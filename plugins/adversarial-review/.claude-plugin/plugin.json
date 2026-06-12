@@ -1,0 +1,12 @@
+{
+  "name": "adversarial-review",
+  "description": "Hostile, bias-free review of a change — dispatches independent adversarial reviewers plus a standalone false-positive filter, and reports only verified findings in plain language.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Patrick D'appollonio",
+    "email": "patrickdappollonio@gmail.com"
+  },
+  "homepage": "https://gist.github.com/patrickdappollonio/2fc5af4d714b97802072e97422823bc4",
+  "license": "MIT",
+  "keywords": ["code-review", "security", "quality", "adversarial", "pre-merge"]
+}

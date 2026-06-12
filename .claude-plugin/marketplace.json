@@ -1,0 +1,22 @@
+{
+  "name": "patrickdappollonio",
+  "description": "Patrick D'appollonio's collection of Claude Code skills, plugins, and tools, shared with the world.",
+  "owner": {
+    "name": "Patrick D'appollonio",
+    "email": "patrickdappollonio@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "adversarial-review",
+      "source": "./plugins/adversarial-review",
+      "description": "Hostile, bias-free review of a change — dispatches independent adversarial reviewers plus a standalone false-positive filter, and reports only verified findings in plain language.",
+      "category": "code-review",
+      "keywords": ["code-review", "security", "quality", "adversarial", "pre-merge"],
+      "author": {
+        "name": "Patrick D'appollonio"
+      },
+      "homepage": "https://gist.github.com/patrickdappollonio/2fc5af4d714b97802072e97422823bc4",
+      "license": "MIT"
+    }
+  ]
+}
