@@ -1,6 +1,6 @@
 ---
 name: adversarial-review
-description: Use when you want a hostile, bias-free review of a code change, a PR, the last commit, or uncommitted work — dispatches many independent adversarial reviewers (concurrency, failure injection, input/auth attacks, data integrity, resource exhaustion, observability, assumptions, API contract, maintainability, Karpathy simplicity & surgical-scope, root-cause & incomplete-fix consistency, rollback, tests, AI-slop, fact-checking), filters false positives with a standalone verifier, and reports findings in plain language with file references.
+description: Use when you want a hostile, bias-free review of a code change, a PR, the last commit, or uncommitted work — dispatches many independent adversarial reviewers (concurrency, failure injection, input/auth attacks, data integrity, resource exhaustion, observability, assumptions, API contract, maintainability, Karpathy simplicity & surgical-scope, root-cause & incomplete-fix consistency, rollback, tests, AI-slop, fact-checking), filters false positives with a standalone verifier, then proposes a fix for each confirmed issue and validates it with a standalone checker, and reports the problems and their validated fixes grouped by category in plain language with file references.
 ---
 
 # Adversarial Review
@@ -9,7 +9,7 @@ description: Use when you want a hostile, bias-free review of a code change, a P
 
 Run a panel of **independent, hostile reviewers** against a change. Each reviewer assumes the code is broken and tries to prove it, from a single narrow angle. Because each runs as a fresh subagent, **none of them inherit the main session's reasoning or the author's intent** — that is the whole point. A change that "looks fine" to the person who wrote it (or to the assistant that helped write it) gets attacked from 16 directions by reviewers who were never told why it should work.
 
-**Core principle:** the orchestrator gathers the change once, hands each reviewer ONLY the raw change plus a charter, collects findings, then a separate verifier confirms each finding is real before anything reaches the user.
+**Core principle:** the orchestrator gathers the change once, hands each reviewer ONLY the raw change plus a charter, collects findings, a separate verifier confirms each finding is real, and a separate validator confirms each proposed fix actually works — before anything reaches the user.
 
 **Do not bias the reviewers.** Never tell a reviewer "the author intended X," "this is probably fine," or "focus only on Y because Z is handled." Give them the diff, the changed files, and their charter. Nothing else.
 
@@ -74,41 +74,52 @@ Collect all findings from all reviewers. Then dispatch **one separate verifier s
 
 Only **confirmed** findings reach the user. Keep the not-confirmed ones available in case the user asks.
 
-### 5. Report in plain language — lead with a simple-terms TL;DR
+### 5. Propose a fix for each confirmed finding — and validate it (standalone)
 
-**Open with a TL;DR anyone could follow.** Before any list or severity table, write 2–4 sentences in plain, non-technical language: what you reviewed, how many real problems survived verification, and whether any of them are genuinely scary. Write for a reader who never saw the code and doesn't know the jargon — no "race condition," "IDOR," or "non-idempotent" without a plain-words gloss. **This simple-terms summary is the most important part of the whole report;** the technical detail lives below and the user pulls it only if they want it.
+Every confirmed finding gets a fix, and **no fix reaches the user until a separate agent has confirmed it actually works.** A fix that looks right but is wrong is worse than no fix — it sends the user troubleshooting a dead end.
+
+1. **Draft a fix** for each confirmed finding: the concrete change that resolves the *root cause*, not just the symptom. Make it specific enough to act on — what to change and where — but only describe it. Do not edit any code.
+2. **Validate every fix with one standalone *Solution Validator* subagent** (charter below; `model: "sonnet"` in Claude Code). Give it the confirmed findings, the drafted fixes, the diff, and the changed files. It is a fresh, hostile checker that owes the fixes nothing: for each one it tries to prove the fix wrong — does it address the real cause, does every API/method/field it names actually exist, does it leave the same bug standing in sibling paths, does it break anything nearby? It returns **valid / invalid** with a one-line reason, and it does not modify code.
+3. **Revise and re-validate** any fix the validator rejects, then send it back through. Loop until valid. If a fix still can't be validated, **say so plainly** — present the problem with "no confirmed fix yet" rather than shipping a guess.
+
+Only **validated** fixes appear in the report.
+
+### 6. Report the problems and their fixes, grouped by category
+
+**Open with a short TL;DR anyone could follow** — 2–4 sentences, plain words, for a reader who never saw the code and doesn't know the jargon: what you reviewed, how many real problems survived verification, and whether any are genuinely serious. Don't label this summary or tell the user you're avoiding jargon — just write it that way. Never use a term like "race condition," "IDOR," or "non-idempotent" without a plain-words gloss.
 
 Then present:
-- A one-line count (e.g. "9 confirmed issues across 5 files; 3 high, 4 medium, 2 low").
-- Findings grouped by severity (high → low), each with:
-  - **What's wrong** — one or two sentences, plain words, no jargon.
+- A one-line count (e.g. "9 confirmed issues across 5 files; 3 serious, 4 moderate, 2 minor").
+- **Findings grouped by category** — a short, plain-language theme, not a charter name. Pick the few that fit; for example: *could crash or break*, *security and access gaps*, *data ending up wrong*, *slow under heavy use*, *will confuse the next person*, *weak tests*, *claims that aren't true*. Within each category, list its findings, each with:
+  - **The problem** — one to three sentences, plain words, with the real-world consequence. No jargon.
+  - **The fix** — one to three sentences, plain words: the validated solution. (More text isn't better; the user can ask for depth.)
   - **Where** — `file:line` (clickable).
-  - **What could go wrong** — the real-world consequence.
+  - **How serious** — serious / moderate / minor.
   - **Which reviewer found it** — so the user can gauge the angle.
 - Which reviewers were skipped and why.
 
-Keep the default report skimmable. Hold the deep technical detail until the user asks.
+Keep both the problem and the fix to a few sentences each. Hold the deep technical detail until the user asks.
 
-### 6. STOP — hand the decision to the user; do not fix anything
+### 7. STOP — hand the decision to the user; do not change anything
 
-**Reviewing is the whole job. Finding a problem is NOT permission to fix it.** The moment the report is delivered you stop and put the next move in the user's hands. Do not edit code, do not open files to "just fix the quick one," do not start drafting patches.
+**Reviewing and proposing fixes is the whole job. A described, validated fix is NOT permission to apply it.** The moment the report is delivered you stop and put the next move in the user's hands. Do not edit code, do not open files to "just apply the quick one," do not start drafting patches in the working tree.
 
 Present exactly these three choices (use `AskUserQuestion`) and wait for the user to pick:
 
-1. **Explain a finding** — go deeper on one or more specific issues (the technical detail, the exact code path, a suggested fix described in words). This is read-only: explaining is not fixing.
-2. **Fix everything** — implement fixes for all the confirmed findings.
+1. **Explain a finding or its fix** — go deeper on one or more specific issues (the technical detail, the exact code path, why the validated fix works). This is read-only: explaining is not applying.
+2. **Apply the fixes** — implement the validated fixes for all the confirmed findings.
 3. **Triage** — defer some findings to a follow-up, and/or let the user mark findings they judge to be non-issues as dismissed (record their reasoning), then act only on whatever remains.
 
-Only after the user chooses **Fix everything**, or names the subset to fix under **Triage**, do you touch code. **Explain** never edits anything.
+Only after the user chooses **Apply the fixes**, or names the subset to fix under **Triage**, do you touch code. **Explain** never edits anything.
 
 This gate holds no matter what:
 
 | The pull you'll feel | The reality |
 |----------------------|-------------|
-| "This one's a trivial one-line fix, I'll just do it." | Trivial or not, it's the user's code and the user's call. Report it, then wait. |
-| "It's high severity — surely they want it fixed now." | High severity raises urgency, not your authority. Present the choice. |
+| "This one's a trivial one-line fix, I'll just apply it." | Trivial or not, it's the user's code and the user's call. Report it, then wait. |
+| "It's serious — surely they want it fixed now." | Severity raises urgency, not your authority. Present the choice. |
 | "Fixing as I go is more efficient than asking." | They asked for a review, not a rewrite. Their control is the goal, not your throughput. |
-| "I already know the fix, so report-and-fix is one step." | Knowing the fix is exactly why you pause — so they can still choose Explain / Fix / Triage. |
+| "The fix is already written and validated, so applying it is one more step." | The fix being ready is exactly why you pause — so they can still choose Explain / Apply / Triage. |
 
 ## Shared output format (give this to every reviewer)
 
@@ -249,7 +260,7 @@ Assume this change treats a symptom, not the disease — a fast, local patch tha
 
 ---
 
-# Verifier — The False-Positive Filter (standalone, runs last)
+# Verifier — The False-Positive Filter (standalone, runs after the reviewers)
 
 You receive the full list of findings from all reviewers, plus the diff and the list of changed files. You did not produce any of these findings and you owe them no loyalty. For each finding:
 
@@ -267,13 +278,35 @@ Be strict. A finding survives only if you can point at the specific code that ma
 
 ---
 
+# Solution Validator — proves each proposed fix is real (standalone, runs after fixes are drafted)
+
+You receive the confirmed findings, the fix drafted for each, the diff, and the list of changed files. You did not write these fixes and you owe them nothing. **Assume each fix is wrong until you can show it is right.** You do not modify any code — you reason against what is actually there. For each fix:
+
+1. Does it resolve the **root cause**, or only hide the symptom the finding pointed at?
+2. Does every API, method, field, import, flag, or config key it names **actually exist** and behave as assumed, in the versions in use? A fix that calls something imaginary is invalid.
+3. Does it leave the **same defect** standing in sibling paths, parallel call sites, or the layer where the bug originates?
+4. Does it **break anything nearby** — a contract a caller relies on, an assumption elsewhere in the code, a test that currently passes?
+
+Return, for each fix:
+
+```json
+{ "valid": true | false, "reason": "one line: why it holds, or exactly what's wrong with it" }
+```
+
+Be strict. A fix is valid only if you can point at the specific code that makes it correct and complete. When in doubt, mark it invalid with the reason — handing the user a broken fix costs them far more than asking the orchestrator to try again.
+
+---
+
 ## Common Mistakes
 
 - **Leaking intent into reviewer prompts.** "The author says this is safe" poisons the review. Never include it.
 - **Skipping the verifier.** Adversarial reviewers over-report. The standalone verifier is what makes the output trustworthy — do not present raw findings.
+- **Presenting an unvalidated fix.** A fix that looks right but is wrong sends the user troubleshooting a dead end — worse than offering no fix at all. Every fix goes through the standalone Solution Validator; if one can't be validated, say "no confirmed fix yet" instead of guessing.
 - **Using the expensive model for subagents in Claude Code.** 16+ agents on the big model is wasteful; use `sonnet`.
 - **Dumping technicalities on the user.** Lead with plain language and consequences; expand only on request.
-- **Skipping the simple-terms TL;DR.** The plain-language summary up top is the most important part of the report, not an optional nicety — write it for someone who never saw the code.
-- **Fixing before the user chooses.** This skill produces a *review*, not a *fix*. A confirmed finding — even an obvious one-liner — does not authorize editing. Stop at the report and let the user pick Explain / Fix everything / Triage.
+- **Padding the problem or the fix.** Each is one to three sentences. More words don't make it more correct — the user can always ask for depth.
+- **Announcing that you're simplifying.** Just write plainly; don't label the summary "simple terms" or tell the user you're keeping the jargon out. That guidance is for you, not for them.
+- **Skipping the opening TL;DR.** The plain summary up top is the most important part of the report, not an optional nicety — write it for someone who never saw the code.
+- **Applying fixes before the user chooses.** This skill produces a *review with proposed fixes*, not changes to the code. A confirmed finding with a validated fix — even an obvious one-liner — does not authorize editing. Stop at the report and let the user pick Explain / Apply the fixes / Triage.
 - **Running reviewers sequentially.** Dispatch them in one batch so they run concurrently.
 
