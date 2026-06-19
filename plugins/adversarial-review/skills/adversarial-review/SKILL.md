@@ -1,6 +1,6 @@
 ---
 name: adversarial-review
-description: Use when you want a hostile, bias-free review of a code change, a PR, the last commit, or uncommitted work — dispatches many independent adversarial reviewers (concurrency, failure injection, input/auth attacks, data integrity, resource exhaustion, observability, assumptions, API contract, maintainability, Karpathy simplicity & surgical-scope, root-cause & incomplete-fix consistency, rollback, tests, AI-slop, fact-checking), filters false positives with a standalone verifier, then proposes a fix for each confirmed issue and validates it with a standalone checker, and reports the problems and their validated fixes grouped by category in plain language with file references.
+description: Use when you want a hostile, bias-free review of a code change — a PR, the last commit, or local/uncommitted work — that attacks it from many independent angles (concurrency, failure injection, input and auth attacks, data integrity, resource exhaustion, observability, API contract, maintainability, simplicity and scope creep, root-cause/incomplete-fix consistency, rollback, tests, AI-slop, fact-checking). Especially for AI-generated code that looks right but may be hollow, or when you want claims in comments and commit messages fact-checked rather than trusted.
 ---
 
 # Adversarial Review
@@ -78,7 +78,7 @@ Only **confirmed** findings reach the user. Keep the not-confirmed ones availabl
 
 Every confirmed finding gets a fix, and **no fix reaches the user until a separate agent has confirmed it actually works.** A fix that looks right but is wrong is worse than no fix — it sends the user troubleshooting a dead end.
 
-1. **Draft a fix** for each confirmed finding: the concrete change that resolves the *root cause*, not just the symptom. Make it specific enough to act on — what to change and where — but only describe it. Do not edit any code.
+1. **Draft a fix** for each confirmed finding: the *smallest* change that resolves the **root cause**, not just the symptom. Small and root-cause are not opposites — reach the actual source of the bug, but with the minimal change that does it. This is the same Simplicity-First, Surgical-Changes discipline the *Karpathy Minimalist* reviews for: no refactoring, no cleaning up adjacent code, no new abstraction, no guarding impossible cases. When the same defect lives in sibling paths or parallel call sites (the *Incomplete-Fix Prosecutor*'s territory), each site is its own finding with its own minimal fix — never a reason to balloon one fix into a sweeping rewrite. Make it specific enough to act on — what to change and where — but only describe it. Do not edit any code.
 2. **Validate every fix with one standalone *Solution Validator* subagent** (charter below; `model: "sonnet"` in Claude Code). Give it the confirmed findings, the drafted fixes, the diff, and the changed files. It is a fresh, hostile checker that owes the fixes nothing: for each one it tries to prove the fix wrong — does it address the real cause, does every API/method/field it names actually exist, does it leave the same bug standing in sibling paths, does it break anything nearby? It returns **valid / invalid** with a one-line reason, and it does not modify code.
 3. **Revise and re-validate** any fix the validator rejects, then send it back through. Loop until valid. If a fix still can't be validated, **say so plainly** — present the problem with "no confirmed fix yet" rather than shipping a guess.
 
@@ -86,19 +86,34 @@ Only **validated** fixes appear in the report.
 
 ### 6. Report the problems and their fixes, grouped by category
 
-**Open with a short TL;DR anyone could follow** — 2–4 sentences, plain words, for a reader who never saw the code and doesn't know the jargon: what you reviewed, how many real problems survived verification, and whether any are genuinely serious. Don't label this summary or tell the user you're avoiding jargon — just write it that way. Never use a term like "race condition," "IDOR," or "non-idempotent" without a plain-words gloss.
+By now you hold detailed, code-level material: reviewer findings full of symbols, the drafted fixes, the validator's notes. **The report is not that material — it is a plain re-telling of it.** Rewrite every finding for a reader who never saw the code and never will. One self-check governs the whole report: *if a sentence only makes sense to someone already reading the code, rewrite it.*
 
-Then present:
-- A one-line count (e.g. "9 confirmed issues across 5 files; 3 serious, 4 moderate, 2 minor").
-- **Findings grouped by category** — a short, plain-language theme, not a charter name. Pick the few that fit; for example: *could crash or break*, *security and access gaps*, *data ending up wrong*, *slow under heavy use*, *will confuse the next person*, *weak tests*, *claims that aren't true*. Within each category, list its findings, each with:
-  - **The problem** — one to three sentences, plain words, with the real-world consequence. No jargon.
-  - **The fix** — one to three sentences, plain words: the validated solution. (More text isn't better; the user can ask for depth.)
-  - **Where** — `file:line` (clickable).
-  - **How serious** — serious / moderate / minor.
-  - **Which reviewer found it** — so the user can gauge the angle.
-- Which reviewers were skipped and why.
+**Where code identifiers go.** Function names, class names, variables, flags — any symbol — belong **only** in the `Where` field, as a clickable `file:line`. That field is the pointer into the editor; it carries the code-level precision so the prose doesn't have to. The problem and the fix describe *what happens* and *what changes* in outcome terms, with no symbol names in them.
 
-Keep both the problem and the fix to a few sentences each. Hold the deep technical detail until the user asks.
+**Open with a short TL;DR anyone could follow** — 2–4 sentences: what you reviewed, how many real problems survived verification, and whether any are genuinely serious. Don't label it or announce that you're keeping jargon out — just write it that way. Never use a term like "race condition," "IDOR," or "non-idempotent" without a plain-words gloss.
+
+Then a one-line count (e.g. "9 confirmed issues across 5 files; 3 serious, 4 moderate, 2 minor").
+
+Then the **findings grouped by category** — a short, plain-language theme, not a charter name. Pick the few that fit; for example: *could crash or break*, *security and access gaps*, *data ending up wrong*, *slow under heavy use*, *will confuse the next person*, *weak tests*, *claims that aren't true*.
+
+Each finding has exactly this shape:
+
+- **What's wrong** — one to three plain sentences: the situation and its real-world consequence.
+- **The fix** — one to three plain sentences: what changes, in outcome terms. (More text isn't better; the user can ask for depth.)
+- **Where** — `path/file.go:142` (the only place a symbol name appears).
+- **Severity** — serious / moderate / minor (the reviewers' high / medium / low).
+- **Found by** — the reviewer, so the user can gauge the angle.
+
+A concurrency finding, for example, renders like this:
+
+> **What's wrong:** Two requests arriving at the same instant can both pass the "is this name still free?" check before either of them saves, so the second silently overwrites the first. It's invisible under normal traffic and only shows up under load, as quietly lost data.
+> **The fix:** Make the check-and-save happen as one all-or-nothing step, so a second request can't slip in between the two.
+> **Where:** `internal/store/users.go:142`
+> **Severity:** serious — **Found by:** Concurrency & State Saboteur
+
+Notice what the example does *not* contain: no function name, no "mutex," no "transaction," no "race condition." Those live in the code at `Where`, not in the explanation.
+
+Close with which reviewers were skipped and why. Hold the deep technical detail until the user asks.
 
 ### 7. STOP — hand the decision to the user; do not change anything
 
@@ -284,8 +299,9 @@ You receive the confirmed findings, the fix drafted for each, the diff, and the 
 
 1. Does it resolve the **root cause**, or only hide the symptom the finding pointed at?
 2. Does every API, method, field, import, flag, or config key it names **actually exist** and behave as assumed, in the versions in use? A fix that calls something imaginary is invalid.
-3. Does it leave the **same defect** standing in sibling paths, parallel call sites, or the layer where the bug originates?
+3. Does it reach the **layer where the bug originates**, or patch a downstream symptom and leave the source broken? (The same defect in *sibling* paths or parallel call sites is a separate finding with its own fix — this fix only needs to be complete for the finding it belongs to, not sweep every site.)
 4. Does it **break anything nearby** — a contract a caller relies on, an assumption elsewhere in the code, a test that currently passes?
+5. Is it the **minimal** change that does the job? A fix that overreaches — refactoring, cleaning up adjacent code, or adding abstraction the finding didn't call for — is invalid as drafted; the smaller change that still resolves the root cause is the valid one.
 
 Return, for each fix:
 
@@ -305,6 +321,8 @@ Be strict. A fix is valid only if you can point at the specific code that makes 
 - **Using the expensive model for subagents in Claude Code.** 16+ agents on the big model is wasteful; use `sonnet`.
 - **Dumping technicalities on the user.** Lead with plain language and consequences; expand only on request.
 - **Padding the problem or the fix.** Each is one to three sentences. More words don't make it more correct — the user can always ask for depth.
+- **Proposing a fix bigger than the bug.** The fix is the smallest change that resolves the root cause — not a refactor, not a cleanup, not a new abstraction. Breadth across sibling paths is handled by separate findings, each with its own small fix. The Solution Validator rejects fixes that overreach.
+- **Letting code identifiers leak into the prose.** Function and symbol names belong in the `Where` (`file:line`) field, not in the problem or the fix. If the explanation only makes sense to someone reading the code, rewrite it.
 - **Announcing that you're simplifying.** Just write plainly; don't label the summary "simple terms" or tell the user you're keeping the jargon out. That guidance is for you, not for them.
 - **Skipping the opening TL;DR.** The plain summary up top is the most important part of the report, not an optional nicety — write it for someone who never saw the code.
 - **Applying fixes before the user chooses.** This skill produces a *review with proposed fixes*, not changes to the code. A confirmed finding with a validated fix — even an obvious one-liner — does not authorize editing. Stop at the report and let the user pick Explain / Apply the fixes / Triage.
