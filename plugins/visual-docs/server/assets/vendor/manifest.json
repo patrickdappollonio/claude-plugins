@@ -1,7 +1,7 @@
 {
   "$schema": "SBOM-style manifest of browser libraries vendored into assets/vendor/",
   "generatedWith": "scripts/update-vendor.mjs",
-  "generatedAt": "2026-07-04T18:46:59.364Z",
+  "generatedAt": "2026-07-04T21:02:46.474Z",
   "assets": [
     {
       "name": "marked",
@@ -112,6 +112,36 @@
       "file": "nomnoml.js",
       "sizeBytes": 72715,
       "integrity": "sha384-cQ6kIxrqYsimUdVijvas+DqrYHmHBewKrXNwm/CZzhk3MNRQ1GdsDDt4ZWo5ltIK"
+    },
+    {
+      "name": "preact",
+      "version": "10.24.3",
+      "license": "MIT",
+      "homepage": "https://github.com/preactjs/preact",
+      "source": "https://cdn.jsdelivr.net/npm/preact@10.24.3/dist/preact.min.js",
+      "file": "preact.min.js",
+      "sizeBytes": 11430,
+      "integrity": "sha384-8lYmL2zoJxGedi/gyeSimJrBzBq9UP16Q3610f5ILM6krTe3Q3zUwEBjEwokLA0g"
+    },
+    {
+      "name": "preact-hooks",
+      "version": "10.24.3",
+      "license": "MIT",
+      "homepage": "https://github.com/preactjs/preact",
+      "source": "https://cdn.jsdelivr.net/npm/preact@10.24.3/hooks/dist/hooks.umd.js",
+      "file": "preact-hooks.umd.js",
+      "sizeBytes": 3882,
+      "integrity": "sha384-3TOXhf2QfKuO2sx5nN6tX0tFWCkocWRxCUu1hkgFl0eIHD/9ZVPE1vF6haC1A+6y"
+    },
+    {
+      "name": "htm",
+      "version": "3.1.1",
+      "license": "Apache-2.0",
+      "homepage": "https://github.com/developit/htm",
+      "source": "https://cdn.jsdelivr.net/npm/htm@3.1.1/dist/htm.umd.js",
+      "file": "htm.umd.js",
+      "sizeBytes": 1364,
+      "integrity": "sha384-toVdrLSMaw7Y55MowcKqkmFL/Ek6Sky62NOk0b5sDDZBu2wcoPyyQUt9unDVjXhL"
     }
   ]
 }

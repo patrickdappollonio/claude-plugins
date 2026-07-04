@@ -14,6 +14,27 @@ import { fileURLToPath } from 'node:url';
 
 const VENDOR_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'assets', 'vendor');
 const MANIFEST = join(VENDOR_DIR, 'manifest.json');
+const INDEX_HTML = join(VENDOR_DIR, '..', 'index.html');
+
+/** Find the <script>/<link> tag that loads /assets/vendor/<file>, capturing
+    (opening tag minus a trailing integrity attr) and the closing `>`. */
+function vendorTagRe(file) {
+  const esc = file.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`(<(?:script|link)\\b[^>]*?\\b(?:src|href)="/assets/vendor/${esc}"[^>]*?)(?:\\s+integrity="[^"]*")?(\\s*>)`, 'g');
+}
+
+/** Return { file: integrity } for every vendored tag referenced in index.html. */
+function indexIntegrities(html) {
+  const map = {};
+  const re = /<(?:script|link)\b[^>]*?\b(?:src|href)="\/assets\/vendor\/([^"]+)"[^>]*?>/g;
+  let m;
+  while ((m = re.exec(html))) {
+    const tag = m[0];
+    const integ = tag.match(/\bintegrity="([^"]*)"/);
+    map[m[1]] = integ ? integ[1] : null;
+  }
+  return map;
+}
 
 const ASSETS = [
   {
@@ -115,6 +136,33 @@ const ASSETS = [
     file: 'nomnoml.js',
     integrity: 'sha384-cQ6kIxrqYsimUdVijvas+DqrYHmHBewKrXNwm/CZzhk3MNRQ1GdsDDt4ZWo5ltIK',
   },
+  {
+    name: 'preact',
+    version: '10.24.3',
+    license: 'MIT',
+    homepage: 'https://github.com/preactjs/preact',
+    url: 'https://cdn.jsdelivr.net/npm/preact@10.24.3/dist/preact.min.js',
+    file: 'preact.min.js',
+    integrity: 'sha384-8lYmL2zoJxGedi/gyeSimJrBzBq9UP16Q3610f5ILM6krTe3Q3zUwEBjEwokLA0g',
+  },
+  {
+    name: 'preact-hooks',
+    version: '10.24.3',
+    license: 'MIT',
+    homepage: 'https://github.com/preactjs/preact',
+    url: 'https://cdn.jsdelivr.net/npm/preact@10.24.3/hooks/dist/hooks.umd.js',
+    file: 'preact-hooks.umd.js',
+    integrity: 'sha384-3TOXhf2QfKuO2sx5nN6tX0tFWCkocWRxCUu1hkgFl0eIHD/9ZVPE1vF6haC1A+6y',
+  },
+  {
+    name: 'htm',
+    version: '3.1.1',
+    license: 'Apache-2.0',
+    homepage: 'https://github.com/developit/htm',
+    url: 'https://cdn.jsdelivr.net/npm/htm@3.1.1/dist/htm.umd.js',
+    file: 'htm.umd.js',
+    integrity: 'sha384-toVdrLSMaw7Y55MowcKqkmFL/Ek6Sky62NOk0b5sDDZBu2wcoPyyQUt9unDVjXhL',
+  },
 ];
 
 function sha384(buf) {
@@ -141,11 +189,33 @@ async function verify() {
       failed++;
     }
   }
+  // Every vendored tag in index.html must carry the correct SRI hash, so a
+  // tampered on-disk file is blocked by the browser even though it's same-origin.
+  const html = await fs.readFile(INDEX_HTML, 'utf8');
+  const inIndex = indexIntegrities(html);
+  for (const [file, hash] of pinned) {
+    if (!(file in inIndex)) continue; // CSS/JS not referenced in the shell is fine
+    if (inIndex[file] !== hash) {
+      console.log(`FAIL ${file} (index.html integrity ${inIndex[file] ? 'mismatched' : 'missing'})`);
+      failed++;
+    }
+  }
   if (failed) {
-    console.error(`${failed} asset(s) missing or mismatched against the pinned hash — re-run without --verify to fetch, or investigate tampering.`);
+    console.error(`${failed} problem(s) — re-run without --verify to fetch and re-sync index.html, or investigate tampering.`);
     process.exit(1);
   }
-  console.log('All vendored assets match the source-pinned hashes.');
+  console.log('All vendored assets match the source-pinned hashes (files + index.html SRI).');
+}
+
+/** Rewrite index.html so each vendored tag carries integrity="<pinned hash>". */
+async function syncIndexIntegrity(byFile) {
+  let html = await fs.readFile(INDEX_HTML, 'utf8');
+  for (const [file, hash] of Object.entries(byFile)) {
+    if (!html.includes(`/assets/vendor/${file}"`)) continue;
+    html = html.replace(vendorTagRe(file), (_m, open, close) => `${open} integrity="${hash}"${close}`);
+  }
+  await fs.writeFile(INDEX_HTML, html);
+  console.log('Synced index.html SRI attributes.');
 }
 
 async function update() {
@@ -189,6 +259,7 @@ async function update() {
   };
   await fs.writeFile(MANIFEST, JSON.stringify(manifest, null, 2) + '\n');
   console.log(`Wrote ${MANIFEST}`);
+  await syncIndexIntegrity(Object.fromEntries(entries.map((e) => [e.file, e.integrity])));
 }
 
 if (process.argv.includes('--verify')) await verify();
