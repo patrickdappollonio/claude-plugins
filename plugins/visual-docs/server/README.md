@@ -20,10 +20,13 @@ document with:
   feedback into a pasteable message when the server isn't reachable.
 - Light/dark themes.
 
-No npm dependencies — the server is pure `node:http` (Node ≥ 18). Rendering
-happens client-side with **vendored** renderer libraries (marked, mermaid,
-highlight.js, diff2html, js-yaml, nomnoml) served from `assets/vendor/` —
-the page makes zero external requests and works fully offline. Each vendored
+No npm dependencies — the server is pure `node:http` (Node ≥ 18). The browser
+UI is a small [Preact](https://preactjs.com/) app (with htm, no build step),
+and rendering uses **vendored** libraries (marked, DOMPurify, mermaid,
+highlight.js, diff2html, js-yaml, nomnoml, preact, htm) served from
+`assets/vendor/` — the page makes zero external requests and works fully
+offline. Each tag also carries a Subresource Integrity hash, so a tampered
+vendored file is refused by the browser. Each vendored
 file's version, source URL, license, size, and SHA-384 are recorded in an
 SBOM-style manifest, [`assets/vendor/manifest.json`](assets/vendor/manifest.json):
 

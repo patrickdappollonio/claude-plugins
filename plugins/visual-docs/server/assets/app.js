@@ -1,73 +1,20 @@
-/* Visual Docs client: fetches raw markdown from the local server and renders
-   it with marked + mermaid + highlight.js + diff2html, all client-side.
-   Renderer libraries are vendored under /assets/vendor (see
-   vendor/manifest.json); if one fails to load, blocks degrade to readable
-   plain <pre> output. */
+/* Visual Docs client. A small Preact app (vendored under /assets/vendor)
+   renders the shell — sidebar, title block, comment drawer, routing, live
+   reload — while markdown is rendered to HTML with marked, sanitized with
+   DOMPurify, and hydrated imperatively (mermaid, diff2html, nomnoml) inside
+   effects. If a renderer library fails to load, blocks degrade to plain
+   <pre> output. */
 
 (() => {
   'use strict';
 
-  const $ = (sel) => document.querySelector(sel);
-  const state = {
-    docs: [],
-    current: null, // relative path of the open doc
-    currentDoc: null, // cached {path, content, mtime} for the open doc
-    comments: [],
-    pendingSection: '', // stable slug of the section being commented on
-    pendingTitle: '', // human heading text, for display
-    mermaidSeq: 0,
-  };
+  const { render } = window.preact;
+  const { useState, useEffect, useRef, useCallback } = window.preactHooks;
+  const html = window.htm.bind(window.preact.h);
 
-  // A comment's stable section key: prefer its stored slug, else derive one
-  // from whatever section/title it was saved with (back-compat with text keys).
-  function commentSlug(c) {
-    return slugify(c.section || c.title || '');
-  }
-
-  /* ---------- theme ---------- */
-
-  function syncHljsTheme(theme) {
-    const light = document.getElementById('hljs-light');
-    const dark = document.getElementById('hljs-dark');
-    if (light) light.disabled = theme === 'dark';
-    if (dark) dark.disabled = theme !== 'dark';
-  }
-
-  function applyTheme(theme) {
-    document.documentElement.setAttribute('data-theme', theme);
-    syncHljsTheme(theme);
-    localStorage.setItem('vd-theme', theme);
-    if (window.mermaid) {
-      window.mermaid.initialize({
-        startOnLoad: false,
-        theme: theme === 'dark' ? 'dark' : 'neutral',
-        securityLevel: 'strict',
-      });
-    }
-    // Re-render from the cached doc so mermaid/diffs pick up the theme without
-    // a network round-trip (a failed refetch here would blank a valid document).
-    if (state.currentDoc) renderDoc(state.currentDoc, { preserveScroll: true });
-  }
-
-  function initTheme() {
-    const saved = localStorage.getItem('vd-theme');
-    const theme = saved || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-    document.documentElement.setAttribute('data-theme', theme);
-    syncHljsTheme(theme);
-    if (window.mermaid) {
-      window.mermaid.initialize({
-        startOnLoad: false,
-        theme: theme === 'dark' ? 'dark' : 'neutral',
-        securityLevel: 'strict',
-      });
-    }
-    $('#theme-toggle').addEventListener('click', () => {
-      const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-      applyTheme(next);
-    });
-  }
-
-  /* ---------- helpers ---------- */
+  /* ================================================================
+     Pure helpers, fence renderers, and hydration — framework-agnostic.
+     ================================================================ */
 
   function escapeHTML(s) {
     return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -97,6 +44,21 @@
   function fmtTime(ms) {
     const d = new Date(ms);
     return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
+
+  function slugify(text) {
+    return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  }
+
+  // A comment's stable section key: prefer its stored slug, else derive one
+  // from whatever section/title it was saved with (back-compat with text keys).
+  function commentSlug(c) {
+    return slugify(c.section || c.title || '');
+  }
+
+  function firstH1Text(md) {
+    const m = (md || '').match(/^#\s+(.+)$/m);
+    return m ? m[1].trim() : null;
   }
 
   async function api(path, opts) {
@@ -268,7 +230,7 @@
 
   /** Parse an ```api fence: an HTTP exchange in plain or `curl -v` style
       (`>` request lines, `<` response lines). Returns {request, response},
-      each {startLine, headers[], body} or null. */
+      each {startLine, headers[], body}. */
   function parseApiExchange(code) {
     const lines = code.split('\n');
     const req = { startLine: '', headers: [], body: [] };
@@ -304,7 +266,6 @@
           target.headers.push(line.trim());
           continue;
         }
-        // Not a header and not blank: treat as body from here on.
         inBody = true;
       }
       target.body.push(line);
@@ -356,7 +317,6 @@
   function renderApiFence(code) {
     const { request, response } = parseApiExchange(code);
     if (!request.startLine && !response.startLine) {
-      // Unparseable: show as plain code so nothing is lost.
       return `<div class="codewrap"><span class="lang-tag">api</span><pre><code class="hljs">${escapeHTML(code)}</code></pre></div>`;
     }
     return `<div class="api-block">${renderApiHalf('request', request)}${renderApiHalf('response', response)}</div>`;
@@ -394,7 +354,7 @@
     return s;
   }
 
-  function renderOpenApiOperation(path, method, op, spec) {
+  function renderOpenApiOperation(path, method, op) {
     const params = (op.parameters || [])
       .map((p) => {
         const schema = p.schema ? schemaToText(p.schema) : p.type || '';
@@ -448,7 +408,7 @@
       if (!methods || typeof methods !== 'object') continue;
       for (const [method, op] of Object.entries(methods)) {
         if (!METHODS.includes(method.toUpperCase()) || !op || typeof op !== 'object') continue;
-        ops.push(renderOpenApiOperation(path, method, op, spec));
+        ops.push(renderOpenApiOperation(path, method, op));
       }
     }
     return `<div class="openapi-block">
@@ -461,26 +421,7 @@
     </div>`;
   }
 
-  /* ---------- nomnoml diagrams ---------- */
-
-  function hydrateNomnoml(container) {
-    for (const b of container.querySelectorAll('.nomnoml-block')) {
-      const src = decodeSrc(b.dataset.nomnomlSource);
-      if (!window.nomnoml) {
-        b.innerHTML = `<pre style="text-align:left">${escapeHTML(src)}</pre>`;
-        continue;
-      }
-      try {
-        b.innerHTML = window.nomnoml.renderSvg(src);
-        const svg = b.querySelector('svg');
-        if (svg) { svg.removeAttribute('width'); svg.removeAttribute('height'); svg.style.maxWidth = '100%'; }
-      } catch (err) {
-        b.innerHTML = `<div class="render-error">nomnoml: ${escapeHTML(String(err.message || err))}\n\n${escapeHTML(src)}</div>`;
-      }
-    }
-  }
-
-  /* ---------- markdown rendering ---------- */
+  /* ---------- markdown → sanitized HTML ---------- */
 
   function renderMarkdown(md) {
     if (!window.marked) {
@@ -510,15 +451,25 @@
       is untrusted (e.g. a recap of someone else's branch), so raw <script>,
       event handlers, and javascript: links must be stripped. DOMPurify keeps
       our data-* fence carriers and dangerous-scheme links are dropped. */
-  function sanitizeHTML(html) {
+  function sanitizeHTML(dirty) {
     if (window.DOMPurify) {
-      // Default config keeps data-* carriers (ALLOW_DATA_ATTR is on) and rich
-      // HTML while stripping <script>, on* handlers, and javascript: links.
-      return window.DOMPurify.sanitize(html);
+      return window.DOMPurify.sanitize(dirty);
     }
     // DOMPurify is vendored and same-origin, so this is effectively unreachable;
     // if it ever fails to load, show escaped source rather than execute markup.
-    return `<pre>${escapeHTML(html)}</pre>`;
+    return `<pre>${escapeHTML(dirty)}</pre>`;
+  }
+
+  /* ---------- imperative hydration (runs on a rendered container) ---------- */
+
+  function initMermaid(theme) {
+    if (window.mermaid) {
+      window.mermaid.initialize({
+        startOnLoad: false,
+        theme: theme === 'dark' ? 'dark' : 'neutral',
+        securityLevel: 'strict',
+      });
+    }
   }
 
   async function hydrateMermaid(container) {
@@ -526,8 +477,7 @@
     if (!blocks.length) return;
     if (!window.mermaid) {
       for (const b of blocks) {
-        const src = decodeSrc(b.dataset.mermaidSource);
-        b.innerHTML = `<pre style="text-align:left">${escapeHTML(src)}</pre>`;
+        b.innerHTML = `<pre style="text-align:left">${escapeHTML(decodeSrc(b.dataset.mermaidSource))}</pre>`;
       }
       return;
     }
@@ -544,11 +494,28 @@
     }
   }
 
+  function hydrateNomnoml(container) {
+    for (const b of container.querySelectorAll('.nomnoml-block')) {
+      const src = decodeSrc(b.dataset.nomnomlSource);
+      if (!window.nomnoml) {
+        b.innerHTML = `<pre style="text-align:left">${escapeHTML(src)}</pre>`;
+        continue;
+      }
+      try {
+        b.innerHTML = window.nomnoml.renderSvg(src);
+        const svg = b.querySelector('svg');
+        if (svg) { svg.removeAttribute('width'); svg.removeAttribute('height'); svg.style.maxWidth = '100%'; }
+      } catch (err) {
+        b.innerHTML = `<div class="render-error">nomnoml: ${escapeHTML(String(err.message || err))}\n\n${escapeHTML(src)}</div>`;
+      }
+    }
+  }
+
   function hydrateDiffs(container) {
     for (const block of container.querySelectorAll('[data-diff]')) {
       const src = decodeSrc(block.dataset.diffSource);
       const body = block.querySelector('.diff-body');
-      const render = (mode) => {
+      const draw = (mode) => {
         if (window.Diff2Html) {
           try {
             body.innerHTML = window.Diff2Html.html(normalizeDiff(src), {
@@ -566,158 +533,37 @@
       buttons.forEach((btn) => {
         btn.addEventListener('click', () => {
           buttons.forEach((b) => b.classList.toggle('active', b === btn));
-          render(btn.dataset.mode);
+          draw(btn.dataset.mode);
         });
       });
-      render('line-by-line');
+      draw('line-by-line');
     }
   }
 
-  function slugify(text) {
-    return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-  }
-
-  function hydrateSectionComments(container) {
+  /** Attach a comment pin to every H2, idempotently (safe to re-run when the
+      comment set changes without re-rendering the document body). Keyed on the
+      stable heading slug so a rename doesn't orphan a comment. */
+  function applySectionPins(container, comments, onOpen) {
+    container.querySelectorAll('.section-comment-btn').forEach((b) => b.remove());
     for (const h2 of container.querySelectorAll('h2')) {
       const title = h2.textContent.trim();
       const slug = slugify(title);
       h2.id = h2.id || slug;
+      const count = comments.filter((c) => commentSlug(c) === slug && !c.resolved).length;
       const btn = document.createElement('button');
-      btn.className = 'section-comment-btn';
+      btn.className = 'section-comment-btn' + (count > 0 ? ' has-comments' : '');
       btn.type = 'button';
-      // Match on the stable slug so a heading rename doesn't orphan its comments.
-      const count = state.comments.filter((c) => commentSlug(c) === slug && !c.resolved).length;
       btn.textContent = count > 0 ? `✎ ${count}` : '✎ comment';
-      if (count > 0) btn.classList.add('has-comments');
       btn.title = `Comment on “${title}”`;
-      btn.addEventListener('click', () => openDrawer(slug, title));
+      btn.addEventListener('click', () => onOpen(slug, title));
       h2.appendChild(btn);
     }
   }
 
-  /* ---------- documents ---------- */
+  /* ---------- feedback helpers ---------- */
 
-  async function refreshDocs() {
-    const { docs } = await api('/api/docs');
-    state.docs = docs;
-    const list = $('#doc-list');
-    list.innerHTML = '';
-    for (const doc of docs) {
-      const a = document.createElement('a');
-      a.className = 'doc-link' + (doc.path === state.current ? ' active' : '');
-      a.href = `#/${doc.path}`;
-      a.innerHTML = `<span class="dl-title">${escapeHTML(doc.title)}</span><span class="dl-path mono">${escapeHTML(doc.path)} · ${fmtTime(doc.mtime)}</span>`;
-      list.appendChild(a);
-    }
-    // Auto-open: single doc, or most recent when nothing selected.
-    if (!state.current && docs.length) {
-      location.hash = `#/${docs[0].path}`;
-    }
-  }
-
-  async function refreshComments() {
-    if (!state.current) return;
-    try {
-      const { comments } = await api(`/api/comments?path=${encodeURIComponent(state.current)}`);
-      state.comments = comments;
-    } catch {
-      state.comments = [];
-    }
-    const open = state.comments.filter((c) => !c.resolved).length;
-    $('#tb-comments-btn').textContent = `${open} open`;
-    renderCommentList();
-  }
-
-  async function loadDoc(path, { preserveScroll = false } = {}) {
-    let doc;
-    try {
-      doc = await api(`/api/doc?path=${encodeURIComponent(path)}`);
-    } catch {
-      $('#content').innerHTML = `<div class="empty-state"><p class="mono">Document not found: ${escapeHTML(path)}</p></div>`;
-      return;
-    }
-    state.current = path;
-    state.currentDoc = doc; // cached so a theme toggle can re-render without refetching
-    await refreshComments();
-    await renderDoc(doc, { preserveScroll });
-  }
-
-  /** Render an already-loaded document. Called by loadDoc after a fetch and by
-      applyTheme from cache, so toggling the theme never depends on the network. */
-  async function renderDoc(doc, { preserveScroll = false } = {}) {
-    const scrollY = window.scrollY;
-    const content = $('#content');
-    state.mermaidSeq = 0;
-    content.innerHTML = sanitizeHTML(renderMarkdown(doc.content));
-
-    // Title block: use first h1 as title, strip it from the body to avoid dupes.
-    const firstH1 = content.querySelector('h1');
-    const title = firstH1 ? firstH1.textContent : doc.path.split('/').pop();
-    if (firstH1) firstH1.remove();
-    $('#tb-doc-title').textContent = title;
-    $('#tb-doc-path').textContent = doc.path;
-    $('#tb-doc-mtime').textContent = fmtTime(doc.mtime);
-    $('#doc-header').hidden = false;
-    document.title = `${title} — Visual Docs`;
-
-    hydrateDiffs(content);
-    hydrateSectionComments(content);
-    hydrateNomnoml(content);
-    await hydrateMermaid(content);
-
-    document.querySelectorAll('.doc-link').forEach((a) => {
-      a.classList.toggle('active', a.getAttribute('href') === `#/${doc.path}`);
-    });
-
-    if (preserveScroll) window.scrollTo(0, scrollY);
-    else window.scrollTo(0, 0);
-  }
-
-  /* ---------- comment drawer ---------- */
-
-  function renderCommentList() {
-    const list = $('#comment-list');
-    if (!state.comments.length) {
-      list.innerHTML = '<p class="mono" style="color:var(--ink-soft)">No comments yet. Anything you write here is saved locally and read back by the agent.</p>';
-      return;
-    }
-    list.innerHTML = state.comments
-      .slice()
-      .reverse()
-      .map(
-        (c) => `<div class="comment-item${c.resolved ? ' resolved' : ''}">
-          <div class="c-meta">
-            ${(c.title || c.section) ? `<span class="c-section">§ ${escapeHTML(c.title || c.section)}</span>` : ''}
-            <span>${escapeHTML(new Date(c.createdAt).toLocaleString())}</span>
-            ${c.resolved ? '<span>resolved</span>' : ''}
-          </div>
-          <div>${escapeHTML(c.text)}</div>
-        </div>`
-      )
-      .join('');
-  }
-
-  function openDrawer(section = '', title = '') {
-    state.pendingSection = section;
-    state.pendingTitle = title;
-    const ctx = $('#comment-context');
-    if (section) {
-      ctx.textContent = `commenting on § ${title || section}`;
-      ctx.hidden = false;
-    } else {
-      ctx.hidden = true;
-    }
-    $('#comment-drawer').hidden = false;
-    $('#comment-text').focus();
-  }
-
-  /** Build a paste-ready prompt from feedback, mirroring what the agent
-      would read from the comments API. Used as the clipboard fallback. */
-  function buildPrompt(entries) {
-    const lines = [
-      `Please revise the visual doc \`${state.current}\` based on this feedback:`,
-      '',
-    ];
+  function buildPrompt(path, entries) {
+    const lines = [`Please revise the visual doc \`${path}\` based on this feedback:`, ''];
     for (const e of entries) {
       const label = e.title || e.section;
       lines.push(label ? `- [section: ${label}] ${e.text}` : `- ${e.text}`);
@@ -744,94 +590,330 @@
     }
   }
 
-  function setCommentStatus(msg, tone = 'ok') {
-    const el = $('#comment-status');
-    el.textContent = msg;
-    el.dataset.tone = tone;
-    el.hidden = !msg;
-    if (msg) setTimeout(() => { el.hidden = true; }, 5000);
+  /* ================================================================
+     Components
+     ================================================================ */
+
+  function Sidebar({ docs, current, conn, onToggleTheme }) {
+    const connLabel = conn === 'on' ? 'live reload on' : conn === 'off' ? 'reconnecting…' : 'connecting…';
+    return html`
+      <aside id="sidebar">
+        <header class="side-head">
+          <span class="side-mark">▤</span>
+          <div>
+            <div class="side-title">Visual Docs</div>
+            <div class="side-sub mono">local · live</div>
+          </div>
+          <button id="theme-toggle" title="Toggle theme" aria-label="Toggle theme" onClick=${onToggleTheme}>◐</button>
+        </header>
+        <nav id="doc-list" aria-label="Documents">
+          ${docs.map((d) => html`
+            <a class="doc-link ${d.path === current ? 'active' : ''}" href=${`#/${d.path}`}>
+              <span class="dl-title">${d.title}</span>
+              <span class="dl-path mono">${d.path} · ${fmtTime(d.mtime)}</span>
+            </a>`)}
+        </nav>
+        <footer class="side-foot mono">
+          <span id="conn-dot" class="dot ${conn === 'on' ? 'on' : conn === 'off' ? 'off' : ''}"></span>
+          <span id="conn-label">${connLabel}</span>
+        </footer>
+      </aside>`;
   }
 
-  function initDrawer() {
-    $('#drawer-close').addEventListener('click', () => { $('#comment-drawer').hidden = true; });
-    $('#tb-comments-btn').addEventListener('click', () => openDrawer(''));
+  function TitleBlock({ doc, openCount, onOpenComments }) {
+    const title = firstH1Text(doc.content) || doc.path.split('/').pop();
+    return html`
+      <div id="doc-header">
+        <div class="titleblock">
+          <div class="tb-cell tb-title">
+            <span class="tb-label mono">document</span>
+            <h1 id="tb-doc-title">${title}</h1>
+          </div>
+          <div class="tb-cell"><span class="tb-label mono">file</span><span id="tb-doc-path" class="mono">${doc.path}</span></div>
+          <div class="tb-cell"><span class="tb-label mono">updated</span><span id="tb-doc-mtime" class="mono">${fmtTime(doc.mtime)}</span></div>
+          <div class="tb-cell"><span class="tb-label mono">comments</span><button id="tb-comments-btn" class="mono" onClick=${onOpenComments}>${openCount} open</button></div>
+        </div>
+      </div>`;
+  }
 
-    $('#copy-prompt-btn').addEventListener('click', async () => {
-      const text = $('#comment-text').value.trim();
-      // Copy the draft if present, otherwise all open comments.
-      const entries = text
-        ? [{ section: state.pendingSection, title: state.pendingTitle, text }]
-        : state.comments.filter((c) => !c.resolved);
-      if (!entries.length) {
-        setCommentStatus('Nothing to copy — write feedback first.', 'warn');
-        return;
-      }
-      const ok = await copyToClipboard(buildPrompt(entries));
-      setCommentStatus(ok ? 'Prompt copied — paste it to your agent.' : 'Copy failed — select the text manually.', ok ? 'ok' : 'warn');
-    });
+  /** Renders sanitized markdown into a Preact-owned-but-manually-managed
+      element. Preact never touches the children (the article is empty in its
+      vdom), so imperative hydration is safe. */
+  function DocView({ doc, comments, theme, onOpenSection }) {
+    const ref = useRef(null);
+    const lastPath = useRef(null);
 
-    $('#comment-form').addEventListener('submit', async (e) => {
+    // Body render + fence hydration: only when the document or theme changes.
+    useEffect(() => {
+      const el = ref.current;
+      if (!el) return;
+      const y = window.scrollY;
+      document.documentElement.setAttribute('data-theme', theme);
+      initMermaid(theme);
+      el.innerHTML = sanitizeHTML(renderMarkdown(doc.content));
+      const h1 = el.querySelector('h1');
+      if (h1) h1.remove(); // title shown in TitleBlock
+      hydrateDiffs(el);
+      hydrateNomnoml(el);
+      hydrateMermaid(el);
+      const changedDoc = lastPath.current !== doc.path;
+      lastPath.current = doc.path;
+      window.scrollTo(0, changedDoc ? 0 : y);
+    }, [doc, theme]);
+
+    // Comment pins: cheap, re-applied whenever the comment set changes.
+    useEffect(() => {
+      const el = ref.current;
+      if (el) applySectionPins(el, comments, onOpenSection);
+    }, [doc, comments, theme, onOpenSection]);
+
+    return html`<article id="content" class="markdown-body" ref=${ref}></article>`;
+  }
+
+  function EmptyContent({ message, detail }) {
+    return html`
+      <article id="content" class="markdown-body">
+        <div class="empty-state">
+          <p class="mono">${message}</p>
+          ${detail ? html`<p>${detail}</p>` : null}
+        </div>
+      </article>`;
+  }
+
+  function CommentDrawer({ open, section, title, comments, status, onClose, onSubmit, onCopy }) {
+    const textRef = useRef(null);
+    useEffect(() => {
+      if (open && textRef.current) textRef.current.focus();
+    }, [open, section]);
+
+    const submit = (e) => {
       e.preventDefault();
-      const text = $('#comment-text').value.trim();
-      if (!text || !state.current) return;
+      const text = textRef.current.value.trim();
+      if (!text) return;
+      onSubmit(text);
+      textRef.current.value = '';
+    };
+    const copy = () => onCopy(textRef.current.value.trim());
+
+    const ordered = comments.slice().reverse();
+    return html`
+      <aside id="comment-drawer" hidden=${!open}>
+        <header class="drawer-head">
+          <span class="mono tb-label">comments</span>
+          <button id="drawer-close" aria-label="Close comments" onClick=${onClose}>✕</button>
+        </header>
+        ${section ? html`<div id="comment-context" class="mono">commenting on § ${title || section}</div>` : null}
+        <div id="comment-list">
+          ${ordered.length === 0
+            ? html`<p class="mono" style="color:var(--ink-soft)">No comments yet. Anything you write here is saved locally and read back by the agent.</p>`
+            : ordered.map((c) => html`
+              <div class="comment-item ${c.resolved ? 'resolved' : ''}">
+                <div class="c-meta">
+                  ${(c.title || c.section) ? html`<span class="c-section">§ ${c.title || c.section}</span>` : null}
+                  <span>${new Date(c.createdAt).toLocaleString()}</span>
+                  ${c.resolved ? html`<span>resolved</span>` : null}
+                </div>
+                <div>${c.text}</div>
+              </div>`)}
+        </div>
+        <form id="comment-form" onSubmit=${submit}>
+          <textarea id="comment-text" rows="4" ref=${textRef} placeholder="Leave feedback for the agent… It will read this before revising the document." required></textarea>
+          <div class="form-actions">
+            <button type="button" id="copy-prompt-btn" class="secondary" title="Copy this feedback as a prompt you can paste to your agent" onClick=${copy}>Copy as prompt</button>
+            <button type="submit">Add comment</button>
+          </div>
+          ${status ? html`<div id="comment-status" class="mono" data-tone=${status.tone}>${status.msg}</div>` : null}
+        </form>
+      </aside>`;
+  }
+
+  /* ================================================================
+     App: state, routing, data loading, live reload
+     ================================================================ */
+
+  function initialTheme() {
+    return localStorage.getItem('vd-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  }
+
+  function App() {
+    const [docs, setDocs] = useState([]);
+    const [current, setCurrent] = useState(null);
+    const [doc, setDoc] = useState(null); // {path,content,mtime} | {error:true,path} | null
+    const [comments, setComments] = useState([]);
+    const [theme, setTheme] = useState(initialTheme());
+    const [conn, setConn] = useState('connecting');
+    const [drawer, setDrawer] = useState({ open: false, section: '', title: '' });
+    const [status, setStatus] = useState(null);
+
+    const currentRef = useRef(current);
+    currentRef.current = current;
+
+    const loadDocs = useCallback(async () => {
+      try {
+        const { docs } = await api('/api/docs');
+        setDocs(docs);
+        return docs;
+      } catch {
+        setDocs([]);
+        return [];
+      }
+    }, []);
+
+    const loadComments = useCallback(async (path) => {
+      try {
+        const { comments } = await api(`/api/comments?path=${encodeURIComponent(path)}`);
+        setComments(comments);
+      } catch {
+        setComments([]);
+      }
+    }, []);
+
+    // Routing: hash → current path.
+    useEffect(() => {
+      const onHash = () => {
+        const h = location.hash.replace(/^#\//, '');
+        if (h) setCurrent(decodeURIComponent(h));
+      };
+      window.addEventListener('hashchange', onHash);
+      onHash();
+      return () => window.removeEventListener('hashchange', onHash);
+    }, []);
+
+    // Initial doc list.
+    useEffect(() => { loadDocs(); }, [loadDocs]);
+
+    // Auto-open the most recent doc when nothing is selected.
+    useEffect(() => {
+      if (!current && docs.length) location.hash = `#/${docs[0].path}`;
+    }, [docs, current]);
+
+    // Fetch the selected document + its comments.
+    useEffect(() => {
+      if (!current) return;
+      let cancelled = false;
+      (async () => {
+        try {
+          const d = await api(`/api/doc?path=${encodeURIComponent(current)}`);
+          if (!cancelled) setDoc(d);
+        } catch {
+          if (!cancelled) setDoc({ error: true, path: current });
+        }
+      })();
+      loadComments(current);
+      return () => { cancelled = true; };
+    }, [current, loadComments]);
+
+    // Theme side effects (document attribute, hljs stylesheet, persistence).
+    useEffect(() => {
+      document.documentElement.setAttribute('data-theme', theme);
+      const light = document.getElementById('hljs-light');
+      const dark = document.getElementById('hljs-dark');
+      if (light) light.disabled = theme === 'dark';
+      if (dark) dark.disabled = theme !== 'dark';
+      localStorage.setItem('vd-theme', theme);
+      initMermaid(theme);
+    }, [theme]);
+
+    // Document title.
+    useEffect(() => {
+      if (doc && !doc.error) {
+        document.title = `${firstH1Text(doc.content) || doc.path.split('/').pop()} — Visual Docs`;
+      }
+    }, [doc]);
+
+    // Live reload over SSE (subscribe once; read current via ref).
+    useEffect(() => {
+      const es = new EventSource('/api/events');
+      es.onopen = () => setConn('on');
+      es.onerror = () => setConn('off');
+      es.onmessage = async (e) => {
+        let msg;
+        try { msg = JSON.parse(e.data); } catch { return; }
+        const cur = currentRef.current;
+        if (msg.type === 'change') {
+          await loadDocs();
+          if (cur) {
+            try { setDoc(await api(`/api/doc?path=${encodeURIComponent(cur)}`)); } catch { /* keep last */ }
+          }
+        } else if (msg.type === 'comment') {
+          if (cur) loadComments(cur);
+        }
+      };
+      return () => es.close();
+    }, [loadDocs, loadComments]);
+
+    // Auto-dismiss the comment status line.
+    useEffect(() => {
+      if (!status) return;
+      const t = setTimeout(() => setStatus(null), 5000);
+      return () => clearTimeout(t);
+    }, [status]);
+
+    const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
+    const openSection = useCallback((section, title) => setDrawer({ open: true, section, title }), []);
+    const openComments = () => setDrawer({ open: true, section: '', title: '' });
+    const closeDrawer = () => setDrawer((d) => ({ ...d, open: false }));
+
+    const submitComment = async (text) => {
+      const cur = currentRef.current;
+      if (!text || !cur) return;
       try {
         await api('/api/comments', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ path: state.current, section: state.pendingSection, title: state.pendingTitle, text }),
+          body: JSON.stringify({ path: cur, section: drawer.section, title: drawer.title, text }),
         });
-        $('#comment-text').value = '';
-        setCommentStatus('Saved. The agent reads comments before its next revision.');
-        await refreshComments();
-        hydrateSectionComments($('#content'));
+        setStatus({ msg: 'Saved. The agent reads comments before its next revision.', tone: 'ok' });
+        loadComments(cur);
       } catch {
-        // Server unreachable: fall back to the clipboard so feedback isn't lost.
-        const ok = await copyToClipboard(buildPrompt([{ section: state.pendingSection, text }]));
-        setCommentStatus(
-          ok
+        const ok = await copyToClipboard(buildPrompt(cur, [{ section: drawer.section, title: drawer.title, text }]));
+        setStatus({
+          msg: ok
             ? 'Saving failed, but the prompt was copied — paste it to your agent.'
             : 'Saving failed and clipboard is unavailable — copy the text manually.',
-          'warn'
-        );
-      }
-    });
-  }
-
-  /* ---------- live reload ---------- */
-
-  function initEvents() {
-    const dot = $('#conn-dot');
-    const label = $('#conn-label');
-    const es = new EventSource('/api/events');
-    es.onopen = () => { dot.className = 'dot on'; label.textContent = 'live reload on'; };
-    es.onerror = () => { dot.className = 'dot off'; label.textContent = 'reconnecting…'; };
-    es.onmessage = async (e) => {
-      let msg;
-      try { msg = JSON.parse(e.data); } catch { return; }
-      if (msg.type === 'change') {
-        await refreshDocs();
-        if (state.current) await loadDoc(state.current, { preserveScroll: true });
-      } else if (msg.type === 'comment') {
-        await refreshComments();
-        hydrateSectionComments($('#content'));
+          tone: 'warn',
+        });
       }
     };
-  }
 
-  /* ---------- routing ---------- */
+    const copyPrompt = async (draftText) => {
+      const cur = currentRef.current;
+      const entries = draftText
+        ? [{ section: drawer.section, title: drawer.title, text: draftText }]
+        : comments.filter((c) => !c.resolved);
+      if (!entries.length) {
+        setStatus({ msg: 'Nothing to copy — write feedback first.', tone: 'warn' });
+        return;
+      }
+      const ok = await copyToClipboard(buildPrompt(cur, entries));
+      setStatus({ msg: ok ? 'Prompt copied — paste it to your agent.' : 'Copy failed — select the text manually.', tone: ok ? 'ok' : 'warn' });
+    };
 
-  function route() {
-    const hash = location.hash.replace(/^#\//, '');
-    if (hash) loadDoc(decodeURIComponent(hash));
+    const openCount = comments.filter((c) => !c.resolved).length;
+
+    let main;
+    if (!doc) {
+      main = html`<${EmptyContent} message="No document selected." detail="Pick a document from the sidebar, or write a markdown file into the served directory and it will appear here." />`;
+    } else if (doc.error) {
+      main = html`<${EmptyContent} message=${`Document not found: ${doc.path}`} />`;
+    } else {
+      main = html`<${DocView} doc=${doc} comments=${comments} theme=${theme} onOpenSection=${openSection} />`;
+    }
+
+    return html`
+      <${Sidebar} docs=${docs} current=${current} conn=${conn} onToggleTheme=${toggleTheme} />
+      <main id="main">
+        ${doc && !doc.error ? html`<${TitleBlock} doc=${doc} openCount=${openCount} onOpenComments=${openComments} />` : null}
+        ${main}
+      </main>
+      <${CommentDrawer}
+        open=${drawer.open} section=${drawer.section} title=${drawer.title}
+        comments=${comments} status=${status}
+        onClose=${closeDrawer} onSubmit=${submitComment} onCopy=${copyPrompt} />`;
   }
 
   /* ---------- boot ---------- */
 
-  initTheme();
-  initDrawer();
-  initEvents();
-  window.addEventListener('hashchange', route);
-  refreshDocs().then(route).catch((err) => {
-    $('#content').innerHTML = `<div class="empty-state"><p class="mono">Failed to load documents: ${escapeHTML(err.message)}</p></div>`;
-  });
+  document.documentElement.setAttribute('data-theme', initialTheme());
+  render(html`<${App} />`, document.getElementById('app'));
 })();

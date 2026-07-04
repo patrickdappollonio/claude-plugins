@@ -22,66 +22,7 @@
 <script src="/assets/vendor/htm.umd.js" integrity="sha384-toVdrLSMaw7Y55MowcKqkmFL/Ek6Sky62NOk0b5sDDZBu2wcoPyyQUt9unDVjXhL"></script>
 </head>
 <body>
-<div id="app">
-  <aside id="sidebar">
-    <header class="side-head">
-      <span class="side-mark">▤</span>
-      <div>
-        <div class="side-title">Visual Docs</div>
-        <div class="side-sub mono">local · live</div>
-      </div>
-      <button id="theme-toggle" title="Toggle theme" aria-label="Toggle theme">◐</button>
-    </header>
-    <nav id="doc-list" aria-label="Documents"></nav>
-    <footer class="side-foot mono">
-      <span id="conn-dot" class="dot"></span><span id="conn-label">connecting…</span>
-    </footer>
-  </aside>
-  <main id="main">
-    <div id="doc-header" hidden>
-      <div class="titleblock">
-        <div class="tb-cell tb-title">
-          <span class="tb-label mono">document</span>
-          <h1 id="tb-doc-title"></h1>
-        </div>
-        <div class="tb-cell">
-          <span class="tb-label mono">file</span>
-          <span id="tb-doc-path" class="mono"></span>
-        </div>
-        <div class="tb-cell">
-          <span class="tb-label mono">updated</span>
-          <span id="tb-doc-mtime" class="mono"></span>
-        </div>
-        <div class="tb-cell">
-          <span class="tb-label mono">comments</span>
-          <button id="tb-comments-btn" class="mono">0 open</button>
-        </div>
-      </div>
-    </div>
-    <article id="content" class="markdown-body">
-      <div class="empty-state">
-        <p class="mono">No document selected.</p>
-        <p>Pick a document from the sidebar, or write a markdown file into the served directory and it will appear here.</p>
-      </div>
-    </article>
-  </main>
-  <aside id="comment-drawer" hidden>
-    <header class="drawer-head">
-      <span class="mono tb-label">comments</span>
-      <button id="drawer-close" aria-label="Close comments">✕</button>
-    </header>
-    <div id="comment-context" class="mono" hidden></div>
-    <div id="comment-list"></div>
-    <form id="comment-form">
-      <textarea id="comment-text" rows="4" placeholder="Leave feedback for the agent… It will read this before revising the document." required></textarea>
-      <div class="form-actions">
-        <button type="button" id="copy-prompt-btn" class="secondary" title="Copy this feedback as a prompt you can paste to your agent">Copy as prompt</button>
-        <button type="submit">Add comment</button>
-      </div>
-      <div id="comment-status" class="mono" hidden></div>
-    </form>
-  </aside>
-</div>
+<div id="app"></div>
 <script src="/assets/app.js"></script>
 </body>
 </html>
