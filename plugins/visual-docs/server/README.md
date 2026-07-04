@@ -37,9 +37,12 @@ node scripts/update-vendor.mjs            # re-fetch and re-pin (upgrades)
 ```bash
 visual-docs-server [dir] [options]
 
-  --port <n>     Port to listen on (default: random free port)
-  --host <addr>  Address to bind (default: 127.0.0.1)
-  --no-watch     Disable live reload
+  --port <n>      Port to listen on (default: random free port)
+  --host [addr]   Address to bind (default: 127.0.0.1). Bare --host binds
+                  0.0.0.0 (all interfaces) and prints per-interface
+                  "Network:" URLs — handy for reviewing from another device
+                  over LAN or Tailscale.
+  --no-watch      Disable live reload
 ```
 
 The process prints a machine-readable line for scripts and agents:
@@ -69,8 +72,9 @@ setting `"resolved": true`.
 ## Security posture
 
 Binds to `127.0.0.1` by default and refuses path traversal outside the served
-directory. `--host 0.0.0.0` exposes it to your network — only do that on a
-network you trust; there is no authentication.
+directory. `--host` (bare or with an address) exposes it to your network —
+only do that on a network you trust (e.g. a Tailscale tailnet); there is no
+authentication.
 
 ## Credits
 

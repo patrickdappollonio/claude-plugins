@@ -96,8 +96,11 @@ node <plugin-dir>/server/bin/visual-docs-server.js ./my-notes
 # VISUAL_DOCS_URL=http://127.0.0.1:39257/
 ```
 
-Options: `--port <n>` (fixed port), `--host <addr>` (e.g. `0.0.0.0` to expose
-on your LAN — off by default on purpose), `--no-watch` (disable live reload).
+Options: `--port <n>` (fixed port), `--host` (Astro-style: bare `--host`
+binds all interfaces and prints per-network URLs, so you can review from
+another device over LAN or Tailscale — off by default on purpose; there is no
+auth), `--no-watch` (disable live reload). Want it reachable on your tailnet?
+Just tell the agent to start the server with `--host`.
 See [server/README.md](server/README.md) for the package details, and
 [server/examples/demo-plan.md](server/examples/demo-plan.md) for a document
 that exercises every feature.

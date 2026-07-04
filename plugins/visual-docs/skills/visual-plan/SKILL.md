@@ -67,6 +67,11 @@ The output contains `VISUAL_DOCS_URL=http://127.0.0.1:<port>/`. The server
 binds to localhost on a random free port, has no dependencies, and serves the
 renderer libraries from vendored local copies — the whole flow works offline.
 
+If the user asks to review from another device (LAN, Tailscale), add a bare
+`--host` flag: the server then binds all interfaces and prints one
+`Network: http://<ip>:<port>/` line per interface — share those URLs instead.
+Only do this when asked; the server has no authentication.
+
 ### 4. Hand the user the link
 
 Give the user the direct document URL:
