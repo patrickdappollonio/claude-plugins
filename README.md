@@ -20,6 +20,7 @@ That registers this marketplace under the name `patrickdappollonio`. You only do
 | Plugin | What it does | Install |
 | :----- | :----------- | :------ |
 | [`adversarial-review`](plugins/adversarial-review) | A hostile, bias-free review of a change (PR, last commit, or uncommitted work) — dispatches 16 independent adversarial reviewers plus a standalone false-positive filter, and reports only verified findings in plain language. | `/plugin install adversarial-review@patrickdappollonio` |
+| [`visual-docs`](plugins/visual-docs) | Fully local visual plans and recaps: the agent writes markdown, a bundled zero-dependency server renders it in your browser with Mermaid/nomnoml diagrams, rich diffs, DB migration cards, API call cards, and a read-only OpenAPI view — plus live reload and a comment box that feeds your feedback back to the agent. | `/plugin install visual-docs@patrickdappollonio` |
 
 ### adversarial-review
 
@@ -30,6 +31,23 @@ Give this change an adversarial review using the adversarial review skill.
 ```
 
 The skill also triggers on its own whenever you ask for a hostile, adversarial, or pre-merge review of a change. See the [plugin README](plugins/adversarial-review) for the full reviewer panel and notes.
+
+### visual-docs
+
+A fully local take on BuilderIO's `/visual-plan` and `/visual-recap`: no hosted
+service, no accounts, nothing leaves your machine. Ask your agent for a visual
+plan or recap:
+
+```
+Give me a visual plan for adding rate limiting to the API.
+Visual recap of PR 142.
+```
+
+The agent writes a markdown document, serves it on a random localhost port
+with a bundled zero-dependency Node server, and hands you the link. The page
+live-reloads as the agent edits, and you can pin comments to any section —
+the agent reads them before revising. See the [plugin README](plugins/visual-docs)
+for everything it renders.
 
 ## Updating
 

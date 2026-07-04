@@ -17,6 +17,18 @@
       },
       "homepage": "https://gist.github.com/patrickdappollonio/2fc5af4d714b97802072e97422823bc4",
       "license": "MIT"
+    },
+    {
+      "name": "visual-docs",
+      "source": "./plugins/visual-docs",
+      "description": "Fully local visual plans and recaps — the agent writes markdown, a bundled zero-dependency server renders it in your browser with Mermaid diagrams, rich diffs, styled DB migrations, API call cards, and a read-only OpenAPI view, with live reload and a comment feedback loop. No remote services.",
+      "category": "planning",
+      "keywords": ["visual-plan", "visual-recap", "markdown", "mermaid", "diff", "local-server", "planning"],
+      "author": {
+        "name": "Patrick D'appollonio"
+      },
+      "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/visual-docs",
+      "license": "MIT"
     }
   ]
 }
