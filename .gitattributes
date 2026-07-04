@@ -1,2 +1,5 @@
 plugins/visual-docs/server/assets/vendor/* linguist-vendored
 plugins/visual-docs/server/assets/vendor/* -diff
+
+# The SBOM manifest is meant to be human-auditable in reviews — keep it diffable.
+plugins/visual-docs/server/assets/vendor/manifest.json -linguist-vendored diff

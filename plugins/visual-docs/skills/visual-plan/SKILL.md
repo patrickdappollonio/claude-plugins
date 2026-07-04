@@ -60,6 +60,7 @@ file; the sidebar and live reload pick it up):
 ```bash
 nohup node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-server.js" "$DIR" \
   > "$DIR/.server.log" 2>&1 &
+echo $! > "$DIR/.server.pid"
 sleep 1 && grep VISUAL_DOCS_URL "$DIR/.server.log"
 ```
 
@@ -105,6 +106,13 @@ if a recap will follow — the same server can serve both documents.
 
 ## Cleanup
 
-The server is a single `node` process; when the session is done, kill it
-(`pkill -f visual-docs-server` or the recorded PID). Temp-dir plans need no
+The server is a single `node` process; when the session is done, stop the one
+this session started using the PID recorded at startup:
+
+```bash
+kill "$(cat "$DIR/.server.pid")" 2>/dev/null && rm -f "$DIR/.server.pid"
+```
+
+Avoid `pkill -f visual-docs-server` — it would kill every instance on the
+machine, including other sessions' or other users'. Temp-dir plans need no
 other cleanup.

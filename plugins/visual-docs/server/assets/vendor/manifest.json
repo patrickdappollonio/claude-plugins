@@ -1,7 +1,7 @@
 {
   "$schema": "SBOM-style manifest of browser libraries vendored into assets/vendor/",
   "generatedWith": "scripts/update-vendor.mjs",
-  "generatedAt": "2026-07-04T08:20:13.524Z",
+  "generatedAt": "2026-07-04T18:46:59.364Z",
   "assets": [
     {
       "name": "marked",
@@ -12,6 +12,16 @@
       "file": "marked.min.js",
       "sizeBytes": 35479,
       "integrity": "sha384-/TQbtLCAerC3jgaim+N78RZSDYV7ryeoBCVqTuzRrFec2akfBkHS7ACQ3PQhvMVi"
+    },
+    {
+      "name": "dompurify",
+      "version": "3.1.6",
+      "license": "(MPL-2.0 OR Apache-2.0)",
+      "homepage": "https://github.com/cure53/DOMPurify",
+      "source": "https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js",
+      "file": "purify.min.js",
+      "sizeBytes": 21496,
+      "integrity": "sha384-+VfUPEb0PdtChMwmBcBmykRMDd+v6D/oFmB3rZM/puCMDYcIvF968OimRh4KQY9a"
     },
     {
       "name": "highlight.js",

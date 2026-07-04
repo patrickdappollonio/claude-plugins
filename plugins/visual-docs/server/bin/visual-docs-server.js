@@ -12,13 +12,24 @@ rendered visual document with Mermaid diagrams, highlighted code, rich
 diffs, styled DB migrations, live reload, and reviewer comments.
 
 Options:
-  --port <n>      Port to listen on (default: random free port)
-  --host [addr]   Address to bind (default: 127.0.0.1). Bare --host binds
-                  0.0.0.0 — all interfaces, including LAN/Tailscale. There is
-                  no authentication, so only do this on networks you trust.
-  --no-watch      Disable live reload
-  -h, --help      Show this help
+  --port <n>       Port to listen on (default: random free port)
+  --host           Bind 0.0.0.0 — all interfaces, including LAN/Tailscale.
+                   No authentication, so only on networks you trust.
+  --host=<addr>    Bind a specific address (default: 127.0.0.1)
+  --no-watch       Disable live reload
+  -h, --help       Show this help
 `);
+}
+
+/** A token is a bind address only if it isn't a path and isn't an existing directory. */
+function looksLikeHost(token) {
+  if (!token || token.startsWith('.') || token.includes('/') || token.includes('\\')) return false;
+  try {
+    if (statSync(token).isDirectory()) return false;
+  } catch {
+    /* not a filesystem entry — fine */
+  }
+  return true;
 }
 
 const args = process.argv.slice(2);
@@ -28,12 +39,14 @@ for (let i = 0; i < args.length; i++) {
   const a = args[i];
   if (a === '-h' || a === '--help') { usage(); process.exit(0); }
   else if (a === '--port') opts.port = Number(args[++i]);
+  else if (a.startsWith('--host=')) opts.host = a.slice('--host='.length) || '0.0.0.0';
   else if (a === '--host') {
-    // Astro-style: a bare --host (no value, or next token is another flag)
-    // binds all interfaces so LAN/Tailscale peers can reach the server.
+    // Astro-style: bare --host binds all interfaces. Only consume the next
+    // token as an address when it actually looks like one — never swallow a
+    // trailing directory argument (e.g. `--host ./docs`).
     const next = args[i + 1];
-    if (next === undefined || next.startsWith('-')) opts.host = '0.0.0.0';
-    else opts.host = args[++i];
+    if (next && !next.startsWith('-') && looksLikeHost(next)) opts.host = args[++i];
+    else opts.host = '0.0.0.0';
   }
   else if (a === '--no-watch') opts.watch = false;
   else if (!a.startsWith('-')) opts.dir = resolve(a);
@@ -55,7 +68,17 @@ try {
   process.exit(1);
 }
 
-const { url, port } = await startServer(opts);
+let started;
+try {
+  started = await startServer(opts);
+} catch (err) {
+  const reason = err && err.code === 'EADDRINUSE' ? `port ${opts.port} already in use`
+    : err && err.code === 'EACCES' ? `permission denied binding ${opts.host}:${opts.port}`
+    : (err && err.message) || String(err);
+  console.error(`Failed to start server: ${reason}`);
+  process.exit(1);
+}
+const { url, port } = started;
 console.log(`Serving ${opts.dir}`);
 console.log(`VISUAL_DOCS_URL=${url}`);
 if (opts.host === '0.0.0.0' || opts.host === '::') {

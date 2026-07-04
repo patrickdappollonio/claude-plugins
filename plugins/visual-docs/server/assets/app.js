@@ -11,10 +11,18 @@
   const state = {
     docs: [],
     current: null, // relative path of the open doc
+    currentDoc: null, // cached {path, content, mtime} for the open doc
     comments: [],
-    pendingSection: '',
+    pendingSection: '', // stable slug of the section being commented on
+    pendingTitle: '', // human heading text, for display
     mermaidSeq: 0,
   };
+
+  // A comment's stable section key: prefer its stored slug, else derive one
+  // from whatever section/title it was saved with (back-compat with text keys).
+  function commentSlug(c) {
+    return slugify(c.section || c.title || '');
+  }
 
   /* ---------- theme ---------- */
 
@@ -36,8 +44,9 @@
         securityLevel: 'strict',
       });
     }
-    // Re-render current doc so mermaid picks up the theme.
-    if (state.current) loadDoc(state.current, { preserveScroll: true });
+    // Re-render from the cached doc so mermaid/diffs pick up the theme without
+    // a network round-trip (a failed refetch here would blank a valid document).
+    if (state.currentDoc) renderDoc(state.currentDoc, { preserveScroll: true });
   }
 
   function initTheme() {
@@ -64,13 +73,25 @@
     return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   }
 
-  /** Read back fence source stored inside <script type="text/plain"> nodes.
-      Script content is raw text, so the entities escapeHTML() produced at
-      insert time are NOT decoded by the parser and must be undone here. */
-  function readFenceSource(el) {
-    const ta = document.createElement('textarea');
-    ta.innerHTML = el?.textContent || '';
-    return ta.value;
+  // Fence sources travel to hydration inside data-* attributes. They're stored
+  // base64-encoded because DOMPurify drops an attribute whose value contains
+  // markup-like content (e.g. mermaid's `<-->`); base64 is always attribute-safe.
+  function encodeSrc(s) {
+    const bytes = new TextEncoder().encode(s);
+    let bin = '';
+    for (const byte of bytes) bin += String.fromCharCode(byte);
+    return btoa(bin);
+  }
+  function decodeSrc(b64) {
+    if (!b64) return '';
+    try {
+      const bin = atob(b64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return new TextDecoder().decode(bytes);
+    } catch {
+      return '';
+    }
   }
 
   function fmtTime(ms) {
@@ -90,8 +111,9 @@
     const language = (lang || '').trim().toLowerCase();
 
     if (language === 'mermaid') {
-      const id = `mermaid-src-${state.mermaidSeq++}`;
-      return `<div class="mermaid-block" data-mermaid-id="${id}"><script type="text/plain" data-mermaid-source>${escapeHTML(code)}</script></div>`;
+      // Source lives base64-encoded in a data-* attribute (not a <script>) so it
+      // survives HTML sanitization intact; hydrateMermaid decodes it.
+      return `<div class="mermaid-block" data-mermaid-source="${encodeSrc(code)}"></div>`;
     }
 
     if (language === 'diff' || language === 'patch') {
@@ -107,7 +129,7 @@
     }
 
     if (language === 'nomnoml') {
-      return `<div class="nomnoml-block"><script type="text/plain" data-nomnoml-source>${escapeHTML(code)}</script></div>`;
+      return `<div class="nomnoml-block" data-nomnoml-source="${encodeSrc(code)}"></div>`;
     }
 
     if (language === 'openapi' || language === 'swagger') {
@@ -143,15 +165,13 @@
   }
 
   function renderDiffFence(code) {
-    const payload = escapeHTML(code);
-    return `<div class="diff-block" data-diff>
+    return `<div class="diff-block" data-diff data-diff-source="${encodeSrc(code)}">
       <div class="diff-toolbar">
         <span class="tb-label">diff</span>
         <button type="button" data-mode="line-by-line" class="active">unified</button>
         <button type="button" data-mode="side-by-side">side by side</button>
       </div>
       <div class="diff-body"></div>
-      <script type="text/plain" data-diff-source>${payload}</script>
     </div>`;
   }
 
@@ -445,7 +465,7 @@
 
   function hydrateNomnoml(container) {
     for (const b of container.querySelectorAll('.nomnoml-block')) {
-      const src = readFenceSource(b.querySelector('[data-nomnoml-source]'));
+      const src = decodeSrc(b.dataset.nomnomlSource);
       if (!window.nomnoml) {
         b.innerHTML = `<pre style="text-align:left">${escapeHTML(src)}</pre>`;
         continue;
@@ -468,7 +488,9 @@
     }
     const renderer = new window.marked.Renderer();
     renderer.code = (code, infostring) => {
-      // marked v12 renderer.code(code, infostring); v13+ passes a token object.
+      // marked v12/v13 call renderer.code(code, infostring) by default; the
+      // token-object signature is opt-in in v13 (useNewRenderer) and mandatory
+      // in v14+. Handle both so a future vendor bump doesn't break rendering.
       if (typeof code === 'object' && code !== null) {
         return renderCodeFence(code.text || '', code.lang || '');
       }
@@ -484,18 +506,33 @@
     return window.marked.parse(md, { renderer, gfm: true, breaks: false });
   }
 
+  /** Sanitize rendered markdown before it touches innerHTML. A served document
+      is untrusted (e.g. a recap of someone else's branch), so raw <script>,
+      event handlers, and javascript: links must be stripped. DOMPurify keeps
+      our data-* fence carriers and dangerous-scheme links are dropped. */
+  function sanitizeHTML(html) {
+    if (window.DOMPurify) {
+      // Default config keeps data-* carriers (ALLOW_DATA_ATTR is on) and rich
+      // HTML while stripping <script>, on* handlers, and javascript: links.
+      return window.DOMPurify.sanitize(html);
+    }
+    // DOMPurify is vendored and same-origin, so this is effectively unreachable;
+    // if it ever fails to load, show escaped source rather than execute markup.
+    return `<pre>${escapeHTML(html)}</pre>`;
+  }
+
   async function hydrateMermaid(container) {
     const blocks = container.querySelectorAll('.mermaid-block');
     if (!blocks.length) return;
     if (!window.mermaid) {
       for (const b of blocks) {
-        const src = readFenceSource(b.querySelector('[data-mermaid-source]'));
+        const src = decodeSrc(b.dataset.mermaidSource);
         b.innerHTML = `<pre style="text-align:left">${escapeHTML(src)}</pre>`;
       }
       return;
     }
     for (const b of blocks) {
-      const src = readFenceSource(b.querySelector('[data-mermaid-source]'));
+      const src = decodeSrc(b.dataset.mermaidSource);
       const id = `m-${Math.random().toString(36).slice(2, 9)}`;
       try {
         const { svg } = await window.mermaid.render(id, src);
@@ -509,7 +546,7 @@
 
   function hydrateDiffs(container) {
     for (const block of container.querySelectorAll('[data-diff]')) {
-      const src = readFenceSource(block.querySelector('[data-diff-source]'));
+      const src = decodeSrc(block.dataset.diffSource);
       const body = block.querySelector('.diff-body');
       const render = (mode) => {
         if (window.Diff2Html) {
@@ -542,16 +579,18 @@
 
   function hydrateSectionComments(container) {
     for (const h2 of container.querySelectorAll('h2')) {
-      const section = h2.textContent.trim();
-      h2.id = h2.id || slugify(section);
+      const title = h2.textContent.trim();
+      const slug = slugify(title);
+      h2.id = h2.id || slug;
       const btn = document.createElement('button');
       btn.className = 'section-comment-btn';
       btn.type = 'button';
-      const count = state.comments.filter((c) => c.section === section && !c.resolved).length;
+      // Match on the stable slug so a heading rename doesn't orphan its comments.
+      const count = state.comments.filter((c) => commentSlug(c) === slug && !c.resolved).length;
       btn.textContent = count > 0 ? `✎ ${count}` : '✎ comment';
       if (count > 0) btn.classList.add('has-comments');
-      btn.title = `Comment on “${section}”`;
-      btn.addEventListener('click', () => openDrawer(section));
+      btn.title = `Comment on “${title}”`;
+      btn.addEventListener('click', () => openDrawer(slug, title));
       h2.appendChild(btn);
     }
   }
@@ -590,7 +629,6 @@
   }
 
   async function loadDoc(path, { preserveScroll = false } = {}) {
-    const scrollY = window.scrollY;
     let doc;
     try {
       doc = await api(`/api/doc?path=${encodeURIComponent(path)}`);
@@ -599,18 +637,25 @@
       return;
     }
     state.current = path;
+    state.currentDoc = doc; // cached so a theme toggle can re-render without refetching
     await refreshComments();
+    await renderDoc(doc, { preserveScroll });
+  }
 
+  /** Render an already-loaded document. Called by loadDoc after a fetch and by
+      applyTheme from cache, so toggling the theme never depends on the network. */
+  async function renderDoc(doc, { preserveScroll = false } = {}) {
+    const scrollY = window.scrollY;
     const content = $('#content');
     state.mermaidSeq = 0;
-    content.innerHTML = renderMarkdown(doc.content);
+    content.innerHTML = sanitizeHTML(renderMarkdown(doc.content));
 
     // Title block: use first h1 as title, strip it from the body to avoid dupes.
     const firstH1 = content.querySelector('h1');
-    const title = firstH1 ? firstH1.textContent : path.split('/').pop();
+    const title = firstH1 ? firstH1.textContent : doc.path.split('/').pop();
     if (firstH1) firstH1.remove();
     $('#tb-doc-title').textContent = title;
-    $('#tb-doc-path').textContent = path;
+    $('#tb-doc-path').textContent = doc.path;
     $('#tb-doc-mtime').textContent = fmtTime(doc.mtime);
     $('#doc-header').hidden = false;
     document.title = `${title} — Visual Docs`;
@@ -621,7 +666,7 @@
     await hydrateMermaid(content);
 
     document.querySelectorAll('.doc-link').forEach((a) => {
-      a.classList.toggle('active', a.getAttribute('href') === `#/${path}`);
+      a.classList.toggle('active', a.getAttribute('href') === `#/${doc.path}`);
     });
 
     if (preserveScroll) window.scrollTo(0, scrollY);
@@ -642,7 +687,7 @@
       .map(
         (c) => `<div class="comment-item${c.resolved ? ' resolved' : ''}">
           <div class="c-meta">
-            ${c.section ? `<span class="c-section">§ ${escapeHTML(c.section)}</span>` : ''}
+            ${(c.title || c.section) ? `<span class="c-section">§ ${escapeHTML(c.title || c.section)}</span>` : ''}
             <span>${escapeHTML(new Date(c.createdAt).toLocaleString())}</span>
             ${c.resolved ? '<span>resolved</span>' : ''}
           </div>
@@ -652,11 +697,12 @@
       .join('');
   }
 
-  function openDrawer(section = '') {
+  function openDrawer(section = '', title = '') {
     state.pendingSection = section;
+    state.pendingTitle = title;
     const ctx = $('#comment-context');
     if (section) {
-      ctx.textContent = `commenting on § ${section}`;
+      ctx.textContent = `commenting on § ${title || section}`;
       ctx.hidden = false;
     } else {
       ctx.hidden = true;
@@ -673,7 +719,8 @@
       '',
     ];
     for (const e of entries) {
-      lines.push(e.section ? `- [section: ${e.section}] ${e.text}` : `- ${e.text}`);
+      const label = e.title || e.section;
+      lines.push(label ? `- [section: ${label}] ${e.text}` : `- ${e.text}`);
     }
     lines.push('', 'Update the markdown file in place; the viewer live-reloads.');
     return lines.join('\n');
@@ -713,7 +760,7 @@
       const text = $('#comment-text').value.trim();
       // Copy the draft if present, otherwise all open comments.
       const entries = text
-        ? [{ section: state.pendingSection, text }]
+        ? [{ section: state.pendingSection, title: state.pendingTitle, text }]
         : state.comments.filter((c) => !c.resolved);
       if (!entries.length) {
         setCommentStatus('Nothing to copy — write feedback first.', 'warn');
@@ -731,7 +778,7 @@
         await api('/api/comments', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ path: state.current, section: state.pendingSection, text }),
+          body: JSON.stringify({ path: state.current, section: state.pendingSection, title: state.pendingTitle, text }),
         });
         $('#comment-text').value = '';
         setCommentStatus('Saved. The agent reads comments before its next revision.');

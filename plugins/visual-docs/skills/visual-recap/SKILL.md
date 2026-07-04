@@ -62,6 +62,7 @@ changed lines. Never infer content that isn't in the diff; redact secrets as
 ```bash
 nohup node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-server.js" "$DIR" \
   > "$DIR/.server.log" 2>&1 &
+echo $! > "$DIR/.server.pid"
 sleep 1 && grep VISUAL_DOCS_URL "$DIR/.server.log"
 ```
 
@@ -86,4 +87,11 @@ exactly like stored comments.
 
 ## Cleanup
 
-Kill the server when the session is done (`pkill -f visual-docs-server`).
+Stop the server this session started using the recorded PID, when the session
+is done:
+
+```bash
+kill "$(cat "$DIR/.server.pid")" 2>/dev/null && rm -f "$DIR/.server.pid"
+```
+
+Avoid `pkill -f visual-docs-server` — it kills every instance on the machine.
