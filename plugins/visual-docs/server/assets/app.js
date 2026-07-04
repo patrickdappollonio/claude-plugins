@@ -1,7 +1,8 @@
 /* Visual Docs client: fetches raw markdown from the local server and renders
    it with marked + mermaid + highlight.js + diff2html, all client-side.
-   Every third-party renderer is optional: if a CDN script failed to load
-   (offline), blocks degrade to readable plain <pre> output. */
+   Renderer libraries are vendored under /assets/vendor (see
+   vendor/manifest.json); if one fails to load, blocks degrade to readable
+   plain <pre> output. */
 
 (() => {
   'use strict';
@@ -107,10 +108,6 @@
 
     if (language === 'nomnoml') {
       return `<div class="nomnoml-block"><script type="text/plain" data-nomnoml-source>${escapeHTML(code)}</script></div>`;
-    }
-
-    if (language === 'excalidraw') {
-      return `<div class="excalidraw-block"><script type="text/plain" data-excalidraw-source>${escapeHTML(code)}</script></div>`;
     }
 
     if (language === 'openapi' || language === 'swagger') {
@@ -444,85 +441,21 @@
     </div>`;
   }
 
-  /* ---------- lazy-loaded diagram renderers (nomnoml, excalidraw) ---------- */
+  /* ---------- nomnoml diagrams ---------- */
 
-  const lazyScripts = new Map();
-  function lazyLoad(url) {
-    if (!lazyScripts.has(url)) {
-      lazyScripts.set(
-        url,
-        new Promise((resolveLoad, reject) => {
-          const s = document.createElement('script');
-          s.src = url;
-          s.onload = resolveLoad;
-          s.onerror = () => reject(new Error(`failed to load ${url}`));
-          document.head.appendChild(s);
-        })
-      );
-    }
-    return lazyScripts.get(url);
-  }
-
-  async function hydrateNomnoml(container) {
-    const blocks = container.querySelectorAll('.nomnoml-block');
-    if (!blocks.length) return;
-    const fallback = (b, src, err) => {
-      b.innerHTML = err
-        ? `<div class="render-error">nomnoml: ${escapeHTML(String(err.message || err))}\n\n${escapeHTML(src)}</div>`
-        : `<pre style="text-align:left">${escapeHTML(src)}</pre>`;
-    };
-    try {
-      await lazyLoad('https://cdn.jsdelivr.net/npm/graphre@0.1.3/dist/graphre.js');
-      await lazyLoad('https://cdn.jsdelivr.net/npm/nomnoml@1.6.2/dist/nomnoml.js');
-    } catch {
-      for (const b of blocks) fallback(b, readFenceSource(b.querySelector('[data-nomnoml-source]')));
-      return;
-    }
-    for (const b of blocks) {
+  function hydrateNomnoml(container) {
+    for (const b of container.querySelectorAll('.nomnoml-block')) {
       const src = readFenceSource(b.querySelector('[data-nomnoml-source]'));
+      if (!window.nomnoml) {
+        b.innerHTML = `<pre style="text-align:left">${escapeHTML(src)}</pre>`;
+        continue;
+      }
       try {
         b.innerHTML = window.nomnoml.renderSvg(src);
         const svg = b.querySelector('svg');
         if (svg) { svg.removeAttribute('width'); svg.removeAttribute('height'); svg.style.maxWidth = '100%'; }
       } catch (err) {
-        fallback(b, src, err);
-      }
-    }
-  }
-
-  async function hydrateExcalidraw(container) {
-    const blocks = container.querySelectorAll('.excalidraw-block');
-    if (!blocks.length) return;
-    const fallback = (b, src, err) => {
-      b.innerHTML = err
-        ? `<div class="render-error">excalidraw: ${escapeHTML(String(err.message || err))}</div><pre style="text-align:left">${escapeHTML(src)}</pre>`
-        : `<pre style="text-align:left">${escapeHTML(src)}</pre>`;
-    };
-    try {
-      await lazyLoad('https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js');
-      await lazyLoad('https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js');
-      await lazyLoad('https://cdn.jsdelivr.net/npm/@excalidraw/utils@0.1.2/dist/excalidraw-utils.min.js');
-    } catch {
-      for (const b of blocks) fallback(b, readFenceSource(b.querySelector('[data-excalidraw-source]')));
-      return;
-    }
-    for (const b of blocks) {
-      const src = readFenceSource(b.querySelector('[data-excalidraw-source]'));
-      try {
-        const scene = JSON.parse(src);
-        const dark = document.documentElement.getAttribute('data-theme') === 'dark';
-        const svg = await window.ExcalidrawUtils.exportToSvg({
-          elements: scene.elements || [],
-          appState: { ...(scene.appState || {}), exportBackground: false, exportWithDarkMode: dark },
-          files: scene.files || null,
-        });
-        svg.removeAttribute('width');
-        svg.removeAttribute('height');
-        svg.style.maxWidth = '100%';
-        b.innerHTML = '';
-        b.appendChild(svg);
-      } catch (err) {
-        fallback(b, src, err);
+        b.innerHTML = `<div class="render-error">nomnoml: ${escapeHTML(String(err.message || err))}\n\n${escapeHTML(src)}</div>`;
       }
     }
   }
@@ -684,7 +617,8 @@
 
     hydrateDiffs(content);
     hydrateSectionComments(content);
-    await Promise.all([hydrateMermaid(content), hydrateNomnoml(content), hydrateExcalidraw(content)]);
+    hydrateNomnoml(content);
+    await hydrateMermaid(content);
 
     document.querySelectorAll('.doc-link').forEach((a) => {
       a.classList.toggle('active', a.getAttribute('href') === `#/${path}`);

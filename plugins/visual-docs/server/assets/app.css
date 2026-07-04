@@ -219,7 +219,7 @@ button { font: inherit; cursor: pointer; }
 }
 
 /* ---------- Mermaid ---------- */
-.mermaid-block, .nomnoml-block, .excalidraw-block {
+.mermaid-block, .nomnoml-block {
   margin: 1.4em 0;
   padding: 18px;
   background: var(--surface);
@@ -228,7 +228,7 @@ button { font: inherit; cursor: pointer; }
   overflow-x: auto;
   text-align: center;
 }
-.mermaid-block svg, .nomnoml-block svg, .excalidraw-block svg { max-width: 100%; height: auto; }
+.mermaid-block svg, .nomnoml-block svg { max-width: 100%; height: auto; }
 .render-error {
   border: 1px dashed var(--danger);
   background: var(--danger-soft);

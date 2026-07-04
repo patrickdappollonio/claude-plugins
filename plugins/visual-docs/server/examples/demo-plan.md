@@ -31,39 +31,6 @@ A sketch-style view of the same flow, for contrast:
 [serve request] -> [<end> done]
 ```
 
-And a hand-drawn note (Excalidraw scene JSON):
-
-```excalidraw
-{
-  "type": "excalidraw",
-  "version": 2,
-  "elements": [
-    {
-      "id": "box1", "type": "rectangle", "x": 0, "y": 0, "width": 200, "height": 70,
-      "angle": 0, "strokeColor": "#1e1e1e", "backgroundColor": "#a5d8ff",
-      "fillStyle": "solid", "strokeWidth": 2, "strokeStyle": "solid",
-      "roughness": 1, "opacity": 100, "roundness": { "type": 3 },
-      "seed": 1, "version": 1, "versionNonce": 1, "isDeleted": false,
-      "groupIds": [], "frameId": null, "boundElements": null,
-      "updated": 1, "link": null, "locked": false
-    },
-    {
-      "id": "txt1", "type": "text", "x": 28, "y": 22, "width": 150, "height": 25,
-      "angle": 0, "strokeColor": "#1e1e1e", "backgroundColor": "transparent",
-      "fillStyle": "solid", "strokeWidth": 2, "strokeStyle": "solid",
-      "roughness": 1, "opacity": 100, "roundness": null,
-      "seed": 2, "version": 1, "versionNonce": 2, "isDeleted": false,
-      "groupIds": [], "frameId": null, "boundElements": null,
-      "updated": 1, "link": null, "locked": false,
-      "text": "token bucket", "fontSize": 20, "fontFamily": 1,
-      "textAlign": "center", "verticalAlign": "middle",
-      "containerId": null, "originalText": "token bucket", "lineHeight": 1.25, "baseline": 18
-    }
-  ],
-  "appState": {}
-}
-```
-
 ## Key changes
 
 ### New middleware

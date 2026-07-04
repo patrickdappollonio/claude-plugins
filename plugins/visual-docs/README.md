@@ -58,16 +58,17 @@ but in the viewer these fences get special treatment:
 | :---- | :--------- |
 | ` ```mermaid ` | Mermaid diagram (flowchart, sequence, ER, state, …) |
 | ` ```nomnoml ` | Sketchy, hand-drawn-style diagram from a tiny UML text DSL |
-| ` ```excalidraw ` | An Excalidraw scene (`.excalidraw` JSON) rendered as a static drawing |
 | ` ```diff ` / ` ```patch ` | Rich diff viewer with a **unified / side-by-side** toggle |
 | ` ```migration ` (also ` ```sql-migration `) | Database migration card with green **up** / red **down** panes and a reversible/irreversible badge |
 | ` ```api ` / ` ```http ` | Styled HTTP request/response cards, `curl -v` style — method & status badges, collapsible headers, pretty-printed JSON |
 | ` ```openapi ` / ` ```swagger ` | Read-only OpenAPI explorer — expandable endpoints with parameters, request bodies, and responses |
 | Any other language | Syntax-highlighted code with a language tag |
 
-Everything degrades gracefully: if a block can't render (or you're offline —
-the renderer libraries load from a CDN), you get a plain readable code block
-instead.
+Everything degrades gracefully: if a block can't render, you get a plain
+readable code block instead. The renderer libraries (marked, mermaid,
+highlight.js, diff2html, js-yaml, nomnoml) are **vendored inside the plugin**
+and served from localhost like everything else — the whole thing works with no
+internet connection at all.
 
 The viewer has light and dark themes (follows your system, toggleable), and a
 title block showing the document, file, last update, and open comment count.
@@ -75,7 +76,10 @@ title block showing the document, file, last update, and open comment count.
 ## Privacy & footprint
 
 - The server binds to `127.0.0.1` on a random free port — it is not reachable
-  from your network, and nothing is uploaded anywhere.
+  from your network, and nothing is uploaded anywhere. The browser page makes
+  zero external requests: all renderer libraries ship vendored with the
+  plugin, pinned and hash-verified in an SBOM-style manifest
+  ([server/assets/vendor/manifest.json](server/assets/vendor/manifest.json)).
 - Your comments are stored next to your documents in
   `.visual-docs/comments.json`, as plain JSON you can read or delete.
 - It's a single `node` process with no dependencies; stop it any time with
@@ -98,6 +102,33 @@ See [server/README.md](server/README.md) for the package details, and
 [server/examples/demo-plan.md](server/examples/demo-plan.md) for a document
 that exercises every feature.
 
+## Design decisions
+
+A few choices worth explaining:
+
+- **nomnoml instead of Excalidraw for sketch-style diagrams.** Excalidraw
+  stores diagrams as scene JSON: absolute pixel coordinates, seeds, and version
+  nonces for every rectangle and label. Agents are bad at hand-writing that —
+  hundreds of tokens per box, easy to get subtly wrong, painful to review in a
+  diff. nomnoml expresses the same whiteboard-style drawing as a few lines of
+  text DSL (`[client] -> [api]`), which agents generate reliably, humans can
+  read in the raw markdown, and git can diff. Same sketchy aesthetic, a
+  fraction of the tokens, no React runtime in the viewer. (Mermaid remains the
+  default for sequence/ER/gantt diagrams, where its DSL is stronger.)
+- **Renderer libraries are vendored, not fetched from a CDN.** A pinned CDN
+  URL is a promise, not a guarantee — supply-chain attacks on published
+  packages are exactly the failure mode lockfiles exist for. The vendored
+  copies live in the plugin, are served from localhost, and every file's
+  version, source URL, license, and SHA-384 are recorded in an SBOM-style
+  manifest ([server/assets/vendor/manifest.json](server/assets/vendor/manifest.json)).
+  `node server/scripts/update-vendor.mjs --verify` checks the files against
+  the manifest; running it without the flag re-fetches and re-pins.
+- **The server itself has zero npm dependencies.** Nothing to install, no
+  install-time scripts to trust, and the plugin works the moment it's cloned.
+- **Documents are plain markdown, not a custom format.** If you stop using
+  the viewer tomorrow, every plan and recap is still a readable file in your
+  repo or temp directory.
+
 ## FAQ
 
 **Do I need to approve anything?** The agent runs `node` from the plugin
@@ -111,3 +142,14 @@ and serve it from your repo instead.
 **Can I edit the markdown myself?** Yes — it's just a file. The browser
 reloads on save, and the agent picks up your edits the next time it reads the
 document.
+
+## Credits
+
+The visual-plan/visual-recap concept — agents presenting plans and change
+summaries as rich, commentable visual documents instead of walls of chat text —
+comes from [Builder.io's skills repo](https://github.com/BuilderIO/skills).
+This plugin is an independent, fully local reimplementation of that idea;
+if you want their hosted experience with wireframes and prototypes, use the
+original. Rendering is powered by the open-source libraries listed (with
+versions and licenses) in
+[server/assets/vendor/manifest.json](server/assets/vendor/manifest.json).

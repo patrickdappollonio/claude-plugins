@@ -64,10 +64,8 @@ sleep 1 && grep VISUAL_DOCS_URL "$DIR/.server.log"
 ```
 
 The output contains `VISUAL_DOCS_URL=http://127.0.0.1:<port>/`. The server
-binds to localhost on a random free port and needs no dependencies. Note: the
-page loads its renderer libraries (Mermaid, highlighting, diff viewer) from a
-CDN; without internet those blocks degrade to plain code but the page still
-works.
+binds to localhost on a random free port, has no dependencies, and serves the
+renderer libraries from vendored local copies — the whole flow works offline.
 
 ### 4. Hand the user the link
 

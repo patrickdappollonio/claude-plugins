@@ -9,8 +9,13 @@
   "files": [
     "bin/",
     "lib/",
-    "assets/"
+    "assets/",
+    "scripts/"
   ],
+  "scripts": {
+    "update-vendor": "node scripts/update-vendor.mjs",
+    "verify-vendor": "node scripts/update-vendor.mjs --verify"
+  },
   "engines": {
     "node": ">=18"
   },

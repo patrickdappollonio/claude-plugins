@@ -34,7 +34,7 @@ The skill also triggers on its own whenever you ask for a hostile, adversarial, 
 
 ### visual-docs
 
-A fully local take on BuilderIO's `/visual-plan` and `/visual-recap`: no hosted
+A fully local take on [BuilderIO's `/visual-plan` and `/visual-recap` skills](https://github.com/BuilderIO/skills): no hosted
 service, no accounts, nothing leaves your machine. Ask your agent for a visual
 plan or recap:
 

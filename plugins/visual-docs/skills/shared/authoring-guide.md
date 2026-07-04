@@ -63,13 +63,6 @@ Nomnoml syntax primer (it is NOT Mermaid — do not mix syntaxes):
 - One edge per line. There are no sequence/gantt/ER modes — for those,
   use Mermaid.
 
-### Excalidraw scenes — ` ```excalidraw `
-
-The contents of an `.excalidraw` file (scene JSON) render as a static SVG.
-Use this only for pre-existing Excalidraw assets — when authoring a new
-diagram yourself, a text DSL (mermaid or nomnoml) is far easier to get right
-than hand-writing scene coordinates.
-
 ### Diffs — ` ```diff ` (alias: ` ```patch `)
 
 Rendered as a rich diff viewer with a unified / side-by-side toggle. Prefer

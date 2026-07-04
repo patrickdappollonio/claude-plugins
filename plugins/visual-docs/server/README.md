@@ -5,8 +5,9 @@ a directory; every `.md` file in it becomes a rendered, live-reloading web
 document with:
 
 - **Mermaid diagrams** (` ```mermaid `)
-- **Sketch-style diagrams** via nomnoml's text DSL (` ```nomnoml `) and
-  static rendering of Excalidraw scenes (` ```excalidraw `)
+- **Sketch-style diagrams** via nomnoml's text DSL (` ```nomnoml `) — chosen
+  over Excalidraw because a text DSL is diffable and cheap for AI agents to
+  write, unlike coordinate-based scene JSON
 - **Rich diffs** with unified/side-by-side toggle (` ```diff `)
 - **Database migration cards** with up/down panes (` ```migration `)
 - **HTTP request/response cards**, `curl -v` style (` ```api `)
@@ -20,9 +21,16 @@ document with:
 - Light/dark themes.
 
 No npm dependencies — the server is pure `node:http` (Node ≥ 18). Rendering
-happens client-side; the viewer page loads pinned renderer libraries (marked,
-mermaid, highlight.js, diff2html, js-yaml) from jsDelivr, and every special
-block degrades to a plain code block when offline.
+happens client-side with **vendored** renderer libraries (marked, mermaid,
+highlight.js, diff2html, js-yaml, nomnoml) served from `assets/vendor/` —
+the page makes zero external requests and works fully offline. Each vendored
+file's version, source URL, license, size, and SHA-384 are recorded in an
+SBOM-style manifest, [`assets/vendor/manifest.json`](assets/vendor/manifest.json):
+
+```bash
+node scripts/update-vendor.mjs --verify   # check files against the manifest
+node scripts/update-vendor.mjs            # re-fetch and re-pin (upgrades)
+```
 
 ## Usage
 
@@ -64,4 +72,17 @@ Binds to `127.0.0.1` by default and refuses path traversal outside the served
 directory. `--host 0.0.0.0` exposes it to your network — only do that on a
 network you trust; there is no authentication.
 
-This package is part of the [`visual-docs` Claude Code plugin](https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/visual-docs).
+## Credits
+
+This package is part of the [`visual-docs` Claude Code plugin](https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/visual-docs),
+a fully local reimplementation of the excellent
+[`visual-plan` and `visual-recap` skills by Builder.io](https://github.com/BuilderIO/skills),
+which pioneered the idea of agents communicating plans through rich visual
+documents. Rendering is powered by [marked](https://github.com/markedjs/marked),
+[mermaid](https://github.com/mermaid-js/mermaid),
+[highlight.js](https://github.com/highlightjs/highlight.js),
+[diff2html](https://github.com/rtfpessoa/diff2html),
+[js-yaml](https://github.com/nodeca/js-yaml), and
+[nomnoml](https://github.com/skanaar/nomnoml) — see
+[`assets/vendor/manifest.json`](assets/vendor/manifest.json) for exact
+versions and licenses.

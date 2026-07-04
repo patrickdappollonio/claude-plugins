@@ -1,0 +1,107 @@
+{
+  "$schema": "SBOM-style manifest of browser libraries vendored into assets/vendor/",
+  "generatedWith": "scripts/update-vendor.mjs",
+  "generatedAt": "2026-07-04T08:20:13.524Z",
+  "assets": [
+    {
+      "name": "marked",
+      "version": "12.0.2",
+      "license": "MIT",
+      "homepage": "https://github.com/markedjs/marked",
+      "source": "https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js",
+      "file": "marked.min.js",
+      "sizeBytes": 35479,
+      "integrity": "sha384-/TQbtLCAerC3jgaim+N78RZSDYV7ryeoBCVqTuzRrFec2akfBkHS7ACQ3PQhvMVi"
+    },
+    {
+      "name": "highlight.js",
+      "version": "11.9.0",
+      "license": "BSD-3-Clause",
+      "homepage": "https://github.com/highlightjs/highlight.js",
+      "source": "https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11.9.0/highlight.min.js",
+      "file": "highlight.min.js",
+      "sizeBytes": 121727,
+      "integrity": "sha384-F/bZzf7p3Joyp5psL90p/p89AZJsndkSoGwRpXcZhleCWhd8SnRuoYo4d0yirjJp"
+    },
+    {
+      "name": "highlight.js-theme-github",
+      "version": "11.9.0",
+      "license": "BSD-3-Clause",
+      "homepage": "https://github.com/highlightjs/highlight.js",
+      "source": "https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11.9.0/styles/github.min.css",
+      "file": "hljs-github.min.css",
+      "sizeBytes": 1309,
+      "integrity": "sha384-eFTL69TLRZTkNfYZOLM+G04821K1qZao/4QLJbet1pP4tcF+fdXq/9CdqAbWRl/L"
+    },
+    {
+      "name": "highlight.js-theme-github-dark",
+      "version": "11.9.0",
+      "license": "BSD-3-Clause",
+      "homepage": "https://github.com/highlightjs/highlight.js",
+      "source": "https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11.9.0/styles/github-dark.min.css",
+      "file": "hljs-github-dark.min.css",
+      "sizeBytes": 1315,
+      "integrity": "sha384-wH75j6z1lH97ZOpMOInqhgKzFkAInZPPSPlZpYKYTOqsaizPvhQZmAtLcPKXpLyH"
+    },
+    {
+      "name": "mermaid",
+      "version": "10.9.1",
+      "license": "MIT",
+      "homepage": "https://github.com/mermaid-js/mermaid",
+      "source": "https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js",
+      "file": "mermaid.min.js",
+      "sizeBytes": 3335717,
+      "integrity": "sha384-WmdflGW9aGfoBdHc4rRyWzYuAjEmDwMdGdiPNacbwfGKxBW/SO6guzuQ76qjnSlr"
+    },
+    {
+      "name": "diff2html",
+      "version": "3.4.48",
+      "license": "MIT",
+      "homepage": "https://github.com/rtfpessoa/diff2html",
+      "source": "https://cdn.jsdelivr.net/npm/diff2html@3.4.48/bundles/js/diff2html.min.js",
+      "file": "diff2html.min.js",
+      "sizeBytes": 68017,
+      "integrity": "sha384-1tVmtFdzvhqVP3vQWJmKYvD0uTtR0r+FhlLWw+vG6F/vNDS7yegNMNNHRS12fSyR"
+    },
+    {
+      "name": "diff2html-css",
+      "version": "3.4.48",
+      "license": "MIT",
+      "homepage": "https://github.com/rtfpessoa/diff2html",
+      "source": "https://cdn.jsdelivr.net/npm/diff2html@3.4.48/bundles/css/diff2html.min.css",
+      "file": "diff2html.min.css",
+      "sizeBytes": 17331,
+      "integrity": "sha384-iBvSlI3tNrrSIy7s6mvLg+5B2Z/QXbR4L0Pzg1nRf8zkXrz5JF316MLm2igMIpi2"
+    },
+    {
+      "name": "js-yaml",
+      "version": "4.1.0",
+      "license": "MIT",
+      "homepage": "https://github.com/nodeca/js-yaml",
+      "source": "https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js",
+      "file": "js-yaml.min.js",
+      "sizeBytes": 39430,
+      "integrity": "sha384-+pxiN6T7yvpryuJmE1gM9PX7yQit15auDb+ZwwvJOd/4be2Cie5/IuVXgQb/S9du"
+    },
+    {
+      "name": "graphre",
+      "version": "0.1.3",
+      "license": "MIT",
+      "homepage": "https://github.com/skanaar/graphre",
+      "source": "https://cdn.jsdelivr.net/npm/graphre@0.1.3/dist/graphre.js",
+      "file": "graphre.js",
+      "sizeBytes": 38690,
+      "integrity": "sha384-+DSRvfJ8fTBtLU9W0M1kWQnn4Ck9VxqJPN5qYz2dFSrn7XP0yyFs/9my1a5vgCbq"
+    },
+    {
+      "name": "nomnoml",
+      "version": "1.6.2",
+      "license": "MIT",
+      "homepage": "https://github.com/skanaar/nomnoml",
+      "source": "https://cdn.jsdelivr.net/npm/nomnoml@1.6.2/dist/nomnoml.js",
+      "file": "nomnoml.js",
+      "sizeBytes": 72715,
+      "integrity": "sha384-cQ6kIxrqYsimUdVijvas+DqrYHmHBewKrXNwm/CZzhk3MNRQ1GdsDDt4ZWo5ltIK"
+    }
+  ]
+}

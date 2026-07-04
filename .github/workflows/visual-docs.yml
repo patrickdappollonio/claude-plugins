@@ -1,0 +1,60 @@
+name: visual-docs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "plugins/visual-docs/**"
+      - ".github/workflows/visual-docs.yml"
+  pull_request:
+    paths:
+      - "plugins/visual-docs/**"
+      - ".github/workflows/visual-docs.yml"
+
+jobs:
+  verify:
+    name: Verify vendored assets & syntax
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: plugins/visual-docs/server
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Vendored assets match the SBOM manifest
+        run: node scripts/update-vendor.mjs --verify
+
+      - name: Manifest covers every vendored file (no strays)
+        run: |
+          node -e '
+            const fs = require("fs");
+            const manifest = JSON.parse(fs.readFileSync("assets/vendor/manifest.json", "utf8"));
+            const listed = new Set(manifest.assets.map(a => a.file).concat(["manifest.json"]));
+            const onDisk = fs.readdirSync("assets/vendor");
+            const strays = onDisk.filter(f => !listed.has(f));
+            if (strays.length) {
+              console.error("Files in assets/vendor/ not listed in manifest.json:", strays);
+              process.exit(1);
+            }
+            console.log(`All ${onDisk.length} files accounted for.`);
+          '
+
+      - name: JavaScript syntax check
+        run: |
+          node --check bin/visual-docs-server.js
+          node --check lib/server.js
+          node --check assets/app.js
+          node --check scripts/update-vendor.mjs
+
+      - name: Smoke test the server
+        run: |
+          node bin/visual-docs-server.js examples --port 8123 &
+          sleep 1
+          curl -sf http://127.0.0.1:8123/api/docs | grep -q demo-plan.md
+          curl -sf http://127.0.0.1:8123/assets/vendor/mermaid.min.js -o /dev/null
+          curl -sf http://127.0.0.1:8123/ | grep -q '<div id="app">'
+          echo "smoke test passed"
