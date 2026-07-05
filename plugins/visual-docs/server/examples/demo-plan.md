@@ -187,6 +187,7 @@ paths:
 
 ```question
 Should websocket connections count against the same bucket?
+WS connections are long-lived, so counting each *message* differs from counting each HTTP request. This affects how `Retry-After` is computed for streaming clients.
 - Yes — one bucket per key across all protocols
 - No — a separate, higher WS budget
 - Exempt WS entirely for now

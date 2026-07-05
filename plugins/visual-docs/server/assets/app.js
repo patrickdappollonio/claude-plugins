@@ -272,27 +272,55 @@
         <div class="pane-label">${label}</div>
         <pre><code class="hljs">${highlightSQL(sql)}</code></pre>
       </div>`;
+    const bothPanes = m.up && m.down;
     let panes = '';
+    let toolbar = '';
     if (m.up || m.down) {
-      panes = `<div class="migration-panes">
+      panes = `<div class="migration-panes mig-updown side-by-side">
         ${m.up ? pane('up', `${ICON.arrowUp} up — apply`, m.up) : ''}
         ${m.down ? pane('down', `${ICON.arrowDown} down — roll back`, m.down) : ''}
       </div>`;
       if (m.other) {
         panes = `<div class="migration-panes">${pane('up', 'preamble', m.other)}</div>` + panes;
       }
+      if (bothPanes) {
+        // Same unified / side-by-side toggle idiom as the diff viewer.
+        toolbar = `<div class="migration-toolbar">
+          <span class="tb-label mono">up / down</span>
+          <button type="button" data-mode="side-by-side" class="active">side by side</button>
+          <button type="button" data-mode="unified">unified</button>
+        </div>`;
+      }
     } else {
       panes = `<div class="migration-panes">${pane('up', 'migration', m.other)}</div>`;
     }
-    const reversible = m.up && m.down ? 'reversible' : 'irreversible';
+    const reversible = bothPanes ? 'reversible' : 'irreversible';
     return `<div class="migration-block" ${blockAttrs(code)}>
       <div class="migration-head">
         <span class="mig-icon">${ICON.database}</span>
         <span class="mig-title">${escapeHTML(m.title)}</span>
         <span class="mig-badge">${reversible}</span>
       </div>
+      ${toolbar}
       ${panes}
     </div>`;
+  }
+
+  /** Wire the migration up/down side-by-side ⇄ unified toggle. */
+  function hydrateMigrations(container) {
+    container.querySelectorAll('.migration-toolbar').forEach((tb) => {
+      const block = tb.closest('.migration-block');
+      const panes = block && block.querySelector('.mig-updown');
+      if (!panes) return;
+      tb.querySelectorAll('button').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          tb.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b === btn));
+          const sbs = btn.dataset.mode === 'side-by-side';
+          panes.classList.toggle('side-by-side', sbs);
+          panes.classList.toggle('unified', !sbs);
+        });
+      });
+    });
   }
 
   /* ---------- API request/response fences ---------- */
@@ -627,7 +655,8 @@
   /* ---------- agent questions ---------- */
 
   /** Parse a ` ```question ` fence. First line is the prompt; `- `/`* ` lines are
-      options; a lone leading `multiple`/`multi` line makes it multi-select. */
+      options; a lone leading `multiple`/`multi` line makes it multi-select; any
+      other non-option lines after the prompt form an optional description. */
   function parseQuestion(code) {
     const lines = code.split('\n').map((l) => l.replace(/\s+$/, '')).filter((l) => l.trim());
     let multiple = false;
@@ -637,15 +666,17 @@
     }
     const question = (lines.shift() || '').trim();
     const options = [];
+    const descParts = [];
     for (const l of lines) {
       const m = l.match(/^\s*[-*]\s+(.*)$/);
       if (m && m[1].trim()) options.push(m[1].trim());
+      else descParts.push(l.trim());
     }
-    return { question, options, multiple };
+    return { question, options, multiple, description: descParts.join(' ').trim() };
   }
 
   function renderQuestionFence(code) {
-    const { question, options, multiple } = parseQuestion(code);
+    const { question, options, multiple, description } = parseQuestion(code);
     if (!question) {
       return `<div class="codewrap"><span class="lang-tag">question</span><pre><code class="hljs">${escapeHTML(code)}</code></pre></div>`;
     }
@@ -661,6 +692,7 @@
         <span class="q-title">${escapeHTML(question)}</span>
         ${multiple ? '<span class="q-badge">select any</span>' : ''}
       </div>
+      ${description ? `<div class="q-desc">${inlineMarkdown(description)}</div>` : ''}
       <form class="q-form">
         ${opts ? `<div class="q-options">${opts}</div>` : ''}
         <label class="q-other">
@@ -1169,6 +1201,7 @@
       if (h1) h1.remove(); // title shown in TitleBlock
       hydrateAdmonitions(el);
       hydrateDiffs(el);
+      hydrateMigrations(el);
       hydrateNomnoml(el);
       hydrateQuestions(el, onAnswer);
       markAnsweredQuestions(el, comments);
