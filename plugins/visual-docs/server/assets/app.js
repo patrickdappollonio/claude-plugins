@@ -1191,13 +1191,14 @@
     return null;
   }
 
-  /** Highlight the quoted span of each unresolved text-anchored comment, so the
-      reader can see what's been commented on. Idempotent: unwraps prior marks
-      first. Quotes that span multiple nodes are left unhighlighted (the comment
-      still shows in the drawer). */
+  /** Highlight the quoted span of every text-anchored comment, so the reader can
+      always see what's been commented on — the highlight persists for the life of
+      the comment (new → acknowledged → resolved), resolved ones rendered a touch
+      softer. Idempotent: unwraps prior marks first. Quotes that span multiple
+      nodes are left unhighlighted (the comment still shows in the drawer). */
   function applyTextHighlights(container, comments, onOpen) {
     const existing = container.querySelectorAll('mark.comment-highlight');
-    const active = comments.filter((c) => c.anchor && c.anchor.kind === 'text' && commentStatus(c) !== 'resolved');
+    const active = comments.filter((c) => c.anchor && c.anchor.kind === 'text');
     // Nothing to draw and nothing drawn before — skip the whole-document tree walk.
     if (!active.length && !existing.length) return;
     existing.forEach((m) => {
@@ -1214,7 +1215,7 @@
         range.setStart(best.node, best.idx);
         range.setEnd(best.node, best.idx + c.anchor.quote.length);
         const mark = document.createElement('mark');
-        mark.className = 'comment-highlight';
+        mark.className = `comment-highlight st-${commentStatus(c)}`;
         mark.title = c.text;
         mark.addEventListener('click', () => onOpen());
         range.surroundContents(mark);

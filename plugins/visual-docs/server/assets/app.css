@@ -554,6 +554,8 @@ mark.comment-highlight {
   background: var(--t-yellow); color: inherit;
   border-bottom: 2px solid var(--warn); border-radius: 2px; padding: 0 1px; cursor: pointer;
 }
+/* Highlight persists once resolved, just settled — same yellow, no underline. */
+mark.comment-highlight.st-resolved { border-bottom-color: transparent; opacity: 0.72; }
 
 /* ---------- Comment drawer ---------- */
 #comment-drawer {

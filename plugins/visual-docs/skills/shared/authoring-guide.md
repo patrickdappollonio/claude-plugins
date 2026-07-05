@@ -244,7 +244,10 @@ headline for an API change, the handler diff is at most supporting evidence.
 ### Everything else
 
 Regular fences (` ```go `, ` ```python `, …) get syntax highlighting and a
-language tag. Untyped fences are auto-detected.
+language tag. Untyped fences are auto-detected. The bundled highlighter covers
+the common set — including **go, rust, python, typescript/javascript, java,
+kotlin, swift, ruby, php, c/c++, c#, sql, bash/shell, yaml, toml, json, xml,
+css, markdown, diff** — so those all just work offline.
 
 ## Linting a doc
 
