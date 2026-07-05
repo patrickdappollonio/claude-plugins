@@ -928,19 +928,36 @@
      Components
      ================================================================ */
 
-  function Sidebar({ docs, current, conn, theme, onToggleTheme }) {
-    const connLabel = conn === 'on' ? 'live reload on' : conn === 'off' ? 'reconnecting…' : 'connecting…';
+  function Sidebar({ docs, current, conn, theme, open, onToggleTheme, onExpand, onCollapse }) {
     // Show the icon of the mode you'll switch TO.
     const themeIcon = theme === 'dark' ? 'sun' : 'moon';
+
+    // Collapsed: a thin clickable rail on the left edge that reopens the sidebar.
+    if (!open) {
+      return html`
+        <aside id="sidebar" class="collapsed">
+          <button class="side-rail" title="Open document list" aria-label="Open document list" onClick=${onExpand}>
+            <span class="rail-icon"><${Icon} name="doc" /></span>
+            <${Icon} name="chevronRight" />
+            <span class="rail-label">documents</span>
+          </button>
+        </aside>`;
+    }
+
+    const connLabel = conn === 'on' ? 'updates automatically as agents edit' : conn === 'off' ? 'reconnecting…' : 'connecting…';
+    const connTitle = conn === 'on'
+      ? 'This page refreshes on its own whenever an agent edits the document file — no reload needed.'
+      : conn === 'off' ? 'Lost the live-update connection — retrying.' : 'Connecting to the live-update stream…';
     return html`
       <aside id="sidebar">
         <header class="side-head">
           <span class="side-mark"><${Icon} name="doc" /></span>
-          <div>
+          <div class="side-head-titles">
             <div class="side-title">Visual Docs</div>
             <div class="side-sub mono">local · live</div>
           </div>
-          <button id="theme-toggle" title=${`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`} aria-label="Toggle theme" onClick=${onToggleTheme}><${Icon} name=${themeIcon} /></button>
+          <button id="theme-toggle" class="side-icon-btn" title=${`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`} aria-label="Toggle theme" onClick=${onToggleTheme}><${Icon} name=${themeIcon} /></button>
+          <button id="nav-collapse" class="side-icon-btn" title="Collapse sidebar" aria-label="Collapse sidebar" onClick=${onCollapse}><${Icon} name="chevronLeft" /></button>
         </header>
         <nav id="doc-list" aria-label="Documents">
           ${docs.map((d) => html`
@@ -949,14 +966,14 @@
               <span class="dl-path mono">${d.path} · ${fmtTime(d.mtime)}</span>
             </a>`)}
         </nav>
-        <footer class="side-foot mono">
+        <footer class="side-foot mono" title=${connTitle}>
           <span id="conn-dot" class="dot ${conn === 'on' ? 'on' : conn === 'off' ? 'off' : ''}"></span>
           <span id="conn-label">${connLabel}</span>
         </footer>
       </aside>`;
   }
 
-  function TitleBlock({ doc, openCount, onOpenComments }) {
+  function TitleBlock({ doc, openCount, raw, onOpenComments, onToggleRaw }) {
     const title = firstH1Text(doc.content) || doc.path.split('/').pop();
     return html`
       <div id="doc-header">
@@ -967,6 +984,7 @@
           </div>
           <div class="tb-cell"><span class="tb-label mono">file</span><span id="tb-doc-path" class="mono">${doc.path}</span></div>
           <div class="tb-cell"><span class="tb-label mono">updated</span><span id="tb-doc-mtime" class="mono">${fmtTime(doc.mtime)}</span></div>
+          <div class="tb-cell"><span class="tb-label mono">view</span><button id="tb-raw-btn" class="mono ${raw ? 'active' : ''}" title=${raw ? 'Show the rendered document' : 'Show the raw markdown source'} onClick=${onToggleRaw}>${raw ? 'rendered' : 'raw'}</button></div>
           <div class="tb-cell"><span class="tb-label mono">comments</span><button id="tb-comments-btn" class="mono" onClick=${onOpenComments}>${openCount} open</button></div>
         </div>
       </div>`;
@@ -975,7 +993,7 @@
   /** Renders sanitized markdown into a Preact-owned-but-manually-managed
       element. Preact never touches the children (the article is empty in its
       vdom), so imperative hydration is safe. */
-  function DocView({ doc, comments, theme, onOpenSection, onOpenComponent, onOpenText, onViewComments }) {
+  function DocView({ doc, comments, theme, raw, onOpenSection, onOpenComponent, onOpenText, onViewComments }) {
     const ref = useRef(null);
     const lastPath = useRef(null);
 
@@ -986,6 +1004,15 @@
       let cancelled = false;
       const y = window.scrollY;
       document.documentElement.setAttribute('data-theme', theme);
+      // Raw view: dump the untouched markdown source, no rendering/hydration.
+      if (raw) {
+        el.innerHTML = '<pre class="raw-md"></pre>';
+        el.firstChild.textContent = doc.content;
+        const changed = lastPath.current !== doc.path;
+        lastPath.current = doc.path;
+        window.scrollTo(0, changed ? 0 : y);
+        return () => { cancelled = true; };
+      }
       initMermaid(theme);
       el.innerHTML = sanitizeHTML(renderMarkdown(doc.content));
       const h1 = el.querySelector('h1');
@@ -1001,18 +1028,18 @@
       lastPath.current = doc.path;
       window.scrollTo(0, changedDoc ? 0 : y);
       return () => { cancelled = true; };
-    }, [doc, theme, onOpenComponent]);
+    }, [doc, theme, raw, onOpenComponent]);
 
     // Section pins + text highlights: re-applied whenever the comment set changes.
     useEffect(() => {
       const el = ref.current;
-      if (!el) return;
+      if (!el || raw) return; // no pins/highlights over raw source
       applySectionPins(el, comments, onOpenSection);
       applyTextHighlights(el, comments, onViewComments);
-      // doc/theme are dependencies (not read here) only so this effect re-runs
-      // AFTER the sibling effect rebuilds el.innerHTML on doc/theme change —
-      // Preact runs effects in declaration order. Don't drop them.
-    }, [doc, comments, theme, onOpenSection, onViewComments]);
+      // doc/theme/raw are dependencies (not all read here) only so this effect
+      // re-runs AFTER the sibling effect rebuilds el.innerHTML — Preact runs
+      // effects in declaration order. Don't drop them.
+    }, [doc, comments, theme, raw, onOpenSection, onViewComments]);
 
     // Text-selection → floating "comment" affordance.
     useEffect(() => {
@@ -1178,6 +1205,8 @@
     // target describes the comment anchor: {section,title} | {anchor} | {} (doc-level)
     const [drawer, setDrawer] = useState({ open: false, target: {} });
     const [status, setStatus] = useState(null);
+    const [raw, setRaw] = useState(false);
+    const [navOpen, setNavOpen] = useState(true);
 
     const currentRef = useRef(current);
     currentRef.current = current;
@@ -1288,7 +1317,11 @@
       return () => clearTimeout(t);
     }, [status]);
 
+    // Reset to the rendered view whenever the document changes.
+    useEffect(() => setRaw(false), [current]);
+
     const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
+    const toggleRaw = () => setRaw((r) => !r);
     const openSection = useCallback((section, title) => setDrawer({ open: true, target: { section, title } }), []);
     const openComponent = useCallback((anchor) => setDrawer({ open: true, target: { anchor } }), []);
     const openText = useCallback((anchor) => setDrawer({ open: true, target: { anchor } }), []);
@@ -1349,15 +1382,16 @@
     } else if (doc.error) {
       main = html`<${EmptyContent} message=${`Document not found: ${doc.path}`} />`;
     } else {
-      main = html`<${DocView} doc=${doc} comments=${comments} theme=${theme}
+      main = html`<${DocView} doc=${doc} comments=${comments} theme=${theme} raw=${raw}
         onOpenSection=${openSection} onOpenComponent=${openComponent}
         onOpenText=${openText} onViewComments=${openComments} />`;
     }
 
     return html`
-      <${Sidebar} docs=${docs} current=${current} conn=${conn} theme=${theme} onToggleTheme=${toggleTheme} />
+      <${Sidebar} docs=${docs} current=${current} conn=${conn} theme=${theme} open=${navOpen}
+        onToggleTheme=${toggleTheme} onExpand=${() => setNavOpen(true)} onCollapse=${() => setNavOpen(false)} />
       <main id="main">
-        ${doc && !doc.error ? html`<${TitleBlock} doc=${doc} openCount=${openCount} onOpenComments=${openComments} />` : null}
+        ${doc && !doc.error ? html`<${TitleBlock} doc=${doc} openCount=${openCount} raw=${raw} onOpenComments=${openComments} onToggleRaw=${toggleRaw} />` : null}
         ${main}
       </main>
       <${CommentDrawer}
