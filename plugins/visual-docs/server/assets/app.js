@@ -502,7 +502,7 @@
     }
   }
 
-  async function hydrateMermaid(container) {
+  async function hydrateMermaid(container, isCancelled = () => false) {
     const blocks = container.querySelectorAll('.mermaid-block');
     if (!blocks.length) return;
     if (!window.mermaid) {
@@ -512,10 +512,14 @@
       return;
     }
     for (const b of blocks) {
+      // Bail if the document/theme moved on mid-loop, so a stale run doesn't keep
+      // rendering under an outdated theme.
+      if (isCancelled()) return;
       const src = decodeSrc(b.dataset.mermaidSource);
       const id = `m-${Math.random().toString(36).slice(2, 9)}`;
       try {
         const { svg } = await window.mermaid.render(id, src);
+        if (isCancelled()) return;
         b.innerHTML = svg;
       } catch (err) {
         document.getElementById(`d${id}`)?.remove(); // mermaid leaves an error node behind
@@ -805,6 +809,7 @@
     useEffect(() => {
       const el = ref.current;
       if (!el) return;
+      let cancelled = false;
       const y = window.scrollY;
       document.documentElement.setAttribute('data-theme', theme);
       initMermaid(theme);
@@ -813,11 +818,15 @@
       if (h1) h1.remove(); // title shown in TitleBlock
       hydrateDiffs(el);
       hydrateNomnoml(el);
-      // Component pins go on AFTER mermaid resolves, since it replaces innerHTML.
-      hydrateMermaid(el).then(() => applyComponentPins(el, onOpenComponent));
+      // Pin the non-mermaid blocks now so their 💬 isn't gated on mermaid, then
+      // re-pin after mermaid replaces its own blocks' innerHTML. The cancel flag
+      // stops a stale async render from touching a doc/theme that has moved on.
+      applyComponentPins(el, onOpenComponent);
+      hydrateMermaid(el, () => cancelled).then(() => { if (!cancelled) applyComponentPins(el, onOpenComponent); });
       const changedDoc = lastPath.current !== doc.path;
       lastPath.current = doc.path;
       window.scrollTo(0, changedDoc ? 0 : y);
+      return () => { cancelled = true; };
     }, [doc, theme, onOpenComponent]);
 
     // Section pins + text highlights: re-applied whenever the comment set changes.
@@ -973,9 +982,10 @@
     const loadComments = useCallback(async (path) => {
       try {
         const { comments } = await api(`/api/comments?path=${encodeURIComponent(path)}`);
-        setComments(comments);
+        // Drop the result if the user navigated away while it was in flight.
+        if (currentRef.current === path) setComments(comments);
       } catch {
-        setComments([]);
+        if (currentRef.current === path) setComments([]);
       }
     }, []);
 
@@ -1044,10 +1054,14 @@
         if (msg.type === 'change') {
           await loadDocs();
           if (cur) {
-            try { setDoc(await api(`/api/doc?path=${encodeURIComponent(cur)}`)); } catch { /* keep last */ }
+            try {
+              const d = await api(`/api/doc?path=${encodeURIComponent(cur)}`);
+              // Only apply if we're still on the doc this fetch was for.
+              if (currentRef.current === cur) setDoc(d);
+            } catch { /* keep last */ }
           }
         } else if (msg.type === 'comment') {
-          if (cur) loadComments(cur);
+          if (cur) loadComments(cur); // loadComments self-guards on current path
         }
       };
       return () => es.close();
