@@ -479,12 +479,7 @@ button { font: inherit; cursor: pointer; }
   opacity: 0;
   transition: opacity 120ms;
 }
-.mermaid-block:hover .component-comment-btn,
-.nomnoml-block:hover .component-comment-btn,
-.diff-block:hover .component-comment-btn,
-.migration-block:hover .component-comment-btn,
-.api-block:hover .component-comment-btn,
-.openapi-block:hover .component-comment-btn,
+.component-block:hover .component-comment-btn,
 .component-comment-btn:focus-visible { opacity: 1; }
 .component-comment-btn:hover { border-color: var(--accent); }
 

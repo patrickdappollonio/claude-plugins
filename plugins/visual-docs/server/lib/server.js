@@ -374,7 +374,7 @@ export async function startServer({ dir, port = 0, host = '127.0.0.1', watch: en
 
       // Agent-facing read endpoint: comments as a ready-to-read markdown digest
       // an agent can curl directly (structured JSON already lives at /api/comments).
-      if ((pathname === '/agent/comments' || pathname === '/agent/comments.md') && req.method === 'GET') {
+      if (pathname === '/agent/comments.md' && req.method === 'GET') {
         const data = await readComments(root);
         const p = url.searchParams.get('path');
         const comments = p ? data.comments.filter((c) => c.path === p) : data.comments;

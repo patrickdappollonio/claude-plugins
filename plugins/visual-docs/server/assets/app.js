@@ -50,8 +50,8 @@
     return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
   }
 
-  // A comment's stable section key: prefer its stored slug, else derive one
-  // from whatever section/title it was saved with (back-compat with text keys).
+  // A section comment's stable key: its stored slug, else one derived from the
+  // heading title (back-compat with early comments keyed by raw heading title).
   function commentSlug(c) {
     return slugify(c.section || c.title || '');
   }
@@ -625,6 +625,7 @@
     for (const [sel, typeName] of COMPONENTS) {
       const blocks = container.querySelectorAll(sel);
       blocks.forEach((blk, i) => {
+        blk.classList.add('component-block'); // one class for the CSS hover rule
         if (getComputedStyle(blk).position === 'static') blk.style.position = 'relative';
         const label = blocks.length > 1 ? `${typeName} #${i + 1}` : typeName;
         const btn = document.createElement('button');
@@ -835,6 +836,9 @@
       if (!el) return;
       applySectionPins(el, comments, onOpenSection);
       applyTextHighlights(el, comments, onViewComments);
+      // doc/theme are dependencies (not read here) only so this effect re-runs
+      // AFTER the sibling effect rebuilds el.innerHTML on doc/theme change —
+      // Preact runs effects in declaration order. Don't drop them.
     }, [doc, comments, theme, onOpenSection, onViewComments]);
 
     // Text-selection → floating "comment" affordance.
