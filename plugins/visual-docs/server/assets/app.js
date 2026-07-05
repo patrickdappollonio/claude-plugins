@@ -603,7 +603,23 @@
       let path = rest.trim();
       let note = '';
       const sp = rest.match(/^(.*?)(?:\s{2,}|\t|\s+—\s+)(.+)$/);
-      if (sp) { path = sp[1].trim(); note = sp[2].trim(); }
+      if (sp) {
+        path = sp[1].trim();
+        note = sp[2].trim();
+      } else {
+        // Forgiving: a single space typed instead of the 2-space/tab/"—"
+        // separator is easy to do by accident — split so the note doesn't fold
+        // into the path chip. A rename ("old -> new") legitimately contains
+        // spaces, so split its note off after the new path.
+        const renameNote = rest.match(/^(\S+\s*(?:->|→)\s*\S+)\s+(\S.*)$/);
+        if (renameNote) {
+          path = renameNote[1].trim();
+          note = renameNote[2].trim();
+        } else if (!/\s(?:->|→)\s/.test(rest)) {
+          const one = rest.match(/^(\S+)\s+(\S.*)$/);
+          if (one && /[./]/.test(one[1])) { path = one[1]; note = one[2].trim(); }
+        }
+      }
       cur.entries.push({ flag, path, note });
     }
     const used = groups.filter((g) => g.entries.length);
@@ -612,12 +628,22 @@
     const buildTree = (entries) => {
       const root = { dirs: new Map(), files: [] };
       for (const e of entries) {
-        // For renames ("old -> new"), place by the new path but keep the label.
+        // For renames ("old -> new"), place by the new path. Collapse the shared
+        // directory the way plain rows do: show "old.go → new.go" when both sit
+        // in the same folder, else "old/path → newbase".
         const arrow = e.path.split(/\s*(?:->|→)\s*/);
         const treePath = arrow.length === 2 ? arrow[1] : e.path;
         const segs = treePath.split('/').filter(Boolean);
         const base = segs.pop();
-        const name = arrow.length === 2 ? e.path : (base || treePath);
+        let name;
+        if (arrow.length === 2) {
+          const [oldP, newP] = arrow.map((s) => s.trim());
+          const oldBase = oldP.split('/').pop();
+          const sameDir = oldP.split('/').slice(0, -1).join('/') === newP.split('/').slice(0, -1).join('/');
+          name = sameDir ? `${oldBase} → ${base}` : `${oldP} → ${base}`;
+        } else {
+          name = base || treePath;
+        }
         let node = root;
         for (const seg of segs) {
           if (!node.dirs.has(seg)) node.dirs.set(seg, { dirs: new Map(), files: [] });

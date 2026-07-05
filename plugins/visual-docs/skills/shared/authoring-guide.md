@@ -13,6 +13,11 @@ block, so a document is always readable — even in a bare text editor.
 - Ground every structured block in real code, real diffs, and real schemas.
   Never invent line numbers, file names, or API shapes. Redact secrets as
   `<redacted>` or `sk-•••`.
+- **Put one sentence of intent directly above every structured fence** (diff,
+  migration, api, openapi, mermaid, nomnoml, filetree) saying what it shows and
+  why it matters — a bare fence makes the reader reverse-engineer intent.
+  `visual-docs-lint` warns when this is missing. (Questions are self-describing
+  and exempt.)
 - Blockquotes starting with `**Decision needed:**` or `**Risk:**` are the
   idiom for calling out things the reader must weigh in on.
 - **GitHub-style admonitions** render as coloured callouts: start a blockquote
@@ -68,6 +73,9 @@ Nomnoml syntax primer (it is NOT Mermaid — do not mix syntaxes):
   Skip colors — the viewer's theme handles that.
 - One edge per line. There are no sequence/gantt/ER modes — for those,
   use Mermaid.
+- Known quirk: when a `[<choice>]` node has several labelled outgoing edges
+  (`yes`/`no`), nomnoml tends to cluster the labels near the node rather than
+  along each edge. If that reads ambiguously, use a Mermaid flowchart instead.
 
 ### File tree — ` ```filetree ` (aliases: ` ```files `, ` ```file-tree `)
 
@@ -77,10 +85,11 @@ directory tree**. One line per file as `<flag> <path>  <note>`. Flags: `A` added
 words `added`/`modified`/`deleted`/`renamed`. This is the block for a recap's
 `## What changed` — prefer it over a plain bullet list.
 
-- **Note** — separate it from the path with 2+ spaces, a tab, or ` — `. It's
-  optional, may be **as long as you need**, and supports inline markdown:
-  `` `code` ``, **bold**, *italic*, and links. Use it to actually explain the
-  change, not just label it.
+- **Note** — separate it from the path with **2+ spaces** (clearest), a tab, or
+  ` — `. It's optional, may be **as long as you need**, and supports inline
+  markdown: `` `code` ``, **bold**, *italic*, and links. Use it to actually
+  explain the change, not just label it. (A single space also works when the path
+  has no spaces, but 2+ spaces reads best and never surprises.)
 - **Paths shrink automatically** — shared directories collapse into folder rows
   and filenames show as basenames, so you always write the full path and the
   renderer builds the tree. Single-child chains (`a/b/c`) collapse into one row.
@@ -239,7 +248,10 @@ in `<served-dir>/.visual-docs/comments.json` and exposed at `GET /api/comments`
 (and the digest at `GET /agent/comments.md`).
 
 Each comment carries an `anchor` (what it's attached to) and a best-effort
-`line` (the source line, so you can jump straight to `path:line`):
+`line` (the source line, so you can jump straight to `path:line`). The browser
+resolves `line` when a reader comments; if you POST to `/api/comments` yourself
+without a `line`, the server fills it in from the anchor's quoted text/heading —
+so you don't have to compute it, though you may still pass one to override.
 
 ```json
 {

@@ -140,6 +140,30 @@ async function readHead(file, bytes = 8192) {
   }
 }
 
+/** Best-effort 1-based source line for a comment, found by searching the current
+    doc for a representative string (quote / fence hint / heading). Lets a caller
+    that POSTs to /api/comments without a `line` (e.g. an agent, not the browser)
+    still get path:line context in the digest. */
+async function resolveCommentLine(baseReal, path, comment) {
+  if (!path || !/\.(md|markdown)$/i.test(path)) return null;
+  const a = comment.anchor;
+  let needle = '';
+  if (a && a.kind === 'text') needle = a.quote;
+  else if (a && a.kind === 'component') needle = a.hint;
+  else if (comment.title || comment.section) needle = comment.title || comment.section;
+  needle = (needle || '').replace(/\s+/g, ' ').trim().slice(0, 40);
+  if (needle.length < 3) return null;
+  try {
+    const abs = await resolveServable(baseReal, path, null);
+    if (!abs) return null;
+    const lines = (await fs.readFile(abs, 'utf8')).split('\n');
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].replace(/\s+/g, ' ').includes(needle)) return i + 1;
+    }
+  } catch { /* ignore */ }
+  return null;
+}
+
 async function serveStatic(res, baseReal, relPath, exts, { verifyImage = false } = {}) {
   const abs = await resolveServable(baseReal, relPath, exts);
   if (!abs) { res.writeHead(404); return res.end('not found'); }
@@ -451,6 +475,9 @@ export async function startServer({ dir, port = 0, host = '127.0.0.1', watch: en
           status: 'new',
           resolved: false,
         };
+        // The browser resolves `line` client-side; a direct API caller may not,
+        // so fill it in from the current doc when it's missing.
+        if (comment.line === null) comment.line = await resolveCommentLine(rootReal, comment.path, comment);
 
         const result = await withComments(async () => {
           // Optimistic-concurrency retry: if the file changed under us (e.g. the
