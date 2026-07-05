@@ -1,0 +1,40 @@
+{
+  "name": "@patrickdappollonio/visual-docs-server",
+  "version": "1.0.0",
+  "description": "Zero-dependency local server that renders agent-written markdown plans and recaps with Mermaid diagrams, syntax-highlighted code, rich diffs, and styled DB migrations. Live-reloads on file changes and collects reviewer comments for the agent.",
+  "type": "module",
+  "bin": {
+    "visual-docs-server": "bin/visual-docs-server.js",
+    "visual-docs-lint": "bin/visual-docs-lint.js"
+  },
+  "files": [
+    "bin/",
+    "lib/",
+    "assets/",
+    "scripts/"
+  ],
+  "scripts": {
+    "update-vendor": "node scripts/update-vendor.mjs",
+    "verify-vendor": "node scripts/update-vendor.mjs --verify",
+    "lint": "node bin/visual-docs-lint.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "markdown",
+    "mermaid",
+    "diff",
+    "visual-plan",
+    "claude",
+    "agent",
+    "local-server"
+  ],
+  "author": "Patrick D'appollonio <patrickdappollonio@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/patrickdappollonio/claude-plugins.git",
+    "directory": "plugins/visual-docs/server"
+  }
+}
