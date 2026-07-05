@@ -61,8 +61,9 @@ trace is the coverage it drives. It's your list for step 3's audit.
 
 **Read `${CLAUDE_PLUGIN_ROOT}/skills/shared/document-quality.md` once (silently)
 before writing** — the standard for a comprehensive, simple→complex, terse
-document. Use `authoring-guide.md` for fence syntax. The plan is where your
-tokens go: budget you didn't spend narrating belongs here.
+document. Use `${CLAUDE_PLUGIN_ROOT}/skills/shared/authoring-guide.md` for fence
+syntax. The plan is where your tokens go: budget you didn't spend narrating
+belongs here.
 
 Author top to bottom against this skeleton; include a section when the inventory
 has items, skip one only when it had nothing there:

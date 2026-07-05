@@ -77,7 +77,8 @@ to avoid.
 
 **Read `${CLAUDE_PLUGIN_ROOT}/skills/shared/document-quality.md` once (silently)
 before writing** — it is the standard for making the document comprehensive,
-layered simple→complex, and terse. Use `authoring-guide.md` for fence syntax.
+layered simple→complex, and terse. Use
+`${CLAUDE_PLUGIN_ROOT}/skills/shared/authoring-guide.md` for fence syntax.
 This document is where your tokens go: any budget you didn't spend narrating
 steps 1–2 belongs here — prefer one more `## Key changes` hunk, one more grounded
 `api`/`migration` example, or a fuller `## Risks` list over a shorter recap.
