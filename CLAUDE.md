@@ -15,6 +15,18 @@ plugins under `plugins/`:
 - **Commit/push only when asked.** Work on a branch, not `main`.
 - The visual-docs server has **no authentication**. `--host` / `0.0.0.0` binding
   must stay opt-in and documented as trusted-network-only.
+- **Agents must never have to write code — not even a small script — to operate
+  visual-docs.** Every operation an agent performs (resolve a directory, serve,
+  read comments, set status, lint, stop) must be a first-class `node
+  visual-docs-server.js --<command>` / `visual-docs-lint.js` invocation that
+  prints **ready-to-read, formatted text** (never JSON the agent must parse, and
+  never something it has to `curl`/`jq`/`python`/`node -e` to consume). Keep these
+  commands **OS-agnostic as much as possible**: do the platform-specific work
+  (temp dirs via `os.tmpdir()`, backgrounding via detached `spawn`, HTTP via
+  `fetch`) *inside* the Node CLI, so the skill only ever runs `node <script>
+  <args>` — no `nohup`/`&`, no `/tmp` paths, no shell-only constructs. When you
+  add an agent-facing capability, add a `--command` for it; don't make the agent
+  improvise glue.
 
 ## visual-docs architecture
 

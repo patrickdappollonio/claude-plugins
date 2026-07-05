@@ -25,9 +25,11 @@ write the plan as a single markdown file. Choose the directory:
 - **Default (throwaway review):** let the server resolve a fresh, session-scoped
   temp directory for you — cross-platform (it uses the OS temp dir under the
   hood), unique per session so it starts empty every session and never overlaps
-  another project's docs. Don't hand-build paths:
-  ```bash
-  DIR=$(node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-server.js" --docdir)
+  another project's docs. Don't hand-build paths; run this, and it **prints the
+  directory** — reuse that path (referred to below as `$DIR`) for the file you
+  write and the serve/comments/status commands:
+  ```
+  node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-server.js" --docdir
   ```
 - **User wants the plan kept:** write it where they say (e.g. `docs/plans/`)
   and serve that directory instead.

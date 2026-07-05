@@ -53,10 +53,12 @@ Directory selection and serving are identical to the visual-plan skill. Default
 to a fresh, session-scoped temp directory resolved by the server itself —
 cross-platform (OS temp dir under the hood), unique per session so it starts
 empty every session and never overlaps another project's recaps. Don't hand-
-build paths; use a user-chosen repo path only if they want it kept:
+build paths; run this, and it **prints the directory** — reuse that path
+(referred to below as `$DIR`). Use a user-chosen repo path only if they want it
+kept:
 
-```bash
-DIR=$(node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-server.js" --docdir)
+```
+node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-server.js" --docdir
 ```
 
 Name the file after the change, e.g. `$DIR/recap-pr-142.md`.
