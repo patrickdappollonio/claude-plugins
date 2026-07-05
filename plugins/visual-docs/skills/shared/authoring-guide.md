@@ -15,6 +15,12 @@ block, so a document is always readable — even in a bare text editor.
   `<redacted>` or `sk-•••`.
 - Blockquotes starting with `**Decision needed:**` or `**Risk:**` are the
   idiom for calling out things the reader must weigh in on.
+- **GitHub-style admonitions** render as coloured callouts: start a blockquote
+  with `> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WARNING]`, or
+  `> [!CAUTION]` on its own line, then the content on the next `>` lines.
+
+      > [!WARNING]
+      > Enabling this in production sheds traffic immediately — stage it first.
 
 ## Special fences
 

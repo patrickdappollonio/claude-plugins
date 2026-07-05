@@ -506,6 +506,33 @@ button { font: inherit; cursor: pointer; }
 .ft-note :first-child { margin-top: 0; }
 .ft-note :last-child { margin-bottom: 0; }
 
+/* ---------- GitHub-style admonitions ---------- */
+.admonition {
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--adm-color, var(--accent));
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 1.4em 0;
+  background: var(--surface-2);
+}
+.admonition .adm-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 6px;
+  color: var(--adm-color, var(--accent));
+}
+.admonition .adm-title .icon { width: 1.05em; height: 1.05em; }
+.admonition .adm-body > :first-child { margin-top: 0; }
+.admonition .adm-body > :last-child { margin-bottom: 0; }
+.adm-note { --adm-color: var(--accent); }
+.adm-tip { --adm-color: var(--ok); }
+.adm-important { --adm-color: #8957e5; }
+.adm-warning { --adm-color: var(--warn); }
+.adm-caution { --adm-color: var(--danger); }
+
 /* ---------- Agent question block ---------- */
 .question-block {
   margin: 1.6em 0;

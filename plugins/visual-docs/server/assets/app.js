@@ -30,6 +30,11 @@
     folder: svgIcon('<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>'),
     help: svgIcon('<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>'),
     check: svgIcon('<polyline points="20 6 9 17 4 12"/>'),
+    info: svgIcon('<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>'),
+    tip: svgIcon('<path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.3h6c0-1 .4-1.8 1-2.3A7 7 0 0 0 12 2z"/>'),
+    important: svgIcon('<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="12" y1="7" x2="12" y2="11"/><line x1="12" y1="14" x2="12.01" y2="14"/>'),
+    warning: svgIcon('<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>'),
+    caution: svgIcon('<polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>'),
     database: svgIcon('<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>'),
     exchange: svgIcon('<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>'),
     arrowRight: svgIcon('<line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>'),
@@ -813,6 +818,53 @@
 
   // Component blocks can't be text-selected meaningfully, so each gets its own
   // "comment on this component" affordance instead.
+  const ADMONITIONS = {
+    NOTE: { cls: 'note', label: 'Note', icon: 'info' },
+    TIP: { cls: 'tip', label: 'Tip', icon: 'tip' },
+    IMPORTANT: { cls: 'important', label: 'Important', icon: 'important' },
+    WARNING: { cls: 'warning', label: 'Warning', icon: 'warning' },
+    CAUTION: { cls: 'caution', label: 'Caution', icon: 'caution' },
+  };
+
+  /** Convert GitHub-style alert blockquotes (`> [!NOTE]` …) into styled callout
+      boxes. Runs on the sanitized DOM; a blockquote without a recognized marker
+      is left untouched. */
+  function hydrateAdmonitions(container) {
+    container.querySelectorAll('blockquote').forEach((bq) => {
+      const first = bq.firstElementChild;
+      if (!first) return;
+      // The marker sits in the first text node, e.g. "[!NOTE]" then a <br>.
+      let node = first.firstChild;
+      while (node && node.nodeType === 3 && !node.nodeValue.trim()) node = node.nextSibling;
+      if (!node || node.nodeType !== 3) return;
+      const m = node.nodeValue.match(/^\s*\[!(\w+)\]\s*/);
+      if (!m) return;
+      const def = ADMONITIONS[m[1].toUpperCase()];
+      if (!def) return;
+      // Strip the marker; drop the node (and a trailing <br>) if nothing remains.
+      node.nodeValue = node.nodeValue.slice(m[0].length);
+      if (!node.nodeValue.trim()) {
+        const next = node.nextSibling;
+        node.remove();
+        if (next && next.tagName === 'BR') next.remove();
+      }
+      const box = document.createElement('div');
+      box.className = `admonition adm-${def.cls}`;
+      const title = document.createElement('div');
+      title.className = 'adm-title';
+      title.innerHTML = ICON[def.icon];
+      const label = document.createElement('span');
+      label.textContent = def.label;
+      title.appendChild(label);
+      const body = document.createElement('div');
+      body.className = 'adm-body';
+      while (bq.firstChild) body.appendChild(bq.firstChild);
+      box.appendChild(title);
+      box.appendChild(body);
+      bq.replaceWith(box);
+    });
+  }
+
   /** Fill a question block's "answered" box with the submitted answer and hide
       the form. Idempotent — safe to call on every comment update. */
   function showQuestionAnswered(blk, answer) {
@@ -1121,6 +1173,7 @@
       el.innerHTML = sanitizeHTML(renderMarkdown(doc.content));
       const h1 = el.querySelector('h1');
       if (h1) h1.remove(); // title shown in TitleBlock
+      hydrateAdmonitions(el);
       hydrateDiffs(el);
       hydrateNomnoml(el);
       hydrateQuestions(el, onAnswer);
