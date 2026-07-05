@@ -4,7 +4,8 @@
   "description": "Zero-dependency local server that renders agent-written markdown plans and recaps with Mermaid diagrams, syntax-highlighted code, rich diffs, and styled DB migrations. Live-reloads on file changes and collects reviewer comments for the agent.",
   "type": "module",
   "bin": {
-    "visual-docs-server": "bin/visual-docs-server.js"
+    "visual-docs-server": "bin/visual-docs-server.js",
+    "visual-docs-lint": "bin/visual-docs-lint.js"
   },
   "files": [
     "bin/",
@@ -14,7 +15,8 @@
   ],
   "scripts": {
     "update-vendor": "node scripts/update-vendor.mjs",
-    "verify-vendor": "node scripts/update-vendor.mjs --verify"
+    "verify-vendor": "node scripts/update-vendor.mjs --verify",
+    "lint": "node bin/visual-docs-lint.js"
   },
   "engines": {
     "node": ">=18"

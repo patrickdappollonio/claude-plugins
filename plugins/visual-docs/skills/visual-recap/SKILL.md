@@ -82,7 +82,8 @@ has items for it, skip one only when the inventory had nothing there:
 
 **Then audit:** walk your inventory checklist against the finished document,
 item by item — each maps to a block or has a one-clause omission reason. Do this
-before serving.
+before serving. Optionally lint the file too:
+`node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-lint.js" "$DIR/<file>.md"`.
 
 Grounding rule: structured blocks are only true if derived from the actual
 changed lines — real paths, fields, method/path, before/after text. Never infer;

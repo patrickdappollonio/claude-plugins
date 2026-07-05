@@ -214,6 +214,19 @@ headline for an API change, the handler diff is at most supporting evidence.
 Regular fences (` ```go `, ` ```python `, …) get syntax highlighting and a
 language tag. Untyped fences are auto-detected.
 
+## Linting a doc
+
+Before serving, you can check a doc against these guidelines:
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-lint.js" path/to/doc.md
+```
+
+It flags: missing/duplicate H1, a structured fence with no one-sentence intent
+above it, empty or malformed fences (e.g. an `openapi` with no `paths:`, a
+`migration` with no `-- up`/`-- down`), unknown admonition types, and obvious
+unredacted secrets. Errors exit non-zero; `--strict` also fails on warnings.
+
 ## Comments / feedback loop
 
 Readers comment three ways: **select any text** to anchor a comment to that

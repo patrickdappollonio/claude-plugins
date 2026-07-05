@@ -8,6 +8,8 @@ We will add a token-bucket rate limiter in front of the public REST API. Request
 
 ## Files touched
 
+The change spans the limiter package, its wiring, config, a migration, and tests:
+
 ```filetree
 # Server
 A  internal/ratelimit/bucket.go      Core **token-bucket** with `Take(key)` and `Refill()`; backs onto Redis via `INCR`+`EXPIRE`, falling back to an in-memory `sync.Map` when Redis is unreachable.
@@ -24,6 +26,8 @@ M  internal/server/router_test.go      End-to-end assertion that the 101st reque
 ```
 
 ## Architecture
+
+Every request passes through the limiter before hitting the API; rejects short-circuit with a `429`:
 
 ```mermaid
 flowchart LR
@@ -71,6 +75,8 @@ func RateLimit(store limiter.Store) func(http.Handler) http.Handler {
 
 ### Router wiring
 
+The limiter middleware is mounted in front of `/api/v1`, before the routes it protects:
+
 ```diff
 --- a/internal/server/router.go
 +++ b/internal/server/router.go
@@ -85,6 +91,8 @@ func RateLimit(store limiter.Store) func(http.Handler) http.Handler {
 ```
 
 ## Database changes
+
+A new table stores per-key limit overrides, with a reversible migration:
 
 ```migration
 -- name: add api_key_limits table
@@ -121,6 +129,8 @@ When a key exceeds its budget, the API responds like this:
 ```
 
 ## API surface
+
+The admin endpoints for reading and setting a key's limit:
 
 ```openapi
 openapi: 3.0.3

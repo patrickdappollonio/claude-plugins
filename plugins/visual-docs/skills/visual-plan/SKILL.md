@@ -69,7 +69,9 @@ has items, skip one only when it had nothing there:
    options + free-text); the user's answer comes back as a comment you read.
 
 **Then audit** your inventory against the finished plan, item by item, before
-serving. Grounding rule: every path, line, schema, and API shape must come from
+serving; optionally lint it too:
+`node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-lint.js" "$DIR/<file>.md"`.
+Grounding rule: every path, line, schema, and API shape must come from
 the actual codebase or the proposed edit — don't invent detail. Redact secrets.
 
 ### 4. Serve it

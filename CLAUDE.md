@@ -43,6 +43,12 @@ A/M/D/R + notes), `question`/`ask` (interactive; answers post as comments),
 GitHub admonitions (`> [!NOTE]` …). Authoring reference:
 `skills/shared/authoring-guide.md`; quality bar: `skills/shared/document-quality.md`.
 
+**When you add a new fence/component, also:** register it in the gutter
+`COMPONENTS` list (if commentable), document it in `authoring-guide.md` + the
+README fence table, and **add a rule for it to the linter**
+(`server/bin/visual-docs-lint.js`) — at minimum recognize its language(s) and
+validate its shape, so `visual-docs-lint` covers every component.
+
 ### Comments
 
 Stored in `<served-dir>/.visual-docs/comments.json`; exposed at `GET
