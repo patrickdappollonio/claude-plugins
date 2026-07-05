@@ -331,7 +331,8 @@ button { font: inherit; cursor: pointer; }
 .diagram-modal .dm-close .icon { width: 18px; height: 18px; }
 /* flex + margin:auto centers when it fits, scrolls from the start when it doesn't.
    SVG width is set imperatively (zoom); height follows the viewBox. */
-.diagram-modal .dm-stage { flex: 1; overflow: auto; display: flex; padding: 28px; }
+.diagram-modal .dm-stage { flex: 1; overflow: auto; display: flex; padding: 28px; cursor: grab; }
+.diagram-modal .dm-stage.grabbing { cursor: grabbing; }
 /* flex:none so the SVG keeps its (zoomed) width and overflows into a scroll
    instead of being shrunk to the stage by flex-shrink; margin:auto still centers
    it when it's smaller than the stage. */
@@ -355,6 +356,7 @@ button { font: inherit; cursor: pointer; }
   min-width: 46px; text-align: center; font-size: 0.74rem; color: var(--ink-soft);
   font-variant-numeric: tabular-nums; font-family: var(--mono);
 }
+.diagram-modal .dm-sep { width: 1px; height: 20px; background: var(--line); margin: 0 3px; }
 .render-error {
   border: 1px solid var(--danger); background: var(--danger-soft); color: var(--danger);
   border-radius: 10px; padding: 10px 14px; font-family: var(--mono); font-size: 0.78rem; white-space: pre-wrap; text-align: left;

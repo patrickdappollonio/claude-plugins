@@ -34,6 +34,7 @@
     expand: svgIcon('<polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>'),
     plus: svgIcon('<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>'),
     minus: svgIcon('<line x1="5" y1="12" x2="19" y2="12"/>'),
+    download: svgIcon('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>'),
     clock: svgIcon('<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/>'),
     code: svgIcon('<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>'),
     printer: svgIcon('<polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>'),
@@ -868,8 +869,58 @@
         startOnLoad: false,
         theme: theme === 'dark' ? 'dark' : 'neutral',
         securityLevel: 'strict',
+        // Render labels as SVG <text>, not HTML <foreignObject>. Keeps the
+        // diagram a pure vector (no foreignObject) so it can be rasterized to PNG
+        // without tainting the canvas; `<br/>` line breaks still work.
+        htmlLabels: false,
+        flowchart: { htmlLabels: false },
       });
     }
+  }
+
+  /** Rasterize a diagram SVG to a PNG and download it. Works because labels are
+      SVG <text> (mermaid htmlLabels:false), so there's no <foreignObject> to taint
+      the canvas. Rendered at 2× on the diagram card's background colour so it
+      reads on its own in light or dark theme. */
+  function exportSvgPng(svg) {
+    try {
+      const clone = svg.cloneNode(true);
+      const vb = svg.viewBox && svg.viewBox.baseVal;
+      const w = (vb && vb.width) || svg.getBoundingClientRect().width || 800;
+      const h = (vb && vb.height) || svg.getBoundingClientRect().height || 600;
+      clone.setAttribute('width', w);
+      clone.setAttribute('height', h);
+      clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+      clone.style.maxWidth = 'none';
+      clone.style.cursor = '';
+      const bg = (svg.parentElement && getComputedStyle(svg.parentElement).backgroundColor) || '#ffffff';
+      const xml = new XMLSerializer().serializeToString(clone);
+      const url = URL.createObjectURL(new Blob([xml], { type: 'image/svg+xml;charset=utf-8' }));
+      const img = new Image();
+      img.onload = () => {
+        const scale = 2;
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(w * scale));
+        canvas.height = Math.max(1, Math.round(h * scale));
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(url);
+        canvas.toBlob((blob) => {
+          if (!blob) return;
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = 'diagram.png';
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+        }, 'image/png');
+      };
+      img.onerror = () => URL.revokeObjectURL(url);
+      img.src = url;
+    } catch { /* export unavailable — ignore */ }
   }
 
   /** Open a diagram's SVG in a full-viewport modal so a dense diagram is
@@ -887,6 +938,8 @@
         <span class="dm-level">100%</span>
         <button type="button" class="dm-in" title="Zoom in (+)">${ICON.plus}</button>
         <button type="button" class="dm-fit" title="Fit width (0)">fit</button>
+        <span class="dm-sep"></span>
+        <button type="button" class="dm-png" title="Download PNG">${ICON.download}</button>
       </div></div>`;
     const clone = svg.cloneNode(true);
     clone.removeAttribute('width');
@@ -907,6 +960,7 @@
       });
     });
     const stage = overlay.querySelector('.dm-stage');
+    clone.style.cursor = 'inherit'; // don't inherit the card's zoom-in cursor
     stage.appendChild(clone);
     document.body.appendChild(overlay); // in DOM so stage.clientWidth is measurable
 
@@ -933,8 +987,33 @@
       e.preventDefault();
       setZoom(zoom * (e.deltaY < 0 ? 1.1 : 0.9));
     }, { passive: false });
+    overlay.querySelector('.dm-png').addEventListener('click', () => exportSvgPng(svg));
 
-    const close = () => { overlay.remove(); document.removeEventListener('keydown', onKey); };
+    // Drag-to-pan: hold and drag anywhere on the stage to scroll around a
+    // zoomed-in diagram (scrollbars and ⌘/ctrl+wheel still work too).
+    let panning = false, sx = 0, sy = 0, sl = 0, st = 0;
+    const onDown = (e) => {
+      if (e.button !== 0 || e.target.closest('.dm-toolbar, .dm-close')) return;
+      panning = true; sx = e.clientX; sy = e.clientY; sl = stage.scrollLeft; st = stage.scrollTop;
+      stage.classList.add('grabbing');
+      e.preventDefault();
+    };
+    const onMove = (e) => {
+      if (!panning) return;
+      stage.scrollLeft = sl - (e.clientX - sx);
+      stage.scrollTop = st - (e.clientY - sy);
+    };
+    const onUp = () => { panning = false; stage.classList.remove('grabbing'); };
+    stage.addEventListener('mousedown', onDown);
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+
+    const close = () => {
+      overlay.remove();
+      document.removeEventListener('keydown', onKey);
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
     const onKey = (e) => {
       if (e.key === 'Escape') close();
       else if (e.key === '+' || e.key === '=') setZoom(zoom * 1.25);
