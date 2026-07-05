@@ -30,6 +30,10 @@
     help: svgIcon('<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>'),
     check: svgIcon('<polyline points="20 6 9 17 4 12"/>'),
     text: svgIcon('<polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/>'),
+    clock: svgIcon('<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/>'),
+    code: svgIcon('<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>'),
+    printer: svgIcon('<polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>'),
+    branch: svgIcon('<line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/>'),
     info: svgIcon('<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>'),
     tip: svgIcon('<path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.3h6c0-1 .4-1.8 1-2.3A7 7 0 0 0 12 2z"/>'),
     important: svgIcon('<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="12" y1="7" x2="12" y2="11"/><line x1="12" y1="14" x2="12.01" y2="14"/>'),
@@ -924,18 +928,54 @@
         node.remove();
         if (next && next.tagName === 'BR') next.remove();
       }
+      // Icon-chip callout (Notion's own pattern): [ icon | title + body ].
       const box = document.createElement('div');
       box.className = `admonition adm-${def.cls}`;
+      const chip = document.createElement('span');
+      chip.className = 'adm-ichip';
+      chip.innerHTML = ICON[def.icon];
+      const main = document.createElement('div');
       const title = document.createElement('div');
       title.className = 'adm-title';
-      title.innerHTML = ICON[def.icon];
-      const label = document.createElement('span');
-      label.textContent = def.label;
-      title.appendChild(label);
+      title.textContent = def.label;
       const body = document.createElement('div');
       body.className = 'adm-body';
       while (bq.firstChild) body.appendChild(bq.firstChild);
-      box.appendChild(title);
+      main.appendChild(title);
+      main.appendChild(body);
+      box.appendChild(chip);
+      box.appendChild(main);
+      bq.replaceWith(box);
+    });
+  }
+
+  const CALLOUTS = {
+    'decision needed': { cls: 'decision', icon: 'branch' },
+    'decision': { cls: 'decision', icon: 'branch' },
+    'risk': { cls: 'risk', icon: 'warning' },
+  };
+
+  /** Convert `> **Decision needed:** …` / `> **Risk:** …` blockquotes into
+      icon-chip callouts. Runs after hydrateAdmonitions, on remaining blockquotes;
+      keyed on the bolded lead so a plain quote is left untouched. */
+  function hydrateCallouts(container) {
+    container.querySelectorAll('blockquote').forEach((bq) => {
+      const first = bq.firstElementChild;
+      if (!first) return;
+      const strong = first.querySelector('strong, b');
+      if (!strong) return;
+      const key = strong.textContent.trim().toLowerCase().replace(/:$/, '');
+      const def = CALLOUTS[key];
+      if (!def) return;
+      const box = document.createElement('div');
+      box.className = `callout ${def.cls}`;
+      const chip = document.createElement('span');
+      chip.className = 'co-ichip';
+      chip.innerHTML = ICON[def.icon];
+      const body = document.createElement('div');
+      body.className = 'co-body';
+      while (bq.firstChild) body.appendChild(bq.firstChild);
+      box.appendChild(chip);
       box.appendChild(body);
       bq.replaceWith(box);
     });
@@ -1258,20 +1298,17 @@
     const title = firstH1Text(doc.content) || doc.path.split('/').pop();
     return html`
       <div id="doc-header">
-        <div class="titleblock">
-          <div class="tb-cell tb-title">
-            <span class="tb-label mono">document</span>
-            <h1 id="tb-doc-title">${title}</h1>
+        <div class="pagehead">
+          <div class="eyebrow"><${Icon} name="doc" /><span>document</span></div>
+          <h1 id="tb-doc-title">${title}</h1>
+          <div class="metarow">
+            <span class="m mono">${doc.path}</span>
+            <span class="m"><${Icon} name="clock" />updated ${fmtTime(doc.mtime)}</span>
+            <span class="spacer"></span>
+            <button id="tb-raw-btn" class="${raw ? 'active' : ''}" title=${raw ? 'Show the rendered document' : 'Show the raw markdown source'} onClick=${onToggleRaw}><${Icon} name=${raw ? 'doc' : 'code'} />${raw ? 'rendered' : 'raw'}</button>
+            <button id="tb-print-btn" title="Print / Save as PDF (document only)" onClick=${onPrint}><${Icon} name="printer" />print</button>
+            <button id="tb-comments-btn" onClick=${onOpenComments}><${Icon} name="comment" />${openCount} open</button>
           </div>
-          <div class="tb-cell tb-meta"><span class="tb-label mono">file</span><span id="tb-doc-path" class="mono">${doc.path}</span></div>
-          <div class="tb-cell tb-meta"><span class="tb-label mono">updated</span><span id="tb-doc-mtime" class="mono">${fmtTime(doc.mtime)}</span></div>
-          <div class="tb-cell tb-chrome"><span class="tb-label mono">view</span>
-            <span class="tb-actions">
-              <button id="tb-raw-btn" class="mono ${raw ? 'active' : ''}" title=${raw ? 'Show the rendered document' : 'Show the raw markdown source'} onClick=${onToggleRaw}>${raw ? 'rendered' : 'raw'}</button>
-              <button id="tb-print-btn" class="mono" title="Print / Save as PDF (document only)" onClick=${onPrint}>print</button>
-            </span>
-          </div>
-          <div class="tb-cell tb-chrome"><span class="tb-label mono">comments</span><button id="tb-comments-btn" class="mono" onClick=${onOpenComments}>${openCount} open</button></div>
         </div>
       </div>`;
   }
@@ -1306,6 +1343,7 @@
       const h1 = el.querySelector('h1');
       if (h1) h1.remove(); // title shown in TitleBlock
       hydrateAdmonitions(el);
+      hydrateCallouts(el);
       hydrateDiffs(el);
       hydrateMigrations(el);
       hydrateNomnoml(el);
