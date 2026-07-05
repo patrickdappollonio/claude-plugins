@@ -8,12 +8,16 @@ description: Use when the user wants a visual summary of work that was done — 
 Turn a change — a PR, branch, commit range, or the working tree — into an
 interactive review document served entirely from the user's machine.
 
-**Spend your tokens on the document, not on narrating.** Move through steps 1–4
-without a play-by-play in chat — no "Step 1: capturing the diff…", no restating
-the captured diff or the inventory, no "here's what I found." The first thing
-you say to the user is the link in step 4 with a one-line pointer. Every token
-you'd spend describing the work, spend instead making the document more
-complete.
+**Acknowledge first, then work quietly.** Before you do anything else, reply with
+one short sentence that acknowledges the request and says you're gathering what
+you need — e.g. *"On it — let me pull the diff together and build a visual recap
+of PR 142."* This is the one message the user should get up front; never jump
+straight into tool calls with no reply. Then **spend your tokens on the document,
+not on narrating**: move through steps 1–4 without a play-by-play — no "Step 1:
+capturing the diff…", no restating the captured diff or the inventory, no "here's
+what I found." Your next message after the acknowledgement is the link in step 4
+with a one-line pointer. Every token you'd spend describing the work, spend
+instead making the document more complete.
 
 ## Workflow
 

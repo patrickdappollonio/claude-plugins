@@ -10,10 +10,15 @@ served entirely from their machine. The plan is a plain markdown file — the
 bundled server renders it with diagrams, diffs, and styled blocks, live-reloads
 as you edit it, and collects the user's comments for you to read back.
 
-**Spend your tokens on the document, not on narrating.** Do the research and
-inventory silently — no step-by-step play-by-play in chat, no restating what you
-found. Surface for the first time in step 4/5 with the link and a one-line
-pointer; put the budget you'd spend narrating into the plan's coverage instead.
+**Acknowledge first, then work quietly.** Before you do anything else, reply with
+one short sentence that acknowledges the request and says you're gathering what
+you need — e.g. *"Got it — let me dig into the code and put together a visual plan
+for the rate-limiting change."* This is the one message the user should get up
+front; never jump straight into tool calls with no reply. Then **spend your
+tokens on the document, not on narrating**: do the research and inventory
+silently — no step-by-step play-by-play, no restating what you found — and
+surface next in step 4/5 with the link and a one-line pointer. Put the budget
+you'd spend narrating into the plan's coverage instead.
 
 ## Workflow
 
