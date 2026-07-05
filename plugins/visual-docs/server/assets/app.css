@@ -262,9 +262,13 @@ button { font: inherit; cursor: pointer; }
   border: 1px solid var(--line); border-radius: 12px; padding: 18px 22px;
   margin-top: 24px;
 }
-.markdown-body h1, .markdown-body h2, .markdown-body h3, .markdown-body h4 {
+.markdown-body h1, .markdown-body h2, .markdown-body h3, .markdown-body h4,
+.markdown-body h5, .markdown-body h6 {
   font-family: var(--sans); font-weight: 600; letter-spacing: -0.3px; line-height: 1.2;
   margin: 1.8em 0 0.5em; color: var(--ink);
+  /* Breathing room when the outline scrolls a heading into view, instead of
+     pinning it flush against the top of the viewport. */
+  scroll-margin-top: 28px;
 }
 .markdown-body h1 { font-size: 1.9rem; letter-spacing: -0.5px; }
 .markdown-body h2 { font-size: 1.55rem; margin-top: 2em; }
