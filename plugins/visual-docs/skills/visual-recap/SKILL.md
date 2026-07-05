@@ -50,16 +50,13 @@ audit.
 ### 3. Write the recap file
 
 Directory selection and serving are identical to the visual-plan skill. Default
-to this session's own Claude scratchpad — auto-created, scoped to this session
-(and agent), and cleaned up for you, so it starts empty every session and never
-overlaps another project's recaps. Find it by session id (this avoids depending
-on Claude's cwd→folder encoding) and fall back to a session-scoped temp dir if
-it isn't there, or use a user-chosen repo path if they want it kept:
+to a fresh, session-scoped temp directory resolved by the server itself —
+cross-platform (OS temp dir under the hood), unique per session so it starts
+empty every session and never overlaps another project's recaps. Don't hand-
+build paths; use a user-chosen repo path only if they want it kept:
 
 ```bash
-SCRATCH=$(ls -d /tmp/claude-$(id -u)/*/"${CLAUDE_CODE_SESSION_ID}"/scratchpad 2>/dev/null | head -1)
-DIR="${SCRATCH:-${TMPDIR:-/tmp}/visual-docs-${CLAUDE_CODE_SESSION_ID:-$$}}/visual-docs"
-mkdir -p "$DIR"
+DIR=$(node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-server.js" --docdir)
 ```
 
 Name the file after the change, e.g. `$DIR/recap-pr-142.md`.
@@ -112,10 +109,11 @@ secrets as `<redacted>` / `sk-•••`.
 
 ### 4. Serve and share
 
+`--serve` backgrounds the server and prints the URL, then returns — cross-
+platform, no `nohup`/`&`:
+
 ```bash
-nohup node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-server.js" "$DIR" \
-  > "$DIR/.server.log" 2>&1 &
-sleep 1 && grep VISUAL_DOCS_URL "$DIR/.server.log"
+node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-server.js" --serve "$DIR"
 ```
 
 The server self-manages via a lock file: if one is already serving `$DIR` (e.g.

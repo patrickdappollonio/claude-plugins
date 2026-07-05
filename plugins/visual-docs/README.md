@@ -104,8 +104,11 @@ node <plugin-dir>/server/bin/visual-docs-server.js ./my-notes
 Options: `--port <n>` (fixed port), `--host` (Astro-style: bare `--host`
 binds all interfaces and prints per-network URLs, so you can review from
 another device over LAN or Tailscale — off by default on purpose; there is no
-auth), `--no-watch` (disable live reload). Want it reachable on your tailnet?
-Just tell the agent to start the server with `--host`.
+auth), `--no-watch` (disable live reload). Two convenience commands power the
+skills and work cross-platform (Windows included): `--serve` backgrounds the
+server and prints the URL, then returns (no `nohup`/`&`), and `--docdir` prints a
+fresh, session-scoped temp directory to drop docs in. Want it reachable on your
+tailnet? Just tell the agent to start the server with `--host`.
 See [server/README.md](server/README.md) for the package details, and
 [server/examples/demo-plan.md](server/examples/demo-plan.md) for a document
 that exercises every feature.

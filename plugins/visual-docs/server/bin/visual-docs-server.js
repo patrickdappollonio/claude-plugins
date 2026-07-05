@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import { startServer } from '../lib/server.js';
-import { resolve, join, dirname } from 'node:path';
+import { resolve, join, dirname, basename } from 'node:path';
 import { statSync, readFileSync, writeFileSync, unlinkSync, mkdirSync } from 'node:fs';
-import { networkInterfaces } from 'node:os';
+import { networkInterfaces, tmpdir } from 'node:os';
 
 function usage() {
   console.log(`Usage: visual-docs-server [dir] [options]
@@ -24,6 +24,10 @@ Options:
   --restart        Replace an instance already serving this dir
   --stop           Stop the instance serving this dir, then exit
   --no-watch       Disable live reload
+  --docdir         Print a fresh, session-scoped docs directory and exit
+                   (cross-platform temp dir; write your .md there, then serve it)
+  --serve          Start in the background and print the URL, then return
+                   (cross-platform; no nohup/& needed)
   -h, --help       Show this help
 `);
 }
@@ -37,6 +41,20 @@ function looksLikeHost(token) {
     /* not a filesystem entry — fine */
   }
   return true;
+}
+
+/** Print a `Network: http://<ip>:<port>/` line per external IPv4 interface, when
+    bound to all interfaces — so a LAN/Tailscale reviewer has an address to hit.
+    Shared by the foreground path and --serve (which can't see the child's stdout). */
+function printNetwork(host, port) {
+  if (host !== '0.0.0.0' && host !== '::') return;
+  for (const ifaces of Object.values(networkInterfaces())) {
+    for (const iface of ifaces || []) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        console.log(`Network: http://${iface.address}:${port}/`);
+      }
+    }
+  }
 }
 
 const lockPath = (dir) => join(dir, '.visual-docs', 'server.json');
@@ -90,6 +108,21 @@ async function stopPid(pid) {
 }
 
 const args = process.argv.slice(2);
+
+// `--docdir`: print a fresh, session-scoped documents directory and exit. Cross-
+// platform (os.tmpdir() → %TEMP% on Windows, /tmp or $TMPDIR on Unix), scoped by
+// CLAUDE_CODE_SESSION_ID so it's unique per session (fresh each run, no overlap
+// with other projects). Skills call this instead of hand-building /tmp paths.
+if (args.includes('--docdir')) {
+  const safe = (s) => String(s).replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '');
+  const sess = safe(process.env.CLAUDE_CODE_SESSION_ID) || String(process.pid);
+  const name = `${safe(basename(process.cwd())) || 'docs'}-${sess}`;
+  const dir = join(tmpdir(), 'visual-docs', name);
+  mkdirSync(dir, { recursive: true });
+  process.stdout.write(dir + '\n');
+  process.exit(0);
+}
+
 const opts = { dir: process.cwd(), port: 0, host: '127.0.0.1', watch: true };
 let restart = false, stop = false;
 
@@ -108,6 +141,7 @@ for (let i = 0; i < args.length; i++) {
   }
   else if (a === '--restart') restart = true;
   else if (a === '--stop') stop = true;
+  else if (a === '--serve') { /* handled after parsing; accepted here so the loop doesn't reject it */ }
   else if (a === '--no-watch') opts.watch = false;
   else if (!a.startsWith('-')) opts.dir = resolve(a);
   else { console.error(`Unknown option: ${a}`); usage(); process.exit(1); }
@@ -125,6 +159,43 @@ try {
   }
 } catch {
   console.error(`Directory not found: ${opts.dir}`);
+  process.exit(1);
+}
+
+// --serve: start in the background and print the URL, then return — cross-
+// platform, so skills don't need `nohup … &` (which doesn't exist on Windows).
+// Reuse a live instance; otherwise spawn a DETACHED child that runs the normal
+// foreground path and poll the lock file for the URL it publishes once listening.
+if (args.includes('--serve')) {
+  const live = liveLock(opts.dir);
+  if (live && !restart) {
+    console.log(`Serving ${opts.dir}`);
+    console.log(`VISUAL_DOCS_URL=${live.url}`);
+    printNetwork(live.host, live.port);
+    process.exit(0);
+  }
+  const { spawn } = await import('node:child_process');
+  const childArgs = args.filter((a) => a !== '--serve');
+  const child = spawn(process.execPath, [process.argv[1], ...childArgs], {
+    detached: true, stdio: 'ignore', windowsHide: true, env: process.env,
+  });
+  child.unref();
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const deadline = Date.now() + 20000;
+  while (Date.now() < deadline) {
+    if (child.exitCode !== null && child.exitCode !== 0) break;
+    const lock = readLock(opts.dir);
+    // Wait for the child's OWN lock, finalized with a url (written only once it's
+    // actually listening) — not a stale/other lock for this dir.
+    if (lock && lock.url && lock.pid === child.pid) {
+      console.log(`Serving ${opts.dir}`);
+      console.log(`VISUAL_DOCS_URL=${lock.url}`);
+      printNetwork(lock.host, lock.port);
+      process.exit(0);
+    }
+    await sleep(150);
+  }
+  console.error(`Timed out starting the background server for ${opts.dir}.`);
   process.exit(1);
 }
 
@@ -212,13 +283,5 @@ for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.on(sig, () => { clean
 
 console.log(`Serving ${opts.dir}`);
 console.log(`VISUAL_DOCS_URL=${url}`);
-if (opts.host === '0.0.0.0' || opts.host === '::') {
-  for (const ifaces of Object.values(networkInterfaces())) {
-    for (const iface of ifaces || []) {
-      if (iface.family === 'IPv4' && !iface.internal) {
-        console.log(`Network: http://${iface.address}:${port}/`);
-      }
-    }
-  }
-}
+printNetwork(opts.host, port);
 console.log('Press Ctrl+C to stop.');

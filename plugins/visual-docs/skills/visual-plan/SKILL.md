@@ -22,15 +22,12 @@ pointer; put the budget you'd spend narrating into the plan's coverage instead.
 Do the normal planning work first (read the code, understand the change). Then
 write the plan as a single markdown file. Choose the directory:
 
-- **Default (throwaway review):** this session's own Claude scratchpad — it's
-  auto-created, scoped to this session (and agent), and cleaned up for you, so it
-  starts empty every session and never overlaps another project's docs. Find it
-  by session id (this avoids depending on Claude's cwd→folder encoding) and fall
-  back to a session-scoped temp dir if it isn't there:
+- **Default (throwaway review):** let the server resolve a fresh, session-scoped
+  temp directory for you — cross-platform (it uses the OS temp dir under the
+  hood), unique per session so it starts empty every session and never overlaps
+  another project's docs. Don't hand-build paths:
   ```bash
-  SCRATCH=$(ls -d /tmp/claude-$(id -u)/*/"${CLAUDE_CODE_SESSION_ID}"/scratchpad 2>/dev/null | head -1)
-  DIR="${SCRATCH:-${TMPDIR:-/tmp}/visual-docs-${CLAUDE_CODE_SESSION_ID:-$$}}/visual-docs"
-  mkdir -p "$DIR"
+  DIR=$(node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-server.js" --docdir)
   ```
 - **User wants the plan kept:** write it where they say (e.g. `docs/plans/`)
   and serve that directory instead.
@@ -89,15 +86,15 @@ the actual codebase or the proposed edit — don't invent detail. Redact secrets
 
 ### 4. Serve it
 
-Start the bundled server. It self-manages per directory via a lock file, so you
-can run this unconditionally — if one is already serving `$DIR` (from an earlier
-plan this session) it just prints the URL and exits, and new files appear in the
-sidebar automatically:
+Start the bundled server with `--serve`: it backgrounds itself and prints the
+URL, then returns — cross-platform, no `nohup`/`&` (which don't exist on
+Windows). It self-manages per directory via a lock file, so you can run this
+unconditionally — if one is already serving `$DIR` (from an earlier plan this
+session) it just prints the URL and exits, and new files appear in the sidebar
+automatically:
 
 ```bash
-nohup node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-server.js" "$DIR" \
-  > "$DIR/.server.log" 2>&1 &
-sleep 1 && grep VISUAL_DOCS_URL "$DIR/.server.log"
+node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-server.js" --serve "$DIR"
 ```
 
 The output contains `VISUAL_DOCS_URL=http://127.0.0.1:<port>/`. The server binds
