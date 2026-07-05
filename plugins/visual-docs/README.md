@@ -41,9 +41,11 @@ Two skills your agent picks up automatically:
 4. **The page live-reloads** whenever the agent edits the file — you watch
    revisions land in real time. Multiple documents from the same session show
    up together in the sidebar.
-5. **You leave feedback without switching windows**: hover any section
-   heading and click the pin to comment on that section, or use the comment
-   drawer for document-level notes. The agent reads your comments before its
+5. **You leave feedback without switching windows**: **select any text** to
+   comment on that exact snippet (it gets highlighted), hover a section heading
+   or a rendered component — a diagram, diff, migration, API card — to pin a
+   comment there, or use the comment drawer for document-level notes. The agent
+   reads your comments (each labelled with what it's anchored to) before its
    next revision and marks them resolved as it addresses them.
 6. If you'd rather talk to the agent directly — or the server was stopped —
    hit **"Copy as prompt"** and your feedback is turned into a ready-to-paste

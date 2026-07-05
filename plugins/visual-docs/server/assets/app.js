@@ -560,13 +560,99 @@
     }
   }
 
+  // Component blocks can't be text-selected meaningfully, so each gets its own
+  // "comment on this component" affordance instead.
+  const COMPONENTS = [
+    ['.mermaid-block', 'mermaid diagram'],
+    ['.nomnoml-block', 'nomnoml diagram'],
+    ['.diff-block', 'diff'],
+    ['.migration-block', 'migration'],
+    ['.api-block', 'API exchange'],
+    ['.openapi-block', 'OpenAPI spec'],
+  ];
+
+  function isInComponent(node) {
+    const el = node && (node.nodeType === 3 ? node.parentElement : node);
+    return !!(el && el.closest('.mermaid-block, .nomnoml-block, .diff-block, .migration-block, .api-block, .openapi-block, .codewrap'));
+  }
+
+  /** Attach a "💬" affordance to each rendered component block. Anchors a
+      comment to that component by type (with an ordinal when several share a
+      type), matching the "commented on component X" behaviour. */
+  function applyComponentPins(container, onOpen) {
+    container.querySelectorAll('.component-comment-btn').forEach((b) => b.remove());
+    for (const [sel, typeName] of COMPONENTS) {
+      const blocks = container.querySelectorAll(sel);
+      blocks.forEach((blk, i) => {
+        if (getComputedStyle(blk).position === 'static') blk.style.position = 'relative';
+        const label = blocks.length > 1 ? `${typeName} #${i + 1}` : typeName;
+        const btn = document.createElement('button');
+        btn.className = 'component-comment-btn';
+        btn.type = 'button';
+        btn.textContent = '💬';
+        btn.title = `Comment on this ${typeName}`;
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          onOpen({ kind: 'component', type: typeName, label });
+        });
+        blk.appendChild(btn);
+      });
+    }
+  }
+
+  /** Highlight the quoted span of each unresolved text-anchored comment, so the
+      reader can see what's been commented on. Idempotent: unwraps prior marks
+      first. Quotes that span multiple nodes are left unhighlighted (the comment
+      still shows in the drawer). */
+  function applyTextHighlights(container, comments, onOpen) {
+    container.querySelectorAll('mark.comment-highlight').forEach((m) => {
+      const parent = m.parentNode;
+      while (m.firstChild) parent.insertBefore(m.firstChild, m);
+      parent.removeChild(m);
+      parent.normalize();
+    });
+    for (const c of comments) {
+      if (!c.anchor || c.anchor.kind !== 'text' || c.resolved) continue;
+      const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, {
+        acceptNode(n) {
+          if (isInComponent(n.parentElement)) return NodeFilter.FILTER_REJECT;
+          return n.nodeValue.includes(c.anchor.quote) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
+        },
+      });
+      const node = walker.nextNode();
+      if (!node) continue;
+      const idx = node.nodeValue.indexOf(c.anchor.quote);
+      try {
+        const range = document.createRange();
+        range.setStart(node, idx);
+        range.setEnd(node, idx + c.anchor.quote.length);
+        const mark = document.createElement('mark');
+        mark.className = 'comment-highlight';
+        mark.title = c.text;
+        mark.addEventListener('click', () => onOpen());
+        range.surroundContents(mark);
+      } catch { /* range not wrappable — skip */ }
+    }
+  }
+
+  /** Human label for what a comment is anchored to, for the drawer list. */
+  function commentAnchorLabel(c) {
+    if (c.anchor && c.anchor.kind === 'text') {
+      const q = c.anchor.quote.replace(/\s+/g, ' ').trim();
+      return `“${q.length > 60 ? q.slice(0, 60) + '…' : q}”`;
+    }
+    if (c.anchor && c.anchor.kind === 'component') return c.anchor.label || c.anchor.type;
+    if (c.title || c.section) return `§ ${c.title || c.section}`;
+    return '';
+  }
+
   /* ---------- feedback helpers ---------- */
 
   function buildPrompt(path, entries) {
     const lines = [`Please revise the visual doc \`${path}\` based on this feedback:`, ''];
     for (const e of entries) {
-      const label = e.title || e.section;
-      lines.push(label ? `- [section: ${label}] ${e.text}` : `- ${e.text}`);
+      const label = commentAnchorLabel(e);
+      lines.push(label ? `- [${label}] ${e.text}` : `- ${e.text}`);
     }
     lines.push('', 'Update the markdown file in place; the viewer live-reloads.');
     return lines.join('\n');
@@ -639,11 +725,11 @@
   /** Renders sanitized markdown into a Preact-owned-but-manually-managed
       element. Preact never touches the children (the article is empty in its
       vdom), so imperative hydration is safe. */
-  function DocView({ doc, comments, theme, onOpenSection }) {
+  function DocView({ doc, comments, theme, onOpenSection, onOpenComponent, onOpenText, onViewComments }) {
     const ref = useRef(null);
     const lastPath = useRef(null);
 
-    // Body render + fence hydration: only when the document or theme changes.
+    // Body render + fence hydration + component pins: only on doc/theme change.
     useEffect(() => {
       const el = ref.current;
       if (!el) return;
@@ -655,17 +741,66 @@
       if (h1) h1.remove(); // title shown in TitleBlock
       hydrateDiffs(el);
       hydrateNomnoml(el);
-      hydrateMermaid(el);
+      // Component pins go on AFTER mermaid resolves, since it replaces innerHTML.
+      hydrateMermaid(el).then(() => applyComponentPins(el, onOpenComponent));
       const changedDoc = lastPath.current !== doc.path;
       lastPath.current = doc.path;
       window.scrollTo(0, changedDoc ? 0 : y);
-    }, [doc, theme]);
+    }, [doc, theme, onOpenComponent]);
 
-    // Comment pins: cheap, re-applied whenever the comment set changes.
+    // Section pins + text highlights: re-applied whenever the comment set changes.
     useEffect(() => {
       const el = ref.current;
-      if (el) applySectionPins(el, comments, onOpenSection);
-    }, [doc, comments, theme, onOpenSection]);
+      if (!el) return;
+      applySectionPins(el, comments, onOpenSection);
+      applyTextHighlights(el, comments, onViewComments);
+    }, [doc, comments, theme, onOpenSection, onViewComments]);
+
+    // Text-selection → floating "comment" affordance.
+    useEffect(() => {
+      const el = ref.current;
+      if (!el) return;
+      const btn = document.createElement('button');
+      btn.className = 'selection-comment-btn';
+      btn.textContent = '💬 Comment';
+      btn.hidden = true;
+      document.body.appendChild(btn);
+      let captured = null;
+      const hide = () => { btn.hidden = true; captured = null; };
+      const onMouseUp = () => {
+        const sel = window.getSelection();
+        if (!sel || sel.isCollapsed || sel.rangeCount === 0) return hide();
+        const range = sel.getRangeAt(0);
+        if (!el.contains(range.commonAncestorContainer) || isInComponent(range.commonAncestorContainer)) return hide();
+        const quote = sel.toString().trim();
+        if (quote.length < 2) return hide();
+        const sc = range.startContainer, ec = range.endContainer;
+        const prefix = sc.nodeType === 3 ? sc.nodeValue.slice(Math.max(0, range.startOffset - 40), range.startOffset) : '';
+        const suffix = ec.nodeType === 3 ? ec.nodeValue.slice(range.endOffset, range.endOffset + 40) : '';
+        captured = { quote, prefix, suffix };
+        const rect = range.getBoundingClientRect();
+        btn.style.top = `${window.scrollY + rect.bottom + 6}px`;
+        btn.style.left = `${window.scrollX + rect.left}px`;
+        btn.hidden = false;
+      };
+      const onBtnClick = () => {
+        if (captured) {
+          onOpenText({ kind: 'text', quote: captured.quote, prefix: captured.prefix, suffix: captured.suffix });
+          window.getSelection().removeAllRanges();
+          hide();
+        }
+      };
+      const onDocMouseDown = (e) => { if (e.target !== btn) hide(); };
+      el.addEventListener('mouseup', onMouseUp);
+      btn.addEventListener('mousedown', (e) => e.preventDefault()); // keep the selection alive
+      btn.addEventListener('click', onBtnClick);
+      document.addEventListener('mousedown', onDocMouseDown);
+      return () => {
+        el.removeEventListener('mouseup', onMouseUp);
+        document.removeEventListener('mousedown', onDocMouseDown);
+        btn.remove();
+      };
+    }, [doc, onOpenText]);
 
     return html`<article id="content" class="markdown-body" ref=${ref}></article>`;
   }
@@ -680,11 +815,20 @@
       </article>`;
   }
 
-  function CommentDrawer({ open, section, title, comments, status, onClose, onSubmit, onCopy }) {
+  function CommentDrawer({ open, target, comments, status, onClose, onSubmit, onCopy }) {
     const textRef = useRef(null);
+    // Label for the thing being commented on (section, quoted text, component).
+    const t = target || {};
+    const contextLabel = t.section
+      ? `§ ${t.title || t.section}`
+      : t.anchor && t.anchor.kind === 'text'
+        ? `“${t.anchor.quote.length > 60 ? t.anchor.quote.slice(0, 60) + '…' : t.anchor.quote}”`
+        : t.anchor && t.anchor.kind === 'component'
+          ? t.anchor.label || t.anchor.type
+          : '';
     useEffect(() => {
       if (open && textRef.current) textRef.current.focus();
-    }, [open, section]);
+    }, [open, contextLabel]);
 
     const submit = (e) => {
       e.preventDefault();
@@ -702,14 +846,14 @@
           <span class="mono tb-label">comments</span>
           <button id="drawer-close" aria-label="Close comments" onClick=${onClose}>✕</button>
         </header>
-        ${section ? html`<div id="comment-context" class="mono">commenting on § ${title || section}</div>` : null}
+        ${contextLabel ? html`<div id="comment-context" class="mono">commenting on ${contextLabel}</div>` : null}
         <div id="comment-list">
           ${ordered.length === 0
             ? html`<p class="mono" style="color:var(--ink-soft)">No comments yet. Anything you write here is saved locally and read back by the agent.</p>`
             : ordered.map((c) => html`
               <div class="comment-item ${c.resolved ? 'resolved' : ''}">
                 <div class="c-meta">
-                  ${(c.title || c.section) ? html`<span class="c-section">§ ${c.title || c.section}</span>` : null}
+                  ${commentAnchorLabel(c) ? html`<span class="c-section">${commentAnchorLabel(c)}</span>` : null}
                   <span>${new Date(c.createdAt).toLocaleString()}</span>
                   ${c.resolved ? html`<span>resolved</span>` : null}
                 </div>
@@ -742,7 +886,8 @@
     const [comments, setComments] = useState([]);
     const [theme, setTheme] = useState(initialTheme());
     const [conn, setConn] = useState('connecting');
-    const [drawer, setDrawer] = useState({ open: false, section: '', title: '' });
+    // target describes the comment anchor: {section,title} | {anchor} | {} (doc-level)
+    const [drawer, setDrawer] = useState({ open: false, target: {} });
     const [status, setStatus] = useState(null);
 
     const currentRef = useRef(current);
@@ -850,9 +995,17 @@
     }, [status]);
 
     const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
-    const openSection = useCallback((section, title) => setDrawer({ open: true, section, title }), []);
-    const openComments = () => setDrawer({ open: true, section: '', title: '' });
+    const openSection = useCallback((section, title) => setDrawer({ open: true, target: { section, title } }), []);
+    const openComponent = useCallback((anchor) => setDrawer({ open: true, target: { anchor } }), []);
+    const openText = useCallback((anchor) => setDrawer({ open: true, target: { anchor } }), []);
+    const openComments = useCallback(() => setDrawer({ open: true, target: {} }), []);
     const closeDrawer = () => setDrawer((d) => ({ ...d, open: false }));
+
+    // Build a comment payload/entry from the current drawer target + text.
+    const entryFor = (text) => {
+      const t = drawer.target || {};
+      return { text, ...(t.section ? { section: t.section, title: t.title } : {}), ...(t.anchor ? { anchor: t.anchor } : {}) };
+    };
 
     const submitComment = async (text) => {
       const cur = currentRef.current;
@@ -861,12 +1014,12 @@
         await api('/api/comments', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ path: cur, section: drawer.section, title: drawer.title, text }),
+          body: JSON.stringify({ path: cur, ...entryFor(text) }),
         });
         setStatus({ msg: 'Saved. The agent reads comments before its next revision.', tone: 'ok' });
         loadComments(cur);
       } catch {
-        const ok = await copyToClipboard(buildPrompt(cur, [{ section: drawer.section, title: drawer.title, text }]));
+        const ok = await copyToClipboard(buildPrompt(cur, [entryFor(text)]));
         setStatus({
           msg: ok
             ? 'Saving failed, but the prompt was copied — paste it to your agent.'
@@ -879,7 +1032,7 @@
     const copyPrompt = async (draftText) => {
       const cur = currentRef.current;
       const entries = draftText
-        ? [{ section: drawer.section, title: drawer.title, text: draftText }]
+        ? [entryFor(draftText)]
         : comments.filter((c) => !c.resolved);
       if (!entries.length) {
         setStatus({ msg: 'Nothing to copy — write feedback first.', tone: 'warn' });
@@ -897,7 +1050,9 @@
     } else if (doc.error) {
       main = html`<${EmptyContent} message=${`Document not found: ${doc.path}`} />`;
     } else {
-      main = html`<${DocView} doc=${doc} comments=${comments} theme=${theme} onOpenSection=${openSection} />`;
+      main = html`<${DocView} doc=${doc} comments=${comments} theme=${theme}
+        onOpenSection=${openSection} onOpenComponent=${openComponent}
+        onOpenText=${openText} onViewComments=${openComments} />`;
     }
 
     return html`
@@ -907,7 +1062,7 @@
         ${main}
       </main>
       <${CommentDrawer}
-        open=${drawer.open} section=${drawer.section} title=${drawer.title}
+        open=${drawer.open} target=${drawer.target}
         comments=${comments} status=${status}
         onClose=${closeDrawer} onSubmit=${submitComment} onCopy=${copyPrompt} />`;
   }

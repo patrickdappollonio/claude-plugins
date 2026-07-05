@@ -144,22 +144,32 @@ language tag. Untyped fences are auto-detected.
 
 ## Comments / feedback loop
 
-Readers can pin comments to any H2 section (hover the heading) or leave
-document-level comments. Comments are stored server-side in
-`<served-dir>/.visual-docs/comments.json` and exposed at `GET /api/comments`.
+Readers comment three ways: **select any text** to anchor a comment to that
+snippet, hover an H2 heading or a rendered component (diagram, diff, migration,
+API, OpenAPI) to pin one there, or leave a document-level comment. Comments are
+stored in `<served-dir>/.visual-docs/comments.json` and exposed at
+`GET /api/comments` (and the digest at `GET /agent/comments.md`).
 
-Each comment looks like:
+Each comment carries an `anchor` describing what it's attached to — a quoted
+text range, a component, or (for headings) the `section`/`title` fields:
 
 ```json
 {
   "id": "c-…",
   "path": "plan.md",
-  "section": "Rollout",
+  "section": "rollout",
+  "title": "Rollout",
+  "anchor": { "kind": "text", "quote": "token-bucket rate limiter", "prefix": "…", "suffix": "…" },
   "text": "Enable per-region only after the metric exists",
   "createdAt": "2026-07-04T08:00:31.804Z",
   "resolved": false
 }
 ```
+
+`anchor` is `{kind:"text", quote, prefix, suffix}` for a selection,
+`{kind:"component", type, label}` for a diagram/diff/etc, or absent for a
+heading/document comment. The digest at `/agent/comments.md` labels each
+comment by its anchor, so you always know exactly what a comment refers to.
 
 Agent obligations:
 

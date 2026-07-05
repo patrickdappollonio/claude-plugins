@@ -214,6 +214,24 @@ async function readBody(req, limit = 1024 * 1024) {
   });
 }
 
+/** Accept only the anchor shapes the viewer produces, clamped to safe sizes,
+    so a client can't stuff arbitrary data into the store. */
+function sanitizeAnchor(a) {
+  if (!a || typeof a !== 'object') return null;
+  const str = (v, n) => (typeof v === 'string' ? v.slice(0, n) : '');
+  if (a.kind === 'text') {
+    const quote = str(a.quote, 2000);
+    if (!quote) return null;
+    return { kind: 'text', quote, prefix: str(a.prefix, 200), suffix: str(a.suffix, 200) };
+  }
+  if (a.kind === 'component') {
+    const type = str(a.type, 60);
+    if (!type) return null;
+    return { kind: 'component', type, label: str(a.label, 120) || type };
+  }
+  return null;
+}
+
 /** A short human label for what a comment is anchored to (section, quoted text,
     or a component), for the agent-facing markdown digest. */
 function anchorLabel(c) {
@@ -327,6 +345,7 @@ export async function startServer({ dir, port = 0, host = '127.0.0.1', watch: en
             path: typeof payload.path === 'string' ? payload.path : '',
             section: typeof payload.section === 'string' ? payload.section : '',
             title: typeof payload.title === 'string' ? payload.title : '',
+            anchor: sanitizeAnchor(payload.anchor),
             text,
             createdAt: new Date().toISOString(),
             resolved: false,

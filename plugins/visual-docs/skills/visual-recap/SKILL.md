@@ -110,8 +110,10 @@ sleep 1 && grep VISUAL_DOCS_URL "$DIR/.server.log"
 
 Skip the start if a server for `$DIR` is already running (e.g. from a
 visual-plan earlier in the session) — new files just appear in the sidebar.
-Give the user `http://127.0.0.1:<port>/#/<file>.md` and mention: live reload,
-hover a heading to pin a comment, "Copy as prompt" for chat-style feedback.
+Give the user `http://127.0.0.1:<port>/#/<file>.md` and mention: live reload;
+they can **select any text** to comment on that exact snippet, hover a heading
+or a rendered component (diagram, diff, …) to pin a comment there, or use "Copy
+as prompt" for chat-style feedback.
 
 ### 5. Respond to review
 
