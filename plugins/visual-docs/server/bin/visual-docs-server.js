@@ -59,10 +59,24 @@ function pidAlive(pid) {
   }
 }
 
+/** Whether `pid` is actually a visual-docs-server, not just some live process
+    that reused a stale PID — so --stop/--restart never signal an unrelated
+    process. On Linux we confirm via /proc/<pid>/cmdline; elsewhere /proc is
+    absent, so we fall back to a plain existence check. */
+function isOurServer(pid) {
+  if (!pidAlive(pid)) return false;
+  try {
+    const cmd = readFileSync(`/proc/${pid}/cmdline`, 'utf8');
+    return cmd.includes('visual-docs-server');
+  } catch {
+    return true; // /proc unavailable (non-Linux) — can't do better than existence
+  }
+}
+
 /** The lock of a live server for this dir, or null (stale locks are cleared). */
 function liveLock(dir) {
   const lock = readLock(dir);
-  if (lock && pidAlive(lock.pid)) return lock;
+  if (lock && isOurServer(lock.pid)) return lock;
   if (lock) { try { unlinkSync(lockPath(dir)); } catch { /* ignore */ } }
   return null;
 }
@@ -141,10 +155,36 @@ if (existing) {
   }
 }
 
+const startedAt = new Date().toISOString();
+const writeLock = (extra, flag) =>
+  writeFileSync(lockPath(opts.dir), JSON.stringify({ pid: process.pid, startedAt, ...extra }, null, 2) + '\n', flag ? { flag } : undefined);
+
+// Claim this directory ATOMICALLY (O_EXCL) before starting, so two invocations
+// racing for the same dir can't both bind — the loser sees the winner's lock.
+let claimed = false;
+try {
+  mkdirSync(dirname(lockPath(opts.dir)), { recursive: true });
+  writeLock({}, 'wx');
+  claimed = true;
+} catch (err) {
+  if (err && err.code === 'EEXIST') {
+    const other = liveLock(opts.dir);
+    if (other && !restart) {
+      console.log(`Serving ${opts.dir}`);
+      console.log(`VISUAL_DOCS_URL=${other.url}`);
+      console.log('(another process just claimed this directory — already running)');
+      process.exit(0);
+    }
+    if (other) { await stopPid(other.pid); }
+    try { writeLock({}); claimed = true; } catch { /* proceed unmanaged */ }
+  } // any other error: proceed without lifecycle management
+}
+
 let started;
 try {
   started = await startServer(opts);
 } catch (err) {
+  if (claimed) { try { const l = readLock(opts.dir); if (l && l.pid === process.pid) unlinkSync(lockPath(opts.dir)); } catch { /* ignore */ } }
   const reason = err && err.code === 'EADDRINUSE' ? `port ${opts.port} already in use`
     : err && err.code === 'EACCES' ? `permission denied binding ${opts.host}:${opts.port}`
     : (err && err.message) || String(err);
@@ -153,10 +193,9 @@ try {
 }
 const { url, port } = started;
 
-// Record ourselves so future invocations can find/replace/stop this instance.
+// Finalize the claim with the real url/port so future invocations can find us.
 try {
-  mkdirSync(dirname(lockPath(opts.dir)), { recursive: true });
-  writeFileSync(lockPath(opts.dir), JSON.stringify({ pid: process.pid, port, host: opts.host, url, startedAt: new Date().toISOString() }, null, 2) + '\n');
+  writeLock({ port, host: opts.host, url });
 } catch { /* non-fatal: lifecycle shortcuts just won't be available */ }
 
 let cleaned = false;

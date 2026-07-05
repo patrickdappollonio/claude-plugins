@@ -177,15 +177,21 @@ async function verify() {
   const pinned = new Map(ASSETS.map((a) => [a.file, a.integrity]));
   let failed = 0;
   for (const a of manifest.assets) {
-    // Anchor to the hash pinned in THIS script's source when present — that
-    // value is code-reviewed independently of the generated manifest, so a
-    // tampered download + regenerated manifest can't pass silently.
-    const anchor = pinned.get(a.file) || a.integrity;
+    // Anchor to the hash pinned in THIS script's source — that value is
+    // code-reviewed independently of the generated manifest, so a tampered
+    // download + regenerated manifest can't pass silently. A manifest entry with
+    // no source pin is a FAILURE (not a warning): it could only ever compare
+    // against itself.
     const anchoredToSource = pinned.has(a.file);
+    if (!anchoredToSource) {
+      console.log(`FAIL ${a.file} (no source-pinned integrity in ASSETS — cannot verify)`);
+      failed++;
+      continue;
+    }
     try {
       const buf = await fs.readFile(join(VENDOR_DIR, a.file));
-      const ok = sha384(buf) === anchor;
-      console.log(`${ok ? 'ok  ' : 'FAIL'} ${a.file}${anchoredToSource ? '' : ' (manifest-only; add a source-pinned integrity)'}`);
+      const ok = sha384(buf) === pinned.get(a.file);
+      console.log(`${ok ? 'ok  ' : 'FAIL'} ${a.file}`);
       if (!ok) failed++;
     } catch {
       console.log(`MISS ${a.file}`);
@@ -200,6 +206,14 @@ async function verify() {
     if (!(file in inIndex)) continue; // CSS/JS not referenced in the shell is fine
     if (inIndex[file] !== hash) {
       console.log(`FAIL ${file} (index.html integrity ${inIndex[file] ? 'mismatched' : 'missing'})`);
+      failed++;
+    }
+  }
+  // And any vendored tag in the shell MUST carry an integrity attribute at all —
+  // a new tag added without SRI (or for a non-ASSETS file) must not slip through.
+  for (const file of new Set([...html.matchAll(/\/assets\/vendor\/([^"]+)"/g)].map((m) => m[1]))) {
+    if (!(file in inIndex)) {
+      console.log(`FAIL ${file} (index.html tag has no integrity attribute)`);
       failed++;
     }
   }
@@ -230,7 +244,13 @@ async function update() {
   await fs.mkdir(VENDOR_DIR, { recursive: true });
   const entries = [];
   for (const a of ASSETS) {
-    const res = await fetch(a.url);
+    let res;
+    try {
+      res = await fetch(a.url, { signal: AbortSignal.timeout(30000) });
+    } catch (err) {
+      console.error(`FAIL ${a.url}: ${err.name === 'TimeoutError' ? 'timed out after 30s' : err.message}`);
+      process.exit(1);
+    }
     if (!res.ok) {
       console.error(`FAIL ${a.url}: ${res.status}`);
       process.exit(1);

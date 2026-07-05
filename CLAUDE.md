@@ -62,8 +62,9 @@ type (headings, paragraphs, lists, code, components).
 
 ## Gotchas (things that have bitten us)
 
-- **DOMPurify drops an attribute whose *value* contains markup** (`<`, `-->`).
-  Fence sources are therefore **base64-encoded** into `data-*` attrs
+- **DOMPurify's mXSS guard strips an attribute value that looks like it closes a
+  comment/tag** (matches `/((--!?|])>)|<\/(style|title)/i` — e.g. mermaid's
+  `-->`). Fence sources are therefore **base64-encoded** into `data-*` attrs
   (`blockAttrs`/`encodeSrc`). Don't put raw source in a data attribute.
 - DOMPurify keeps inline `<svg>`, `<form>`/`<input>`, and `style` — verified.
   Icons are inline SVG (`ICON` map), never emoji (emoji render inconsistently).

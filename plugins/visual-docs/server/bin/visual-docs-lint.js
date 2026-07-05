@@ -17,12 +17,16 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
+// Keep in sync with the fence dispatch in assets/app.js (renderCodeFence): a new
+// structured fence there needs adding here (and to NEEDS_INTENT if it wants an
+// intent line) or the linter won't validate it.
 const STRUCTURED = new Set([
   'diff', 'patch', 'migration', 'sql-migration', 'db-migration',
   'api', 'http', 'openapi', 'swagger', 'filetree', 'files', 'file-tree',
   'mermaid', 'nomnoml', 'question', 'ask',
 ]);
 const ADMONITIONS = new Set(['NOTE', 'TIP', 'IMPORTANT', 'WARNING', 'CAUTION']);
+const SECRET_RE = /\b(sk-[A-Za-z0-9]{16,}|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{20,})\b/;
 // Fences that should be introduced by a one-sentence intent line. Questions are
 // self-describing (the prompt is the intent), so they're excluded.
 const NEEDS_INTENT = new Set([
@@ -63,7 +67,14 @@ function lintText(text, file) {
       const start = i;
       const body = [];
       i++;
-      while (i < lines.length && !/^```\s*$/.test(lines[i])) { body.push(lines[i]); i++; }
+      while (i < lines.length && !/^```\s*$/.test(lines[i])) {
+        // Secrets pasted inside a fence (curl examples, env vars) are the most
+        // likely place — scan body lines too, not just prose.
+        const s = lines[i].match(SECRET_RE);
+        if (s) add(i + 1, 'warn', `Possible unredacted secret ("${s[0].slice(0, 10)}…") — redact as <redacted> or sk-•••.`);
+        body.push(lines[i]);
+        i++;
+      }
       if (i >= lines.length) { add(start + 1, 'error', 'Unclosed code fence.'); break; }
 
       if (STRUCTURED.has(lang)) {
@@ -90,7 +101,7 @@ function lintText(text, file) {
       add(i + 1, 'warn', `Unknown admonition [!${am[1]}] — use NOTE, TIP, IMPORTANT, WARNING, or CAUTION.`);
     }
     // obvious unredacted secrets
-    const sec = lines[i].match(/\b(sk-[A-Za-z0-9]{16,}|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{20,})\b/);
+    const sec = lines[i].match(SECRET_RE);
     if (sec) add(i + 1, 'warn', `Possible unredacted secret ("${sec[0].slice(0, 10)}…") — redact as <redacted> or sk-•••.`);
 
     i++;

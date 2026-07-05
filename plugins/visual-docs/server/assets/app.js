@@ -20,7 +20,6 @@
 
   const ICON = {
     comment: svgIcon('<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'),
-    edit: svgIcon('<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/>'),
     sun: svgIcon('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'),
     moon: svgIcon('<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>'),
     chevronLeft: svgIcon('<polyline points="15 6 9 12 15 18"/>'),
@@ -56,8 +55,9 @@
   }
 
   // Fence sources travel to hydration inside data-* attributes. They're stored
-  // base64-encoded because DOMPurify drops an attribute whose value contains
-  // markup-like content (e.g. mermaid's `<-->`); base64 is always attribute-safe.
+  // base64-encoded because DOMPurify's mXSS guard strips an attribute value that
+  // looks like it closes a comment/tag (matches /((--!?|])>)|<\/(style|title)/i)
+  // — mermaid source commonly contains `-->` arrows; base64 is always attr-safe.
   function encodeSrc(s) {
     const bytes = new TextEncoder().encode(s);
     let bin = '';
@@ -91,9 +91,18 @@
     return slugify(c.section || c.title || '');
   }
 
+  // First real H1, skipping any `#` line inside a fenced code block (mirrors the
+  // server's firstH1 and the linter's inFence tracking).
   function firstH1Text(md) {
-    const m = (md || '').match(/^#\s+(.+)$/m);
-    return m ? m[1].trim() : null;
+    let inFence = false;
+    for (const line of (md || '').split('\n')) {
+      if (/^```/.test(line)) { inFence = !inFence; continue; }
+      if (!inFence) {
+        const m = line.match(/^#\s+(.+)$/);
+        if (m) return m[1].trim();
+      }
+    }
+    return null;
   }
 
   /** Stable short id for a component, derived from its source (FNV-1a → base36).
@@ -113,8 +122,8 @@
 
   /** First non-empty line of a source, trimmed and clamped — a human/agent-
       readable hint for locating a component in the markdown. Angle brackets are
-      stripped so the value stays safe in an attribute (DOMPurify drops
-      attributes whose value contains markup-like content). */
+      stripped so the value can't trip DOMPurify's mXSS attribute guard (which
+      strips values that look like they close a comment/tag). */
   function blockHint(code) {
     const line = (code.split('\n').find((l) => l.trim()) || '').trim().replace(/[<>]/g, '');
     return line.length > 50 ? line.slice(0, 50) + '…' : line;
@@ -128,12 +137,24 @@
 
   async function api(path, opts) {
     const res = await fetch(path, opts);
-    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+    if (!res.ok) {
+      // Surface the server's specific reason ({error: "..."}) so callers can show
+      // it, instead of a bare status the user can't act on.
+      let serverMessage = '';
+      try { serverMessage = (await res.json()).error || ''; } catch { /* no JSON body */ }
+      const err = new Error(serverMessage || `${res.status} ${res.statusText}`);
+      err.status = res.status;
+      err.serverMessage = serverMessage;
+      throw err;
+    }
     return res.json();
   }
 
   /* ---------- custom fence renderers ---------- */
 
+  // NOTE: the set of structured fence languages dispatched below is mirrored in
+  // bin/visual-docs-lint.js (STRUCTURED / NEEDS_INTENT). Adding a fence type here
+  // means adding it there too, or the linter won't validate it.
   function renderCodeFence(code, lang) {
     const language = (lang || '').trim().toLowerCase();
 
@@ -434,7 +455,7 @@
   function renderApiFence(code) {
     const { request, response } = parseApiExchange(code);
     if (!request.startLine && !response.startLine) {
-      return `<div class="codewrap"><span class="lang-tag">api</span><pre><code class="hljs">${escapeHTML(code)}</code></pre></div>`;
+      return `<div class="codewrap" ${blockAttrs(code)}><span class="lang-tag">api</span><pre><code class="hljs">${escapeHTML(code)}</code></pre></div>`;
     }
     return `<div class="api-block" ${blockAttrs(code)}>${renderApiHalf('request', request)}${renderApiHalf('response', response)}</div>`;
   }
@@ -516,7 +537,7 @@
   function renderOpenApiFence(code) {
     const spec = parseOpenApiSpec(code);
     if (!spec || typeof spec !== 'object' || !spec.paths) {
-      return `<div class="codewrap"><span class="lang-tag">openapi</span><pre><code class="hljs">${escapeHTML(code)}</code></pre></div>`;
+      return `<div class="codewrap" ${blockAttrs(code)}><span class="lang-tag">openapi</span><pre><code class="hljs">${escapeHTML(code)}</code></pre></div>`;
     }
     const title = spec.info?.title || 'API';
     const version = spec.info?.version ? ` · v${spec.info.version}` : '';
@@ -679,7 +700,7 @@
   function renderQuestionFence(code) {
     const { question, options, multiple, description } = parseQuestion(code);
     if (!question) {
-      return `<div class="codewrap"><span class="lang-tag">question</span><pre><code class="hljs">${escapeHTML(code)}</code></pre></div>`;
+      return `<div class="codewrap" ${blockAttrs(code)}><span class="lang-tag">question</span><pre><code class="hljs">${escapeHTML(code)}</code></pre></div>`;
     }
     const type = multiple ? 'checkbox' : 'radio';
     // value stays the plain option text (that's the answer we store); the visible
@@ -716,9 +737,11 @@
     }
     const renderer = new window.marked.Renderer();
     renderer.code = (code, infostring) => {
-      // marked v12/v13 call renderer.code(code, infostring) by default; the
-      // token-object signature is opt-in in v13 (useNewRenderer) and mandatory
-      // in v14+. Handle both so a future vendor bump doesn't break rendering.
+      // Vendored marked is v12.0.2, which calls renderer.code(code, infostring).
+      // For a Renderer instance passed as options.renderer (this wiring), v13+
+      // already calls renderer.code(token) — a single token object — unconditionally
+      // (useNewRenderer only affects renderers registered via marked.use()). Handle
+      // both forms so a future vendor bump doesn't break rendering.
       if (typeof code === 'object' && code !== null) {
         return renderCodeFence(code.text || '', code.lang || '');
       }
@@ -744,6 +767,20 @@
     }
     // DOMPurify is vendored and same-origin, so this is effectively unreachable;
     // if it ever fails to load, show escaped source rather than execute markup.
+    return `<pre>${escapeHTML(dirty)}</pre>`;
+  }
+
+  // SVG-preserving sanitize for the diagram renderers (mermaid/nomnoml). The
+  // libraries escape their own output (and mermaid runs securityLevel:'strict'),
+  // but their result is injected via innerHTML, so this is a second line of
+  // defense that keeps SVG/foreignObject/style intact.
+  function sanitizeSvg(dirty) {
+    if (window.DOMPurify) {
+      return window.DOMPurify.sanitize(dirty, {
+        USE_PROFILES: { svg: true, svgFilters: true, html: true },
+        ADD_TAGS: ['foreignObject', 'style'],
+      });
+    }
     return `<pre>${escapeHTML(dirty)}</pre>`;
   }
 
@@ -777,7 +814,7 @@
       try {
         const { svg } = await window.mermaid.render(id, src);
         if (isCancelled()) return;
-        b.innerHTML = svg;
+        b.innerHTML = sanitizeSvg(svg);
       } catch (err) {
         document.getElementById(`d${id}`)?.remove(); // mermaid leaves an error node behind
         b.innerHTML = `<div class="render-error">mermaid: ${escapeHTML(String(err.message || err))}\n\n${escapeHTML(src)}</div>`;
@@ -793,7 +830,7 @@
         continue;
       }
       try {
-        b.innerHTML = window.nomnoml.renderSvg(src);
+        b.innerHTML = sanitizeSvg(window.nomnoml.renderSvg(src));
         const svg = b.querySelector('svg');
         if (svg) { svg.removeAttribute('width'); svg.removeAttribute('height'); svg.style.maxWidth = '100%'; }
       } catch (err) {
@@ -809,12 +846,12 @@
       const draw = (mode) => {
         if (window.Diff2Html) {
           try {
-            body.innerHTML = window.Diff2Html.html(normalizeDiff(src), {
+            body.innerHTML = sanitizeHTML(window.Diff2Html.html(normalizeDiff(src), {
               drawFileList: false,
               matching: 'lines',
               outputFormat: mode,
               colorScheme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light',
-            });
+            }));
             return;
           } catch { /* fall through */ }
         }
@@ -940,11 +977,16 @@
   // Derived from COMPONENTS so there's one source of truth for the block set.
   const COMPONENT_SELECTOR = COMPONENTS.map(([sel]) => sel).join(', ');
 
-  // Components whose rendering *transforms* the content (a diagram, an
-  // interactive explorer, a table) — text selection inside them is meaningless,
-  // so they're whole-block-only. The rest (diff, migration, api, plain code)
-  // keep their text readable, so selecting a line to comment on it IS allowed.
-  const OPAQUE_SELECTOR = '.mermaid-block, .nomnoml-block, .openapi-block, .filetree-block, .question-block';
+  // Components whose text stays readable, so selecting a line inside them to
+  // comment on it IS allowed. Everything else in COMPONENTS transforms its
+  // content (a diagram, an interactive explorer, a table) and is whole-block-only
+  // — deriving OPAQUE_SELECTOR from COMPONENTS means a NEW component type defaults
+  // to opaque (the safe choice) until it's explicitly listed as text-preserving.
+  const TEXT_PRESERVING = new Set(['.diff-block', '.migration-block', '.api-block']);
+  const OPAQUE_SELECTOR = [
+    ...COMPONENTS.map(([sel]) => sel).filter((sel) => !TEXT_PRESERVING.has(sel)),
+    '.question-block', // interactive answer form, not a COMPONENTS entry
+  ].join(', ');
 
   function isInComponent(node) {
     const el = node && (node.nodeType === 3 ? node.parentElement : node);
@@ -980,6 +1022,12 @@
       + (count ? `<span class="fcb-count">${count}</span>` : '');
   }
 
+  /** Build a component comment anchor from an element — the single shape used by
+      every commentable block (COMPONENTS types and the code-block special case). */
+  function makeComponentAnchor(type, label, el) {
+    return { kind: 'component', type, label, id: el.dataset.blockId || '', hint: el.dataset.blockHint || '' };
+  }
+
   /** Resolve a component block to its comment anchor (type + ordinal label +
       stable id + hint), matching the "commented on component X" behaviour. */
   function componentAnchorFor(container, el) {
@@ -988,7 +1036,7 @@
       const blocks = [...container.querySelectorAll(sel)];
       const i = blocks.indexOf(el);
       const label = blocks.length > 1 ? `${typeName} #${i + 1}` : typeName;
-      return { kind: 'component', type: typeName, label, id: el.dataset.blockId || '', hint: el.dataset.blockHint || '' };
+      return makeComponentAnchor(typeName, label, el);
     }
     return null;
   }
@@ -998,14 +1046,17 @@
       first. Quotes that span multiple nodes are left unhighlighted (the comment
       still shows in the drawer). */
   function applyTextHighlights(container, comments, onOpen) {
-    container.querySelectorAll('mark.comment-highlight').forEach((m) => {
+    const existing = container.querySelectorAll('mark.comment-highlight');
+    const active = comments.filter((c) => c.anchor && c.anchor.kind === 'text' && commentStatus(c) !== 'resolved');
+    // Nothing to draw and nothing drawn before — skip the whole-document tree walk.
+    if (!active.length && !existing.length) return;
+    existing.forEach((m) => {
       const parent = m.parentNode;
       while (m.firstChild) parent.insertBefore(m.firstChild, m);
       parent.removeChild(m);
       parent.normalize();
     });
-    for (const c of comments) {
-      if (!c.anchor || c.anchor.kind !== 'text' || commentStatus(c) === 'resolved') continue;
+    for (const c of active) {
       const best = bestQuoteMatch(container, c.anchor);
       if (!best) continue;
       try {
@@ -1238,24 +1289,26 @@
       // button is the affordance. The cancel flag stops a stale async mermaid
       // render from touching a doc/theme that has moved on.
       markCommentables(el);
+      // Draw comment highlights/answered-state as the LAST step of the rebuild,
+      // so this doesn't depend on effect declaration order — the sibling effect
+      // below only handles later comment-set changes.
+      applyTextHighlights(el, comments, onViewComments);
       hydrateMermaid(el, () => cancelled);
       const changedDoc = lastPath.current !== doc.path;
       lastPath.current = doc.path;
       window.scrollTo(0, changedDoc ? 0 : y);
       return () => { cancelled = true; };
-    }, [doc, theme, raw, onAnswer]);
+    }, [doc, theme, raw, onAnswer, onViewComments]);
 
-    // Text highlights + answered-question state: re-applied whenever the comment
-    // set changes.
+    // Re-apply highlights + answered state when the comment set changes (the doc
+    // body is untouched here — the sibling effect above already drew them on
+    // doc/theme/raw change).
     useEffect(() => {
       const el = ref.current;
       if (!el || raw) return; // nothing to mark over raw source
       applyTextHighlights(el, comments, onViewComments);
       markAnsweredQuestions(el, comments);
-      // doc/theme/raw are dependencies (not all read here) only so this effect
-      // re-runs AFTER the sibling effect rebuilds el.innerHTML — Preact runs
-      // effects in declaration order. Don't drop them.
-    }, [doc, comments, theme, raw, onViewComments]);
+    }, [comments, raw, onViewComments]);
 
     // Notion-style gutter comment button: a single button that follows the
     // hovered heading or component into the document's right margin, labelled
@@ -1318,7 +1371,7 @@
           const blocks = [...content.querySelectorAll('.codewrap')];
           const i = blocks.indexOf(el);
           const lbl = blocks.length > 1 ? `code block #${i + 1}` : 'code block';
-          const anchor = { kind: 'component', type: 'code block', label: lbl, id: el.dataset.blockId || '', hint: el.dataset.blockHint || '' };
+          const anchor = makeComponentAnchor('code block', lbl, el);
           count = countComponent(comments, anchor.id);
           label = `Comment on ${lbl}`;
           action = () => onOpenComponent(anchor);
@@ -1560,8 +1613,9 @@
         setDocs(docs);
         return docs;
       } catch {
-        setDocs([]);
-        return [];
+        // Keep the last-known list rather than blanking the sidebar — a failed
+        // refresh (e.g. during --restart) shouldn't look like an empty project.
+        return null;
       }
     }, []);
 
@@ -1602,8 +1656,9 @@
         try {
           const d = await api(`/api/doc?path=${encodeURIComponent(current)}`);
           if (!cancelled) setDoc(d);
-        } catch {
-          if (!cancelled) setDoc({ error: true, path: current });
+        } catch (err) {
+          // Distinguish a real 404 from a server/network failure.
+          if (!cancelled) setDoc({ error: true, path: current, missing: err && err.status === 404 });
         }
       })();
       loadComments(current);
@@ -1692,7 +1747,11 @@
         });
         setStatus({ msg: 'Answer sent — the agent reads it before its next revision.', tone: 'ok' });
         loadComments(cur);
-      } catch {
+      } catch (err) {
+        if (err && err.status >= 400 && err.status < 500 && err.serverMessage) {
+          setStatus({ msg: err.serverMessage, tone: 'warn' });
+          return;
+        }
         const ok = await copyToClipboard(buildPrompt(cur, [{ text, anchor, line }]));
         setStatus({ msg: ok ? 'Saving failed, but the answer was copied — paste it to your agent.' : 'Saving failed and clipboard is unavailable.', tone: 'warn' });
       }
@@ -1724,7 +1783,13 @@
         });
         setStatus({ msg: 'Saved. The agent reads comments before its next revision.', tone: 'ok' });
         loadComments(cur);
-      } catch {
+      } catch (err) {
+        // A 4xx is a validation problem (too long, bad anchor…) — show the reason
+        // rather than pretending the message was lost to a failure.
+        if (err && err.status >= 400 && err.status < 500 && err.serverMessage) {
+          setStatus({ msg: err.serverMessage, tone: 'warn' });
+          return;
+        }
         const ok = await copyToClipboard(buildPrompt(cur, [entryFor(text)]));
         setStatus({
           msg: ok
@@ -1756,7 +1821,9 @@
     if (!doc) {
       main = html`<${EmptyContent} message="No document selected." detail="Pick a document from the sidebar, or write a markdown file into the served directory and it will appear here." />`;
     } else if (doc.error) {
-      main = html`<${EmptyContent} message=${`Document not found: ${doc.path}`} />`;
+      main = doc.missing
+        ? html`<${EmptyContent} message=${`Document not found: ${doc.path}`} />`
+        : html`<${EmptyContent} message=${`Couldn't load ${doc.path}`} detail="The server returned an error or is unreachable. Check that it's still running, then reload." />`;
     } else {
       main = html`<${DocView} doc=${doc} comments=${comments} theme=${theme} raw=${raw}
         onOpenSection=${openSection} onOpenComponent=${openComponent}

@@ -16,8 +16,9 @@
   --danger-soft: #fbe9e7;
   --warn: #9a6700;
   --warn-soft: #fff3d6;
-  /* Native OS fonts only — no web-font downloads. system-ui resolves to San
-     Francisco (macOS/iOS), Segoe UI (Windows), Cantarell/Ubuntu/Noto (Linux). */
+  /* Native OS fonts only — no web-font downloads. system-ui is the OS UI font:
+     San Francisco (macOS/iOS), Segoe UI (Windows), and on Linux whatever the
+     desktop environment sets — commonly Cantarell, Ubuntu, or Noto Sans. */
   --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Charter, Georgia, "Times New Roman", serif;
   --sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   --mono: ui-monospace, "SF Mono", "SFMono-Regular", Menlo, "Cascadia Mono", Consolas, "Liberation Mono", "DejaVu Sans Mono", monospace;

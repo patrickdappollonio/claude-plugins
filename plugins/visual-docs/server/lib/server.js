@@ -2,6 +2,7 @@ import http from 'node:http';
 import { promises as fs, watch } from 'node:fs';
 import { join, resolve, relative, extname, dirname, sep, isAbsolute, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
 
 const ASSETS_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'assets');
 
@@ -44,8 +45,9 @@ function sniffImage(buf) {
   }
   if (buf.length >= 12 && buf.toString('latin1', 0, 4) === 'RIFF' && buf.toString('latin1', 8, 12) === 'WEBP') return 'image/webp';
   if (buf.length >= 12 && buf.toString('latin1', 4, 8) === 'ftyp' && /avif|avis/.test(buf.toString('latin1', 8, 12))) return 'image/avif';
-  // BMP: "BM" + a 14-byte header whose 4-byte reserved field is zero — more than
-  // the 2-byte magic so an arbitrary file starting with "BM" isn't accepted.
+  // BMP: "BM" + the two reserved fields (bfReserved1/bfReserved2, bytes 6-9, both
+  // must be zero — read here as one uint32) — more than the 2-byte magic so an
+  // arbitrary file starting with "BM" isn't accepted.
   if (buf.length >= 14 && buf[0] === 0x42 && buf[1] === 0x4d && buf.readUInt32LE(6) === 0) return 'image/bmp';
   if (buf.length >= 4 && buf[0] === 0x00 && buf[1] === 0x00 && buf[2] === 0x01 && buf[3] === 0x00) return 'image/x-icon';
   // SVG is XML text; allow an optional XML declaration, DOCTYPE, and comments
@@ -59,6 +61,9 @@ function sniffImage(buf) {
 const MAX_COMMENT_LEN = 8000;
 const MAX_COMMENTS = 2000;
 const MAX_SSE_CLIENTS = 64;
+// A single markdown doc is read whole into memory + JSON; cap it so a stray huge
+// file can't balloon the response.
+const MAX_DOC_BYTES = 8 * 1024 * 1024;
 
 function isInside(baseReal, p) {
   const rel = relative(baseReal, p);
@@ -103,7 +108,36 @@ async function resolveServable(baseReal, relPath, exts) {
     return null;
   }
   if (!isInside(baseReal, real)) return null;
+  // Re-check the RESOLVED path: a symlink with a non-hidden name could point at a
+  // dotfile or ignored dir (e.g. .visual-docs, .git) that the lexical check on the
+  // requested path could not see.
+  if (hasHiddenSegment(baseReal, real)) return null;
   return real;
+}
+
+/** First real H1 title, skipping any `#` line inside a fenced code block. */
+function firstH1(text) {
+  let inFence = false;
+  for (const line of text.split('\n')) {
+    if (/^```/.test(line)) { inFence = !inFence; continue; }
+    if (!inFence) {
+      const m = line.match(/^#\s+(.+)$/);
+      if (m) return m[1].trim();
+    }
+  }
+  return null;
+}
+
+/** Read only the first `bytes` of a file (enough to find the H1) instead of the whole thing. */
+async function readHead(file, bytes = 8192) {
+  const fh = await fs.open(file, 'r');
+  try {
+    const buf = Buffer.alloc(bytes);
+    const { bytesRead } = await fh.read(buf, 0, bytes, 0);
+    return buf.subarray(0, bytesRead).toString('utf8');
+  } finally {
+    await fh.close();
+  }
 }
 
 async function serveStatic(res, baseReal, relPath, exts, { verifyImage = false } = {}) {
@@ -147,11 +181,10 @@ async function listMarkdownFiles(root, dir = root, out = []) {
       // One unreadable/just-deleted file must not sink the whole listing.
       try {
         const stat = await fs.stat(full);
-        const content = await fs.readFile(full, 'utf8');
-        const m = content.match(/^#\s+(.+)$/m);
+        const head = await readHead(full);
         out.push({
           path: relative(root, full).split(sep).join('/'),
-          title: m ? m[1].trim() : e.name,
+          title: firstH1(head) || e.name,
           mtime: stat.mtimeMs,
         });
       } catch {
@@ -167,28 +200,61 @@ function commentsFile(root) {
   return join(root, '.visual-docs', 'comments.json');
 }
 
-async function readComments(root) {
-  const file = commentsFile(root);
-  try {
-    return JSON.parse(await fs.readFile(file, 'utf8'));
-  } catch (err) {
-    // ENOENT is normal (no comments yet). A parse error means the file is
-    // corrupt — preserve it for recovery instead of silently overwriting.
-    if (err && err.code !== 'ENOENT') {
-      try { await fs.rename(file, `${file}.corrupt-${Date.now()}`); } catch { /* best effort */ }
-    }
-    return { comments: [] };
-  }
+/** Move an unreadable comments file aside so it isn't silently overwritten, and
+    say so on stderr (the operator's terminal) instead of vanishing the data. */
+async function quarantineComments(file, why) {
+  const dest = `${file}.corrupt-${Date.now()}`;
+  try { await fs.rename(file, dest); } catch { /* best effort */ }
+  console.error(`[visual-docs] comments store ${file} was unreadable (${why}); quarantined to ${dest}, starting from empty.`);
+  return { data: { comments: [] }, hash: null };
 }
 
-async function writeComments(root, data) {
+/** Read + validate the comment store, returning the parsed data and a hash of
+    the on-disk bytes (null if absent) for optimistic-concurrency writes. A file
+    that is missing is normal; one that is unparseable OR the wrong shape (a bad
+    hand-edit) is quarantined and treated as empty. */
+async function readCommentsRaw(root) {
+  const file = commentsFile(root);
+  let raw;
+  try {
+    raw = await fs.readFile(file, 'utf8');
+  } catch (err) {
+    if (err && err.code !== 'ENOENT') return quarantineComments(file, err.message);
+    return { data: { comments: [] }, hash: null };
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return quarantineComments(file, 'invalid JSON');
+  }
+  if (!parsed || !Array.isArray(parsed.comments)) {
+    return quarantineComments(file, 'unexpected shape (no comments array)');
+  }
+  return { data: parsed, hash: createHash('sha1').update(raw).digest('hex') };
+}
+
+async function readComments(root) {
+  return (await readCommentsRaw(root)).data;
+}
+
+/** Atomically replace the comment store. When `expectedHash` is given, bail
+    (return false) if the file changed since it was read — so a server write can't
+    clobber a concurrent hand-edit by the agent, and vice-versa. */
+async function writeComments(root, data, expectedHash) {
   const file = commentsFile(root);
   await fs.mkdir(dirname(file), { recursive: true });
+  if (expectedHash !== undefined) {
+    let currentHash = null;
+    try { currentHash = createHash('sha1').update(await fs.readFile(file, 'utf8')).digest('hex'); } catch { currentHash = null; }
+    if (currentHash !== expectedHash) return false;
+  }
   // Atomic replace: write to a temp file, then rename over the target so a
   // crash mid-write can never truncate the real file.
   const tmp = `${file}.tmp-${process.pid}`;
   await fs.writeFile(tmp, JSON.stringify(data, null, 2) + '\n');
   await fs.rename(tmp, file);
+  return true;
 }
 
 function sendJSON(res, status, obj) {
@@ -255,7 +321,9 @@ function anchorLabel(c) {
 const COMMENT_STATUSES = ['new', 'acknowledged', 'resolved'];
 
 /** A comment's lifecycle state. Prefers an explicit `status`; falls back to the
-    legacy `resolved` boolean so older comments.json files keep working. */
+    legacy `resolved` boolean so older comments.json files keep working.
+    NOTE: duplicated in assets/app.js (commentStatus) — no shared module across
+    the Node/browser split; keep the two in sync. */
 function commentStatus(c) {
   if (c && COMMENT_STATUSES.includes(c.status)) return c.status;
   return c && c.resolved ? 'resolved' : 'new';
@@ -283,7 +351,7 @@ function renderCommentsMarkdown(comments, scopePath) {
     out += `\n## ${p}\n`;
     for (const c of list) {
       const loc = `${p}${c.line ? `:${c.line}` : ''}`;
-      out += `\n- \`${loc}\` — [${commentStatus(c)}] on ${anchorLabel(c)}\n  > ${c.text.replace(/\n+/g, ' ')}`;
+      out += `\n- \`${loc}\` — [${commentStatus(c)}] on ${anchorLabel(c)}\n  > ${String(c.text || '').replace(/\n+/g, ' ')}`;
     }
     out += '\n';
   }
@@ -332,8 +400,9 @@ export async function startServer({ dir, port = 0, host = '127.0.0.1', watch: en
         const abs = await resolveServable(rootReal, p, null);
         if (!abs) return sendJSON(res, 404, { error: 'not found' });
         try {
-          const content = await fs.readFile(abs, 'utf8');
           const stat = await fs.stat(abs);
+          if (stat.size > MAX_DOC_BYTES) return sendJSON(res, 413, { error: `document exceeds ${MAX_DOC_BYTES} bytes` });
+          const content = await fs.readFile(abs, 'utf8');
           return sendJSON(res, 200, { path: p, content, mtime: stat.mtimeMs });
         } catch {
           return sendJSON(res, 404, { error: 'not found' });
@@ -355,34 +424,45 @@ export async function startServer({ dir, port = 0, host = '127.0.0.1', watch: en
         } catch {
           return sendJSON(res, 400, { error: 'invalid JSON body' });
         }
+        if (!payload || typeof payload !== 'object') return sendJSON(res, 400, { error: 'body must be a JSON object' });
         const text = typeof payload.text === 'string' ? payload.text.trim() : '';
         if (!text) return sendJSON(res, 400, { error: 'text is required' });
         if (text.length > MAX_COMMENT_LEN) return sendJSON(res, 413, { error: `text exceeds ${MAX_COMMENT_LEN} chars` });
+        // A comment is anchored to exactly one thing. A text/component anchor
+        // wins; only a section/heading comment carries section/title.
+        const anchor = sanitizeAnchor(payload.anchor);
+        // An anchor was sent but didn't survive validation — reject rather than
+        // silently degrade the comment to document-level.
+        if (payload.anchor && typeof payload.anchor === 'object' && !anchor) {
+          return sendJSON(res, 400, { error: 'invalid anchor' });
+        }
+        const clamp = (v, n) => (typeof v === 'string' ? v.slice(0, n) : '');
+        const comment = {
+          id: `c-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          path: clamp(payload.path, 1024),
+          section: anchor ? '' : clamp(payload.section, 300),
+          title: anchor ? '' : clamp(payload.title, 300),
+          anchor,
+          // Best-effort 1-based source line the client resolved from the doc,
+          // so the digest can point the agent at path:line.
+          line: Number.isInteger(payload.line) && payload.line > 0 ? payload.line : null,
+          text,
+          createdAt: new Date().toISOString(),
+          status: 'new',
+          resolved: false,
+        };
 
         const result = await withComments(async () => {
-          const data = await readComments(root);
-          if (data.comments.length >= MAX_COMMENTS) return { error: 'comment limit reached' };
-          // A comment is anchored to exactly one thing. A text/component anchor
-          // wins; only a section/heading comment carries section/title. This
-          // keeps every consumer (pin counts, labels, digest) in agreement.
-          const anchor = sanitizeAnchor(payload.anchor);
-          const comment = {
-            id: `c-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-            path: typeof payload.path === 'string' ? payload.path : '',
-            section: anchor ? '' : (typeof payload.section === 'string' ? payload.section : ''),
-            title: anchor ? '' : (typeof payload.title === 'string' ? payload.title : ''),
-            anchor,
-            // Best-effort 1-based source line the client resolved from the doc,
-            // so the digest can point the agent at path:line.
-            line: Number.isInteger(payload.line) && payload.line > 0 ? payload.line : null,
-            text,
-            createdAt: new Date().toISOString(),
-            status: 'new',
-            resolved: false,
-          };
-          data.comments.push(comment);
-          await writeComments(root, data);
-          return { comment };
+          // Optimistic-concurrency retry: if the file changed under us (e.g. the
+          // agent hand-edited a status), re-read and re-append instead of
+          // clobbering that edit.
+          for (let attempt = 0; attempt < 2; attempt++) {
+            const { data, hash } = await readCommentsRaw(root);
+            if (data.comments.length >= MAX_COMMENTS) return { error: 'comment limit reached' };
+            data.comments.push(comment);
+            if (await writeComments(root, data, hash)) return { comment };
+          }
+          return { error: 'write conflict — please retry' };
         });
         if (result.error) return sendJSON(res, 409, { error: result.error });
         broadcast({ type: 'comment', path: result.comment.path });
@@ -436,6 +516,9 @@ export async function startServer({ dir, port = 0, host = '127.0.0.1', watch: en
       res.writeHead(405);
       res.end('method not allowed');
     } catch (err) {
+      // Log to the operator's terminal — the 500 body alone is invisible unless
+      // they happen to have DevTools open.
+      console.error(`[visual-docs] request error on ${req.method} ${req.url}:`, err);
       res.writeHead(500, { 'content-type': 'text/plain' });
       res.end(`internal error: ${err.message}`);
     }
@@ -470,7 +553,9 @@ export async function startServer({ dir, port = 0, host = '127.0.0.1', watch: en
     try {
       watch(root, { recursive: true }, onChange);
     } catch {
-      // Recursive watch unsupported on this platform/FS: watch top level only.
+      // Recursive watch unsupported on this platform/FS: watch top level only,
+      // and say so — nested docs will list but won't live-reload.
+      console.warn('[visual-docs] recursive file watching is unavailable here; live-reload only tracks top-level files.');
       watch(root, onChange);
     }
   }
