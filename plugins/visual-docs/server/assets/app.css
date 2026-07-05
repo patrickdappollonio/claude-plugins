@@ -425,25 +425,23 @@ button { font: inherit; cursor: pointer; }
 .ft-table td { padding: 6px 14px; vertical-align: middle; }
 .ft-inner { display: inline-flex; align-items: center; gap: 8px; }
 
-/* Group heading row */
+/* Group heading row — solid band */
 .ft-grouprow td.ft-group {
   font-family: var(--mono);
   font-size: 0.62rem;
   text-transform: uppercase;
   letter-spacing: 0.12em;
   color: var(--ink-soft);
-  padding: 12px 14px 5px;
-  border-bottom: 1px solid var(--line);
+  background: var(--surface-2);
+  padding: 7px 14px;
 }
-.ft-grouprow:first-child td.ft-group { padding-top: 10px; }
 
 /* Directory row */
 .ft-dirrow td.ft-dir { color: var(--ink-soft); font-family: var(--mono); font-size: 0.74rem; padding-top: 7px; padding-bottom: 3px; }
 .ft-dirrow .icon { width: 0.95em; height: 0.95em; color: var(--accent); }
 
-/* File rows — faint separators between consecutive files (no line under a
-   directory row, since dir rows interrupt the .ft-row + .ft-row adjacency). */
-.ft-row + .ft-row td { border-top: 1px solid var(--line); }
+/* Faint separator on every row boundary. */
+.ft-table tr + tr td { border-top: 1px solid var(--line); }
 .ft-row:hover { background: var(--surface-2); }
 .ft-name { white-space: nowrap; width: 1%; }
 .ft-flag {
@@ -589,19 +587,22 @@ button { font: inherit; cursor: pointer; }
 /* Per-component comment affordance (top-right of a rendered block) */
 .component-comment-btn {
   position: absolute;
-  top: 6px;
-  right: 8px;
+  top: 5px;
+  right: 6px;
   z-index: 5;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 6px;
-  padding: 1px 6px;
+  padding: 4px 7px;
   font-size: 0.72rem;
-  line-height: 1.4;
+  line-height: 1;
   cursor: pointer;
   opacity: 0;
   transition: opacity 120ms;
 }
+/* Reserve the top-right corner in header bars so the pin can't overlap their
+   right-aligned controls (diff toggle, migration/openapi badges). */
+.diff-toolbar, .migration-head, .oa-head { padding-right: 44px; }
 .component-block:hover .component-comment-btn,
 .component-comment-btn:focus-visible { opacity: 1; }
 .component-comment-btn:hover { border-color: var(--accent); }

@@ -1106,16 +1106,6 @@
           <span class="mono tb-label">comments</span>
           <button id="drawer-close" title="Collapse comments panel" aria-label="Collapse comments panel" onClick=${onCollapse}><${Icon} name="chevronRight" /></button>
         </header>
-        ${hasTarget ? html`
-          <div id="comment-context">
-            <div class="ctx-body mono">
-              <span class="ctx-lead">commenting on</span>
-              ${pendingQuote
-                ? html`<span class="ctx-quote">“${pendingQuote.length > 90 ? pendingQuote.slice(0, 90) + '…' : pendingQuote}”</span>`
-                : html`<span class="ctx-label">${contextLabel}</span>`}
-            </div>
-            <button type="button" class="ctx-clear" title="Cancel — comment on the document instead" onClick=${onClearTarget}><${Icon} name="close" /></button>
-          </div>` : null}
         <div id="comment-list">
           ${ordered.length === 0
             ? html`<p class="mono" style="color:var(--ink-soft)">No comments yet. Anything you write here is saved locally and read back by the agent.</p>`
@@ -1135,6 +1125,16 @@
             })}
         </div>
         <form id="comment-form" onSubmit=${submit}>
+          ${hasTarget ? html`
+            <div id="comment-context">
+              <div class="ctx-body mono">
+                <span class="ctx-lead">commenting on</span>
+                ${pendingQuote
+                  ? html`<span class="ctx-quote">“${pendingQuote.length > 90 ? pendingQuote.slice(0, 90) + '…' : pendingQuote}”</span>`
+                  : html`<span class="ctx-label">${contextLabel}</span>`}
+              </div>
+              <button type="button" class="ctx-clear" title="Cancel — comment on the document instead" onClick=${onClearTarget}><${Icon} name="close" /></button>
+            </div>` : null}
           <textarea id="comment-text" rows="4" ref=${textRef} placeholder="Leave feedback for the agent… It will read this before revising the document." required></textarea>
           <div class="form-actions">
             <button type="button" id="copy-prompt-btn" class="secondary" title="Copy this feedback as a prompt you can paste to your agent" onClick=${copy}>Copy as prompt</button>
