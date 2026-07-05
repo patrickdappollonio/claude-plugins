@@ -50,6 +50,18 @@ body {
   line-height: 1.6;
 }
 .mono { font-family: var(--mono); font-size: 0.78rem; letter-spacing: 0.02em; }
+
+/* Inline SVG icons: size to 1em of context, inherit color, align with text. */
+.icon { width: 1em; height: 1em; display: block; flex: 0 0 auto; }
+.icon-wrap { display: inline-flex; align-items: center; }
+/* Buttons/labels that pair an icon with text line them up with a small gap. */
+.section-comment-btn, .selection-comment-btn, .api-half-label,
+.migration-pane .pane-label, #theme-toggle, .mig-icon, .side-mark,
+.component-comment-btn, #drawer-close, .ctx-clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
 button { font: inherit; cursor: pointer; }
 
 #app { display: flex; min-height: 100vh; }

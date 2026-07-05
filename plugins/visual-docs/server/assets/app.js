@@ -12,6 +12,32 @@
   const { useState, useEffect, useRef, useCallback } = window.preactHooks;
   const html = window.htm.bind(window.preact.h);
 
+  /* ---------- inline SVG icons (currentColor, theme-aware, render identically
+     across platforms — unlike emoji) ---------- */
+
+  const svgIcon = (inner) =>
+    `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inner}</svg>`;
+
+  const ICON = {
+    comment: svgIcon('<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'),
+    edit: svgIcon('<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/>'),
+    sun: svgIcon('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'),
+    moon: svgIcon('<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>'),
+    chevronLeft: svgIcon('<polyline points="15 6 9 12 15 18"/>'),
+    chevronRight: svgIcon('<polyline points="9 6 15 12 9 18"/>'),
+    close: svgIcon('<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>'),
+    doc: svgIcon('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>'),
+    database: svgIcon('<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>'),
+    exchange: svgIcon('<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>'),
+    arrowRight: svgIcon('<line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>'),
+    arrowLeft: svgIcon('<line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>'),
+    arrowUp: svgIcon('<polyline points="18 15 12 9 6 15"/>'),
+    arrowDown: svgIcon('<polyline points="6 9 12 15 18 9"/>'),
+  };
+
+  // Preact component for icons in htm markup.
+  const Icon = ({ name }) => html`<span class="icon-wrap" dangerouslySetInnerHTML=${{ __html: ICON[name] || '' }}></span>`;
+
   /* ================================================================
      Pure helpers, fence renderers, and hydration — framework-agnostic.
      ================================================================ */
@@ -233,8 +259,8 @@
     let panes = '';
     if (m.up || m.down) {
       panes = `<div class="migration-panes">
-        ${m.up ? pane('up', '▲ up — apply', m.up) : ''}
-        ${m.down ? pane('down', '▼ down — roll back', m.down) : ''}
+        ${m.up ? pane('up', `${ICON.arrowUp} up — apply`, m.up) : ''}
+        ${m.down ? pane('down', `${ICON.arrowDown} down — roll back`, m.down) : ''}
       </div>`;
       if (m.other) {
         panes = `<div class="migration-panes">${pane('up', 'preamble', m.other)}</div>` + panes;
@@ -245,7 +271,7 @@
     const reversible = m.up && m.down ? 'reversible' : 'irreversible';
     return `<div class="migration-block" ${blockAttrs(code)}>
       <div class="migration-head">
-        <span class="mig-icon">⛁</span>
+        <span class="mig-icon">${ICON.database}</span>
         <span class="mig-title">${escapeHTML(m.title)}</span>
         <span class="mig-badge">${reversible}</span>
       </div>
@@ -354,7 +380,7 @@
       ? `<pre class="api-body"><code class="hljs">${highlightBody(part.body)}</code></pre>`
       : '';
     return `<div class="api-half api-${kind}">
-      <div class="api-half-label mono">${kind === 'request' ? '→ request' : '← response'}</div>
+      <div class="api-half-label mono">${kind === 'request' ? `${ICON.arrowRight} request` : `${ICON.arrowLeft} response`}</div>
       <div class="api-startline">${head}</div>
       ${headers}${body}
     </div>`;
@@ -459,7 +485,7 @@
     }
     return `<div class="openapi-block" ${blockAttrs(code)}>
       <div class="oa-head">
-        <span class="mig-icon">⇄</span>
+        <span class="mig-icon">${ICON.exchange}</span>
         <span class="mig-title">${escapeHTML(title)}${escapeHTML(version)}</span>
         <span class="mig-badge">openapi · read-only</span>
       </div>
@@ -603,7 +629,7 @@
       const btn = document.createElement('button');
       btn.className = 'section-comment-btn' + (count > 0 ? ' has-comments' : '');
       btn.type = 'button';
-      btn.textContent = count > 0 ? `✎ ${count}` : '✎ comment';
+      btn.innerHTML = ICON.edit + (count > 0 ? ` ${count}` : ' comment');
       btn.title = `Comment on “${title}”`;
       btn.addEventListener('click', () => onOpen(slug, title));
       h2.appendChild(btn);
@@ -647,7 +673,7 @@
         const btn = document.createElement('button');
         btn.className = 'component-comment-btn';
         btn.type = 'button';
-        btn.textContent = '💬';
+        btn.innerHTML = ICON.comment;
         btn.title = `Comment on this ${typeName}`;
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -773,17 +799,19 @@
      Components
      ================================================================ */
 
-  function Sidebar({ docs, current, conn, onToggleTheme }) {
+  function Sidebar({ docs, current, conn, theme, onToggleTheme }) {
     const connLabel = conn === 'on' ? 'live reload on' : conn === 'off' ? 'reconnecting…' : 'connecting…';
+    // Show the icon of the mode you'll switch TO.
+    const themeIcon = theme === 'dark' ? 'sun' : 'moon';
     return html`
       <aside id="sidebar">
         <header class="side-head">
-          <span class="side-mark">▤</span>
+          <span class="side-mark"><${Icon} name="doc" /></span>
           <div>
             <div class="side-title">Visual Docs</div>
             <div class="side-sub mono">local · live</div>
           </div>
-          <button id="theme-toggle" title="Toggle theme" aria-label="Toggle theme" onClick=${onToggleTheme}>◐</button>
+          <button id="theme-toggle" title=${`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`} aria-label="Toggle theme" onClick=${onToggleTheme}><${Icon} name=${themeIcon} /></button>
         </header>
         <nav id="doc-list" aria-label="Documents">
           ${docs.map((d) => html`
@@ -863,7 +891,7 @@
       if (!el) return;
       const btn = document.createElement('button');
       btn.className = 'selection-comment-btn';
-      btn.textContent = '💬 Comment';
+      btn.innerHTML = `${ICON.comment} Comment`;
       btn.hidden = true;
       document.body.appendChild(btn);
       let captured = null;
@@ -934,7 +962,7 @@
       return html`
         <aside id="comment-drawer" class="collapsed">
           <button class="comment-rail" title="Open comments" aria-label="Open comments" onClick=${onExpand}>
-            <span class="rail-icon">💬</span>
+            <span class="rail-icon"><${Icon} name="comment" /></span>
             ${openCount > 0 ? html`<span class="rail-count">${openCount}</span>` : null}
             <span class="rail-label">comments</span>
           </button>
@@ -955,7 +983,7 @@
       <aside id="comment-drawer">
         <header class="drawer-head">
           <span class="mono tb-label">comments</span>
-          <button id="drawer-close" title="Collapse comments panel" aria-label="Collapse comments panel" onClick=${onCollapse}>›</button>
+          <button id="drawer-close" title="Collapse comments panel" aria-label="Collapse comments panel" onClick=${onCollapse}><${Icon} name="chevronRight" /></button>
         </header>
         ${hasTarget ? html`
           <div id="comment-context">
@@ -965,7 +993,7 @@
                 ? html`<span class="ctx-quote">“${pendingQuote.length > 90 ? pendingQuote.slice(0, 90) + '…' : pendingQuote}”</span>`
                 : html`<span class="ctx-label">${contextLabel}</span>`}
             </div>
-            <button type="button" class="ctx-clear" title="Cancel — comment on the document instead" onClick=${onClearTarget}>✕</button>
+            <button type="button" class="ctx-clear" title="Cancel — comment on the document instead" onClick=${onClearTarget}><${Icon} name="close" /></button>
           </div>` : null}
         <div id="comment-list">
           ${ordered.length === 0
@@ -1189,7 +1217,7 @@
     }
 
     return html`
-      <${Sidebar} docs=${docs} current=${current} conn=${conn} onToggleTheme=${toggleTheme} />
+      <${Sidebar} docs=${docs} current=${current} conn=${conn} theme=${theme} onToggleTheme=${toggleTheme} />
       <main id="main">
         ${doc && !doc.error ? html`<${TitleBlock} doc=${doc} openCount=${openCount} onOpenComments=${openComments} />` : null}
         ${main}
