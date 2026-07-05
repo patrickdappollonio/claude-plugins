@@ -32,6 +32,8 @@
     text: svgIcon('<polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/>'),
     list: svgIcon('<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>'),
     expand: svgIcon('<polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>'),
+    plus: svgIcon('<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>'),
+    minus: svgIcon('<line x1="5" y1="12" x2="19" y2="12"/>'),
     clock: svgIcon('<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/>'),
     code: svgIcon('<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>'),
     printer: svgIcon('<polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>'),
@@ -877,7 +879,15 @@
   function openDiagramModal(svg) {
     const overlay = document.createElement('div');
     overlay.className = 'diagram-modal';
-    overlay.innerHTML = `<div class="dm-backdrop"></div><div class="dm-panel"><button type="button" class="dm-close" title="Close (Esc)">${ICON.close}</button><div class="dm-stage"></div></div>`;
+    overlay.innerHTML = `<div class="dm-backdrop"></div><div class="dm-panel">
+      <button type="button" class="dm-close" title="Close (Esc)">${ICON.close}</button>
+      <div class="dm-stage"></div>
+      <div class="dm-toolbar">
+        <button type="button" class="dm-out" title="Zoom out (−)">${ICON.minus}</button>
+        <span class="dm-level">100%</span>
+        <button type="button" class="dm-in" title="Zoom in (+)">${ICON.plus}</button>
+        <button type="button" class="dm-fit" title="Fit width (0)">fit</button>
+      </div></div>`;
     const clone = svg.cloneNode(true);
     clone.removeAttribute('width');
     clone.removeAttribute('height');
@@ -896,13 +906,44 @@
         }
       });
     });
-    overlay.querySelector('.dm-stage').appendChild(clone);
+    const stage = overlay.querySelector('.dm-stage');
+    stage.appendChild(clone);
+    document.body.appendChild(overlay); // in DOM so stage.clientWidth is measurable
+
+    // Zoom by setting the SVG's real layout width (height auto-follows the
+    // viewBox), so the stage's scroll area grows and you can pan — a CSS
+    // transform would enlarge visually but not create scrollbars. Default "fit"
+    // fills the stage width (like the doc, but the full modal width), so a TALL
+    // diagram stays large and scrolls vertically instead of shrinking to height.
+    const level = overlay.querySelector('.dm-level');
+    let baseW = 1, zoom = 1;
+    const apply = () => {
+      clone.style.width = `${Math.round(baseW * zoom)}px`;
+      clone.style.height = 'auto';
+      level.textContent = `${Math.round(zoom * 100)}%`;
+    };
+    const fit = () => { baseW = Math.max(200, stage.clientWidth - 56); zoom = 1; apply(); };
+    const setZoom = (z) => { zoom = Math.min(6, Math.max(0.2, z)); apply(); };
+    fit();
+    overlay.querySelector('.dm-in').addEventListener('click', () => setZoom(zoom * 1.25));
+    overlay.querySelector('.dm-out').addEventListener('click', () => setZoom(zoom * 0.8));
+    overlay.querySelector('.dm-fit').addEventListener('click', fit);
+    stage.addEventListener('wheel', (e) => {
+      if (!e.ctrlKey && !e.metaKey) return; // plain wheel scrolls/pans; ctrl/⌘+wheel zooms
+      e.preventDefault();
+      setZoom(zoom * (e.deltaY < 0 ? 1.1 : 0.9));
+    }, { passive: false });
+
     const close = () => { overlay.remove(); document.removeEventListener('keydown', onKey); };
-    const onKey = (e) => { if (e.key === 'Escape') close(); };
+    const onKey = (e) => {
+      if (e.key === 'Escape') close();
+      else if (e.key === '+' || e.key === '=') setZoom(zoom * 1.25);
+      else if (e.key === '-' || e.key === '_') setZoom(zoom * 0.8);
+      else if (e.key === '0') fit();
+    };
     overlay.querySelector('.dm-close').addEventListener('click', close);
     overlay.querySelector('.dm-backdrop').addEventListener('click', close);
     document.addEventListener('keydown', onKey);
-    document.body.appendChild(overlay);
   }
 
   /** Give a rendered diagram card a hover "expand" button and click-to-open. */
@@ -1555,7 +1596,11 @@
         if (!target || wrap.hidden) return;
         const r = target.getBoundingClientRect();
         const cr = content.getBoundingClientRect();
-        let x = cr.right + 14;
+        // Sit just past the TEXT's right edge (content box minus its right
+        // padding), not the padded element edge — otherwise the button floats
+        // ~70px off the text with a big empty gap.
+        const padRight = parseFloat(getComputedStyle(content).paddingRight) || 0;
+        let x = cr.right - padRight + 14;
         const maxX = window.innerWidth - wrap.offsetWidth - 10;
         if (x > maxX) x = maxX;
         wrap.style.left = `${Math.round(x)}px`;
