@@ -28,30 +28,51 @@ write the plan as a single markdown file. Choose the directory:
 
 Name the file after the task, e.g. `$DIR/add-rate-limiting.md`.
 
-### 2. Author the document
+### 2. Take inventory before writing
+
+A thin plan is the common failure. From your research, **list every part of the
+system the plan will touch** — the components/modules, the files you'll add or
+change, the schema/tables/migrations, the API endpoints or routes, the flows or
+data paths that shift, the UI surfaces affected, and the decisions or risks the
+user must weigh. The finished plan must **represent each meaningful item with a
+block, or intentionally omit it** because it's trivial. This inventory is your
+coverage checklist.
+
+### 3. Author the document
 
 Follow `${CLAUDE_PLUGIN_ROOT}/skills/shared/authoring-guide.md` for the full
-fence syntax. Recommended plan skeleton (include what applies, in this order):
+fence syntax. **Substantial ≠ verbose:** lean prose, complete coverage — the
+user should be able to approve or push back from the plan alone. Author top to
+bottom against this skeleton; include a section when the inventory has items for
+it, and skip one only because the inventory had nothing there.
 
 1. `# Title` — one line, imperative ("Add rate limiting to the public API").
-2. `## Summary` — what and why in a short paragraph, plus a
-   `> **Decision needed:** …` blockquote for anything the user must decide.
+2. `## Summary` — the **birds-eye view first**: a short plain-terms paragraph on
+   what you're going to do and *why* (a reader new to the task should follow
+   it), then a `> **Decision needed:** …` blockquote for anything the user must
+   decide.
 3. `## Architecture` — a ` ```mermaid ` diagram (or sketch-style ` ```nomnoml `)
-   when components or flows change.
-4. `## Key changes` — one H3 per meaningful change: real code in normal fences,
+   when components or flows change; prefer a two-dimensional shape over a chain.
+4. `## Key changes` — one H3 per meaningful change from the inventory, each
+   introduced by a sentence on *why it matters*: real code in normal fences,
    proposed edits as ` ```diff ` fences (real `git diff`-style hunks with file
-   headers, ~150 lines max per fence).
+   headers, ~150 lines max per fence). 3–8 is the healthy range.
 5. `## Database changes` — ` ```migration ` fences with `-- up` / `-- down`.
 6. `## API behavior` / `## API surface` — ` ```api ` request/response examples
    and/or an ` ```openapi ` fence for new or changed endpoints.
 7. `## Rollout` — ordered steps, flags, sequencing.
 8. `## Open questions` — bullets the user should answer in comments.
 
+**Change → block coverage.** Map each item in the inventory to a block so none
+is dropped: schema → ` ```migration `; endpoint → ` ```api ` / ` ```openapi `;
+architecture/flow → ` ```mermaid ` / ` ```nomnoml `; concrete code → a normal
+or ` ```diff ` fence; decisions/risks → `> **Decision needed:**` prose.
+
 Grounding rule: every file path, line, schema, and API shape must come from
 the actual codebase or the actual proposed edit. Do not decorate with invented
 detail. Redact secrets.
 
-### 3. Serve it
+### 4. Serve it
 
 Start the bundled server **once per directory** (check it isn't already
 running from an earlier plan in this session — if it is, just write the new
@@ -73,7 +94,7 @@ If the user asks to review from another device (LAN, Tailscale), add a bare
 `Network: http://<ip>:<port>/` line per interface — share those URLs instead.
 Only do this when asked; the server has no authentication.
 
-### 4. Hand the user the link
+### 5. Hand the user the link
 
 Give the user the direct document URL:
 
@@ -85,7 +106,7 @@ Tell them, briefly: the page live-reloads as you edit, they can hover any
 section heading to pin a comment, and "Copy as prompt" turns their feedback
 into a pasteable message if they prefer chat.
 
-### 5. Read feedback before revising — every time
+### 6. Read feedback before revising — every time
 
 Before any revision (user asks for changes, or you're checking in), read the
 open comments as a ready-to-read digest — no JSON parsing needed:
@@ -102,7 +123,7 @@ comments you handled with `"resolved": true` in
 `$DIR/.visual-docs/comments.json`. If the user pastes a "Copy as prompt" block
 into chat instead, treat it identically.
 
-### 6. Approval gate
+### 7. Approval gate
 
 The plan is approved when the user says so (in chat or via a comment). Only
 then move on to implementation. Keep the server running during implementation
