@@ -17,8 +17,18 @@ for the rate-limiting change."* This is the one message the user should get up
 front; never jump straight into tool calls with no reply. Then **spend your
 tokens on the document, not on narrating**: do the research and inventory
 silently — no step-by-step play-by-play, no restating what you found — and
-surface next in step 4/5 with the link and a one-line pointer. Put the budget
+surface next with the link (once served) and a one-line pointer. Put the budget
 you'd spend narrating into the plan's coverage instead.
+
+**The sequence — do every step, in order; the last two are the ones agents skip:**
+
+1. Research the change and write the plan file.
+2. Inventory it (silently).
+3. **Lint it and fix every finding** — required, not optional (§3).
+4. **Self-review the rendered document** — required (§3): re-read it top to
+   bottom against your inventory before anyone else sees it.
+5. Serve it and hand over the link.
+6. Read and act on comments.
 
 ## Workflow
 
@@ -86,9 +96,20 @@ has items, skip one only when it had nothing there:
 8. `## Open questions` — a ` ```question ` fence per decision (single/multi
    options + free-text); the user's answer comes back as a comment you read.
 
-**Then audit** your inventory against the finished plan, item by item, before
-serving; optionally lint it too:
-`node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-lint.js" "$DIR/<file>.md"`.
+**Then lint and self-review — both required, before you serve or share anything.
+Do not write the file and stop.**
+
+1. **Lint** and fix every finding — not optional:
+   ```
+   node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-lint.js" "$DIR/<file>.md"
+   ```
+2. **Self-review**: re-read the whole plan top to bottom as the user will see it,
+   and check: every inventory item maps to a block or has a one-clause omission
+   reason; every fence is well-formed for its type (a ` ```diff ` has real
+   `+`/`-` lines, a ` ```migration ` has `-- up`/`-- down`, an ` ```api ` has a
+   request line, a ` ```mermaid ` is valid); no leftover placeholder or truncated
+   block; secrets redacted. Fix what you find, then re-lint.
+
 Grounding rule: every path, line, schema, and API shape must come from
 the actual codebase or the proposed edit — don't invent detail. Redact secrets.
 

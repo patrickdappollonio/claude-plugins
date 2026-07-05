@@ -15,9 +15,20 @@ of PR 142."* This is the one message the user should get up front; never jump
 straight into tool calls with no reply. Then **spend your tokens on the document,
 not on narrating**: move through steps 1–4 without a play-by-play — no "Step 1:
 capturing the diff…", no restating the captured diff or the inventory, no "here's
-what I found." Your next message after the acknowledgement is the link in step 4
-with a one-line pointer. Every token you'd spend describing the work, spend
-instead making the document more complete.
+what I found." Your next message after the acknowledgement is the link (once
+served) with a one-line pointer. Every token you'd spend describing the work,
+spend instead making the document more complete.
+
+**The sequence — do every step, in order; the last two are the ones agents skip:**
+
+1. Capture the diff (once).
+2. Inventory it (silently).
+3. Write the recap file.
+4. **Lint it and fix every finding** — required, not optional (§3).
+5. **Self-review the rendered document** — required (§3): re-read it top to
+   bottom against your inventory before anyone else sees it.
+6. Serve it and hand over the link.
+7. Read and act on comments.
 
 ## Workflow
 
@@ -104,10 +115,22 @@ has items for it, skip one only when the inventory had nothing there:
    bullets on the lines that matter (see document-quality.md §5).
 8. `## Risks & follow-ups` — what wasn't done, what to watch, next steps.
 
-**Then audit:** walk your inventory checklist against the finished document,
-item by item — each maps to a block or has a one-clause omission reason. Do this
-before serving. Optionally lint the file too:
-`node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-lint.js" "$DIR/<file>.md"`.
+**Then lint and self-review — both required, before you serve or share anything.
+Do not write the file and stop.**
+
+1. **Lint** and fix every finding — not optional:
+   ```
+   node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-lint.js" "$DIR/<file>.md"
+   ```
+2. **Self-review**: re-read the whole document top to bottom as the reviewer will
+   see it, and check:
+   - every inventory item maps to a block, or has a one-clause omission reason;
+   - every fence is well-formed for its type — a ` ```diff ` has real `+`/`-`
+     lines, a ` ```migration ` has `-- up` (and `-- down` unless deliberately
+     irreversible), an ` ```api ` has a request line, a ` ```mermaid ` is valid;
+   - no leftover placeholder, `TODO`, or truncated block;
+   - secrets are redacted.
+   Fix what you find, then re-lint. Only after this passes do you move on.
 
 Grounding rule: structured blocks are only true if derived from the actual
 changed lines — real paths, fields, method/path, before/after text. Never infer;

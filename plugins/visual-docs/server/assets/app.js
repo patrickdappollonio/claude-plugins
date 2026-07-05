@@ -224,28 +224,61 @@
     return `<div class="codewrap" ${blockAttrs(code)}>${tag}<pre><code class="hljs">${inner}</code></pre></div>`;
   }
 
-  /** Ensure content parses as a unified diff for diff2html; if it's a bare
-      +/- snippet without headers, synthesize a minimal header. */
+  /** Ensure content parses as a unified diff for diff2html. Handles: a full diff
+      (pass through), file headers present but NO `@@` hunk (common for authored
+      new-file diffs like `--- /dev/null` + all `+` lines — diff2html can't parse
+      these and renders "File without changes"), and a bare +/- snippet with no
+      headers at all. In the last two cases we synthesize a hunk header with the
+      REAL line counts (a fixed "@@ -1,1 +1,1 @@" botches multi-line/side-by-side)
+      while preserving any real file headers so the filename still renders. */
   function normalizeDiff(code) {
-    if (/^(diff --git|---[ ]|Index: )/m.test(code)) return code;
-    let body;
-    if (/^@@/m.test(code)) {
-      body = code;
-    } else {
-      // Synthesize a hunk header with the REAL line counts, so diff2html aligns
-      // the two sides correctly (a fixed "@@ -1,1 +1,1 @@" botches multi-line
-      // and side-by-side rendering).
-      const lines = code.split('\n');
-      if (lines.length && lines[lines.length - 1] === '') lines.pop();
-      let oldC = 0, newC = 0;
-      for (const l of lines) {
-        if (l[0] === '+') newC++;
-        else if (l[0] === '-') oldC++;
-        else { oldC++; newC++; } // context (incl. unprefixed lines)
-      }
-      body = `@@ -${oldC ? 1 : 0},${oldC} +${newC ? 1 : 0},${newC} @@\n${lines.join('\n')}\n`;
+    const lines = code.split('\n');
+    if (lines.length && lines[lines.length - 1] === '') lines.pop();
+
+    // Peel contiguous leading file-header lines so we can tell whether a hunk exists.
+    const head = [];
+    let i = 0;
+    while (i < lines.length && /^(diff --git |index |Index: |--- |\+\+\+ )/.test(lines[i])) {
+      head.push(lines[i]);
+      i++;
     }
-    return `--- a/snippet\n+++ b/snippet\n${body}`;
+    const body = lines.slice(i);
+
+    // Already has a hunk header → diff2html can parse it; just ensure file headers.
+    if (body.some((l) => /^@@/.test(l))) {
+      const headers = head.length ? head : ['--- a/snippet', '+++ b/snippet'];
+      return `${[...headers, ...body].join('\n')}\n`;
+    }
+
+    // No hunk header: synthesize one from the real +/- counts.
+    let oldC = 0, newC = 0;
+    for (const l of body) {
+      if (l[0] === '+') newC++;
+      else if (l[0] === '-') oldC++;
+      else { oldC++; newC++; } // context (incl. unprefixed lines)
+    }
+    // Recover the file path from any real +++/--- header for the git-style output.
+    const pathFrom = (re) => {
+      const h = head.find((l) => re.test(l));
+      return h ? h.replace(re, '').replace(/^[ab]\//, '').trim() : '';
+    };
+    const path = pathFrom(/^\+\+\+ /) || pathFrom(/^--- /) || 'snippet';
+    // Emit canonical git headers so diff2html badges + parses correctly: a pure
+    // addition is a NEW file (`@@ -0,0 +1,N @@`), a pure deletion a DELETED file,
+    // otherwise a normal modification. Bare `--- /dev/null` without these markers
+    // mis-renders as "RENAMED" / "File without changes".
+    let git, hunk;
+    if (oldC === 0 && newC > 0) {
+      git = [`diff --git a/${path} b/${path}`, 'new file mode 100644', 'index 0000000..1111111', '--- /dev/null', `+++ b/${path}`];
+      hunk = `@@ -0,0 +1,${newC} @@`;
+    } else if (newC === 0 && oldC > 0) {
+      git = [`diff --git a/${path} b/${path}`, 'deleted file mode 100644', 'index 1111111..0000000', `--- a/${path}`, '+++ /dev/null'];
+      hunk = `@@ -1,${oldC} +0,0 @@`;
+    } else {
+      git = [`diff --git a/${path} b/${path}`, 'index 1111111..2222222 100644', `--- a/${path}`, `+++ b/${path}`];
+      hunk = `@@ -1,${oldC} +1,${newC} @@`;
+    }
+    return `${[...git, hunk, ...body].join('\n')}\n`;
   }
 
   function renderDiffFence(code) {
@@ -310,7 +343,9 @@
     let panes = '';
     let toolbar = '';
     if (m.up || m.down) {
-      panes = `<div class="migration-panes mig-updown side-by-side">
+      // Two panes side-by-side only when BOTH exist; a lone up/down pane renders
+      // single-column (`unified`) so an irreversible migration has no empty half.
+      panes = `<div class="migration-panes mig-updown ${bothPanes ? 'side-by-side' : 'unified'}">
         ${m.up ? pane('up', `${ICON.arrowUp} up — apply`, m.up) : ''}
         ${m.down ? pane('down', `${ICON.arrowDown} down — roll back`, m.down) : ''}
       </div>`;
@@ -877,6 +912,19 @@
     }
   }
 
+  // diff2html logs a benign "Failed to parse lines, starting in 0!" to
+  // console.error for new-file (`@@ -0,0`) hunks even though it renders them
+  // correctly. Swallow only that message so it doesn't masquerade as a real page
+  // error during review; everything else passes through untouched.
+  function quietDiff2Html(fn) {
+    const orig = console.error;
+    console.error = (...a) => {
+      if (typeof a[0] === 'string' && a[0].includes('Failed to parse lines')) return;
+      orig.apply(console, a);
+    };
+    try { return fn(); } finally { console.error = orig; }
+  }
+
   function hydrateDiffs(container) {
     for (const block of container.querySelectorAll('[data-diff]')) {
       const src = decodeSrc(block.dataset.diffSource);
@@ -884,12 +932,12 @@
       const draw = (mode) => {
         if (window.Diff2Html) {
           try {
-            body.innerHTML = sanitizeHTML(window.Diff2Html.html(normalizeDiff(src), {
+            body.innerHTML = sanitizeHTML(quietDiff2Html(() => window.Diff2Html.html(normalizeDiff(src), {
               drawFileList: false,
               matching: 'lines',
               outputFormat: mode,
               colorScheme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light',
-            }));
+            })));
             return;
           } catch { /* fall through */ }
         }
