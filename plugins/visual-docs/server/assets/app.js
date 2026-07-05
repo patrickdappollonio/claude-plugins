@@ -1826,7 +1826,10 @@
           hide();
         }
       };
-      const onDocMouseDown = (e) => { if (e.target !== btn) hide(); };
+      // Use contains(), not ===: the button has child nodes (icon svg + label),
+      // so a click lands on a descendant — `e.target !== btn` would hide the
+      // button on mousedown, before its own click could fire.
+      const onDocMouseDown = (e) => { if (!btn.contains(e.target)) hide(); };
       el.addEventListener('mouseup', onMouseUp);
       btn.addEventListener('mousedown', (e) => e.preventDefault()); // keep the selection alive
       btn.addEventListener('click', onBtnClick);
