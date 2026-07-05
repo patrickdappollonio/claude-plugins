@@ -73,25 +73,25 @@ the actual codebase or the proposed edit — don't invent detail. Redact secrets
 
 ### 4. Serve it
 
-Start the bundled server **once per directory** (check it isn't already
-running from an earlier plan in this session — if it is, just write the new
-file; the sidebar and live reload pick it up):
+Start the bundled server. It self-manages per directory via a lock file, so you
+can run this unconditionally — if one is already serving `$DIR` (from an earlier
+plan this session) it just prints the URL and exits, and new files appear in the
+sidebar automatically:
 
 ```bash
 nohup node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-server.js" "$DIR" \
-  > "$DIR/.server.log" 2>&1 &
-echo $! > "$DIR/.server.pid"
-sleep 1 && grep VISUAL_DOCS_URL "$DIR/.server.log"
+  > "$DIR/.visual-docs/server.log" 2>&1 &
+sleep 1 && grep VISUAL_DOCS_URL "$DIR/.visual-docs/server.log"
 ```
 
-The output contains `VISUAL_DOCS_URL=http://127.0.0.1:<port>/`. The server
-binds to localhost on a random free port, has no dependencies, and serves the
-renderer libraries from vendored local copies — the whole flow works offline.
+The output contains `VISUAL_DOCS_URL=http://127.0.0.1:<port>/`. The server binds
+to localhost on a random free port, has no dependencies, and serves the renderer
+libraries from vendored local copies — the whole flow works offline.
 
 If the user asks to review from another device (LAN, Tailscale), add a bare
-`--host` flag: the server then binds all interfaces and prints one
-`Network: http://<ip>:<port>/` line per interface — share those URLs instead.
-Only do this when asked; the server has no authentication.
+`--host` flag (with `--restart` if a localhost-only instance is already up): the
+server binds all interfaces and prints a `Network: http://<ip>:<port>/` line per
+interface — share those. Only when asked; the server has no authentication.
 
 ### 5. Hand the user the link
 
@@ -131,13 +131,12 @@ if a recap will follow — the same server can serve both documents.
 
 ## Cleanup
 
-The server is a single `node` process; when the session is done, stop the one
-this session started using the PID recorded at startup:
+When the session is done, stop the server for this directory:
 
 ```bash
-kill "$(cat "$DIR/.server.pid")" 2>/dev/null && rm -f "$DIR/.server.pid"
+node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-server.js" "$DIR" --stop
 ```
 
-Avoid `pkill -f visual-docs-server` — it would kill every instance on the
-machine, including other sessions' or other users'. Temp-dir plans need no
-other cleanup.
+It reads the lock file and stops just that instance. Avoid
+`pkill -f visual-docs-server` — it would kill every instance on the machine,
+including other sessions' or other users'. Temp-dir plans need no other cleanup.

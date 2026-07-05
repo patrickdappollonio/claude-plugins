@@ -93,13 +93,14 @@ secrets as `<redacted>` / `sk-•••`.
 
 ```bash
 nohup node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-server.js" "$DIR" \
-  > "$DIR/.server.log" 2>&1 &
-echo $! > "$DIR/.server.pid"
-sleep 1 && grep VISUAL_DOCS_URL "$DIR/.server.log"
+  > "$DIR/.visual-docs/server.log" 2>&1 &
+sleep 1 && grep VISUAL_DOCS_URL "$DIR/.visual-docs/server.log"
 ```
 
-Skip the start if a server for `$DIR` is already running (e.g. from a
-visual-plan earlier in the session) — new files just appear in the sidebar.
+The server self-manages via a lock file: if one is already serving `$DIR` (e.g.
+from a visual-plan earlier in the session) this just prints its URL and exits —
+new files appear in the sidebar automatically, no need to check first. To bind
+differently later (e.g. add `--host` for Tailscale), re-run with `--restart`.
 Give the user `http://127.0.0.1:<port>/#/<file>.md` and mention: live reload;
 they can **select any text** to comment on that exact snippet, hover a heading
 or a rendered component (diagram, diff, …) to pin a comment there, or use "Copy
@@ -125,11 +126,11 @@ before editing code. After handling a comment, set its `"resolved": true` in
 
 ## Cleanup
 
-Stop the server this session started using the recorded PID, when the session
-is done:
+When the session is done, stop the server for this directory:
 
 ```bash
-kill "$(cat "$DIR/.server.pid")" 2>/dev/null && rm -f "$DIR/.server.pid"
+node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-server.js" "$DIR" --stop
 ```
 
-Avoid `pkill -f visual-docs-server` — it kills every instance on the machine.
+It finds the instance from the lock file and stops just that one. Avoid
+`pkill -f visual-docs-server` — it kills every instance on the machine.

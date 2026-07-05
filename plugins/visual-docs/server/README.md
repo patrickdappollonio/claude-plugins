@@ -45,8 +45,15 @@ visual-docs-server [dir] [options]
                   0.0.0.0 (all interfaces) and prints per-interface
                   "Network:" URLs — handy for reviewing from another device
                   over LAN or Tailscale.
+  --restart       Replace an instance already serving this dir
+  --stop          Stop the instance serving this dir, then exit
   --no-watch      Disable live reload
 ```
+
+The server records itself in `<dir>/.visual-docs/server.json` (pid, port, url),
+so starting again for an already-served directory just prints its URL instead of
+failing on a port clash, `--restart` swaps options (e.g. add `--host`) in one
+command, and `--stop` shuts down exactly that instance — no manual PID handling.
 
 The process prints a machine-readable line for scripts and agents:
 

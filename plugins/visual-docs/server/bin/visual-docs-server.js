@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { startServer } from '../lib/server.js';
-import { resolve } from 'node:path';
-import { statSync } from 'node:fs';
+import { resolve, join, dirname } from 'node:path';
+import { statSync, readFileSync, writeFileSync, unlinkSync, mkdirSync } from 'node:fs';
 import { networkInterfaces } from 'node:os';
 
 function usage() {
@@ -11,11 +11,18 @@ Serves every markdown file under <dir> (default: current directory) as a
 rendered visual document with Mermaid diagrams, highlighted code, rich
 diffs, styled DB migrations, live reload, and reviewer comments.
 
+The server records itself in <dir>/.visual-docs/server.json, so:
+  - starting again for a dir that's already served just prints its URL;
+  - --restart replaces the running instance (e.g. to change --host/--port);
+  - --stop stops it. No manual PID juggling.
+
 Options:
   --port <n>       Port to listen on (default: random free port)
   --host           Bind 0.0.0.0 — all interfaces, including LAN/Tailscale.
                    No authentication, so only on networks you trust.
   --host=<addr>    Bind a specific address (default: 127.0.0.1)
+  --restart        Replace an instance already serving this dir
+  --stop           Stop the instance serving this dir, then exit
   --no-watch       Disable live reload
   -h, --help       Show this help
 `);
@@ -32,8 +39,45 @@ function looksLikeHost(token) {
   return true;
 }
 
+const lockPath = (dir) => join(dir, '.visual-docs', 'server.json');
+
+function readLock(dir) {
+  try {
+    return JSON.parse(readFileSync(lockPath(dir), 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+function pidAlive(pid) {
+  if (!pid) return false;
+  try {
+    process.kill(pid, 0); // signal 0 = existence check
+    return true;
+  } catch (err) {
+    return err.code === 'EPERM'; // alive but not ours still counts as alive
+  }
+}
+
+/** The lock of a live server for this dir, or null (stale locks are cleared). */
+function liveLock(dir) {
+  const lock = readLock(dir);
+  if (lock && pidAlive(lock.pid)) return lock;
+  if (lock) { try { unlinkSync(lockPath(dir)); } catch { /* ignore */ } }
+  return null;
+}
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function stopPid(pid) {
+  try { process.kill(pid, 'SIGTERM'); } catch { return; }
+  for (let i = 0; i < 30 && pidAlive(pid); i++) await sleep(100); // up to ~3s
+  if (pidAlive(pid)) { try { process.kill(pid, 'SIGKILL'); } catch { /* ignore */ } }
+}
+
 const args = process.argv.slice(2);
 const opts = { dir: process.cwd(), port: 0, host: '127.0.0.1', watch: true };
+let restart = false, stop = false;
 
 for (let i = 0; i < args.length; i++) {
   const a = args[i];
@@ -48,6 +92,8 @@ for (let i = 0; i < args.length; i++) {
     if (next && !next.startsWith('-') && looksLikeHost(next)) opts.host = args[++i];
     else opts.host = '0.0.0.0';
   }
+  else if (a === '--restart') restart = true;
+  else if (a === '--stop') stop = true;
   else if (a === '--no-watch') opts.watch = false;
   else if (!a.startsWith('-')) opts.dir = resolve(a);
   else { console.error(`Unknown option: ${a}`); usage(); process.exit(1); }
@@ -68,6 +114,33 @@ try {
   process.exit(1);
 }
 
+// --stop: stop whatever is serving this dir, then exit.
+if (stop) {
+  const lock = liveLock(opts.dir);
+  if (lock) {
+    await stopPid(lock.pid);
+    try { unlinkSync(lockPath(opts.dir)); } catch { /* ignore */ }
+    console.log(`Stopped visual-docs-server for ${opts.dir}`);
+  } else {
+    console.log(`No running visual-docs-server for ${opts.dir}`);
+  }
+  process.exit(0);
+}
+
+// An instance is already serving this dir: reuse it (idempotent) or replace it.
+const existing = liveLock(opts.dir);
+if (existing) {
+  if (restart) {
+    await stopPid(existing.pid);
+    try { unlinkSync(lockPath(opts.dir)); } catch { /* ignore */ }
+  } else {
+    console.log(`Serving ${opts.dir}`);
+    console.log(`VISUAL_DOCS_URL=${existing.url}`);
+    console.log('(already running — use --restart to apply new options, --stop to stop)');
+    process.exit(0);
+  }
+}
+
 let started;
 try {
   started = await startServer(opts);
@@ -79,6 +152,25 @@ try {
   process.exit(1);
 }
 const { url, port } = started;
+
+// Record ourselves so future invocations can find/replace/stop this instance.
+try {
+  mkdirSync(dirname(lockPath(opts.dir)), { recursive: true });
+  writeFileSync(lockPath(opts.dir), JSON.stringify({ pid: process.pid, port, host: opts.host, url, startedAt: new Date().toISOString() }, null, 2) + '\n');
+} catch { /* non-fatal: lifecycle shortcuts just won't be available */ }
+
+let cleaned = false;
+const cleanup = () => {
+  if (cleaned) return;
+  cleaned = true;
+  try {
+    const lock = readLock(opts.dir);
+    if (lock && lock.pid === process.pid) unlinkSync(lockPath(opts.dir));
+  } catch { /* ignore */ }
+};
+process.on('exit', cleanup);
+for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.on(sig, () => { cleanup(); process.exit(0); });
+
 console.log(`Serving ${opts.dir}`);
 console.log(`VISUAL_DOCS_URL=${url}`);
 if (opts.host === '0.0.0.0' || opts.host === '::') {
