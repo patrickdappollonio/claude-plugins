@@ -236,6 +236,10 @@ button { font: inherit; cursor: pointer; }
 .markdown-body h1 { font-size: 1.9rem; letter-spacing: -0.5px; }
 .markdown-body h2 { font-size: 1.55rem; margin-top: 2em; }
 .markdown-body h3 { font-size: 1.2rem; }
+/* Roomier leading for running prose (helps the eye track across a full-width
+   line); headings stay tight, code keeps its own spacing. */
+.markdown-body p, .markdown-body li, .markdown-body blockquote { line-height: 1.7; }
+.markdown-body li { margin: 0.2em 0; }
 .markdown-body a { color: var(--accent); text-decoration: none; border-bottom: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); }
 .markdown-body a:hover { border-bottom-color: var(--accent); }
 .markdown-body img { max-width: 100%; }
