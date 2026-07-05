@@ -65,7 +65,8 @@ has items, skip one only when it had nothing there:
 5. `## Database changes` — ` ```migration ` fences with `-- up` / `-- down`.
 6. `## API behavior` / `## API surface` — ` ```api ` examples and/or ` ```openapi `.
 7. `## Rollout` — ordered steps, flags, sequencing.
-8. `## Open questions` — bullets the user answers in comments.
+8. `## Open questions` — a ` ```question ` fence per decision (single/multi
+   options + free-text); the user's answer comes back as a comment you read.
 
 **Then audit** your inventory against the finished plan, item by item, before
 serving. Grounding rule: every path, line, schema, and API shape must come from

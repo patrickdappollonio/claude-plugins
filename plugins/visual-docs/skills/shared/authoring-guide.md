@@ -93,6 +93,34 @@ words `added`/`modified`/`deleted`/`renamed`. This is the block for a recap's
     ```
 ```
 
+### Questions — ` ```question ` (alias: ` ```ask `)
+
+Ask the reader a question and get a structured answer back. Renders like the
+agent's own question UI: the prompt, selectable options, and a free-text "write
+your own" box. The first line is the question; `- ` lines are options; a lone
+leading `multiple` line makes it multi-select (checkboxes instead of radios).
+Options are optional — omit them for a pure free-text question.
+
+When the reader answers, the answer is saved as a **comment anchored to the
+question** (it shows up in `/agent/comments.md` as `question … — <answer>`), so
+you read it back exactly like any other feedback. Put these in an `## Open
+questions` section (or wherever a decision is needed).
+
+    ```question
+    What should the default rate limit be?
+    - 100 req/min (conservative)
+    - 500 req/min
+    - 1000 req/min (enterprise)
+    ```
+
+    ```question
+    multiple
+    Which regions should get it first?
+    - us-east
+    - eu-west
+    - ap-south
+    ```
+
 ### Diffs — ` ```diff ` (alias: ` ```patch `)
 
 Rendered as a rich diff viewer with a unified / side-by-side toggle. Prefer

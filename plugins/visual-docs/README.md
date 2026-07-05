@@ -65,6 +65,7 @@ but in the viewer these fences get special treatment:
 | ` ```api ` / ` ```http ` | Styled HTTP request/response cards, `curl -v` style — method & status badges, collapsible headers, pretty-printed JSON |
 | ` ```openapi ` / ` ```swagger ` | Read-only OpenAPI explorer — expandable endpoints with parameters, request bodies, and responses |
 | ` ```filetree ` / ` ```files ` | "What changed" file map — coloured A/M/D/R change badges, paths, and per-file notes, grouped by area |
+| ` ```question ` / ` ```ask ` | An interactive question — single/multi-select options plus a custom answer; the reply is saved as a comment for the agent |
 | Any other language | Syntax-highlighted code with a language tag |
 
 Everything degrades gracefully: if a block can't render, you get a plain

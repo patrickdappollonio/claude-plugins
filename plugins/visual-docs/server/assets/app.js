@@ -28,6 +28,8 @@
     close: svgIcon('<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>'),
     doc: svgIcon('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>'),
     folder: svgIcon('<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>'),
+    help: svgIcon('<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>'),
+    check: svgIcon('<polyline points="20 6 9 17 4 12"/>'),
     database: svgIcon('<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>'),
     exchange: svgIcon('<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>'),
     arrowRight: svgIcon('<line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>'),
@@ -157,6 +159,10 @@
 
     if (language === 'filetree' || language === 'file-tree' || language === 'files') {
       return renderFileTreeFence(code);
+    }
+
+    if (language === 'question' || language === 'ask') {
+      return renderQuestionFence(code);
     }
 
     let inner;
@@ -613,6 +619,55 @@
     </div>`;
   }
 
+  /* ---------- agent questions ---------- */
+
+  /** Parse a ` ```question ` fence. First line is the prompt; `- `/`* ` lines are
+      options; a lone leading `multiple`/`multi` line makes it multi-select. */
+  function parseQuestion(code) {
+    const lines = code.split('\n').map((l) => l.replace(/\s+$/, '')).filter((l) => l.trim());
+    let multiple = false;
+    if (lines.length && /^(multiple|multi|select all( that apply)?)$/i.test(lines[0].trim())) {
+      multiple = true;
+      lines.shift();
+    }
+    const question = (lines.shift() || '').trim();
+    const options = [];
+    for (const l of lines) {
+      const m = l.match(/^\s*[-*]\s+(.*)$/);
+      if (m && m[1].trim()) options.push(m[1].trim());
+    }
+    return { question, options, multiple };
+  }
+
+  function renderQuestionFence(code) {
+    const { question, options, multiple } = parseQuestion(code);
+    if (!question) {
+      return `<div class="codewrap"><span class="lang-tag">question</span><pre><code class="hljs">${escapeHTML(code)}</code></pre></div>`;
+    }
+    const type = multiple ? 'checkbox' : 'radio';
+    const opts = options.map((o) => `
+      <label class="q-option">
+        <input type="${type}" name="q-opt" value="${escapeHTML(o)}" />
+        <span>${escapeHTML(o)}</span>
+      </label>`).join('');
+    return `<div class="question-block" ${blockAttrs(code)}>
+      <div class="q-head">
+        <span class="mig-icon">${ICON.help}</span>
+        <span class="q-title">${escapeHTML(question)}</span>
+        ${multiple ? '<span class="q-badge">select any</span>' : ''}
+      </div>
+      <form class="q-form">
+        ${opts ? `<div class="q-options">${opts}</div>` : ''}
+        <label class="q-other">
+          <span class="q-other-label mono">${opts ? 'or write your own' : 'your answer'}</span>
+          <input type="text" class="q-other-input" placeholder="Type a custom answer…" />
+        </label>
+        <div class="q-actions"><button type="submit" class="q-send">Send answer</button></div>
+      </form>
+      <div class="q-answered" hidden></div>
+    </div>`;
+  }
+
   /* ---------- markdown → sanitized HTML ---------- */
 
   function renderMarkdown(md) {
@@ -758,6 +813,52 @@
 
   // Component blocks can't be text-selected meaningfully, so each gets its own
   // "comment on this component" affordance instead.
+  /** Fill a question block's "answered" box with the submitted answer and hide
+      the form. Idempotent — safe to call on every comment update. */
+  function showQuestionAnswered(blk, answer) {
+    const form = blk.querySelector('.q-form');
+    const box = blk.querySelector('.q-answered');
+    if (!form || !box) return;
+    form.hidden = true;
+    box.hidden = false;
+    box.innerHTML = `<span class="q-ans-label mono">${ICON.check} your answer</span>`;
+    const ans = document.createElement('span');
+    ans.className = 'q-ans';
+    ans.textContent = answer; // user text — never as HTML
+    box.appendChild(ans);
+  }
+
+  /** Wire each ` ```question ` form so submitting sends the answer as a comment
+      anchored to the question. onAnswer(anchor, text) does the POST. */
+  function hydrateQuestions(container, onAnswer) {
+    container.querySelectorAll('.question-block').forEach((blk) => {
+      const form = blk.querySelector('.q-form');
+      if (!form || form.dataset.wired) return;
+      form.dataset.wired = '1';
+      const id = blk.dataset.blockId || '';
+      const question = blk.querySelector('.q-title')?.textContent || '';
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const picked = [...form.querySelectorAll('input[name="q-opt"]:checked')].map((i) => i.value);
+        const other = form.querySelector('.q-other-input')?.value.trim();
+        if (other) picked.push(other);
+        if (!picked.length) return;
+        const answer = picked.join('; ');
+        onAnswer({ kind: 'component', type: 'question', label: 'question', id, hint: question.slice(0, 120) }, answer);
+        showQuestionAnswered(blk, answer);
+      });
+    });
+  }
+
+  /** Reflect already-answered questions (from stored comments) on load/refresh. */
+  function markAnsweredQuestions(container, comments) {
+    container.querySelectorAll('.question-block').forEach((blk) => {
+      const id = blk.dataset.blockId || '';
+      const answers = comments.filter((c) => c.anchor && c.anchor.kind === 'component' && c.anchor.type === 'question' && c.anchor.id === id);
+      if (answers.length) showQuestionAnswered(blk, answers[answers.length - 1].text);
+    });
+  }
+
   const COMPONENTS = [
     ['.mermaid-block', 'mermaid diagram'],
     ['.nomnoml-block', 'nomnoml diagram'],
@@ -777,7 +878,9 @@
 
   function isInComponent(node) {
     const el = node && (node.nodeType === 3 ? node.parentElement : node);
-    return !!(el && el.closest(COMPONENT_SELECTOR));
+    // .question-block is interactive (answer form), so exclude it from
+    // text-selection comments even though it carries no comment pin.
+    return !!(el && el.closest(COMPONENT_SELECTOR + ', .question-block'));
   }
 
   /** Attach a "💬" affordance to each rendered component block. Anchors a
@@ -994,7 +1097,7 @@
   /** Renders sanitized markdown into a Preact-owned-but-manually-managed
       element. Preact never touches the children (the article is empty in its
       vdom), so imperative hydration is safe. */
-  function DocView({ doc, comments, theme, raw, onOpenSection, onOpenComponent, onOpenText, onViewComments }) {
+  function DocView({ doc, comments, theme, raw, onOpenSection, onOpenComponent, onOpenText, onViewComments, onAnswer }) {
     const ref = useRef(null);
     const lastPath = useRef(null);
 
@@ -1020,6 +1123,8 @@
       if (h1) h1.remove(); // title shown in TitleBlock
       hydrateDiffs(el);
       hydrateNomnoml(el);
+      hydrateQuestions(el, onAnswer);
+      markAnsweredQuestions(el, comments);
       // Pin the non-mermaid blocks now so their 💬 isn't gated on mermaid, then
       // re-pin after mermaid replaces its own blocks' innerHTML. The cancel flag
       // stops a stale async render from touching a doc/theme that has moved on.
@@ -1029,14 +1134,16 @@
       lastPath.current = doc.path;
       window.scrollTo(0, changedDoc ? 0 : y);
       return () => { cancelled = true; };
-    }, [doc, theme, raw, onOpenComponent]);
+    }, [doc, theme, raw, onOpenComponent, onAnswer]);
 
-    // Section pins + text highlights: re-applied whenever the comment set changes.
+    // Section pins + text highlights + answered-question state: re-applied
+    // whenever the comment set changes.
     useEffect(() => {
       const el = ref.current;
       if (!el || raw) return; // no pins/highlights over raw source
       applySectionPins(el, comments, onOpenSection);
       applyTextHighlights(el, comments, onViewComments);
+      markAnsweredQuestions(el, comments);
       // doc/theme/raw are dependencies (not all read here) only so this effect
       // re-runs AFTER the sibling effect rebuilds el.innerHTML — Preact runs
       // effects in declaration order. Don't drop them.
@@ -1327,6 +1434,23 @@
     const openSection = useCallback((section, title) => setDrawer({ open: true, target: { section, title } }), []);
     const openComponent = useCallback((anchor) => setDrawer({ open: true, target: { anchor } }), []);
     const openText = useCallback((anchor) => setDrawer({ open: true, target: { anchor } }), []);
+    // Submit an answer to a ```question fence as a comment anchored to it.
+    const answerQuestion = useCallback(async (anchor, text) => {
+      const cur = currentRef.current;
+      if (!cur || !text) return;
+      try {
+        await api('/api/comments', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ path: cur, anchor, text }),
+        });
+        setStatus({ msg: 'Answer sent — the agent reads it before its next revision.', tone: 'ok' });
+        loadComments(cur);
+      } catch {
+        const ok = await copyToClipboard(buildPrompt(cur, [{ text, anchor }]));
+        setStatus({ msg: ok ? 'Saving failed, but the answer was copied — paste it to your agent.' : 'Saving failed and clipboard is unavailable.', tone: 'warn' });
+      }
+    }, [loadComments]);
     const openComments = useCallback(() => setDrawer({ open: true, target: {} }), []);
     // Collapse resets the target so reopening starts document-level, not on a stale anchor.
     const collapseDrawer = () => setDrawer({ open: false, target: {} });
@@ -1386,7 +1510,7 @@
     } else {
       main = html`<${DocView} doc=${doc} comments=${comments} theme=${theme} raw=${raw}
         onOpenSection=${openSection} onOpenComponent=${openComponent}
-        onOpenText=${openText} onViewComments=${openComments} />`;
+        onOpenText=${openText} onViewComments=${openComments} onAnswer=${answerQuestion} />`;
     }
 
     return html`

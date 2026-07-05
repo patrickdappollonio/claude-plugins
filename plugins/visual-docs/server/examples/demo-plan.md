@@ -185,5 +185,18 @@ paths:
 
 ## Open questions
 
-- Should websocket connections count against the same bucket?
-- Do we backfill `api_key_limits` for existing keys or lazily default?
+```question
+Should websocket connections count against the same bucket?
+- Yes — one bucket per key across all protocols
+- No — a separate, higher WS budget
+- Exempt WS entirely for now
+```
+
+```question
+multiple
+Which of these should ship in the first release?
+- Per-key overrides table
+- Redis-backed store
+- In-memory fallback
+- Prometheus rejection metric
+```
