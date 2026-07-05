@@ -55,7 +55,7 @@ body {
 .icon { width: 1em; height: 1em; display: block; flex: 0 0 auto; }
 .icon-wrap { display: inline-flex; align-items: center; }
 /* Buttons/labels that pair an icon with text line them up with a small gap. */
-.selection-comment-btn, .api-half-label, .migration-pane .pane-label,
+.api-half-label, .migration-pane .pane-label,
 #theme-toggle, .mig-icon, .side-mark, #drawer-close, .ctx-clear {
   display: inline-flex;
   align-items: center;
@@ -608,32 +608,34 @@ button { font: inherit; cursor: pointer; }
 .q-ans-label .icon { color: var(--ok); }
 .q-ans { color: var(--ink); font-size: 0.9rem; }
 
-/* ---------- Gutter comment button (Notion-style) ----------
-   A single floating button that follows the hovered heading/component into the
-   right margin, labelled for its target. */
-.gutter-comment-btn {
-  position: fixed;
+/* ---------- Floating comment button ----------
+   One accent-filled button shared by the text-selection affordance
+   (.pos-selection, page-absolute) and the Notion-style gutter affordance
+   (.pos-gutter, viewport-fixed, follows the hovered heading/component). */
+.floating-comment-btn {
   z-index: 40;
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  max-width: 260px;
-  padding: 5px 10px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  color: var(--ink-soft);
-  font-size: 0.76rem;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
-  cursor: pointer;
-  transition: color 120ms, border-color 120ms;
-}
-.gutter-comment-btn:hover { color: var(--accent); border-color: var(--accent); }
-.gutter-comment-btn .icon { width: 0.95em; height: 0.95em; flex: 0 0 auto; }
-.gcb-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.gcb-count {
-  flex: 0 0 auto;
+  max-width: 280px;
+  padding: 6px 12px;
   background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+  cursor: pointer;
+}
+.floating-comment-btn:hover { filter: brightness(1.08); }
+.floating-comment-btn.pos-selection { position: absolute; }
+.floating-comment-btn.pos-gutter { position: fixed; }
+.floating-comment-btn .icon { width: 0.95em; height: 0.95em; flex: 0 0 auto; }
+.fcb-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fcb-count {
+  flex: 0 0 auto;
+  background: rgba(255, 255, 255, 0.28);
   color: #fff;
   border-radius: 20px;
   font-size: 0.62rem;
@@ -724,21 +726,6 @@ button { font: inherit; cursor: pointer; }
   cursor: pointer;
 }
 .ctx-clear:hover { color: var(--danger); }
-/* Floating "comment on selection" affordance */
-.selection-comment-btn {
-  position: absolute;
-  z-index: 40;
-  background: var(--accent);
-  color: #fff;
-  border: none;
-  border-radius: 7px;
-  padding: 5px 11px;
-  font-size: 0.78rem;
-  font-family: var(--sans);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
-  cursor: pointer;
-}
-.selection-comment-btn:hover { filter: brightness(1.08); }
 
 /* Subtle hover outline on a commentable component (the gutter button carries
    the actual affordance). */

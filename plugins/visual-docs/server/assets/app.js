@@ -187,7 +187,7 @@
       inner = escapeHTML(code);
     }
     const tag = language ? `<span class="lang-tag">${escapeHTML(language)}</span>` : '';
-    return `<div class="codewrap">${tag}<pre><code class="hljs">${inner}</code></pre></div>`;
+    return `<div class="codewrap" ${blockAttrs(code)}>${tag}<pre><code class="hljs">${inner}</code></pre></div>`;
   }
 
   /** Ensure content parses as a unified diff for diff2html; if it's a bare
@@ -889,6 +889,9 @@
     });
   }
 
+  // Friendly names for generic blocks, used in the gutter button's label.
+  const BLOCK_NAMES = { P: 'paragraph', UL: 'list', OL: 'list', DL: 'list', TABLE: 'table', BLOCKQUOTE: 'note', PRE: 'code', FIGURE: 'figure', HR: 'divider' };
+
   const COMPONENTS = [
     ['.mermaid-block', 'mermaid diagram'],
     ['.nomnoml-block', 'nomnoml diagram'],
@@ -917,12 +920,29 @@
       blocks get the .component-block class (for the hover outline). No embedded
       buttons — the single gutter button (setupGutter) is the affordance. */
   function markCommentables(container) {
-    for (const h2 of container.querySelectorAll('h2')) {
-      h2.id = h2.id || slugify(h2.textContent.trim());
+    for (const h of container.querySelectorAll('h2, h3, h4, h5, h6')) {
+      h.id = h.id || slugify(h.textContent.trim());
     }
-    for (const sel of COMPONENTS.map(([s]) => s)) {
+    for (const sel of [...COMPONENTS.map(([s]) => s), '.codewrap']) {
       container.querySelectorAll(sel).forEach((blk) => blk.classList.add('component-block'));
     }
+  }
+
+  /** The one floating "comment" button, shared by the text-selection affordance
+      and the gutter (heading/component) affordance so they look identical. The
+      caller adds a positioning modifier (`pos-selection` fixed-to-page /
+      `pos-gutter` fixed-to-viewport) and drives visibility via `hidden`. */
+  function makeCommentButton(posClass) {
+    const btn = document.createElement('button');
+    btn.className = `floating-comment-btn ${posClass}`;
+    btn.type = 'button';
+    btn.hidden = true;
+    return btn;
+  }
+  function setCommentButtonLabel(btn, label, count = 0) {
+    btn.innerHTML = ICON.comment
+      + `<span class="fcb-label">${escapeHTML(label)}</span>`
+      + (count ? `<span class="fcb-count">${count}</span>` : '');
   }
 
   /** Resolve a component block to its comment anchor (type + ordinal label +
@@ -1181,10 +1201,7 @@
     useEffect(() => {
       const content = ref.current;
       if (!content || raw) return;
-      const btn = document.createElement('button');
-      btn.className = 'gutter-comment-btn';
-      btn.type = 'button';
-      btn.hidden = true;
+      const btn = makeCommentButton('pos-gutter');
       document.body.appendChild(btn);
       let target = null;
       let action = null;
@@ -1203,36 +1220,62 @@
         btn.style.top = `${Math.round(Math.max(12, r.top))}px`;
       };
 
+      // The top-level block child of the document under a node — so every block
+      // (paragraph, list, table, heading, component, code…) is a comment target.
+      const closestBlock = (node) => {
+        let el = node && node.nodeType === 3 ? node.parentElement : node;
+        if (!el || !content.contains(el)) return null;
+        while (el && el.parentElement !== content) el = el.parentElement;
+        return el && el.parentElement === content ? el : null;
+      };
+
+      const countComponent = (comments, id) => comments.filter((c) => c.anchor && c.anchor.kind === 'component' && c.anchor.id === id && commentStatus(c) !== 'resolved').length;
+
       const showFor = (el) => {
         const comments = commentsRef.current;
+        if (el.classList.contains('question-block')) { scheduleHide(); return; } // interactive
         let label = '';
         let count = 0;
         if (el.matches(COMPONENT_SELECTOR)) {
           const anchor = componentAnchorFor(content, el);
           if (!anchor) return;
-          count = comments.filter((c) => c.anchor && c.anchor.kind === 'component' && c.anchor.id === anchor.id && commentStatus(c) !== 'resolved').length;
+          count = countComponent(comments, anchor.id);
           label = `Comment on ${anchor.label}`;
           action = () => onOpenComponent(anchor);
-        } else {
+        } else if (el.classList.contains('codewrap')) {
+          const blocks = [...content.querySelectorAll('.codewrap')];
+          const i = blocks.indexOf(el);
+          const lbl = blocks.length > 1 ? `code block #${i + 1}` : 'code block';
+          const anchor = { kind: 'component', type: 'code block', label: lbl, id: el.dataset.blockId || '', hint: el.dataset.blockHint || '' };
+          count = countComponent(comments, anchor.id);
+          label = `Comment on ${lbl}`;
+          action = () => onOpenComponent(anchor);
+        } else if (/^H[2-6]$/.test(el.tagName)) {
           const title = el.textContent.trim();
           const slug = slugify(title);
           count = comments.filter((c) => commentSlug(c) === slug && commentStatus(c) !== 'resolved').length;
           const short = title.length > 42 ? title.slice(0, 42) + '…' : title;
           label = `Comment on “${short}”`;
           action = () => onOpenSection(slug, title);
+        } else {
+          const text = el.textContent.replace(/\s+/g, ' ').trim();
+          if (!text) { scheduleHide(); return; }
+          const quote = text.slice(0, 400);
+          const name = BLOCK_NAMES[el.tagName] || (el.classList.contains('admonition') ? 'callout' : 'block');
+          count = comments.filter((c) => c.anchor && c.anchor.kind === 'text' && c.anchor.quote === quote && commentStatus(c) !== 'resolved').length;
+          label = `Comment on this ${name}`;
+          action = () => onOpenText({ kind: 'text', quote, prefix: '', suffix: '' });
         }
         target = el;
-        const badge = count ? `<span class="gcb-count">${count}</span>` : '';
-        btn.innerHTML = ICON.comment + `<span class="gcb-label">${escapeHTML(label)}</span>` + badge;
+        setCommentButtonLabel(btn, label, count);
         btn.hidden = false;
         place();
       };
 
       const onMove = (e) => {
         if (e.target === btn || btn.contains(e.target)) { clearHide(); return; }
-        const comp = e.target.closest(COMPONENT_SELECTOR);
-        const cand = (comp && content.contains(comp)) ? comp : e.target.closest('h2');
-        if (cand && content.contains(cand)) {
+        const cand = closestBlock(e.target);
+        if (cand) {
           clearHide();
           if (cand !== target) showFor(cand);
         } else {
@@ -1256,16 +1299,14 @@
         clearHide();
         btn.remove();
       };
-    }, [doc, raw, onOpenSection, onOpenComponent]);
+    }, [doc, raw, onOpenSection, onOpenComponent, onOpenText]);
 
     // Text-selection → floating "comment" affordance.
     useEffect(() => {
       const el = ref.current;
       if (!el) return;
-      const btn = document.createElement('button');
-      btn.className = 'selection-comment-btn';
-      btn.innerHTML = `${ICON.comment} Comment`;
-      btn.hidden = true;
+      const btn = makeCommentButton('pos-selection');
+      setCommentButtonLabel(btn, 'Comment');
       document.body.appendChild(btn);
       let captured = null;
       const hide = () => { btn.hidden = true; captured = null; };
