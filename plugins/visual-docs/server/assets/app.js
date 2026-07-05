@@ -30,6 +30,7 @@
     folder: svgIcon('<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>'),
     help: svgIcon('<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>'),
     check: svgIcon('<polyline points="20 6 9 17 4 12"/>'),
+    text: svgIcon('<polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/>'),
     info: svgIcon('<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>'),
     tip: svgIcon('<path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.3h6c0-1 .4-1.8 1-2.3A7 7 0 0 0 12 2z"/>'),
     important: svgIcon('<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="12" y1="7" x2="12" y2="11"/><line x1="12" y1="14" x2="12.01" y2="14"/>'),
@@ -1241,23 +1242,33 @@
     useEffect(() => {
       const content = ref.current;
       if (!content || raw) return;
-      const btn = makeCommentButton('pos-gutter');
-      document.body.appendChild(btn);
+      // A fixed wrapper holds the button plus a faint "or select text" hint.
+      const wrap = document.createElement('div');
+      wrap.className = 'gutter-comment';
+      wrap.hidden = true;
+      const btn = makeCommentButton('');
+      btn.hidden = false;
+      const hint = document.createElement('div');
+      hint.className = 'gutter-hint';
+      hint.innerHTML = ICON.text + '<span>or highlight text to comment on a phrase</span>';
+      wrap.appendChild(btn);
+      wrap.appendChild(hint);
+      document.body.appendChild(wrap);
       let target = null;
       let action = null;
       let hideTimer = null;
       const clearHide = () => { if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; } };
-      const scheduleHide = () => { clearHide(); hideTimer = setTimeout(() => { btn.hidden = true; target = null; action = null; }, 200); };
+      const scheduleHide = () => { clearHide(); hideTimer = setTimeout(() => { wrap.hidden = true; target = null; action = null; }, 200); };
 
       const place = () => {
-        if (!target || btn.hidden) return;
+        if (!target || wrap.hidden) return;
         const r = target.getBoundingClientRect();
         const cr = content.getBoundingClientRect();
         let x = cr.right + 14;
-        const maxX = window.innerWidth - btn.offsetWidth - 10;
+        const maxX = window.innerWidth - wrap.offsetWidth - 10;
         if (x > maxX) x = maxX;
-        btn.style.left = `${Math.round(x)}px`;
-        btn.style.top = `${Math.round(Math.max(12, r.top))}px`;
+        wrap.style.left = `${Math.round(x)}px`;
+        wrap.style.top = `${Math.round(Math.max(12, r.top))}px`;
       };
 
       // The top-level block child of the document under a node — so every block
@@ -1308,12 +1319,15 @@
         }
         target = el;
         setCommentButtonLabel(btn, label, count);
-        btn.hidden = false;
+        // The hint only applies where text selection is possible (components
+        // exclude it); show it for paragraphs, lists, headings, and code.
+        hint.hidden = el.matches(COMPONENT_SELECTOR);
+        wrap.hidden = false;
         place();
       };
 
       const onMove = (e) => {
-        if (e.target === btn || btn.contains(e.target)) { clearHide(); return; }
+        if (e.target === wrap || wrap.contains(e.target)) { clearHide(); return; }
         const cand = closestBlock(e.target);
         if (cand) {
           clearHide();
@@ -1326,8 +1340,8 @@
 
       content.addEventListener('mousemove', onMove);
       content.addEventListener('mouseleave', scheduleHide);
-      btn.addEventListener('mouseenter', clearHide);
-      btn.addEventListener('mouseleave', scheduleHide);
+      wrap.addEventListener('mouseenter', clearHide);
+      wrap.addEventListener('mouseleave', scheduleHide);
       btn.addEventListener('click', () => { if (action) action(); });
       window.addEventListener('scroll', onScroll, true);
       window.addEventListener('resize', onScroll);
@@ -1337,7 +1351,7 @@
         window.removeEventListener('scroll', onScroll, true);
         window.removeEventListener('resize', onScroll);
         clearHide();
-        btn.remove();
+        wrap.remove();
       };
     }, [doc, raw, onOpenSection, onOpenComponent, onOpenText]);
 

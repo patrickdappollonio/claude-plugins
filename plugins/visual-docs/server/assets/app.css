@@ -655,6 +655,20 @@ button { font: inherit; cursor: pointer; }
 .floating-comment-btn:hover { filter: brightness(1.08); }
 .floating-comment-btn.pos-selection { position: absolute; }
 .floating-comment-btn.pos-gutter { position: fixed; }
+
+/* Gutter wrapper: the button plus a faint "or highlight text" hint below it. */
+.gutter-comment { position: fixed; z-index: 40; display: flex; flex-direction: column; align-items: flex-start; gap: 5px; }
+.gutter-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 240px;
+  color: var(--ink-soft);
+  font-size: 0.68rem;
+  opacity: 0.75;
+  padding-left: 2px;
+}
+.gutter-hint .icon { width: 0.9em; height: 0.9em; flex: 0 0 auto; }
 .floating-comment-btn .icon { width: 0.95em; height: 0.95em; flex: 0 0 auto; }
 .fcb-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fcb-count {
