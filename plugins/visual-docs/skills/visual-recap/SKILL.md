@@ -8,6 +8,13 @@ description: Use when the user wants a visual summary of work that was done — 
 Turn a change — a PR, branch, commit range, or the working tree — into an
 interactive review document served entirely from the user's machine.
 
+**Spend your tokens on the document, not on narrating.** Move through steps 1–4
+without a play-by-play in chat — no "Step 1: capturing the diff…", no restating
+the captured diff or the inventory, no "here's what I found." The first thing
+you say to the user is the link in step 4 with a one-line pointer. Every token
+you'd spend describing the work, spend instead making the document more
+complete.
+
 ## Workflow
 
 ### 1. Capture the change
@@ -21,28 +28,24 @@ Figure out what to recap, then capture the diff **once**:
 - **Uncommitted work:** `git diff HEAD` plus `git status --porcelain`
 - **Ambiguous** (e.g. both an open PR and local changes): ask the user which.
 
-Also capture `--name-status` for the file list. Everything in the document
-must be derived from this captured diff — that is what makes the recap
-trustworthy.
+Also capture `--name-status` for the file list. Everything in the document must
+be derived from this captured diff — that's what makes the recap trustworthy.
+Keep the captured output **out of chat**; it flows only into the document's
+fences, never as a pasted block in your reply.
 
-### 2. Take inventory before writing
+### 2. Take inventory before writing (silently)
 
-A thin recap is the common failure. Prevent it: before authoring, scan the
-captured diff and **list every meaningful item** it touches —
+A thin recap is the common failure. Prevent it by building — **as internal
+reasoning, never a chat message** — a checklist of every meaningful item the
+captured diff touches: each changed **file** (with its flag), **schema/table/
+migration**, **endpoint/route/message shape**, **component/flow/data-path** that
+moved, **UI surface or state** (incl. empty/loading/error/permission states),
+**load-bearing code hunk**, and **risk**. Recap the whole work unit (all the
+thread's changes), not just the latest fix.
 
-- changed **files**, grouped by area, with their change flag;
-- new/changed **schema, tables, migrations**;
-- new/changed **API endpoints, routes, actions, message shapes**;
-- new/changed **components, flows, or data paths** (anything that moved);
-- new/changed **UI surfaces or states**;
-- the **load-bearing code hunks** a reviewer must actually read;
-- **risks**: compatibility breaks, unhandled cases, follow-ups.
-
-The finished recap must **represent each meaningful item with a block, or
-intentionally omit it** because it's tiny, redundant, or not reviewer-facing.
-This inventory is your coverage checklist — work down it as you author. Recap
-the **whole work unit** (all the thread's commits/changes), not just the latest
-fix.
+Do not print this checklist into your reply — its only visible trace is the
+coverage it produces inside the document. It's your coverage list for step 3's
+audit.
 
 ### 3. Write the recap file
 
@@ -51,53 +54,40 @@ default to `DIR="${TMPDIR:-/tmp}/visual-docs-$(basename "$PWD")"` (create
 once, reuse), or a user-chosen repo path if they want it kept. Name the file
 after the change, e.g. `$DIR/recap-pr-142.md`.
 
-Follow `${CLAUDE_PLUGIN_ROOT}/skills/shared/authoring-guide.md` for fence
-syntax. **Substantial ≠ verbose:** be lean in prose but complete in coverage —
-a reviewer should be able to understand the whole change from the recap without
-opening the raw diff. Author top to bottom against this skeleton; include a
-section when the inventory has items for it, and when you skip one, it's because
-the inventory had nothing there — not because you didn't look.
+**Read `${CLAUDE_PLUGIN_ROOT}/skills/shared/document-quality.md` once (silently)
+before writing** — it is the standard for making the document comprehensive,
+layered simple→complex, and terse. Use `authoring-guide.md` for fence syntax.
+This document is where your tokens go: any budget you didn't spend narrating
+steps 1–2 belongs here — prefer one more `## Key changes` hunk, one more grounded
+`api`/`migration` example, or a fuller `## Risks` list over a shorter recap.
 
-1. `# Title` — what the change accomplished, past tense
-   ("Added rate limiting to the public API").
-2. `## Outcome` — the **birds-eye view first**: 1–3 short paragraphs a
-   non-author could follow — what this change accomplishes and *why*, in plain
-   terms, before any code. Then what reviewers should scrutinize. Flag risky or
-   surprising parts with `> **Risk:** …`. This is the part that makes a recap
-   feel comprehensive; don't shortchange it.
-3. `## What changed` — the full file list with change flags (path,
-   added/modified/deleted/renamed, one-line purpose each), grouped by area. A
-   reviewer should see the footprint at a glance.
-4. `## Architecture` — a ` ```mermaid ` (or sketch-style ` ```nomnoml `)
-   diagram when the change moved components, flows, or data paths. Prefer a
-   two-dimensional shape (before/after, layered, swimlane) over a flat chain.
-5. `## Data & schema` — ` ```migration ` fences for schema/migration changes,
-   reflecting the actual migration files.
-6. `## API` — ` ```api ` exchange examples for changed behaviour and/or an
-   ` ```openapi ` fence for added or modified endpoints. Give each distinct
-   message shape its own example.
-7. `## Key changes` — 3–8 H3 subsections, each introduced by a sentence saying
-   what to look at and *why it matters*, then a focused ` ```diff ` fence
-   (~150 lines max) with real hunks. Cover the load-bearing hunks from the
-   inventory, not an arbitrary sample. Fewer than 3 on a large change
-   under-serves the reviewer; more than 8 stops being a summary — summarize or
-   link the rest.
-8. `## Risks & follow-ups` — bullets: what wasn't done, what to watch after
-   merge/deploy, suggested next steps.
+Author top to bottom against this skeleton; include a section when the inventory
+has items for it, skip one only when the inventory had nothing there:
 
-**Diff → block coverage.** Map each kind of change to the block that carries
-it, so nothing in the inventory is dropped: schema/migration → ` ```migration `;
-endpoint/route → ` ```api ` / ` ```openapi `; architecture/flow shift →
-` ```mermaid ` / ` ```nomnoml `; any load-bearing code hunk → ` ```diff `;
-files → the `## What changed` list; a UI change → embed a screenshot image
-(referenced via `/files/…`) or diagram the flow. Prose (`## Outcome`, risk
-notes) is the only place you write freely.
+1. `# Title` — what the change accomplished, past tense.
+2. `## Outcome` — birds-eye first: 1–3 plain-terms paragraphs a non-author
+   follows, **no code/symbol names**, then what to scrutinize; flag with
+   `> **Risk:** …`.
+3. `## What changed` — full file list with change flags + a one-line purpose
+   each, grouped by area.
+4. `## Architecture` — a ` ```mermaid `/` ```nomnoml ` diagram when components,
+   flows, or data paths moved (prefer a 2-D before/after or layered shape).
+5. `## Data & schema` — ` ```migration ` fences for schema changes.
+6. `## API` — ` ```api ` examples and/or an ` ```openapi ` fence per changed
+   endpoint (each distinct message shape its own example).
+7. `## Key changes` — 3–8 H3 subsections, each led by a *why-it-matters*
+   sentence, then a trimmed ` ```diff ` (≤~150 lines) plus 2–4 annotation
+   bullets on the lines that matter (see document-quality.md §4).
+8. `## Risks & follow-ups` — what wasn't done, what to watch, next steps.
+
+**Then audit:** walk your inventory checklist against the finished document,
+item by item — each maps to a block or has a one-clause omission reason. Do this
+before serving.
 
 Grounding rule: structured blocks are only true if derived from the actual
-changed lines — real paths, real fields, real method/path, real before/after
-text. Never infer content that isn't in the diff; when the diff doesn't contain
-a fact, leave it out or mark it as inferred. Redact secrets as
-`<redacted>` / `sk-•••`.
+changed lines — real paths, fields, method/path, before/after text. Never infer;
+when the diff doesn't contain a fact, leave it out or mark it inferred. Redact
+secrets as `<redacted>` / `sk-•••`.
 
 ### 4. Serve and share
 

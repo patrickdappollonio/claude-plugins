@@ -10,6 +10,11 @@ served entirely from their machine. The plan is a plain markdown file — the
 bundled server renders it with diagrams, diffs, and styled blocks, live-reloads
 as you edit it, and collects the user's comments for you to read back.
 
+**Spend your tokens on the document, not on narrating.** Do the research and
+inventory silently — no step-by-step play-by-play in chat, no restating what you
+found. Surface for the first time in step 4/5 with the link and a one-line
+pointer; put the budget you'd spend narrating into the plan's coverage instead.
+
 ## Workflow
 
 ### 1. Research first, then write the plan file
@@ -28,49 +33,43 @@ write the plan as a single markdown file. Choose the directory:
 
 Name the file after the task, e.g. `$DIR/add-rate-limiting.md`.
 
-### 2. Take inventory before writing
+### 2. Take inventory before writing (silently)
 
-A thin plan is the common failure. From your research, **list every part of the
-system the plan will touch** — the components/modules, the files you'll add or
-change, the schema/tables/migrations, the API endpoints or routes, the flows or
-data paths that shift, the UI surfaces affected, and the decisions or risks the
-user must weigh. The finished plan must **represent each meaningful item with a
-block, or intentionally omit it** because it's trivial. This inventory is your
-coverage checklist.
+A thin plan is the common failure. From your research, build — **as internal
+reasoning, never a chat message** — a checklist of every part of the system the
+plan will touch: components/modules, files to add or change, schema/tables/
+migrations, endpoints/routes, flows or data-paths that shift, UI surfaces and
+states, and the decisions or risks the user must weigh. Don't print it; its only
+trace is the coverage it drives. It's your list for step 3's audit.
 
 ### 3. Author the document
 
-Follow `${CLAUDE_PLUGIN_ROOT}/skills/shared/authoring-guide.md` for the full
-fence syntax. **Substantial ≠ verbose:** lean prose, complete coverage — the
-user should be able to approve or push back from the plan alone. Author top to
-bottom against this skeleton; include a section when the inventory has items for
-it, and skip one only because the inventory had nothing there.
+**Read `${CLAUDE_PLUGIN_ROOT}/skills/shared/document-quality.md` once (silently)
+before writing** — the standard for a comprehensive, simple→complex, terse
+document. Use `authoring-guide.md` for fence syntax. The plan is where your
+tokens go: budget you didn't spend narrating belongs here.
 
-1. `# Title` — one line, imperative ("Add rate limiting to the public API").
-2. `## Summary` — the **birds-eye view first**: a short plain-terms paragraph on
-   what you're going to do and *why* (a reader new to the task should follow
-   it), then a `> **Decision needed:** …` blockquote for anything the user must
-   decide.
-3. `## Architecture` — a ` ```mermaid ` diagram (or sketch-style ` ```nomnoml `)
-   when components or flows change; prefer a two-dimensional shape over a chain.
-4. `## Key changes` — one H3 per meaningful change from the inventory, each
-   introduced by a sentence on *why it matters*: real code in normal fences,
-   proposed edits as ` ```diff ` fences (real `git diff`-style hunks with file
-   headers, ~150 lines max per fence). 3–8 is the healthy range.
+Author top to bottom against this skeleton; include a section when the inventory
+has items, skip one only when it had nothing there:
+
+1. `# Title` — one line, imperative.
+2. `## Summary` — birds-eye first: a plain-terms paragraph on what you'll do and
+   *why*, **no code/symbol names**, then `> **Decision needed:** …` for anything
+   the user must decide.
+3. `## Architecture` — a ` ```mermaid `/` ```nomnoml ` diagram when components or
+   flows change (prefer a 2-D shape over a chain).
+4. `## Key changes` — one H3 per meaningful change, each led by a *why-it-matters*
+   sentence: real code in normal fences, proposed edits as ` ```diff ` hunks,
+   trimmed to the load-bearing lines with 2–4 annotation bullets (document-quality
+   §4). 3–8 is healthy.
 5. `## Database changes` — ` ```migration ` fences with `-- up` / `-- down`.
-6. `## API behavior` / `## API surface` — ` ```api ` request/response examples
-   and/or an ` ```openapi ` fence for new or changed endpoints.
+6. `## API behavior` / `## API surface` — ` ```api ` examples and/or ` ```openapi `.
 7. `## Rollout` — ordered steps, flags, sequencing.
-8. `## Open questions` — bullets the user should answer in comments.
+8. `## Open questions` — bullets the user answers in comments.
 
-**Change → block coverage.** Map each item in the inventory to a block so none
-is dropped: schema → ` ```migration `; endpoint → ` ```api ` / ` ```openapi `;
-architecture/flow → ` ```mermaid ` / ` ```nomnoml `; concrete code → a normal
-or ` ```diff ` fence; decisions/risks → `> **Decision needed:**` prose.
-
-Grounding rule: every file path, line, schema, and API shape must come from
-the actual codebase or the actual proposed edit. Do not decorate with invented
-detail. Redact secrets.
+**Then audit** your inventory against the finished plan, item by item, before
+serving. Grounding rule: every path, line, schema, and API shape must come from
+the actual codebase or the proposed edit — don't invent detail. Redact secrets.
 
 ### 4. Serve it
 
