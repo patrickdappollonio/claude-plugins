@@ -65,24 +65,33 @@ Nomnoml syntax primer (it is NOT Mermaid — do not mix syntaxes):
 
 ### File tree — ` ```filetree ` (aliases: ` ```files `, ` ```file-tree `)
 
-A "what changed" file map: one line per file as `<flag> <path>  <note>`, rendered
-with a coloured change badge, the path, and a muted note. Flags: `A` added
+A "what changed" file map, rendered as a **striped table with a collapsed
+directory tree**. One line per file as `<flag> <path>  <note>`. Flags: `A` added
 (green), `M` modified (amber), `D` deleted (red), `R` renamed (blue) — or the
-words `added`/`modified`/`deleted`/`renamed`. The note is optional (separate it
-with 2+ spaces, a tab, or ` — `). A line starting with `#` is a group heading.
-This is the block for a recap's `## What changed` — prefer it over a plain
-bullet list.
+words `added`/`modified`/`deleted`/`renamed`. This is the block for a recap's
+`## What changed` — prefer it over a plain bullet list.
 
+- **Note** — separate it from the path with 2+ spaces, a tab, or ` — `. It's
+  optional, may be **as long as you need**, and supports inline markdown:
+  `` `code` ``, **bold**, *italic*, and links. Use it to actually explain the
+  change, not just label it.
+- **Paths shrink automatically** — shared directories collapse into folder rows
+  and filenames show as basenames, so you always write the full path and the
+  renderer builds the tree. Single-child chains (`a/b/c`) collapse into one row.
+- **`#` heading** starts a group (e.g. `# Server`). Optional.
+
+```
     ```filetree
     # Server
-    A  server/lib/server.js     http server: routing, access gate
-    M  server/assets/app.js     the viewer
-    D  server/old.js            removed
-    R  a.js -> b.js             renamed
+    A  internal/ratelimit/bucket.go      Core **token-bucket** with `Take(key)`; backs onto Redis, falling back to an in-memory store when it's down.
+    M  internal/server/router.go         Wires the limiter in front of `/api/v1` *before* auth.
+    D  internal/legacy/throttle.go       Replaced by the bucket limiter.
+    R  internal/rl/old.go -> new.go      renamed for clarity
 
-    # Skills
-    A  skills/shared/guide.md   fence syntax
+    # Tests
+    A  internal/ratelimit/bucket_test.go Burst, refill, and Redis-down fallback cases.
     ```
+```
 
 ### Diffs — ` ```diff ` (alias: ` ```patch `)
 

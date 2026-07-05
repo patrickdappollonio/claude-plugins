@@ -417,30 +417,32 @@ button { font: inherit; cursor: pointer; }
 
 /* ---------- File-tree block ---------- */
 .filetree-block { margin: 1.6em 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--surface); }
-.filetree-block .ft-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  background: var(--surface-2);
-  border-bottom: 1px solid var(--line);
-}
-.filetree-block .ft-head .mig-icon { color: var(--accent); }
-.filetree-block .ft-head .mig-title { font-family: var(--mono); font-size: 0.78rem; font-weight: 600; }
-.ft-group {
-  padding: 10px 14px 4px;
+.ft-table { width: 100%; border-collapse: collapse; }
+.ft-table td { padding: 6px 14px; vertical-align: middle; }
+.ft-inner { display: inline-flex; align-items: center; gap: 8px; }
+
+/* Group heading row */
+.ft-grouprow td.ft-group {
   font-family: var(--mono);
   font-size: 0.62rem;
   text-transform: uppercase;
   letter-spacing: 0.12em;
   color: var(--ink-soft);
+  padding: 12px 14px 5px;
+  border-bottom: 1px solid var(--line);
 }
-.ft-group:first-of-type { padding-top: 6px; }
-.ft-row { display: flex; align-items: baseline; gap: 10px; padding: 3px 14px; }
-.ft-row:hover { background: var(--surface-2); }
+.ft-grouprow:first-child td.ft-group { padding-top: 10px; }
+
+/* Directory row */
+.ft-dirrow td.ft-dir { color: var(--ink-soft); font-family: var(--mono); font-size: 0.74rem; padding-top: 7px; padding-bottom: 3px; }
+.ft-dirrow .icon { width: 0.95em; height: 0.95em; color: var(--accent); }
+
+/* File rows — zebra striping */
+.ft-row.ft-even { background: var(--surface-2); }
+.ft-row:hover { background: var(--line); }
+.ft-name { white-space: nowrap; width: 1%; }
 .ft-flag {
   flex: 0 0 auto;
-  align-self: center;
   width: 17px;
   height: 17px;
   border-radius: 4px;
@@ -458,7 +460,10 @@ button { font: inherit; cursor: pointer; }
 .ft-renamed { background: var(--accent); }
 .ft-none { background: transparent; border: 1px solid var(--line); }
 .ft-path { font-family: var(--mono); font-size: 0.8rem; background: none; padding: 0; }
-.ft-note { color: var(--ink-soft); font-size: 0.82rem; }
+.ft-note { color: var(--ink); font-size: 0.84rem; line-height: 1.5; }
+.ft-note code { font-size: 0.78rem; padding: 0.1em 0.35em; }
+.ft-note :first-child { margin-top: 0; }
+.ft-note :last-child { margin-bottom: 0; }
 
 /* ---------- Section comment pins ---------- */
 .section-comment-btn {

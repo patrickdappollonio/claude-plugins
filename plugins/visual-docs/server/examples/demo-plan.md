@@ -10,17 +10,17 @@ We will add a token-bucket rate limiter in front of the public REST API. Request
 
 ```filetree
 # Server
-A  internal/ratelimit/bucket.go      token-bucket algorithm + Redis/in-memory stores
-A  internal/ratelimit/middleware.go  chi middleware: check bucket, emit 429 + Retry-After
-M  internal/server/router.go         wire the limiter in front of /api/v1
-M  internal/config/config.go         new RATE_LIMIT_RPM / REDIS_URL settings
+A  internal/ratelimit/bucket.go      Core **token-bucket** with `Take(key)` and `Refill()`; backs onto Redis via `INCR`+`EXPIRE`, falling back to an in-memory `sync.Map` when Redis is unreachable.
+A  internal/ratelimit/middleware.go  chi middleware that calls `Take` per request and, on rejection, writes `429` with a `Retry-After` header computed from the bucket's next-refill time.
+M  internal/server/router.go         Wires the limiter in front of `/api/v1` *before* auth, so unauthenticated floods are shed cheaply.
+M  internal/config/config.go         Adds `RATE_LIMIT_RPM` (default `100`) and `REDIS_URL`; both are optional — omitting `REDIS_URL` selects the in-memory store.
 
 # Database
-A  migrations/0007_api_key_limits.sql  per-key limit overrides table
+A  migrations/0007_api_key_limits.sql  Per-key limit *overrides* table so enterprise keys can exceed the global default.
 
 # Tests
-A  internal/ratelimit/bucket_test.go   burst, refill, and fallback cases
-M  internal/server/router_test.go      assert 429 path end-to-end
+A  internal/ratelimit/bucket_test.go   Burst, steady-refill, and Redis-down fallback cases; asserts `Retry-After` is monotonic.
+M  internal/server/router_test.go      End-to-end assertion that the 101st request in a minute gets `429`.
 ```
 
 ## Architecture

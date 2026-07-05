@@ -27,6 +27,7 @@
     chevronRight: svgIcon('<polyline points="9 6 15 12 9 18"/>'),
     close: svgIcon('<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>'),
     doc: svgIcon('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>'),
+    folder: svgIcon('<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>'),
     database: svgIcon('<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>'),
     exchange: svgIcon('<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>'),
     arrowRight: svgIcon('<line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>'),
@@ -505,15 +506,35 @@
     deleted: 'deleted', removed: 'deleted', renamed: 'renamed', moved: 'renamed',
   };
 
-  /** Render a ` ```filetree ` fence: a "what changed" file map. Each line is
-      `<flag> <path>  <note>` (flag = A|M|D|R or added/modified/deleted/renamed;
-      note optional, separated by 2+ spaces, a tab, or " — "). A line starting
-      with `#` is a group heading. */
+  // Inline-only markdown (bold/italic/code/links) for file descriptions; the
+  // result is sanitized by the outer sanitizeHTML pass like all fence output.
+  function inlineMarkdown(s) {
+    try {
+      return window.marked ? window.marked.parseInline(s) : escapeHTML(s);
+    } catch {
+      return escapeHTML(s);
+    }
+  }
+
+  /** Render a ` ```filetree ` fence: a "what changed" file map as a striped
+      table. Each line is `<flag> <path>  <note>` (flag = A|M|D|R or
+      added/modified/deleted/renamed; note optional, separated by 2+ spaces, a
+      tab, or " — ", and may use inline markdown). A line starting with `#` is a
+      group heading. Shared directories collapse into folder rows so filenames
+      shrink to basenames. */
   function renderFileTreeFence(code) {
-    const rows = code.split('\n').map((raw) => {
+    // Parse into groups of {flag, path, note} entries.
+    const groups = [];
+    let cur = { label: null, entries: [] };
+    groups.push(cur);
+    for (const raw of code.split('\n')) {
       const line = raw.replace(/\s+$/, '');
-      if (!line.trim()) return null;
-      if (line.trim().startsWith('#')) return { group: line.replace(/^\s*#\s?/, '') };
+      if (!line.trim()) continue;
+      if (line.trim().startsWith('#')) {
+        cur = { label: line.replace(/^\s*#\s?/, ''), entries: [] };
+        groups.push(cur);
+        continue;
+      }
       let flag = '';
       let rest = line.trim();
       const fm = rest.match(/^([A-Za-z]+)\s+(\S.*)$/);
@@ -522,20 +543,75 @@
       let note = '';
       const sp = rest.match(/^(.*?)(?:\s{2,}|\t|\s+—\s+)(.+)$/);
       if (sp) { path = sp[1].trim(); note = sp[2].trim(); }
-      return { flag, path, note };
-    }).filter(Boolean);
+      cur.entries.push({ flag, path, note });
+    }
+    const used = groups.filter((g) => g.entries.length);
+
+    // Build a directory trie for one group's entries.
+    const buildTree = (entries) => {
+      const root = { dirs: new Map(), files: [] };
+      for (const e of entries) {
+        // For renames ("old -> new"), place by the new path but keep the label.
+        const arrow = e.path.split(/\s*(?:->|→)\s*/);
+        const treePath = arrow.length === 2 ? arrow[1] : e.path;
+        const segs = treePath.split('/').filter(Boolean);
+        const base = segs.pop();
+        const name = arrow.length === 2 ? e.path : (base || treePath);
+        let node = root;
+        for (const seg of segs) {
+          if (!node.dirs.has(seg)) node.dirs.set(seg, { dirs: new Map(), files: [] });
+          node = node.dirs.get(seg);
+        }
+        node.files.push({ ...e, name });
+      }
+      return root;
+    };
 
     const flagBadge = (f) => f
       ? `<span class="ft-flag ft-${f}" title="${f}">${f[0].toUpperCase()}</span>`
       : '<span class="ft-flag ft-none"></span>';
-    const body = rows.map((r) => r.group !== undefined
-      ? `<div class="ft-group">${escapeHTML(r.group)}</div>`
-      : `<div class="ft-row">${flagBadge(r.flag)}<code class="ft-path">${escapeHTML(r.path)}</code>${r.note ? `<span class="ft-note">${escapeHTML(r.note)}</span>` : ''}</div>`
-    ).join('');
+
+    let stripe = 0;
+    const fileRow = (f, depth) => {
+      stripe += 1;
+      const pad = 12 + depth * 18;
+      return `<tr class="ft-row ${stripe % 2 ? 'ft-odd' : 'ft-even'}">
+        <td class="ft-name" style="padding-left:${pad}px"><span class="ft-inner">${flagBadge(f.flag)}<code class="ft-path">${escapeHTML(f.name)}</code></span></td>
+        <td class="ft-note">${f.note ? inlineMarkdown(f.note) : ''}</td>
+      </tr>`;
+    };
+    const dirRow = (label, depth) => {
+      const pad = 12 + depth * 18;
+      return `<tr class="ft-dirrow"><td class="ft-dir" colspan="2" style="padding-left:${pad}px"><span class="ft-inner">${ICON.folder}<span>${escapeHTML(label)}/</span></span></td></tr>`;
+    };
+
+    // Render a trie node; collapse single-child directory chains (a/b/c).
+    const renderNode = (node, depth) => {
+      let out = '';
+      for (const [seg, child] of node.dirs) {
+        let label = seg;
+        let c = child;
+        while (c.files.length === 0 && c.dirs.size === 1) {
+          const [s2, c2] = c.dirs.entries().next().value;
+          label += '/' + s2;
+          c = c2;
+        }
+        out += dirRow(label, depth);
+        out += renderNode(c, depth + 1);
+      }
+      for (const f of node.files) out += fileRow(f, depth);
+      return out;
+    };
+
+    const rows = used.map((g) => {
+      const header = g.label
+        ? `<tr class="ft-grouprow"><td class="ft-group" colspan="2">${escapeHTML(g.label)}</td></tr>`
+        : '';
+      return header + renderNode(buildTree(g.entries), 0);
+    }).join('');
 
     return `<div class="filetree-block" ${blockAttrs(code)}>
-      <div class="ft-head"><span class="mig-icon">${ICON.doc}</span><span class="mig-title">files changed</span></div>
-      ${body}
+      <table class="ft-table"><tbody>${rows}</tbody></table>
     </div>`;
   }
 
