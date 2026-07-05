@@ -87,16 +87,20 @@ into a pasteable message if they prefer chat.
 
 ### 5. Read feedback before revising — every time
 
-Before any revision (user asks for changes, or you're checking in):
+Before any revision (user asks for changes, or you're checking in), read the
+open comments as a ready-to-read digest — no JSON parsing needed:
 
 ```bash
-curl -s http://127.0.0.1:<port>/api/comments
+curl -s http://127.0.0.1:<port>/agent/comments.md
 ```
 
-(or read `$DIR/.visual-docs/comments.json`). Address every open comment, edit
+Each comment is labelled with what it's anchored to: a section, a quoted
+snippet, or a component. Use `/agent/comments.json` for the structured form, or
+add `?path=<file>` to scope to one document. Address every open comment, edit
 the markdown file in place (the browser reloads automatically), then mark the
-comments you handled with `"resolved": true` in the JSON file. If the user
-pastes a "Copy as prompt" block into chat instead, treat it identically.
+comments you handled with `"resolved": true` in
+`$DIR/.visual-docs/comments.json`. If the user pastes a "Copy as prompt" block
+into chat instead, treat it identically.
 
 ### 6. Approval gate
 

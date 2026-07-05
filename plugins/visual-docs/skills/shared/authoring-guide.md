@@ -163,9 +163,21 @@ Each comment looks like:
 
 Agent obligations:
 
-1. **Before every revision**, fetch open comments
-   (`curl -s <url>api/comments` or read the JSON file) and address them.
+1. **Before every revision**, read open comments as a formatted digest:
+   `curl -s <url>agent/comments.md` (add `?path=<file>` to scope to one doc).
+   Each entry is labelled with what it's anchored to — a section, a quoted
+   snippet, or a component. `<url>agent/comments.json` gives the structured form.
 2. After addressing a comment, set its `"resolved": true` in
-   `.visual-docs/comments.json` so the reader sees it cleared.
+   `.visual-docs/comments.json` so the reader sees it cleared (live-updates).
 3. The viewer also offers "Copy as prompt" — users may paste feedback directly
    into chat instead; treat pasted prompts and stored comments the same way.
+
+## Agent endpoints (`/agent/…`)
+
+Read-only endpoints that return formatted data an agent can `curl` directly,
+so no JSON parsing or scripting is needed:
+
+- `GET /agent/comments.md` — open comments as a readable markdown digest.
+- `GET /agent/comments.json` — the structured comment list.
+- Both accept `?path=<file>` to scope to a single document, and honour the
+  `Accept` header (`text/markdown` → the digest) when no extension is given.

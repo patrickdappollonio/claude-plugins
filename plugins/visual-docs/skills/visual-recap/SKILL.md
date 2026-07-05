@@ -73,17 +73,21 @@ hover a heading to pin a comment, "Copy as prompt" for chat-style feedback.
 
 ### 4. Respond to review
 
-Before revising the recap (or acting on review feedback), read open comments:
+Before revising the recap (or acting on review feedback), read open comments as
+a ready-to-read digest — no JSON parsing needed:
 
 ```bash
-curl -s http://127.0.0.1:<port>/api/comments
+curl -s http://127.0.0.1:<port>/agent/comments.md
 ```
 
-(or `$DIR/.visual-docs/comments.json`). Comments on a recap often request
-code changes, not document changes — when a comment asks for a fix, confirm
-scope with the user before editing code. After handling a comment, set its
-`"resolved": true` in the JSON file. Treat pasted "Copy as prompt" blocks
-exactly like stored comments.
+Each comment is labelled with what it's anchored to: a section, a quoted
+snippet of the document, or a component (e.g. "mermaid diagram"). Use
+`/agent/comments.json` if you want the structured form, or add `?path=<file>`
+to scope to one document. Comments on a recap often request code changes, not
+document changes — when a comment asks for a fix, confirm scope with the user
+before editing code. After handling a comment, set its `"resolved": true` in
+`$DIR/.visual-docs/comments.json` (the viewer live-updates). Treat pasted
+"Copy as prompt" blocks exactly like stored comments.
 
 ## Cleanup
 

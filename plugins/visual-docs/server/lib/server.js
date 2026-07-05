@@ -27,9 +27,29 @@ const IGNORED_DIRS = new Set(['node_modules', '.git', '.visual-docs']);
 
 // Extensions the plugin's own /assets/ dir may serve (our vendored renderer libs).
 const ASSET_EXTS = new Set(['.js', '.css', '.svg', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.woff', '.woff2', '.ttf', '.otf', '.ico', '.md']);
-// Extensions a document may reference via /files/ — images, fonts, stylesheets only.
-// Deliberately excludes .js/.json/.md/dotfiles so the served repo's source and secrets stay private.
-const FILE_EXTS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.avif', '.svg', '.ico', '.bmp', '.css', '.woff', '.woff2', '.ttf', '.otf']);
+// A document may reference only images via /files/ (markdown is served through
+// /api/doc). The extension is a fast pre-filter; the real gate is content
+// sniffing below, so a mislabeled non-image file is never served.
+const FILE_EXTS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.avif', '.svg', '.ico', '.bmp']);
+
+/** Detect an image type from magic bytes; returns a MIME string or null. SVG is
+    XML text, so it's matched by leading token. This is what actually decides
+    whether a /files/ response is served — the extension only narrows the set. */
+function sniffImage(buf) {
+  if (buf.length >= 8 && buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47) return 'image/png';
+  if (buf.length >= 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return 'image/jpeg';
+  if (buf.length >= 6) {
+    const g = buf.toString('latin1', 0, 6);
+    if (g === 'GIF87a' || g === 'GIF89a') return 'image/gif';
+  }
+  if (buf.length >= 12 && buf.toString('latin1', 0, 4) === 'RIFF' && buf.toString('latin1', 8, 12) === 'WEBP') return 'image/webp';
+  if (buf.length >= 12 && buf.toString('latin1', 4, 8) === 'ftyp' && /avif|avis/.test(buf.toString('latin1', 8, 12))) return 'image/avif';
+  if (buf.length >= 2 && buf[0] === 0x42 && buf[1] === 0x4d) return 'image/bmp';
+  if (buf.length >= 4 && buf[0] === 0x00 && buf[1] === 0x00 && buf[2] === 0x01 && buf[3] === 0x00) return 'image/x-icon';
+  const head = buf.slice(0, 512).toString('utf8').replace(/^﻿/, '').trimStart();
+  if (head.startsWith('<?xml') || head.startsWith('<svg')) return 'image/svg+xml';
+  return null;
+}
 
 // Guardrails for the on-disk comment store.
 const MAX_COMMENT_LEN = 8000;
@@ -82,20 +102,29 @@ async function resolveServable(baseReal, relPath, exts) {
   return real;
 }
 
-async function serveStatic(res, baseReal, relPath, exts) {
+async function serveStatic(res, baseReal, relPath, exts, { verifyImage = false } = {}) {
   const abs = await resolveServable(baseReal, relPath, exts);
   if (!abs) { res.writeHead(404); return res.end('not found'); }
+  let content;
   try {
-    const content = await fs.readFile(abs);
-    res.writeHead(200, {
-      'content-type': MIME[extname(abs).toLowerCase()] || 'application/octet-stream',
-      'cache-control': 'no-store',
-    });
-    return res.end(content);
+    content = await fs.readFile(abs);
   } catch {
     res.writeHead(404);
     return res.end('not found');
   }
+  const headers = { 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' };
+  if (verifyImage) {
+    // The file must actually BE an image, not just be named like one.
+    const mime = sniffImage(content);
+    if (!mime) { res.writeHead(404); return res.end('not found'); }
+    headers['content-type'] = mime;
+    // A directly-navigated SVG could otherwise run inline script; lock it down.
+    if (mime === 'image/svg+xml') headers['content-security-policy'] = "default-src 'none'; style-src 'unsafe-inline'";
+  } else {
+    headers['content-type'] = MIME[extname(abs).toLowerCase()] || 'application/octet-stream';
+  }
+  res.writeHead(200, headers);
+  return res.end(content);
 }
 
 async function listMarkdownFiles(root, dir = root, out = []) {
@@ -183,6 +212,43 @@ async function readBody(req, limit = 1024 * 1024) {
     req.on('end', () => resolveBody(Buffer.concat(chunks).toString('utf8')));
     req.on('error', reject);
   });
+}
+
+/** A short human label for what a comment is anchored to (section, quoted text,
+    or a component), for the agent-facing markdown digest. */
+function anchorLabel(c) {
+  if (c.anchor && c.anchor.kind === 'text' && c.anchor.quote) {
+    const q = c.anchor.quote.replace(/\s+/g, ' ').trim();
+    return `“${q.length > 100 ? q.slice(0, 100) + '…' : q}”`;
+  }
+  if (c.anchor && c.anchor.kind === 'component') return c.anchor.label || c.anchor.type || 'component';
+  return c.title || c.section || 'document';
+}
+
+/** Render a comment list as a ready-to-read markdown digest, grouped by document
+    with open comments first. Served at /agent/comments.md so an agent can read
+    feedback with a plain `curl` instead of parsing JSON. */
+function renderCommentsMarkdown(comments, scopePath) {
+  if (!comments.length) {
+    return `# Comments${scopePath ? ` for ${scopePath}` : ''}\n\n_No comments yet._\n`;
+  }
+  const open = comments.filter((c) => !c.resolved);
+  const resolved = comments.length - open.length;
+  const byPath = new Map();
+  for (const c of open) {
+    const key = c.path || '(document)';
+    if (!byPath.has(key)) byPath.set(key, []);
+    byPath.get(key).push(c);
+  }
+  let out = `# Open comments (${open.length})\n`;
+  if (!open.length) out += '\n_No open comments._\n';
+  for (const [p, list] of byPath) {
+    out += `\n## ${p}\n`;
+    for (const c of list) out += `\n- **${anchorLabel(c)}** — ${c.text.replace(/\n+/g, ' ')}`;
+    out += '\n';
+  }
+  if (resolved) out += `\n---\n_${resolved} resolved comment(s) not shown._\n`;
+  return out;
 }
 
 /** Reject a state-changing request whose Origin is a different host than the one it hit. */
@@ -274,6 +340,21 @@ export async function startServer({ dir, port = 0, host = '127.0.0.1', watch: en
         return sendJSON(res, 201, { comment: result.comment });
       }
 
+      // Agent-facing read endpoints: formatted data an agent can curl directly.
+      // Format is chosen by extension (.md | .json), with Accept as a fallback.
+      if (pathname.startsWith('/agent/comments') && req.method === 'GET') {
+        const data = await readComments(root);
+        const p = url.searchParams.get('path');
+        const comments = p ? data.comments.filter((c) => c.path === p) : data.comments;
+        const wantsMd = pathname.endsWith('.md')
+          || (!pathname.endsWith('.json') && /text\/(markdown|plain)/.test(req.headers.accept || ''));
+        if (wantsMd) {
+          res.writeHead(200, { 'content-type': 'text/markdown; charset=utf-8', 'cache-control': 'no-store' });
+          return res.end(renderCommentsMarkdown(comments, p));
+        }
+        return sendJSON(res, 200, { comments });
+      }
+
       if (pathname === '/api/events' && req.method === 'GET') {
         if (sseClients.size >= MAX_SSE_CLIENTS) {
           res.writeHead(503, { 'content-type': 'text/plain' });
@@ -297,9 +378,9 @@ export async function startServer({ dir, port = 0, host = '127.0.0.1', watch: en
         return serveStatic(res, assetsReal, pathname.slice('/assets/'.length), ASSET_EXTS);
       }
 
-      // Serve image/font/style assets referenced by docs (never source or secrets).
+      // Serve images referenced by docs (content-verified; never source/secrets).
       if (pathname.startsWith('/files/') && req.method === 'GET') {
-        return serveStatic(res, rootReal, pathname.slice('/files/'.length), FILE_EXTS);
+        return serveStatic(res, rootReal, pathname.slice('/files/'.length), FILE_EXTS, { verifyImage: true });
       }
 
       // Everything else gets the single-page shell; the client routes.
