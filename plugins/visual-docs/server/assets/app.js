@@ -31,6 +31,7 @@
     check: svgIcon('<polyline points="20 6 9 17 4 12"/>'),
     text: svgIcon('<polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/>'),
     list: svgIcon('<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>'),
+    expand: svgIcon('<polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>'),
     clock: svgIcon('<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/>'),
     code: svgIcon('<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>'),
     printer: svgIcon('<polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>'),
@@ -869,6 +870,56 @@
     }
   }
 
+  /** Open a diagram's SVG in a full-viewport modal so a dense diagram is
+      readable. Clones the already-sanitized SVG and re-namespaces its element
+      ids so markers/arrowheads resolve to the clone, not the original in the
+      page. Closes on backdrop / X / Esc. */
+  function openDiagramModal(svg) {
+    const overlay = document.createElement('div');
+    overlay.className = 'diagram-modal';
+    overlay.innerHTML = `<div class="dm-backdrop"></div><div class="dm-panel"><button type="button" class="dm-close" title="Close (Esc)">${ICON.close}</button><div class="dm-stage"></div></div>`;
+    const clone = svg.cloneNode(true);
+    clone.removeAttribute('width');
+    clone.removeAttribute('height');
+    clone.style.maxWidth = 'none';
+    // Duplicate ids (defs/markers/gradients) otherwise resolve to the first copy
+    // in the document (the original) — fine when it's visible, but re-namespace to
+    // be safe so the enlarged copy is self-contained.
+    const suffix = `-dm${Math.random().toString(36).slice(2, 7)}`;
+    clone.querySelectorAll('[id]').forEach((el) => {
+      const oldId = el.id;
+      const newId = oldId + suffix;
+      el.id = newId;
+      clone.querySelectorAll('*').forEach((ref) => {
+        for (const attr of ref.attributes) {
+          if (attr.value.includes(`#${oldId}`)) ref.setAttribute(attr.name, attr.value.split(`#${oldId}`).join(`#${newId}`));
+        }
+      });
+    });
+    overlay.querySelector('.dm-stage').appendChild(clone);
+    const close = () => { overlay.remove(); document.removeEventListener('keydown', onKey); };
+    const onKey = (e) => { if (e.key === 'Escape') close(); };
+    overlay.querySelector('.dm-close').addEventListener('click', close);
+    overlay.querySelector('.dm-backdrop').addEventListener('click', close);
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(overlay);
+  }
+
+  /** Give a rendered diagram card a hover "expand" button and click-to-open. */
+  function addDiagramExpand(block) {
+    const svg = block.querySelector('svg');
+    if (!svg || block.querySelector('.diagram-expand')) return;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'diagram-expand';
+    btn.title = 'Open full screen';
+    btn.innerHTML = ICON.expand;
+    btn.addEventListener('click', (e) => { e.stopPropagation(); openDiagramModal(svg); });
+    block.appendChild(btn);
+    svg.style.cursor = 'zoom-in';
+    svg.addEventListener('click', () => openDiagramModal(svg));
+  }
+
   async function hydrateMermaid(container, isCancelled = () => false) {
     const blocks = container.querySelectorAll('.mermaid-block');
     if (!blocks.length) return;
@@ -888,6 +939,7 @@
         const { svg } = await window.mermaid.render(id, src);
         if (isCancelled()) return;
         b.innerHTML = sanitizeSvg(svg);
+        addDiagramExpand(b);
       } catch (err) {
         document.getElementById(`d${id}`)?.remove(); // mermaid leaves an error node behind
         b.innerHTML = `<div class="render-error">mermaid: ${escapeHTML(String(err.message || err))}\n\n${escapeHTML(src)}</div>`;
@@ -906,6 +958,7 @@
         b.innerHTML = sanitizeSvg(window.nomnoml.renderSvg(src));
         const svg = b.querySelector('svg');
         if (svg) { svg.removeAttribute('width'); svg.removeAttribute('height'); svg.style.maxWidth = '100%'; }
+        addDiagramExpand(b);
       } catch (err) {
         b.innerHTML = `<div class="render-error">nomnoml: ${escapeHTML(String(err.message || err))}\n\n${escapeHTML(src)}</div>`;
       }

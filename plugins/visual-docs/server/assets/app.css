@@ -294,11 +294,44 @@ button { font: inherit; cursor: pointer; }
 
 /* ---------- Diagram cards (mermaid / nomnoml) ---------- */
 .mermaid-block, .nomnoml-block {
+  position: relative;
   margin: 1.5em 0; padding: 24px;
   background: var(--surface-2); border: 1px solid var(--line);
   border-radius: 12px; overflow-x: auto; text-align: center;
 }
 .mermaid-block svg, .nomnoml-block svg { max-width: 100%; height: auto; }
+
+/* Hover "open full screen" affordance on a diagram card. */
+.diagram-expand {
+  position: absolute; top: 10px; right: 10px; z-index: 2;
+  width: 30px; height: 30px; display: grid; place-items: center; padding: 0;
+  border: 1px solid var(--line); border-radius: 8px; background: var(--surface);
+  color: var(--ink-soft); cursor: pointer; opacity: 0; transition: opacity 0.12s, color 0.12s, border-color 0.12s;
+}
+.mermaid-block:hover .diagram-expand, .nomnoml-block:hover .diagram-expand,
+.diagram-expand:focus-visible { opacity: 1; }
+.diagram-expand:hover { color: var(--accent); border-color: var(--accent); }
+.diagram-expand .icon { width: 15px; height: 15px; }
+
+/* Full-viewport diagram modal. */
+.diagram-modal { position: fixed; inset: 0; z-index: 1000; }
+.diagram-modal .dm-backdrop { position: absolute; inset: 0; background: color-mix(in srgb, var(--ink) 60%, transparent); }
+.diagram-modal .dm-panel {
+  position: absolute; inset: 3vh 3vw; z-index: 1; display: flex; overflow: hidden;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.35);
+}
+.diagram-modal .dm-close {
+  position: absolute; top: 12px; right: 12px; z-index: 2;
+  width: 34px; height: 34px; display: grid; place-items: center; padding: 0;
+  border: 1px solid var(--line); border-radius: 9px; background: var(--surface);
+  color: var(--ink-soft); cursor: pointer;
+}
+.diagram-modal .dm-close:hover { color: var(--danger); border-color: var(--danger); }
+.diagram-modal .dm-close .icon { width: 18px; height: 18px; }
+/* flex + margin:auto centers when it fits, scrolls from the start when it doesn't. */
+.diagram-modal .dm-stage { flex: 1; overflow: auto; display: flex; padding: 28px; }
+.diagram-modal .dm-stage svg { margin: auto; height: 80vh; width: auto; max-width: none; }
 .render-error {
   border: 1px solid var(--danger); background: var(--danger-soft); color: var(--danger);
   border-radius: 10px; padding: 10px 14px; font-family: var(--mono); font-size: 0.78rem; white-space: pre-wrap; text-align: left;
