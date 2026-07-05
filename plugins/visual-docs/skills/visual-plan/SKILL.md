@@ -22,11 +22,14 @@ pointer; put the budget you'd spend narrating into the plan's coverage instead.
 Do the normal planning work first (read the code, understand the change). Then
 write the plan as a single markdown file. Choose the directory:
 
-- **Default (throwaway review):** a directory scoped to **this session and this
-  project**, so it starts empty every session and never overlaps another
-  project's docs (`CLAUDE_CODE_SESSION_ID` is unique per session):
+- **Default (throwaway review):** this session's own Claude scratchpad — it's
+  auto-created, scoped to this session (and agent), and cleaned up for you, so it
+  starts empty every session and never overlaps another project's docs. Find it
+  by session id (this avoids depending on Claude's cwd→folder encoding) and fall
+  back to a session-scoped temp dir if it isn't there:
   ```bash
-  DIR="${TMPDIR:-/tmp}/visual-docs/$(basename "$PWD")-${CLAUDE_CODE_SESSION_ID:-$$}"
+  SCRATCH=$(ls -d /tmp/claude-$(id -u)/*/"${CLAUDE_CODE_SESSION_ID}"/scratchpad 2>/dev/null | head -1)
+  DIR="${SCRATCH:-${TMPDIR:-/tmp}/visual-docs-${CLAUDE_CODE_SESSION_ID:-$$}}/visual-docs"
   mkdir -p "$DIR"
   ```
 - **User wants the plan kept:** write it where they say (e.g. `docs/plans/`)
@@ -60,7 +63,9 @@ tokens go: budget you didn't spend narrating belongs here.
 Author top to bottom against this skeleton; include a section when the inventory
 has items, skip one only when it had nothing there:
 
-1. `# Title` — one line, imperative.
+1. `# Title` — one line, imperative. Directly under it, add a ` ```tldr `
+   summary card (recommended for anything non-trivial): 2–4 sentences a reader
+   absorbs in one glance before scrolling.
 2. `## Summary` — birds-eye first: a plain-terms paragraph on what you'll do and
    *why*, **no code/symbol names**, then `> **Decision needed:** …` for anything
    the user must decide.

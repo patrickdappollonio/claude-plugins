@@ -58,6 +58,7 @@ but in the viewer these fences get special treatment:
 
 | Fence | Renders as |
 | :---- | :--------- |
+| ` ```tldr ` / ` ```summary ` | A prominent **TL;DR** summary card for the top of the document — markdown body (bold, code, links, lists) |
 | ` ```mermaid ` | Mermaid diagram (flowchart, sequence, ER, state, …) |
 | ` ```nomnoml ` | Sketchy, hand-drawn-style diagram from a tiny UML text DSL |
 | ` ```diff ` / ` ```patch ` | Rich diff viewer with a **unified / side-by-side** toggle |

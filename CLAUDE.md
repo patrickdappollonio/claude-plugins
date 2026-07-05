@@ -37,6 +37,7 @@ A zero-dependency reader you serve locally. Nothing is remote.
 
 ### Fences & components (all rendered client-side, then DOMPurify-sanitized)
 
+`tldr`/`summary` (prominent top-of-doc summary card; markdown body),
 `mermaid`, `nomnoml`, `diff`/`patch`, `migration` (up/down + unified/side-by-side
 toggle), `api`/`http`, `openapi`/`swagger`, `filetree`/`files` (tree-table with
 A/M/D/R + notes), `question`/`ask` (interactive; answers post as comments),

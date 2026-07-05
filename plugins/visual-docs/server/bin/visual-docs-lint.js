@@ -23,7 +23,7 @@ import path from 'node:path';
 const STRUCTURED = new Set([
   'diff', 'patch', 'migration', 'sql-migration', 'db-migration',
   'api', 'http', 'openapi', 'swagger', 'filetree', 'files', 'file-tree',
-  'mermaid', 'nomnoml', 'question', 'ask',
+  'mermaid', 'nomnoml', 'question', 'ask', 'tldr', 'tl;dr', 'summary',
 ]);
 const ADMONITIONS = new Set(['NOTE', 'TIP', 'IMPORTANT', 'WARNING', 'CAUTION']);
 const SECRET_RE = /\b(sk-[A-Za-z0-9]{16,}|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{20,})\b/;
@@ -134,6 +134,8 @@ function lintFence(lang, body, start, add) {
     const entries = body.map((l) => l.trim()).filter((l) => l && !l.startsWith('#'));
     if (!entries.length) add(at, 'warn', 'filetree fence has no file entries.');
   }
+  // tldr/tl;dr/summary need no extra shape check — the generic empty-fence guard
+  // above already requires prose content.
 }
 
 // ---- CLI ----

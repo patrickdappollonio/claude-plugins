@@ -448,6 +448,29 @@ button { font: inherit; cursor: pointer; }
 .ft-note :first-child { margin-top: 0; }
 .ft-note :last-child { margin-bottom: 0; }
 
+/* ---------- TL;DR summary card ---------- */
+/* A deliberately prominent top-of-doc summary: filled accent tint, an icon-chip
+   + "TL;DR" eyebrow, and slightly larger body text so it reads as THE summary. */
+.tldr-block {
+  margin: 0.2em 0 1.9em; padding: 18px 22px 20px;
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--line));
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--accent-soft) 70%, var(--surface));
+}
+.tldr-head { display: flex; align-items: center; gap: 10px; margin-bottom: 11px; }
+.tldr-ichip {
+  width: 27px; height: 27px; border-radius: 8px; display: grid; place-items: center; flex: 0 0 auto;
+  background: color-mix(in srgb, var(--accent) 22%, var(--surface)); color: var(--accent);
+}
+.tldr-ichip .icon { width: 15px; height: 15px; }
+.tldr-label {
+  font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.11em; color: var(--accent-ink);
+}
+.tldr-body { font-size: 1.02rem; line-height: 1.65; color: var(--ink); }
+.tldr-body > :first-child { margin-top: 0; }
+.tldr-body > :last-child { margin-bottom: 0; }
+.tldr-body p { line-height: 1.65; }
+
 /* ---------- Admonitions (icon-chip, no accent rail) ---------- */
 .admonition {
   display: grid; grid-template-columns: auto 1fr; gap: 13px; align-items: start;

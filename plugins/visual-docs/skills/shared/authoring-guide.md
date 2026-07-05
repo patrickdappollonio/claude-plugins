@@ -29,6 +29,21 @@ block, so a document is always readable — even in a bare text editor.
 
 ## Special fences
 
+### TL;DR summary — ` ```tldr ` (aliases: ` ```tl;dr `, ` ```summary `)
+
+A prominent summary card for the **top of the document** — a "TL;DR" eyebrow over
+a few sentences a reader can absorb in one glance before scrolling. The body is
+regular markdown (bold, `code`, links, a short list all render), so keep it to
+the essentials: what the change does and the one or two things that matter most.
+Use it once, at the very top; it's not a general callout (use `> [!NOTE]` for
+those).
+
+    ```tldr
+    Adds a **token-bucket** rate limiter in front of the public API — over-limit
+    requests get `429` with `Retry-After`. Limits are per API key in Redis, with
+    an in-memory fallback. Default is 100 req/min, behind a rollout flag.
+    ```
+
 ### Mermaid diagrams — ` ```mermaid `
 
 Any Mermaid diagram type (flowchart, sequence, state, ER, gantt):

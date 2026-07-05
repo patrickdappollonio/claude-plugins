@@ -1,5 +1,11 @@
 # Add rate limiting to the public API
 
+```tldr
+Adds a **token-bucket** rate limiter in front of the public API — over-limit
+requests get `429` with a `Retry-After` header. Limits are per API key in Redis,
+with an in-memory fallback. Default is **100 req/min**, behind a rollout flag.
+```
+
 ## Summary
 
 We will add a token-bucket rate limiter in front of the public REST API. Requests over the limit get `429 Too Many Requests` with a `Retry-After` header. Limits are per API key, stored in Redis, with an in-memory fallback when Redis is unavailable.

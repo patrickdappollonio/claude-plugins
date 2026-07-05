@@ -50,13 +50,15 @@ audit.
 ### 3. Write the recap file
 
 Directory selection and serving are identical to the visual-plan skill. Default
-to a directory scoped to **this session and this project** so it starts empty
-every session and never overlaps another project's recaps
-(`CLAUDE_CODE_SESSION_ID` is unique per session), or a user-chosen repo path if
-they want it kept:
+to this session's own Claude scratchpad — auto-created, scoped to this session
+(and agent), and cleaned up for you, so it starts empty every session and never
+overlaps another project's recaps. Find it by session id (this avoids depending
+on Claude's cwd→folder encoding) and fall back to a session-scoped temp dir if
+it isn't there, or use a user-chosen repo path if they want it kept:
 
 ```bash
-DIR="${TMPDIR:-/tmp}/visual-docs/$(basename "$PWD")-${CLAUDE_CODE_SESSION_ID:-$$}"
+SCRATCH=$(ls -d /tmp/claude-$(id -u)/*/"${CLAUDE_CODE_SESSION_ID}"/scratchpad 2>/dev/null | head -1)
+DIR="${SCRATCH:-${TMPDIR:-/tmp}/visual-docs-${CLAUDE_CODE_SESSION_ID:-$$}}/visual-docs"
 mkdir -p "$DIR"
 ```
 
@@ -80,7 +82,9 @@ steps 1–2 belongs here — prefer one more `## Key changes` hunk, one more gro
 Author top to bottom against this skeleton; include a section when the inventory
 has items for it, skip one only when the inventory had nothing there:
 
-1. `# Title` — what the change accomplished, past tense.
+1. `# Title` — what the change accomplished, past tense. Directly under it, add
+   a ` ```tldr ` summary card (recommended for anything non-trivial): 2–4
+   sentences a reader absorbs in one glance before scrolling.
 2. `## Outcome` — birds-eye first: 1–3 plain-terms paragraphs a non-author
    follows, **no code/symbol names**, then what to scrutinize; flag with
    `> **Risk:** …`.

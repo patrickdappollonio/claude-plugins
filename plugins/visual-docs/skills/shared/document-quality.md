@@ -16,6 +16,15 @@ aren't in tension when you split them across two kinds of content:
 
 Minimal prose + maximal structure + trimmed-to-what-matters = terse and complete.
 
+**Scale the document to the change.** Length is proportional to how much the
+change actually contains, never padded to a template. A 100-line branch gets a
+short document — a few sections, one or two blocks — that still covers every
+meaningful item; forcing it to look substantial is a failure. A 10k-line PR gets
+a genuinely comprehensive one: many `## Key changes` subsections, a block per
+distinct diagram/migration/endpoint, a full risks list. Thoroughness (every
+item on the inventory is represented) is constant; the *amount* of output tracks
+the size and complexity of the diff. Right-size, don't inflate and don't thin.
+
 ## 1. Layer it simple → complex
 
 The skeleton is ordered on purpose: plain-language outcome → what changed →

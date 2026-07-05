@@ -30,6 +30,7 @@
     help: svgIcon('<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>'),
     check: svgIcon('<polyline points="20 6 9 17 4 12"/>'),
     text: svgIcon('<polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/>'),
+    list: svgIcon('<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>'),
     clock: svgIcon('<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/>'),
     code: svgIcon('<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>'),
     printer: svgIcon('<polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>'),
@@ -194,6 +195,13 @@
 
     if (language === 'question' || language === 'ask') {
       return renderQuestionFence(code);
+    }
+
+    if (language === 'tldr' || language === 'tl;dr' || language === 'summary') {
+      // Prose summary rendered as a prominent top-of-doc card. The body markdown
+      // is rendered at hydrate time (hydrateTldr), not here, to avoid re-entering
+      // marked.parse from inside its own renderer.
+      return `<div class="tldr-block" ${blockAttrs(code)} data-tldr-source="${encodeSrc(code)}"></div>`;
     }
 
     let inner;
@@ -949,6 +957,33 @@
     });
   }
 
+  /** Render a ```tldr fence's markdown body into a prominent summary card.
+      Runs after the empty block is in the DOM (like hydrateMermaid); the body is
+      rendered here rather than during the main parse to avoid re-entering
+      marked.parse from inside renderCodeFence. */
+  function hydrateTldr(container) {
+    container.querySelectorAll('.tldr-block').forEach((block) => {
+      if (block.dataset.hydrated) return;
+      const src = decodeSrc(block.dataset.tldrSource || '');
+      const head = document.createElement('div');
+      head.className = 'tldr-head';
+      const chip = document.createElement('span');
+      chip.className = 'tldr-ichip';
+      chip.innerHTML = ICON.list;
+      const label = document.createElement('span');
+      label.className = 'tldr-label';
+      label.textContent = 'TL;DR';
+      head.appendChild(chip);
+      head.appendChild(label);
+      const body = document.createElement('div');
+      body.className = 'tldr-body';
+      body.innerHTML = sanitizeHTML(renderMarkdown(src));
+      block.appendChild(head);
+      block.appendChild(body);
+      block.dataset.hydrated = '1';
+    });
+  }
+
   const CALLOUTS = {
     'decision needed': { cls: 'decision', icon: 'branch' },
     'decision': { cls: 'decision', icon: 'branch' },
@@ -1031,6 +1066,7 @@
   const BLOCK_NAMES = { P: 'paragraph', UL: 'list', OL: 'list', DL: 'list', TABLE: 'table', BLOCKQUOTE: 'note', PRE: 'code', FIGURE: 'figure', HR: 'divider' };
 
   const COMPONENTS = [
+    ['.tldr-block', 'summary'],
     ['.mermaid-block', 'mermaid diagram'],
     ['.nomnoml-block', 'nomnoml diagram'],
     ['.diff-block', 'diff'],
@@ -1048,7 +1084,7 @@
   // content (a diagram, an interactive explorer, a table) and is whole-block-only
   // — deriving OPAQUE_SELECTOR from COMPONENTS means a NEW component type defaults
   // to opaque (the safe choice) until it's explicitly listed as text-preserving.
-  const TEXT_PRESERVING = new Set(['.diff-block', '.migration-block', '.api-block']);
+  const TEXT_PRESERVING = new Set(['.tldr-block', '.diff-block', '.migration-block', '.api-block']);
   const OPAQUE_SELECTOR = [
     ...COMPONENTS.map(([sel]) => sel).filter((sel) => !TEXT_PRESERVING.has(sel)),
     '.question-block', // interactive answer form, not a COMPONENTS entry
@@ -1358,6 +1394,7 @@
       if (h1) h1.remove(); // title shown in TitleBlock
       hydrateAdmonitions(el);
       hydrateCallouts(el);
+      hydrateTldr(el);
       hydrateDiffs(el);
       hydrateMigrations(el);
       hydrateNomnoml(el);
