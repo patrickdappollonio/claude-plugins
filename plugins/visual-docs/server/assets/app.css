@@ -381,6 +381,12 @@ button { font: inherit; cursor: pointer; }
 .api-status.s-4xx { background: var(--warn-soft); color: var(--warn); }
 .api-status.s-5xx { background: var(--danger-soft); color: var(--danger); }
 .api-status-text { font-family: var(--mono); font-size: 0.78rem; color: var(--ink-soft); }
+/* Pills/badges: vertically center their (often uppercase) text — without this
+   the glyphs top-align inside the padded box. .ft-flag already does this. */
+.api-method, .api-status, .migration-head .mig-badge, .oa-head .mig-badge,
+.question-block .q-badge, .c-status {
+  display: inline-flex; align-items: center; justify-content: center; line-height: 1;
+}
 .api-headers { margin-top: 8px; }
 .api-headers summary { cursor: pointer; color: var(--ink-soft); font-size: 0.72rem; }
 .api-headers pre { margin: 6px 0 0; background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; font-size: 0.75rem; }
@@ -571,9 +577,11 @@ mark.comment-highlight {
 #comment-context .ctx-lead { color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.58rem; margin-right: 6px; }
 #comment-context .ctx-quote { font-style: italic; }
 #comment-context .ctx-label { font-weight: 600; }
-.ctx-clear { flex: 0 0 auto; width: 22px; height: 22px; background: var(--accent); border: none; color: #fff; border-radius: 6px; display: grid; place-items: center; cursor: pointer; }
-.ctx-clear .icon { width: 12px; height: 12px; }
-.ctx-clear:hover { background: var(--accent-press); }
+/* Scoped above #comment-form button (which sets padding: 9px 16px) so the X
+   stays a centered square instead of a padded pill. */
+#comment-context .ctx-clear { flex: 0 0 auto; width: 22px; height: 22px; padding: 0; background: var(--accent); border: none; color: #fff; border-radius: 6px; display: grid; place-items: center; cursor: pointer; }
+#comment-context .ctx-clear .icon { width: 12px; height: 12px; }
+#comment-context .ctx-clear:hover { background: var(--accent-press); }
 
 #comment-form { padding: 12px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 9px; }
 #comment-form textarea {

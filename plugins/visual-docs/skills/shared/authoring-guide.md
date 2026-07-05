@@ -274,12 +274,22 @@ refers to.
 
 **Comment lifecycle.** Every comment has a `status`: `new` (just written by the
 reader), `acknowledged` (you've read it and are working on it), or `resolved`
-(you've addressed it). New comments start as `new`. As you work, edit
-`.visual-docs/comments.json` to set `"status": "acknowledged"` when you pick a
-comment up and `"status": "resolved"` when you're done — the viewer shows each
-state distinctly and live-updates. (The legacy `"resolved": true` boolean is
-still honoured and treated as `resolved`.) The reader's "Copy as prompt" button
-copies only the `new` comments, so acknowledging promptly keeps that clean.
+(you've addressed it). New comments start as `new`. As you work, POST to the
+status endpoint — **don't hand-edit `comments.json` or write a script for it:**
+
+```bash
+curl -sX POST <url>api/comments/status \
+  -H 'content-type: application/json' \
+  -d '{"id":"<comment-id>","status":"acknowledged"}'   # then "resolved" when done
+```
+
+Pass `{"ids":["…","…"],"status":"…"}` to update several at once. Each comment's
+`id` is printed in the digest alongside this exact command. The viewer shows
+each state distinctly and live-updates. (The legacy `"resolved": true` boolean
+is still honoured and treated as `resolved`; editing the JSON directly also
+still works, but the endpoint is the supported path.) The reader's "Copy as
+prompt" button copies only the `new` comments, so acknowledging promptly keeps
+that clean.
 
 `anchor` is `{kind:"text", quote, prefix, suffix}` for a selection,
 `{kind:"component", type, label, id, hint}` for a diagram/diff/etc, or absent
@@ -299,9 +309,10 @@ Agent obligations:
    `curl -s <url>agent/comments.md` (add `?path=<file>` to scope to one doc).
    Each entry is labelled with its `[status]` and what it's anchored to — a
    section, a quoted snippet, or a component. `<url>api/comments` gives JSON.
-2. Drive the lifecycle: set `"status": "acknowledged"` when you start on a
-   comment and `"status": "resolved"` when done, in `.visual-docs/comments.json`
-   (the viewer live-updates and distinguishes the three states).
+2. Drive the lifecycle via the status endpoint: `POST <url>api/comments/status`
+   with `{"id":"<id>","status":"acknowledged"}` when you start on a comment and
+   `"resolved"` when done (or `{"ids":[…],"status":…}` for several). The viewer
+   live-updates and distinguishes the three states. Don't hand-edit the JSON.
 3. The viewer also offers "Copy as prompt" — users may paste feedback directly
    into chat instead; treat pasted prompts and stored comments the same way.
 
@@ -312,5 +323,9 @@ so no JSON parsing or scripting is needed:
 
 - `GET /agent/comments.md` — open comments as a readable markdown digest,
   each labelled with what it's anchored to (section, quoted text, or a
-  component and its id). Accepts `?path=<file>` to scope to one document.
+  component and its id) and carrying its own `id`. Accepts `?path=<file>` to
+  scope to one document.
+- `POST /api/comments/status` — update a comment's lifecycle state without
+  editing `comments.json`. Body: `{"id":"<id>","status":"acknowledged"}` (or
+  `{"ids":[…],"status":…}`); valid statuses `new`/`acknowledged`/`resolved`.
 - Structured JSON (for programmatic use) is at `GET /api/comments`.

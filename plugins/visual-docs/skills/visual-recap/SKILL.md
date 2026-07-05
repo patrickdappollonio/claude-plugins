@@ -117,14 +117,25 @@ curl -s http://127.0.0.1:<port>/agent/comments.md
 ```
 
 Each comment is labelled with what it's anchored to: a section, a quoted
-snippet of the document, or a component (e.g. "mermaid diagram"). Use
-`/api/comments` if you want the structured JSON, or add `?path=<file>` to
-scope to one document. Comments on a recap often request code changes, not
+snippet of the document, or a component (e.g. "mermaid diagram"), and carries an
+`id`. Use `/api/comments` if you want the structured JSON, or add `?path=<file>`
+to scope to one document. Comments on a recap often request code changes, not
 document changes — when a comment asks for a fix, confirm scope with the user
-before editing code. Drive each comment's `status` in
-`$DIR/.visual-docs/comments.json`: `"acknowledged"` when you start on it,
-`"resolved"` when done (the viewer live-updates and shows the three states).
-Treat pasted "Copy as prompt" blocks exactly like stored comments.
+before editing code.
+
+Drive each comment's `status` by POSTing to the status endpoint — do **not**
+hand-edit `comments.json` or write a script for it:
+
+```bash
+curl -sX POST http://127.0.0.1:<port>/api/comments/status \
+  -H 'content-type: application/json' \
+  -d '{"id":"<comment-id>","status":"acknowledged"}'   # then "resolved" when done
+```
+
+Pass `{"ids":["…","…"],"status":"…"}` to update several at once. The digest
+prints each comment's id and this exact command; the viewer live-updates and
+shows the three states (`new` → `acknowledged` → `resolved`). Treat pasted
+"Copy as prompt" blocks exactly like stored comments.
 
 ## Cleanup
 

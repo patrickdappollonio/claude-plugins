@@ -119,13 +119,24 @@ curl -s http://127.0.0.1:<port>/agent/comments.md
 ```
 
 Each comment is labelled with what it's anchored to: a section, a quoted
-snippet, or a component. Use `/api/comments` for the structured JSON, or
-add `?path=<file>` to scope to one document. Address every open comment, edit
-the markdown file in place (the browser reloads automatically), and drive each
-comment's `status` in `$DIR/.visual-docs/comments.json` — `"acknowledged"` when
-you start on it, `"resolved"` when done (the viewer shows the three states and
-live-updates). If the user pastes a "Copy as prompt" block into chat instead,
-treat it identically.
+snippet, or a component, and carries an `id`. Use `/api/comments` for the
+structured JSON, or add `?path=<file>` to scope to one document. Address every
+open comment and edit the markdown file in place (the browser reloads
+automatically).
+
+Drive each comment's `status` by POSTing to the status endpoint — do **not**
+hand-edit `comments.json` or write a script for it:
+
+```bash
+curl -sX POST http://127.0.0.1:<port>/api/comments/status \
+  -H 'content-type: application/json' \
+  -d '{"id":"<comment-id>","status":"acknowledged"}'   # then "resolved" when done
+```
+
+Pass `{"ids":["…","…"],"status":"…"}` to update several at once. The digest
+prints each comment's id and this exact command. The viewer shows the three
+states (`new` → `acknowledged` → `resolved`) and live-updates. If the user
+pastes a "Copy as prompt" block into chat instead, treat it identically.
 
 ### 7. Approval gate
 

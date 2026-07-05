@@ -1199,18 +1199,32 @@
   /** Best-effort 1-based source line for a comment entry, found by searching the
       raw markdown for a representative string (the quote / fence hint / heading).
       Returns null if not locatable — the anchor still identifies the target. */
+  // Reduce a string to lowercase alphanumeric words so a *rendered* quote can be
+  // matched against *raw* markdown — bold/italic/`code`/[links]/smart-quotes and
+  // other syntax collapse away on both sides. (Mirrors resolveCommentLine on the
+  // server; keep the two in sync.)
+  function normalizeForLineMatch(s) {
+    return (s || '')
+      .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1') // [text](url) / ![alt](url) -> visible text only
+      .toLowerCase().replace(/[^a-z0-9]+/g, ' ').replace(/^ | $/g, '');
+  }
   function sourceLineFor(content, entry) {
     if (!content || !entry) return null;
     const a = entry.anchor;
-    let needle = '';
-    if (a && a.kind === 'text') needle = a.quote;
-    else if (a && a.kind === 'component') needle = a.hint;
-    else if (entry.title || entry.section) needle = entry.title || entry.section;
-    needle = (needle || '').replace(/\s+/g, ' ').trim().slice(0, 40);
+    let raw = '';
+    if (a && a.kind === 'text') raw = a.quote;
+    else if (a && a.kind === 'component') raw = a.hint;
+    else if (entry.title || entry.section) raw = entry.title || entry.section;
+    const needle = normalizeForLineMatch(raw).slice(0, 40).trim();
     if (needle.length < 3) return null;
-    const lines = content.split('\n');
-    for (let i = 0; i < lines.length; i++) {
-      if (lines[i].replace(/\s+/g, ' ').includes(needle)) return i + 1;
+    const norm = content.split('\n').map(normalizeForLineMatch);
+    for (let i = 0; i < norm.length; i++) {
+      if (norm[i].includes(needle)) return i + 1;
+    }
+    // The quote may straddle a source line break (soft-wrapped prose); retry
+    // across a two-line sliding window before giving up.
+    for (let i = 0; i < norm.length - 1; i++) {
+      if (`${norm[i]} ${norm[i + 1]}`.includes(needle)) return i + 1;
     }
     return null;
   }

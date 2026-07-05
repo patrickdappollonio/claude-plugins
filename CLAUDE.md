@@ -54,8 +54,13 @@ validate its shape, so `visual-docs-lint` covers every component.
 Stored in `<served-dir>/.visual-docs/comments.json`; exposed at `GET
 /api/comments` (JSON) and `GET /agent/comments.md` (agent-readable digest).
 Lifecycle `status`: **new → acknowledged → resolved** (legacy `resolved:true`
-still honored). The agent drives status by editing the JSON. Anchors: text
-(quote+prefix/suffix), component (type+stable-id+hint), or section (heading).
+still honored). The agent drives status via `POST /api/comments/status`
+(`{id|ids, status}`) — the digest prints each comment's id + the curl for it;
+hand-editing the JSON still works but the endpoint is the supported path.
+Anchors: text (quote+prefix/suffix), component (type+stable-id+hint), or section
+(heading). A best-effort `line` is resolved (client + server) by normalizing the
+rendered quote and raw markdown to bare alphanumerics before matching, so
+`path:line` survives bold/`code`/[links]/smart-quotes/soft-wraps.
 The **gutter comment button** (Notion-style) is the single add-a-comment
 affordance — it follows the hovered block into the right margin for every block
 type (headings, paragraphs, lists, code, components).

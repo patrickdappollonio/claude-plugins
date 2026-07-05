@@ -144,21 +144,35 @@ async function readHead(file, bytes = 8192) {
     doc for a representative string (quote / fence hint / heading). Lets a caller
     that POSTs to /api/comments without a `line` (e.g. an agent, not the browser)
     still get path:line context in the digest. */
+// Reduce a string to lowercase alphanumeric words so a *rendered* quote can be
+// matched against *raw* markdown — bold/italic/`code`/[links]/smart-quotes and
+// other syntax collapse away on both sides. (Mirrors normalizeForLineMatch in
+// the client; keep the two in sync.)
+function normalizeForLineMatch(s) {
+  return (s || '')
+    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1') // [text](url) / ![alt](url) -> visible text only
+    .toLowerCase().replace(/[^a-z0-9]+/g, ' ').replace(/^ | $/g, '');
+}
 async function resolveCommentLine(baseReal, path, comment) {
   if (!path || !/\.(md|markdown)$/i.test(path)) return null;
   const a = comment.anchor;
-  let needle = '';
-  if (a && a.kind === 'text') needle = a.quote;
-  else if (a && a.kind === 'component') needle = a.hint;
-  else if (comment.title || comment.section) needle = comment.title || comment.section;
-  needle = (needle || '').replace(/\s+/g, ' ').trim().slice(0, 40);
+  let raw = '';
+  if (a && a.kind === 'text') raw = a.quote;
+  else if (a && a.kind === 'component') raw = a.hint;
+  else if (comment.title || comment.section) raw = comment.title || comment.section;
+  const needle = normalizeForLineMatch(raw).slice(0, 40).trim();
   if (needle.length < 3) return null;
   try {
     const abs = await resolveServable(baseReal, path, null);
     if (!abs) return null;
-    const lines = (await fs.readFile(abs, 'utf8')).split('\n');
-    for (let i = 0; i < lines.length; i++) {
-      if (lines[i].replace(/\s+/g, ' ').includes(needle)) return i + 1;
+    const norm = (await fs.readFile(abs, 'utf8')).split('\n').map(normalizeForLineMatch);
+    for (let i = 0; i < norm.length; i++) {
+      if (norm[i].includes(needle)) return i + 1;
+    }
+    // The quote may straddle a source line break (soft-wrapped prose); retry
+    // across a two-line sliding window before giving up.
+    for (let i = 0; i < norm.length - 1; i++) {
+      if (`${norm[i]} ${norm[i + 1]}`.includes(needle)) return i + 1;
     }
   } catch { /* ignore */ }
   return null;
@@ -356,7 +370,7 @@ function commentStatus(c) {
 /** Render a comment list as a ready-to-read markdown digest, grouped by document
     with open comments first. Served at /agent/comments.md so an agent can read
     feedback with a plain `curl` instead of parsing JSON. */
-function renderCommentsMarkdown(comments, scopePath) {
+function renderCommentsMarkdown(comments, scopePath, base = 'http://127.0.0.1') {
   if (!comments.length) {
     return `# Comments${scopePath ? ` for ${scopePath}` : ''}\n\n_No comments yet._\n`;
   }
@@ -369,13 +383,16 @@ function renderCommentsMarkdown(comments, scopePath) {
     byPath.get(key).push(c);
   }
   let out = `# Open comments (${open.length})\n`;
-  out += '\n_Lifecycle: set a comment\'s `"status"` to `"acknowledged"` when you start on it and `"resolved"` when done (edit `.visual-docs/comments.json`). New comments start as `new`._\n';
+  // Point the agent at the status endpoint instead of hand-editing JSON.
+  out += '\n_Lifecycle: mark a comment `acknowledged` when you start it and `resolved` when done. Update status with a single request — no need to edit `.visual-docs/comments.json` or run a script:_\n';
+  out += `\n\`\`\`bash\ncurl -sX POST ${base}/api/comments/status \\\n  -H 'content-type: application/json' \\\n  -d '{"id":"<comment-id>","status":"acknowledged"}'\n\`\`\`\n`;
+  out += '\n_Pass `{"ids":["…","…"],"status":"resolved"}` to update several at once. Valid statuses: `new`, `acknowledged`, `resolved`. Each comment\'s id is shown below._\n';
   if (!open.length) out += '\n_No open comments._\n';
   for (const [p, list] of byPath) {
     out += `\n## ${p}\n`;
     for (const c of list) {
       const loc = `${p}${c.line ? `:${c.line}` : ''}`;
-      out += `\n- \`${loc}\` — [${commentStatus(c)}] on ${anchorLabel(c)}\n  > ${String(c.text || '').replace(/\n+/g, ' ')}`;
+      out += `\n- \`${loc}\` — [${commentStatus(c)}] \`${c.id}\` — on ${anchorLabel(c)}\n  > ${String(c.text || '').replace(/\n+/g, ' ')}`;
     }
     out += '\n';
   }
@@ -496,14 +513,58 @@ export async function startServer({ dir, port = 0, host = '127.0.0.1', watch: en
         return sendJSON(res, 201, { comment: result.comment });
       }
 
+      // Agent-facing status endpoint: flip a comment's lifecycle state without
+      // hand-editing comments.json. Accepts { id } or { ids: [...] } plus a
+      // target { status }. Keeps the legacy `resolved` boolean in sync.
+      if (pathname === '/api/comments/status' && req.method === 'POST') {
+        if (crossOrigin(req)) return sendJSON(res, 403, { error: 'cross-origin request refused' });
+        let payload;
+        try {
+          payload = JSON.parse(await readBody(req));
+        } catch {
+          return sendJSON(res, 400, { error: 'invalid JSON body' });
+        }
+        if (!payload || typeof payload !== 'object') return sendJSON(res, 400, { error: 'body must be a JSON object' });
+        if (!COMMENT_STATUSES.includes(payload.status)) {
+          return sendJSON(res, 400, { error: `status must be one of: ${COMMENT_STATUSES.join(', ')}` });
+        }
+        const idSet = new Set();
+        if (typeof payload.id === 'string') idSet.add(payload.id);
+        if (Array.isArray(payload.ids)) for (const x of payload.ids) if (typeof x === 'string') idSet.add(x);
+        if (!idSet.size) return sendJSON(res, 400, { error: 'id or ids is required' });
+
+        const result = await withComments(async () => {
+          // Same optimistic-concurrency retry as the POST path: re-read on a
+          // hash miss so a concurrent write (or hand edit) isn't clobbered.
+          for (let attempt = 0; attempt < 3; attempt++) {
+            const { data, hash } = await readCommentsRaw(root);
+            const updated = [];
+            for (const c of data.comments) {
+              if (!idSet.has(c.id)) continue;
+              c.status = payload.status;
+              c.resolved = payload.status === 'resolved'; // keep legacy flag in sync
+              updated.push(c);
+            }
+            if (!updated.length) return { notFound: true };
+            if (await writeComments(root, data, hash)) return { updated };
+          }
+          return { error: 'write conflict — please retry' };
+        });
+        if (result.notFound) return sendJSON(res, 404, { error: 'no comment matched the given id(s)' });
+        if (result.error) return sendJSON(res, 409, { error: result.error });
+        broadcast({ type: 'comment', path: result.updated[0].path });
+        return sendJSON(res, 200, { updated: result.updated.length, comments: result.updated });
+      }
+
       // Agent-facing read endpoint: comments as a ready-to-read markdown digest
       // an agent can curl directly (structured JSON already lives at /api/comments).
       if (pathname === '/agent/comments.md' && req.method === 'GET') {
         const data = await readComments(root);
         const p = url.searchParams.get('path');
         const comments = p ? data.comments.filter((c) => c.path === p) : data.comments;
+        const base = `http://${req.headers.host || '127.0.0.1'}`;
         res.writeHead(200, { 'content-type': 'text/markdown; charset=utf-8', 'cache-control': 'no-store' });
-        return res.end(renderCommentsMarkdown(comments, p));
+        return res.end(renderCommentsMarkdown(comments, p, base));
       }
 
       if (pathname === '/api/events' && req.method === 'GET') {
