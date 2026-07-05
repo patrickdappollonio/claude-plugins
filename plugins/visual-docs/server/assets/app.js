@@ -62,8 +62,11 @@
   }
 
   /** Stable short id for a component, derived from its source (FNV-1a → base36).
-      Same source → same id across re-renders, so a comment on a diagram keeps
-      pointing at it even as the document changes around it. */
+      Same source → same id across re-renders. It is a display-only reference —
+      shown in the comment label and the agent digest so a human/agent can find
+      the block by id+hint — not a live anchor the viewer resolves back to the
+      DOM. Identical fence source yields the same id (the ordinal in the label
+      disambiguates duplicates for the reader). */
   function blockHash(s) {
     let h = 2166136261 >>> 0;
     for (let i = 0; i < s.length; i++) {
@@ -598,9 +601,16 @@
     ['.openapi-block', 'OpenAPI spec'],
   ];
 
+  // Derived from COMPONENTS so there's one source of truth for the block set.
+  // A text selection cannot meaningfully sit inside these (they get their own
+  // 💬 pin instead). Plain code (.codewrap) is deliberately excluded: selecting
+  // a line of code to comment on it is allowed, and it's the only way to comment
+  // on an api/openapi fence that failed to parse.
+  const COMPONENT_SELECTOR = COMPONENTS.map(([sel]) => sel).join(', ');
+
   function isInComponent(node) {
     const el = node && (node.nodeType === 3 ? node.parentElement : node);
-    return !!(el && el.closest('.mermaid-block, .nomnoml-block, .diff-block, .migration-block, .api-block, .openapi-block, .codewrap'));
+    return !!(el && el.closest(COMPONENT_SELECTOR));
   }
 
   /** Attach a "💬" affordance to each rendered component block. Anchors a
@@ -646,19 +656,12 @@
     });
     for (const c of comments) {
       if (!c.anchor || c.anchor.kind !== 'text' || c.resolved) continue;
-      const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, {
-        acceptNode(n) {
-          if (isInComponent(n.parentElement)) return NodeFilter.FILTER_REJECT;
-          return n.nodeValue.includes(c.anchor.quote) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
-        },
-      });
-      const node = walker.nextNode();
-      if (!node) continue;
-      const idx = node.nodeValue.indexOf(c.anchor.quote);
+      const best = bestQuoteMatch(container, c.anchor);
+      if (!best) continue;
       try {
         const range = document.createRange();
-        range.setStart(node, idx);
-        range.setEnd(node, idx + c.anchor.quote.length);
+        range.setStart(best.node, best.idx);
+        range.setEnd(best.node, best.idx + c.anchor.quote.length);
         const mark = document.createElement('mark');
         mark.className = 'comment-highlight';
         mark.title = c.text;
@@ -668,7 +671,39 @@
     }
   }
 
-  /** Human label for what a comment is anchored to, for the drawer list. */
+  /** Find the occurrence of anchor.quote whose surrounding text best matches the
+      stored prefix/suffix, so a phrase that appears more than once highlights
+      the one the reader actually selected. Returns {node, idx} or null. */
+  function bestQuoteMatch(container, anchor) {
+    const { quote, prefix = '', suffix = '' } = anchor;
+    const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, {
+      acceptNode(n) {
+        if (isInComponent(n.parentElement)) return NodeFilter.FILTER_REJECT;
+        return n.nodeValue.includes(quote) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
+      },
+    });
+    let best = null;
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      const v = node.nodeValue;
+      for (let idx = v.indexOf(quote); idx !== -1; idx = v.indexOf(quote, idx + 1)) {
+        // Score by how many trailing chars of prefix / leading chars of suffix
+        // match the text immediately around this occurrence.
+        const before = v.slice(0, idx);
+        const after = v.slice(idx + quote.length);
+        let score = 0;
+        for (let k = 1; k <= prefix.length && before.endsWith(prefix.slice(prefix.length - k)); k++) score = k;
+        let s2 = 0;
+        for (let k = 1; k <= suffix.length && after.startsWith(suffix.slice(0, k)); k++) s2 = k;
+        score += s2;
+        if (!best || score > best.score) best = { node, idx, score };
+      }
+    }
+    return best;
+  }
+
+  /** Human label for what a comment (or a pending drawer target) is anchored to.
+      One source of truth used by the drawer context line, the comment list, and
+      the copy-as-prompt text, so the same comment is never labelled two ways. */
   function commentAnchorLabel(c) {
     if (c.anchor && c.anchor.kind === 'text') {
       const q = c.anchor.quote.replace(/\s+/g, ' ').trim();
@@ -676,7 +711,8 @@
     }
     if (c.anchor && c.anchor.kind === 'component') {
       const base = c.anchor.label || c.anchor.type;
-      return c.anchor.id ? `${base} · ${c.anchor.id}` : base;
+      const ref = [c.anchor.id, c.anchor.hint && `“${c.anchor.hint}”`].filter(Boolean).join(' · ');
+      return ref ? `${base} · ${ref}` : base;
     }
     if (c.title || c.section) return `§ ${c.title || c.section}`;
     return '';
@@ -853,15 +889,9 @@
 
   function CommentDrawer({ open, target, comments, status, onClose, onSubmit, onCopy }) {
     const textRef = useRef(null);
-    // Label for the thing being commented on (section, quoted text, component).
-    const t = target || {};
-    const contextLabel = t.section
-      ? `§ ${t.title || t.section}`
-      : t.anchor && t.anchor.kind === 'text'
-        ? `“${t.anchor.quote.length > 60 ? t.anchor.quote.slice(0, 60) + '…' : t.anchor.quote}”`
-        : t.anchor && t.anchor.kind === 'component'
-          ? t.anchor.label || t.anchor.type
-          : '';
+    // Same label helper as the saved-comment list, so "commenting on X" matches
+    // exactly how the comment is shown once saved.
+    const contextLabel = commentAnchorLabel(target || {});
     useEffect(() => {
       if (open && textRef.current) textRef.current.focus();
     }, [open, contextLabel]);

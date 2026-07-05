@@ -349,12 +349,16 @@ export async function startServer({ dir, port = 0, host = '127.0.0.1', watch: en
         const result = await withComments(async () => {
           const data = await readComments(root);
           if (data.comments.length >= MAX_COMMENTS) return { error: 'comment limit reached' };
+          // A comment is anchored to exactly one thing. A text/component anchor
+          // wins; only a section/heading comment carries section/title. This
+          // keeps every consumer (pin counts, labels, digest) in agreement.
+          const anchor = sanitizeAnchor(payload.anchor);
           const comment = {
             id: `c-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
             path: typeof payload.path === 'string' ? payload.path : '',
-            section: typeof payload.section === 'string' ? payload.section : '',
-            title: typeof payload.title === 'string' ? payload.title : '',
-            anchor: sanitizeAnchor(payload.anchor),
+            section: anchor ? '' : (typeof payload.section === 'string' ? payload.section : ''),
+            title: anchor ? '' : (typeof payload.title === 'string' ? payload.title : ''),
+            anchor,
             text,
             createdAt: new Date().toISOString(),
             resolved: false,
