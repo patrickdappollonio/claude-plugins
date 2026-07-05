@@ -571,11 +571,9 @@
       ? `<span class="ft-flag ft-${f}" title="${f}">${f[0].toUpperCase()}</span>`
       : '<span class="ft-flag ft-none"></span>';
 
-    let stripe = 0;
     const fileRow = (f, depth) => {
-      stripe += 1;
       const pad = 12 + depth * 18;
-      return `<tr class="ft-row ${stripe % 2 ? 'ft-odd' : 'ft-even'}">
+      return `<tr class="ft-row">
         <td class="ft-name" style="padding-left:${pad}px"><span class="ft-inner">${flagBadge(f.flag)}<code class="ft-path">${escapeHTML(f.name)}</code></span></td>
         <td class="ft-note">${f.note ? inlineMarkdown(f.note) : ''}</td>
       </tr>`;

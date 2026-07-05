@@ -62,6 +62,10 @@ body {
   align-items: center;
   gap: 4px;
 }
+/* `hidden` must always win over the display rules above (e.g. the floating
+   selection-comment button, which is display:inline-flex but hidden until a
+   selection exists). */
+[hidden] { display: none !important; }
 button { font: inherit; cursor: pointer; }
 
 #app { display: flex; min-height: 100vh; }
@@ -437,9 +441,10 @@ button { font: inherit; cursor: pointer; }
 .ft-dirrow td.ft-dir { color: var(--ink-soft); font-family: var(--mono); font-size: 0.74rem; padding-top: 7px; padding-bottom: 3px; }
 .ft-dirrow .icon { width: 0.95em; height: 0.95em; color: var(--accent); }
 
-/* File rows — zebra striping */
-.ft-row.ft-even { background: var(--surface-2); }
-.ft-row:hover { background: var(--line); }
+/* File rows — faint separators between consecutive files (no line under a
+   directory row, since dir rows interrupt the .ft-row + .ft-row adjacency). */
+.ft-row + .ft-row td { border-top: 1px solid var(--line); }
+.ft-row:hover { background: var(--surface-2); }
 .ft-name { white-space: nowrap; width: 1%; }
 .ft-flag {
   flex: 0 0 auto;
