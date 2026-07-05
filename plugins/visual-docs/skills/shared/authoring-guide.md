@@ -126,6 +126,11 @@ endpoint list: method badge, path, summary, and per-operation parameters,
 request-body schema, and responses. Include only the paths relevant to the
 document — this is a review aid, not the full spec dump.
 
+**Reach for this (or ` ```api ` cards) whenever the change adds or modifies HTTP
+endpoints — even without a formal spec file, hand-write the paths.** It shows the
+endpoint contract, which a `diff` of the route handler does not; the block is the
+headline for an API change, the handler diff is at most supporting evidence.
+
     ```openapi
     openapi: 3.0.3
     info: { title: Admin API, version: 1.0.0 }

@@ -77,7 +77,7 @@ has items for it, skip one only when the inventory had nothing there:
    endpoint (each distinct message shape its own example).
 7. `## Key changes` — 3–8 H3 subsections, each led by a *why-it-matters*
    sentence, then a trimmed ` ```diff ` (≤~150 lines) plus 2–4 annotation
-   bullets on the lines that matter (see document-quality.md §4).
+   bullets on the lines that matter (see document-quality.md §5).
 8. `## Risks & follow-ups` — what wasn't done, what to watch, next steps.
 
 **Then audit:** walk your inventory checklist against the finished document,

@@ -49,14 +49,28 @@ Thin is the common failure. Beat it with a coverage discipline:
 Recap the **whole** unit of work (all the thread's commits/changes), not just
 the latest fix.
 
-## 3. One sentence of intent above every structured fence
+## 3. Prefer the purpose-built block over a raw diff
+
+Every fence type earns its keep — reach for the one that shows the *thing*, not
+just the code that implements it. A `diff` of a route handler shows that a route
+exists; it does **not** show the endpoint's contract. When the change exposes or
+modifies an **HTTP API, routes, actions, or message shapes** — even if the
+system is "just" API-driven and there's no formal spec file — represent that
+surface with an ` ```openapi ` block (the read-only endpoint explorer) and/or
+` ```api ` request/response cards. That is the headline for an API change; a
+handler `diff` is at most supporting evidence beside it, never a substitute.
+The same reflex applies elsewhere: schema/migration → ` ```migration `,
+architecture/flow → ` ```mermaid `/` ```nomnoml `. If a purpose-built block can
+carry the change, don't let a code diff stand in for it.
+
+## 4. One sentence of intent above every structured fence
 
 Every `diff`, `migration`, `api`, and `openapi` fence gets exactly one sentence
 directly above it saying what it changes and **why it matters** — not only the
 ones under `## Key changes`. A bare fence with no lead-in makes the reader
 reverse-engineer intent from the code. Never leave a fence unlabeled.
 
-## 4. Trim complex code to the load-bearing lines, then annotate
+## 5. Trim complex code to the load-bearing lines, then annotate
 
 When a hunk touches a large or intricate function, **do not paste the whole
 function.** Trim the `diff`/code fence to the changed lines plus a few lines of
@@ -67,7 +81,7 @@ margin notes, so annotations are prose right after the fence.)
 One or two high-signal bullets beat a line-by-line walkthrough. If you're
 annotating more than about a third of the lines, you haven't trimmed enough.
 
-## 5. Before/after and type-change idioms
+## 6. Before/after and type-change idioms
 
 - When a field or parameter's **type/shape changed** (rather than being newly
   added), put a small table above the fence: `field | change | was → now`.
@@ -75,7 +89,7 @@ annotating more than about a third of the lines, you haven't trimmed enough.
   a swapped component), use two labeled fences (`Before` / `After`) or a
   two-column table — this is our substitute for a dedicated comparison block.
 
-## 6. No prose about the document itself
+## 7. No prose about the document itself
 
 Cut any sentence whose only content is describing or disclaiming the document:
 "this recap summarizes N files," "the reviewer should still read the diff,"
@@ -83,7 +97,7 @@ Cut any sentence whose only content is describing or disclaiming the document:
 padding, not coverage. Every prose sentence must tell the reader something about
 **the change**, not about the write-up.
 
-## 7. Calibration — GOOD vs BAD
+## 8. Calibration — GOOD vs BAD
 
 **BAD.** A 20-file recap with one paragraph of Outcome, a bare file list, and no
 `diff`/`migration`/`api` fences — the reviewer is forced back into `git diff`.
