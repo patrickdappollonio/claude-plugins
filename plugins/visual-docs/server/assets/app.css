@@ -182,7 +182,7 @@ button { font: inherit; cursor: pointer; }
   font-size: 1.35rem;
   line-height: 1.25;
 }
-#tb-comments-btn, #tb-raw-btn {
+#tb-comments-btn, #tb-raw-btn, #tb-print-btn {
   background: none;
   border: none;
   padding: 0;
@@ -192,9 +192,27 @@ button { font: inherit; cursor: pointer; }
   text-underline-offset: 3px;
 }
 #tb-raw-btn.active { color: var(--ink); }
+.tb-actions { display: inline-flex; gap: 12px; }
 
 /* ---------- Markdown body ---------- */
 .markdown-body { max-width: 860px; margin: 0 auto; }
+
+/* Document footer — matched to the document column width, not the full main. */
+#doc-footer {
+  max-width: 860px;
+  margin: 72px auto 0;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+}
+#doc-footer a { color: var(--accent); text-decoration: none; }
+#doc-footer a:hover { text-decoration: underline; }
+#doc-footer .foot-sep { opacity: 0.5; }
 
 /* Raw markdown source view */
 .raw-md {
@@ -838,3 +856,40 @@ mark.comment-highlight {
 
 /* hljs theme adjustments to sit inside our panels */
 [data-theme="dark"] .markdown-body pre { background: #161b22; }
+
+/* ---------- Print / Save-as-PDF (document only, no shell or comments) ---------- */
+@media print {
+  /* Hide the whole app shell and every interactive affordance. */
+  #sidebar,
+  #comment-drawer,
+  .floating-comment-btn,
+  .tb-chrome,
+  .diff-toolbar,
+  .migration-toolbar,
+  .q-actions,
+  .q-other { display: none !important; }
+
+  #app { display: block; }
+  #main { padding: 0 !important; }
+  body { background: #fff !important; }
+  .markdown-body, .raw-md, #doc-footer { max-width: 100% !important; margin: 0 auto; }
+
+  /* Flatten the title block into a simple document header. */
+  .titleblock { border: none !important; display: block; margin-bottom: 20px; }
+  .tb-cell { border: none !important; padding: 2px 0 !important; }
+  .tb-cell.tb-meta { display: inline-flex; gap: 5px; align-items: baseline; margin-right: 18px; color: #555; }
+  #tb-doc-title { font-size: 1.7rem; }
+
+  /* Keep component/background colours in the PDF. */
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  /* Don't split a component, table, or code block across pages. */
+  .component-block, .question-block, .admonition, .filetree-block,
+  .migration-block, .diff-block, .api-block, .openapi-block,
+  pre, table, figure, .oa-op { break-inside: avoid; }
+  h1, h2, h3, h4 { break-after: avoid; }
+
+  /* The component hover outline shouldn't print. */
+  .component-block:hover { box-shadow: none; }
+  a { color: inherit; text-decoration: none; }
+}

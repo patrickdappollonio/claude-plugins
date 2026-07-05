@@ -105,7 +105,10 @@ Ask the reader a question and get a structured answer back. Renders like the
 agent's own question UI: the prompt, selectable options, and a free-text "write
 your own" box. The first line is the question; `- ` lines are options; a lone
 leading `multiple` line makes it multi-select (checkboxes instead of radios).
-Options are optional — omit them for a pure free-text question.
+Options are optional — omit them for a pure free-text question. Any other
+non-option line after the prompt becomes an optional **description** shown under
+the title. The question, description, and option labels all support inline
+markdown (`` `code` ``, **bold**, *italic*) for emphasis.
 
 When the reader answers, the answer is saved as a **comment anchored to the
 question** (it shows up in `/agent/comments.md` as `question … — <answer>`), so

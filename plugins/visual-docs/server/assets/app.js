@@ -681,15 +681,17 @@
       return `<div class="codewrap"><span class="lang-tag">question</span><pre><code class="hljs">${escapeHTML(code)}</code></pre></div>`;
     }
     const type = multiple ? 'checkbox' : 'radio';
+    // value stays the plain option text (that's the answer we store); the visible
+    // label may use inline markdown for emphasis.
     const opts = options.map((o) => `
       <label class="q-option">
         <input type="${type}" name="q-opt" value="${escapeHTML(o)}" />
-        <span>${escapeHTML(o)}</span>
+        <span>${inlineMarkdown(o)}</span>
       </label>`).join('');
     return `<div class="question-block" ${blockAttrs(code)}>
       <div class="q-head">
         <span class="mig-icon">${ICON.help}</span>
-        <span class="q-title">${escapeHTML(question)}</span>
+        <span class="q-title">${inlineMarkdown(question)}</span>
         ${multiple ? '<span class="q-badge">select any</span>' : ''}
       </div>
       ${description ? `<div class="q-desc">${inlineMarkdown(description)}</div>` : ''}
@@ -1153,7 +1155,7 @@
       </aside>`;
   }
 
-  function TitleBlock({ doc, openCount, raw, onOpenComments, onToggleRaw }) {
+  function TitleBlock({ doc, openCount, raw, onOpenComments, onToggleRaw, onPrint }) {
     const title = firstH1Text(doc.content) || doc.path.split('/').pop();
     return html`
       <div id="doc-header">
@@ -1162,10 +1164,15 @@
             <span class="tb-label mono">document</span>
             <h1 id="tb-doc-title">${title}</h1>
           </div>
-          <div class="tb-cell"><span class="tb-label mono">file</span><span id="tb-doc-path" class="mono">${doc.path}</span></div>
-          <div class="tb-cell"><span class="tb-label mono">updated</span><span id="tb-doc-mtime" class="mono">${fmtTime(doc.mtime)}</span></div>
-          <div class="tb-cell"><span class="tb-label mono">view</span><button id="tb-raw-btn" class="mono ${raw ? 'active' : ''}" title=${raw ? 'Show the rendered document' : 'Show the raw markdown source'} onClick=${onToggleRaw}>${raw ? 'rendered' : 'raw'}</button></div>
-          <div class="tb-cell"><span class="tb-label mono">comments</span><button id="tb-comments-btn" class="mono" onClick=${onOpenComments}>${openCount} open</button></div>
+          <div class="tb-cell tb-meta"><span class="tb-label mono">file</span><span id="tb-doc-path" class="mono">${doc.path}</span></div>
+          <div class="tb-cell tb-meta"><span class="tb-label mono">updated</span><span id="tb-doc-mtime" class="mono">${fmtTime(doc.mtime)}</span></div>
+          <div class="tb-cell tb-chrome"><span class="tb-label mono">view</span>
+            <span class="tb-actions">
+              <button id="tb-raw-btn" class="mono ${raw ? 'active' : ''}" title=${raw ? 'Show the rendered document' : 'Show the raw markdown source'} onClick=${onToggleRaw}>${raw ? 'rendered' : 'raw'}</button>
+              <button id="tb-print-btn" class="mono" title="Print / Save as PDF (document only)" onClick=${onPrint}>print</button>
+            </span>
+          </div>
+          <div class="tb-cell tb-chrome"><span class="tb-label mono">comments</span><button id="tb-comments-btn" class="mono" onClick=${onOpenComments}>${openCount} open</button></div>
         </div>
       </div>`;
   }
@@ -1379,6 +1386,15 @@
     }, [doc, onOpenText]);
 
     return html`<article id="content" class="markdown-body" ref=${ref}></article>`;
+  }
+
+  function DocFooter() {
+    return html`
+      <footer id="doc-footer">
+        <span>Rendered with <a href="https://github.com/patrickdappollonio/claude-plugins" target="_blank" rel="noopener noreferrer">visual-docs</a></span>
+        <span class="foot-sep">·</span>
+        <span>by <a href="https://www.patrickdap.com" target="_blank" rel="noopener noreferrer">Patrick D'appollonio</a></span>
+      </footer>`;
   }
 
   function EmptyContent({ message, detail }) {
@@ -1614,6 +1630,17 @@
 
     const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
     const toggleRaw = () => setRaw((r) => !r);
+    // Print the rendered document (never raw) in light theme; print CSS hides the
+    // shell. Restore the prior theme after the print dialog closes.
+    const printDoc = () => {
+      setRaw(false);
+      const prev = theme;
+      if (prev !== 'light') setTheme('light');
+      setTimeout(() => {
+        window.print();
+        if (prev !== 'light') setTheme(prev);
+      }, 120);
+    };
     const openSection = useCallback((section, title) => setDrawer({ open: true, target: { section, title } }), []);
     const openComponent = useCallback((anchor) => setDrawer({ open: true, target: { anchor } }), []);
     const openText = useCallback((anchor) => setDrawer({ open: true, target: { anchor } }), []);
@@ -1700,8 +1727,9 @@
       <${Sidebar} docs=${docs} current=${current} conn=${conn} theme=${theme} open=${navOpen}
         onToggleTheme=${toggleTheme} onExpand=${() => setNavOpen(true)} onCollapse=${() => setNavOpen(false)} />
       <main id="main">
-        ${doc && !doc.error ? html`<${TitleBlock} doc=${doc} openCount=${openCount} raw=${raw} onOpenComments=${openComments} onToggleRaw=${toggleRaw} />` : null}
+        ${doc && !doc.error ? html`<${TitleBlock} doc=${doc} openCount=${openCount} raw=${raw} onOpenComments=${openComments} onToggleRaw=${toggleRaw} onPrint=${printDoc} />` : null}
         ${main}
+        ${doc && !doc.error ? html`<${DocFooter} />` : null}
       </main>
       <${CommentDrawer}
         open=${drawer.open} target=${drawer.target}
