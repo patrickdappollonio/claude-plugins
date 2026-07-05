@@ -745,7 +745,7 @@
       const title = h2.textContent.trim();
       const slug = slugify(title);
       h2.id = h2.id || slug;
-      const count = comments.filter((c) => commentSlug(c) === slug && !c.resolved).length;
+      const count = comments.filter((c) => commentSlug(c) === slug && commentStatus(c) !== 'resolved').length;
       const btn = document.createElement('button');
       btn.className = 'section-comment-btn' + (count > 0 ? ' has-comments' : '');
       btn.type = 'button';
@@ -823,7 +823,7 @@
       parent.normalize();
     });
     for (const c of comments) {
-      if (!c.anchor || c.anchor.kind !== 'text' || c.resolved) continue;
+      if (!c.anchor || c.anchor.kind !== 'text' || commentStatus(c) === 'resolved') continue;
       const best = bestQuoteMatch(container, c.anchor);
       if (!best) continue;
       try {
@@ -872,6 +872,14 @@
   /** Human label for what a comment (or a pending drawer target) is anchored to.
       One source of truth used by the drawer context line, the comment list, and
       the copy-as-prompt text, so the same comment is never labelled two ways. */
+  // Comment lifecycle state. Prefers explicit `status`; falls back to the legacy
+  // `resolved` boolean. Mirrors commentStatus() in the server.
+  const COMMENT_STATUSES = ['new', 'acknowledged', 'resolved'];
+  function commentStatus(c) {
+    if (c && COMMENT_STATUSES.includes(c.status)) return c.status;
+    return c && c.resolved ? 'resolved' : 'new';
+  }
+
   function commentAnchorLabel(c) {
     if (c.anchor && c.anchor.kind === 'text') {
       const q = c.anchor.quote.replace(/\s+/g, ' ').trim();
@@ -1073,7 +1081,7 @@
     const pendingQuote = t.anchor && t.anchor.kind === 'text' ? t.anchor.quote : '';
     const contextLabel = pendingQuote ? '' : commentAnchorLabel(t);
     const hasTarget = !!(pendingQuote || contextLabel);
-    const openCount = comments.filter((c) => !c.resolved).length;
+    const openCount = comments.filter((c) => commentStatus(c) !== 'resolved').length;
     useEffect(() => {
       if (open && textRef.current) textRef.current.focus();
     }, [open, contextLabel, pendingQuote]);
@@ -1099,7 +1107,13 @@
     };
     const copy = () => onCopy(textRef.current.value.trim());
 
-    const ordered = comments.slice().reverse();
+    // Newest first, but keep resolved comments sunk to the bottom.
+    const rank = { new: 0, acknowledged: 1, resolved: 2 };
+    const ordered = comments
+      .map((c, i) => ({ c, i }))
+      .sort((a, b) => (rank[commentStatus(a.c)] - rank[commentStatus(b.c)]) || (b.i - a.i))
+      .map((x) => x.c);
+    const statusLabel = { new: 'new', acknowledged: 'acknowledged', resolved: 'resolved' };
     return html`
       <aside id="comment-drawer">
         <header class="drawer-head">
@@ -1112,12 +1126,13 @@
             : ordered.map((c) => {
               const isText = c.anchor && c.anchor.kind === 'text';
               const chip = isText ? '' : commentAnchorLabel(c);
+              const st = commentStatus(c);
               return html`
-                <div class="comment-item ${c.resolved ? 'resolved' : ''}">
+                <div class="comment-item st-${st}">
                   <div class="c-meta">
+                    <span class="c-status s-${st}">${statusLabel[st]}</span>
                     ${chip ? html`<span class="c-section">${chip}</span>` : null}
                     <span>${new Date(c.createdAt).toLocaleString()}</span>
-                    ${c.resolved ? html`<span>resolved</span>` : null}
                   </div>
                   ${isText ? html`<div class="c-quote">“${c.anchor.quote}”</div>` : null}
                   <div class="c-text">${c.text}</div>
@@ -1313,18 +1328,20 @@
 
     const copyPrompt = async (draftText) => {
       const cur = currentRef.current;
+      // Copy only the still-`new` comments — acknowledged ones are already being
+      // worked on, resolved ones are done — unless a draft is being copied.
       const entries = draftText
         ? [entryFor(draftText)]
-        : comments.filter((c) => !c.resolved);
+        : comments.filter((c) => commentStatus(c) === 'new');
       if (!entries.length) {
-        setStatus({ msg: 'Nothing to copy — write feedback first.', tone: 'warn' });
+        setStatus({ msg: draftText ? 'Nothing to copy — write feedback first.' : 'No new comments to copy.', tone: 'warn' });
         return;
       }
       const ok = await copyToClipboard(buildPrompt(cur, entries));
       setStatus({ msg: ok ? 'Prompt copied — paste it to your agent.' : 'Copy failed — select the text manually.', tone: ok ? 'ok' : 'warn' });
     };
 
-    const openCount = comments.filter((c) => !c.resolved).length;
+    const openCount = comments.filter((c) => commentStatus(c) !== 'resolved').length;
 
     let main;
     if (!doc) {

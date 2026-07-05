@@ -120,9 +120,10 @@ snippet of the document, or a component (e.g. "mermaid diagram"). Use
 `/api/comments` if you want the structured JSON, or add `?path=<file>` to
 scope to one document. Comments on a recap often request code changes, not
 document changes — when a comment asks for a fix, confirm scope with the user
-before editing code. After handling a comment, set its `"resolved": true` in
-`$DIR/.visual-docs/comments.json` (the viewer live-updates). Treat pasted
-"Copy as prompt" blocks exactly like stored comments.
+before editing code. Drive each comment's `status` in
+`$DIR/.visual-docs/comments.json`: `"acknowledged"` when you start on it,
+`"resolved"` when done (the viewer live-updates and shows the three states).
+Treat pasted "Copy as prompt" blocks exactly like stored comments.
 
 ## Cleanup
 

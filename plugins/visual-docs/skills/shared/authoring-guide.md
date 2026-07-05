@@ -197,9 +197,18 @@ text range, a component, or (for headings) the `section`/`title` fields:
   "anchor": { "kind": "text", "quote": "token-bucket rate limiter", "prefix": "…", "suffix": "…" },
   "text": "Enable per-region only after the metric exists",
   "createdAt": "2026-07-04T08:00:31.804Z",
-  "resolved": false
+  "status": "new"
 }
 ```
+
+**Comment lifecycle.** Every comment has a `status`: `new` (just written by the
+reader), `acknowledged` (you've read it and are working on it), or `resolved`
+(you've addressed it). New comments start as `new`. As you work, edit
+`.visual-docs/comments.json` to set `"status": "acknowledged"` when you pick a
+comment up and `"status": "resolved"` when you're done — the viewer shows each
+state distinctly and live-updates. (The legacy `"resolved": true` boolean is
+still honoured and treated as `resolved`.) The reader's "Copy as prompt" button
+copies only the `new` comments, so acknowledging promptly keeps that clean.
 
 `anchor` is `{kind:"text", quote, prefix, suffix}` for a selection,
 `{kind:"component", type, label, id, hint}` for a diagram/diff/etc, or absent
@@ -217,10 +226,11 @@ Agent obligations:
 
 1. **Before every revision**, read open comments as a formatted digest:
    `curl -s <url>agent/comments.md` (add `?path=<file>` to scope to one doc).
-   Each entry is labelled with what it's anchored to — a section, a quoted
-   snippet, or a component. `<url>api/comments` gives the structured JSON.
-2. After addressing a comment, set its `"resolved": true` in
-   `.visual-docs/comments.json` so the reader sees it cleared (live-updates).
+   Each entry is labelled with its `[status]` and what it's anchored to — a
+   section, a quoted snippet, or a component. `<url>api/comments` gives JSON.
+2. Drive the lifecycle: set `"status": "acknowledged"` when you start on a
+   comment and `"status": "resolved"` when done, in `.visual-docs/comments.json`
+   (the viewer live-updates and distinguishes the three states).
 3. The viewer also offers "Copy as prompt" — users may paste feedback directly
    into chat instead; treat pasted prompts and stored comments the same way.
 

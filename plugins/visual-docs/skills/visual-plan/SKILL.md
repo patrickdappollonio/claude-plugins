@@ -118,10 +118,11 @@ curl -s http://127.0.0.1:<port>/agent/comments.md
 Each comment is labelled with what it's anchored to: a section, a quoted
 snippet, or a component. Use `/api/comments` for the structured JSON, or
 add `?path=<file>` to scope to one document. Address every open comment, edit
-the markdown file in place (the browser reloads automatically), then mark the
-comments you handled with `"resolved": true` in
-`$DIR/.visual-docs/comments.json`. If the user pastes a "Copy as prompt" block
-into chat instead, treat it identically.
+the markdown file in place (the browser reloads automatically), and drive each
+comment's `status` in `$DIR/.visual-docs/comments.json` — `"acknowledged"` when
+you start on it, `"resolved"` when done (the viewer shows the three states and
+live-updates). If the user pastes a "Copy as prompt" block into chat instead,
+treat it identically.
 
 ### 7. Approval gate
 

@@ -626,9 +626,26 @@ mark.comment-highlight {
   background: var(--bg);
   font-size: 0.88rem;
 }
-.comment-item.resolved { opacity: 0.55; }
-.comment-item .c-meta { color: var(--ink-soft); font-family: var(--mono); font-size: 0.66rem; margin-bottom: 4px; display: flex; gap: 6px; flex-wrap: wrap; }
+/* Lifecycle: new stands out (accent left-bar), acknowledged is amber, resolved
+   fades back. */
+.comment-item.st-new { border-left: 3px solid var(--accent); }
+.comment-item.st-acknowledged { border-left: 3px solid var(--warn); }
+.comment-item.st-resolved { opacity: 0.5; }
+.comment-item .c-meta { color: var(--ink-soft); font-family: var(--mono); font-size: 0.66rem; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .comment-item .c-section { color: var(--accent); }
+/* Status chip */
+.c-status {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.58rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 20px;
+  color: #fff;
+}
+.c-status.s-new { background: var(--accent); }
+.c-status.s-acknowledged { background: var(--warn); }
+.c-status.s-resolved { background: var(--ok); }
 /* The quoted text a comment is anchored to — visually distinct from the comment
    the user wrote (muted, italic, a quote bar), so they don't blur together. */
 .comment-item .c-quote {

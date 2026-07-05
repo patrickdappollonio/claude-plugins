@@ -252,6 +252,15 @@ function anchorLabel(c) {
   return c.title || c.section || 'document';
 }
 
+const COMMENT_STATUSES = ['new', 'acknowledged', 'resolved'];
+
+/** A comment's lifecycle state. Prefers an explicit `status`; falls back to the
+    legacy `resolved` boolean so older comments.json files keep working. */
+function commentStatus(c) {
+  if (c && COMMENT_STATUSES.includes(c.status)) return c.status;
+  return c && c.resolved ? 'resolved' : 'new';
+}
+
 /** Render a comment list as a ready-to-read markdown digest, grouped by document
     with open comments first. Served at /agent/comments.md so an agent can read
     feedback with a plain `curl` instead of parsing JSON. */
@@ -259,7 +268,7 @@ function renderCommentsMarkdown(comments, scopePath) {
   if (!comments.length) {
     return `# Comments${scopePath ? ` for ${scopePath}` : ''}\n\n_No comments yet._\n`;
   }
-  const open = comments.filter((c) => !c.resolved);
+  const open = comments.filter((c) => commentStatus(c) !== 'resolved');
   const resolved = comments.length - open.length;
   const byPath = new Map();
   for (const c of open) {
@@ -268,10 +277,11 @@ function renderCommentsMarkdown(comments, scopePath) {
     byPath.get(key).push(c);
   }
   let out = `# Open comments (${open.length})\n`;
+  out += '\n_Lifecycle: set a comment\'s `"status"` to `"acknowledged"` when you start on it and `"resolved"` when done (edit `.visual-docs/comments.json`). New comments start as `new`._\n';
   if (!open.length) out += '\n_No open comments._\n';
   for (const [p, list] of byPath) {
     out += `\n## ${p}\n`;
-    for (const c of list) out += `\n- **${anchorLabel(c)}** — ${c.text.replace(/\n+/g, ' ')}`;
+    for (const c of list) out += `\n- \`[${commentStatus(c)}]\` **${anchorLabel(c)}** — ${c.text.replace(/\n+/g, ' ')}`;
     out += '\n';
   }
   if (resolved) out += `\n---\n_${resolved} resolved comment(s) not shown._\n`;
@@ -361,6 +371,7 @@ export async function startServer({ dir, port = 0, host = '127.0.0.1', watch: en
             anchor,
             text,
             createdAt: new Date().toISOString(),
+            status: 'new',
             resolved: false,
           };
           data.comments.push(comment);
