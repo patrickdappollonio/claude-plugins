@@ -916,7 +916,7 @@
       </article>`;
   }
 
-  function CommentDrawer({ open, target, comments, status, onClose, onClearTarget, onSubmit, onCopy }) {
+  function CommentDrawer({ open, target, comments, status, onExpand, onCollapse, onClearTarget, onSubmit, onCopy }) {
     const textRef = useRef(null);
     const t = target || {};
     // What's being commented on. Text anchors show the quote itself; section and
@@ -924,9 +924,22 @@
     const pendingQuote = t.anchor && t.anchor.kind === 'text' ? t.anchor.quote : '';
     const contextLabel = pendingQuote ? '' : commentAnchorLabel(t);
     const hasTarget = !!(pendingQuote || contextLabel);
+    const openCount = comments.filter((c) => !c.resolved).length;
     useEffect(() => {
       if (open && textRef.current) textRef.current.focus();
     }, [open, contextLabel, pendingQuote]);
+
+    // Collapsed: a thin clickable rail on the right edge that reopens the panel.
+    if (!open) {
+      return html`
+        <aside id="comment-drawer" class="collapsed">
+          <button class="comment-rail" title="Open comments" aria-label="Open comments" onClick=${onExpand}>
+            <span class="rail-icon">💬</span>
+            ${openCount > 0 ? html`<span class="rail-count">${openCount}</span>` : null}
+            <span class="rail-label">comments</span>
+          </button>
+        </aside>`;
+    }
 
     const submit = (e) => {
       e.preventDefault();
@@ -939,10 +952,10 @@
 
     const ordered = comments.slice().reverse();
     return html`
-      <aside id="comment-drawer" hidden=${!open}>
+      <aside id="comment-drawer">
         <header class="drawer-head">
           <span class="mono tb-label">comments</span>
-          <button id="drawer-close" aria-label="Close comments" onClick=${onClose}>✕</button>
+          <button id="drawer-close" title="Collapse comments panel" aria-label="Collapse comments panel" onClick=${onCollapse}>›</button>
         </header>
         ${hasTarget ? html`
           <div id="comment-context">
@@ -1116,8 +1129,8 @@
     const openComponent = useCallback((anchor) => setDrawer({ open: true, target: { anchor } }), []);
     const openText = useCallback((anchor) => setDrawer({ open: true, target: { anchor } }), []);
     const openComments = useCallback(() => setDrawer({ open: true, target: {} }), []);
-    // Close resets the target so reopening starts document-level, not on a stale anchor.
-    const closeDrawer = () => setDrawer({ open: false, target: {} });
+    // Collapse resets the target so reopening starts document-level, not on a stale anchor.
+    const collapseDrawer = () => setDrawer({ open: false, target: {} });
     // Cancel the pending anchor but keep the drawer open (comment on the doc instead).
     const clearTarget = useCallback(() => setDrawer((d) => ({ ...d, target: {} })), []);
 
@@ -1184,7 +1197,7 @@
       <${CommentDrawer}
         open=${drawer.open} target=${drawer.target}
         comments=${comments} status=${status}
-        onClose=${closeDrawer} onClearTarget=${clearTarget} onSubmit=${submitComment} onCopy=${copyPrompt} />`;
+        onExpand=${openComments} onCollapse=${collapseDrawer} onClearTarget=${clearTarget} onSubmit=${submitComment} onCopy=${copyPrompt} />`;
   }
 
   /* ---------- boot ---------- */

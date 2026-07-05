@@ -442,7 +442,44 @@ button { font: inherit; cursor: pointer; }
   padding: 14px 16px;
   border-bottom: 1px solid var(--line);
 }
-#drawer-close { background: none; border: none; color: var(--ink-soft); font-size: 0.9rem; }
+#drawer-close { background: none; border: none; color: var(--ink-soft); font-size: 1.3rem; line-height: 1; cursor: pointer; padding: 0 4px; }
+#drawer-close:hover { color: var(--ink); }
+
+/* Collapsed comments panel: a thin clickable rail on the right edge. */
+#comment-drawer.collapsed { width: 38px; }
+.comment-rail {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--ink-soft);
+}
+.comment-rail:hover { background: var(--surface-2); color: var(--ink); }
+.rail-icon { font-size: 1rem; }
+.rail-count {
+  background: var(--accent);
+  color: #fff;
+  border-radius: 10px;
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  padding: 1px 6px;
+  min-width: 15px;
+  text-align: center;
+}
+.rail-label {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
 #comment-context {
   display: flex;
   align-items: flex-start;
