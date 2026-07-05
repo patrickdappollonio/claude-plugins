@@ -281,7 +281,10 @@ function renderCommentsMarkdown(comments, scopePath) {
   if (!open.length) out += '\n_No open comments._\n';
   for (const [p, list] of byPath) {
     out += `\n## ${p}\n`;
-    for (const c of list) out += `\n- \`[${commentStatus(c)}]\` **${anchorLabel(c)}** — ${c.text.replace(/\n+/g, ' ')}`;
+    for (const c of list) {
+      const loc = `${p}${c.line ? `:${c.line}` : ''}`;
+      out += `\n- \`${loc}\` — [${commentStatus(c)}] on ${anchorLabel(c)}\n  > ${c.text.replace(/\n+/g, ' ')}`;
+    }
     out += '\n';
   }
   if (resolved) out += `\n---\n_${resolved} resolved comment(s) not shown._\n`;
@@ -369,6 +372,9 @@ export async function startServer({ dir, port = 0, host = '127.0.0.1', watch: en
             section: anchor ? '' : (typeof payload.section === 'string' ? payload.section : ''),
             title: anchor ? '' : (typeof payload.title === 'string' ? payload.title : ''),
             anchor,
+            // Best-effort 1-based source line the client resolved from the doc,
+            // so the digest can point the agent at path:line.
+            line: Number.isInteger(payload.line) && payload.line > 0 ? payload.line : null,
             text,
             createdAt: new Date().toISOString(),
             status: 'new',

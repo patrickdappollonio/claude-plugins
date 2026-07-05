@@ -938,17 +938,17 @@
   ];
 
   // Derived from COMPONENTS so there's one source of truth for the block set.
-  // A text selection cannot meaningfully sit inside these (they get their own
-  // 💬 pin instead). Plain code (.codewrap) is deliberately excluded: selecting
-  // a line of code to comment on it is allowed, and it's the only way to comment
-  // on an api/openapi fence that failed to parse.
   const COMPONENT_SELECTOR = COMPONENTS.map(([sel]) => sel).join(', ');
+
+  // Components whose rendering *transforms* the content (a diagram, an
+  // interactive explorer, a table) — text selection inside them is meaningless,
+  // so they're whole-block-only. The rest (diff, migration, api, plain code)
+  // keep their text readable, so selecting a line to comment on it IS allowed.
+  const OPAQUE_SELECTOR = '.mermaid-block, .nomnoml-block, .openapi-block, .filetree-block, .question-block';
 
   function isInComponent(node) {
     const el = node && (node.nodeType === 3 ? node.parentElement : node);
-    // .question-block is interactive (answer form), so exclude it from
-    // text-selection comments even though it carries no comment pin.
-    return !!(el && el.closest(COMPONENT_SELECTOR + ', .question-block'));
+    return !!(el && el.closest(OPAQUE_SELECTOR));
   }
 
   /** Give every commentable element a stable handle: H2s get an id, component
@@ -1079,11 +1079,32 @@
 
   /* ---------- feedback helpers ---------- */
 
+  /** Best-effort 1-based source line for a comment entry, found by searching the
+      raw markdown for a representative string (the quote / fence hint / heading).
+      Returns null if not locatable — the anchor still identifies the target. */
+  function sourceLineFor(content, entry) {
+    if (!content || !entry) return null;
+    const a = entry.anchor;
+    let needle = '';
+    if (a && a.kind === 'text') needle = a.quote;
+    else if (a && a.kind === 'component') needle = a.hint;
+    else if (entry.title || entry.section) needle = entry.title || entry.section;
+    needle = (needle || '').replace(/\s+/g, ' ').trim().slice(0, 40);
+    if (needle.length < 3) return null;
+    const lines = content.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].replace(/\s+/g, ' ').includes(needle)) return i + 1;
+    }
+    return null;
+  }
+
   function buildPrompt(path, entries) {
     const lines = [`Please revise the visual doc \`${path}\` based on this feedback:`, ''];
     for (const e of entries) {
       const label = commentAnchorLabel(e);
-      lines.push(label ? `- [${label}] ${e.text}` : `- ${e.text}`);
+      const loc = `${path}${e.line ? `:${e.line}` : ''}`;
+      const head = label ? `${loc} · on ${label}` : loc;
+      lines.push(`- [${head}] ${e.text}`);
     }
     lines.push('', 'Update the markdown file in place; the viewer live-reloads.');
     return lines.join('\n');
@@ -1662,29 +1683,34 @@
     const answerQuestion = useCallback(async (anchor, text) => {
       const cur = currentRef.current;
       if (!cur || !text) return;
+      const line = sourceLineFor(doc && doc.content, { anchor });
       try {
         await api('/api/comments', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ path: cur, anchor, text }),
+          body: JSON.stringify({ path: cur, anchor, text, ...(line ? { line } : {}) }),
         });
         setStatus({ msg: 'Answer sent — the agent reads it before its next revision.', tone: 'ok' });
         loadComments(cur);
       } catch {
-        const ok = await copyToClipboard(buildPrompt(cur, [{ text, anchor }]));
+        const ok = await copyToClipboard(buildPrompt(cur, [{ text, anchor, line }]));
         setStatus({ msg: ok ? 'Saving failed, but the answer was copied — paste it to your agent.' : 'Saving failed and clipboard is unavailable.', tone: 'warn' });
       }
-    }, [loadComments]);
+    }, [loadComments, doc]);
     const openComments = useCallback(() => setDrawer({ open: true, target: {} }), []);
     // Collapse resets the target so reopening starts document-level, not on a stale anchor.
     const collapseDrawer = () => setDrawer({ open: false, target: {} });
     // Cancel the pending anchor but keep the drawer open (comment on the doc instead).
     const clearTarget = useCallback(() => setDrawer((d) => ({ ...d, target: {} })), []);
 
-    // Build a comment payload/entry from the current drawer target + text.
+    // Build a comment payload/entry from the current drawer target + text,
+    // resolving a best-effort source line so the agent gets file:line context.
     const entryFor = (text) => {
       const t = drawer.target || {};
-      return { text, ...(t.section ? { section: t.section, title: t.title } : {}), ...(t.anchor ? { anchor: t.anchor } : {}) };
+      const entry = { text, ...(t.section ? { section: t.section, title: t.title } : {}), ...(t.anchor ? { anchor: t.anchor } : {}) };
+      const line = sourceLineFor(doc && doc.content, entry);
+      if (line) entry.line = line;
+      return entry;
     };
 
     const submitComment = async (text) => {

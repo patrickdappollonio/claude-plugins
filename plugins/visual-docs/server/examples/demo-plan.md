@@ -193,6 +193,18 @@ paths:
 2. Enable in staging, watch `rate_limit_rejections_total`.
 3. Enable in production per-region.
 
+> [!NOTE]
+> The limiter is a no-op until `RATE_LIMIT_ENABLED=true`, so shipping the code is
+> safe to do ahead of the rollout.
+
+> [!WARNING]
+> Enabling this in production immediately sheds traffic over the limit — roll it
+> out per-region and watch `rate_limit_rejections_total` before going global.
+
+> [!TIP]
+> Set a generous per-key override for internal services in `api_key_limits` so
+> health checks and dashboards aren't throttled.
+
 ## Open questions
 
 ```question

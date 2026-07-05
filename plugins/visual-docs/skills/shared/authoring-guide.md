@@ -229,20 +229,23 @@ unredacted secrets. Errors exit non-zero; `--strict` also fails on warnings.
 
 ## Comments / feedback loop
 
-Readers comment three ways: **select any text** to anchor a comment to that
-snippet, hover an H2 heading or a rendered component (diagram, diff, migration,
-API, OpenAPI) and click the margin ("Comment on …") button, or leave a
-document-level comment. Comments are
-stored in `<served-dir>/.visual-docs/comments.json` and exposed at
-`GET /api/comments` (and the digest at `GET /agent/comments.md`).
+Readers comment two ways: **select any text** to anchor a comment to that exact
+snippet (this works inside text-preserving components too — diffs, migrations,
+code, API exchanges — so a comment can land on a single line), or hover any
+block (heading, paragraph, list, code, or a rendered component) and click the
+margin ("Comment on …") button. Truly-transformed components (diagrams, the
+OpenAPI explorer, the filetree table) are whole-block-only. Comments are stored
+in `<served-dir>/.visual-docs/comments.json` and exposed at `GET /api/comments`
+(and the digest at `GET /agent/comments.md`).
 
-Each comment carries an `anchor` describing what it's attached to — a quoted
-text range, a component, or (for headings) the `section`/`title` fields:
+Each comment carries an `anchor` (what it's attached to) and a best-effort
+`line` (the source line, so you can jump straight to `path:line`):
 
 ```json
 {
   "id": "c-…",
   "path": "plan.md",
+  "line": 42,
   "section": "rollout",
   "title": "Rollout",
   "anchor": { "kind": "text", "quote": "token-bucket rate limiter", "prefix": "…", "suffix": "…" },
@@ -251,6 +254,11 @@ text range, a component, or (for headings) the `section`/`title` fields:
   "status": "new"
 }
 ```
+
+The `/agent/comments.md` digest leads each entry with `` `path:line` `` and what
+it's anchored to (`on “quoted text”`, `on migration [id … · "…"]`, `on
+Heading`), then the comment body — so you never have to guess what a comment
+refers to.
 
 **Comment lifecycle.** Every comment has a `status`: `new` (just written by the
 reader), `acknowledged` (you've read it and are working on it), or `resolved`
