@@ -916,14 +916,17 @@
       </article>`;
   }
 
-  function CommentDrawer({ open, target, comments, status, onClose, onSubmit, onCopy }) {
+  function CommentDrawer({ open, target, comments, status, onClose, onClearTarget, onSubmit, onCopy }) {
     const textRef = useRef(null);
-    // Same label helper as the saved-comment list, so "commenting on X" matches
-    // exactly how the comment is shown once saved.
-    const contextLabel = commentAnchorLabel(target || {});
+    const t = target || {};
+    // What's being commented on. Text anchors show the quote itself; section and
+    // component anchors show a short label.
+    const pendingQuote = t.anchor && t.anchor.kind === 'text' ? t.anchor.quote : '';
+    const contextLabel = pendingQuote ? '' : commentAnchorLabel(t);
+    const hasTarget = !!(pendingQuote || contextLabel);
     useEffect(() => {
       if (open && textRef.current) textRef.current.focus();
-    }, [open, contextLabel]);
+    }, [open, contextLabel, pendingQuote]);
 
     const submit = (e) => {
       e.preventDefault();
@@ -941,19 +944,33 @@
           <span class="mono tb-label">comments</span>
           <button id="drawer-close" aria-label="Close comments" onClick=${onClose}>✕</button>
         </header>
-        ${contextLabel ? html`<div id="comment-context" class="mono">commenting on ${contextLabel}</div>` : null}
+        ${hasTarget ? html`
+          <div id="comment-context">
+            <div class="ctx-body mono">
+              <span class="ctx-lead">commenting on</span>
+              ${pendingQuote
+                ? html`<span class="ctx-quote">“${pendingQuote.length > 90 ? pendingQuote.slice(0, 90) + '…' : pendingQuote}”</span>`
+                : html`<span class="ctx-label">${contextLabel}</span>`}
+            </div>
+            <button type="button" class="ctx-clear" title="Cancel — comment on the document instead" onClick=${onClearTarget}>✕</button>
+          </div>` : null}
         <div id="comment-list">
           ${ordered.length === 0
             ? html`<p class="mono" style="color:var(--ink-soft)">No comments yet. Anything you write here is saved locally and read back by the agent.</p>`
-            : ordered.map((c) => html`
-              <div class="comment-item ${c.resolved ? 'resolved' : ''}">
-                <div class="c-meta">
-                  ${commentAnchorLabel(c) ? html`<span class="c-section">${commentAnchorLabel(c)}</span>` : null}
-                  <span>${new Date(c.createdAt).toLocaleString()}</span>
-                  ${c.resolved ? html`<span>resolved</span>` : null}
-                </div>
-                <div>${c.text}</div>
-              </div>`)}
+            : ordered.map((c) => {
+              const isText = c.anchor && c.anchor.kind === 'text';
+              const chip = isText ? '' : commentAnchorLabel(c);
+              return html`
+                <div class="comment-item ${c.resolved ? 'resolved' : ''}">
+                  <div class="c-meta">
+                    ${chip ? html`<span class="c-section">${chip}</span>` : null}
+                    <span>${new Date(c.createdAt).toLocaleString()}</span>
+                    ${c.resolved ? html`<span>resolved</span>` : null}
+                  </div>
+                  ${isText ? html`<div class="c-quote">“${c.anchor.quote}”</div>` : null}
+                  <div class="c-text">${c.text}</div>
+                </div>`;
+            })}
         </div>
         <form id="comment-form" onSubmit=${submit}>
           <textarea id="comment-text" rows="4" ref=${textRef} placeholder="Leave feedback for the agent… It will read this before revising the document." required></textarea>
@@ -1099,7 +1116,10 @@
     const openComponent = useCallback((anchor) => setDrawer({ open: true, target: { anchor } }), []);
     const openText = useCallback((anchor) => setDrawer({ open: true, target: { anchor } }), []);
     const openComments = useCallback(() => setDrawer({ open: true, target: {} }), []);
-    const closeDrawer = () => setDrawer((d) => ({ ...d, open: false }));
+    // Close resets the target so reopening starts document-level, not on a stale anchor.
+    const closeDrawer = () => setDrawer({ open: false, target: {} });
+    // Cancel the pending anchor but keep the drawer open (comment on the doc instead).
+    const clearTarget = useCallback(() => setDrawer((d) => ({ ...d, target: {} })), []);
 
     // Build a comment payload/entry from the current drawer target + text.
     const entryFor = (text) => {
@@ -1164,7 +1184,7 @@
       <${CommentDrawer}
         open=${drawer.open} target=${drawer.target}
         comments=${comments} status=${status}
-        onClose=${closeDrawer} onSubmit=${submitComment} onCopy=${copyPrompt} />`;
+        onClose=${closeDrawer} onClearTarget=${clearTarget} onSubmit=${submitComment} onCopy=${copyPrompt} />`;
   }
 
   /* ---------- boot ---------- */

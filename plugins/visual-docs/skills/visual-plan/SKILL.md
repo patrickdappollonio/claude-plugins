@@ -61,7 +61,7 @@ has items, skip one only when it had nothing there:
 4. `## Key changes` — one H3 per meaningful change, each led by a *why-it-matters*
    sentence: real code in normal fences, proposed edits as ` ```diff ` hunks,
    trimmed to the load-bearing lines with 2–4 annotation bullets (document-quality
-   §4). 3–8 is healthy.
+   §5). 3–8 is healthy.
 5. `## Database changes` — ` ```migration ` fences with `-- up` / `-- down`.
 6. `## API behavior` / `## API surface` — ` ```api ` examples and/or ` ```openapi `.
 7. `## Rollout` — ordered steps, flags, sequencing.
@@ -80,8 +80,8 @@ sidebar automatically:
 
 ```bash
 nohup node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-server.js" "$DIR" \
-  > "$DIR/.visual-docs/server.log" 2>&1 &
-sleep 1 && grep VISUAL_DOCS_URL "$DIR/.visual-docs/server.log"
+  > "$DIR/.server.log" 2>&1 &
+sleep 1 && grep VISUAL_DOCS_URL "$DIR/.server.log"
 ```
 
 The output contains `VISUAL_DOCS_URL=http://127.0.0.1:<port>/`. The server binds

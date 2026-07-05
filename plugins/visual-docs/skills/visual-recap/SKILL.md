@@ -93,8 +93,8 @@ secrets as `<redacted>` / `sk-•••`.
 
 ```bash
 nohup node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-server.js" "$DIR" \
-  > "$DIR/.visual-docs/server.log" 2>&1 &
-sleep 1 && grep VISUAL_DOCS_URL "$DIR/.visual-docs/server.log"
+  > "$DIR/.server.log" 2>&1 &
+sleep 1 && grep VISUAL_DOCS_URL "$DIR/.server.log"
 ```
 
 The server self-manages via a lock file: if one is already serving `$DIR` (e.g.
