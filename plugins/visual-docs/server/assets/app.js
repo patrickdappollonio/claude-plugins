@@ -152,7 +152,23 @@
       +/- snippet without headers, synthesize a minimal header. */
   function normalizeDiff(code) {
     if (/^(diff --git|---[ ]|Index: )/m.test(code)) return code;
-    const body = /^@@/m.test(code) ? code : `@@ -1,1 +1,1 @@\n${code.replace(/\n?$/, '\n')}`;
+    let body;
+    if (/^@@/m.test(code)) {
+      body = code;
+    } else {
+      // Synthesize a hunk header with the REAL line counts, so diff2html aligns
+      // the two sides correctly (a fixed "@@ -1,1 +1,1 @@" botches multi-line
+      // and side-by-side rendering).
+      const lines = code.split('\n');
+      if (lines.length && lines[lines.length - 1] === '') lines.pop();
+      let oldC = 0, newC = 0;
+      for (const l of lines) {
+        if (l[0] === '+') newC++;
+        else if (l[0] === '-') oldC++;
+        else { oldC++; newC++; } // context (incl. unprefixed lines)
+      }
+      body = `@@ -${oldC ? 1 : 0},${oldC} +${newC ? 1 : 0},${newC} @@\n${lines.join('\n')}\n`;
+    }
     return `--- a/snippet\n+++ b/snippet\n${body}`;
   }
 

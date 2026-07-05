@@ -180,9 +180,11 @@ button { font: inherit; cursor: pointer; }
   background: var(--surface);
   color: var(--ink-soft);
 }
-.markdown-body table { border-collapse: collapse; width: 100%; display: block; overflow-x: auto; }
-.markdown-body th, .markdown-body td { border: 1px solid var(--line); padding: 6px 12px; text-align: left; }
-.markdown-body th { background: var(--surface-2); font-family: var(--mono); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; }
+/* Scope to top-level GFM tables only — never diff2html / OpenAPI tables, which
+   are nested inside their own blocks and bring their own layout. */
+.markdown-body > table { border-collapse: collapse; width: 100%; display: block; overflow-x: auto; }
+.markdown-body > table th, .markdown-body > table td { border: 1px solid var(--line); padding: 6px 12px; text-align: left; }
+.markdown-body > table th { background: var(--surface-2); font-family: var(--mono); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; }
 .markdown-body hr { border: none; border-top: 1px solid var(--line); margin: 2.5em 0; }
 .markdown-body code {
   font-family: var(--mono);
