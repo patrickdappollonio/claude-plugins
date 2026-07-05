@@ -68,8 +68,8 @@ has items for it, skip one only when the inventory had nothing there:
 2. `## Outcome` — birds-eye first: 1–3 plain-terms paragraphs a non-author
    follows, **no code/symbol names**, then what to scrutinize; flag with
    `> **Risk:** …`.
-3. `## What changed` — full file list with change flags + a one-line purpose
-   each, grouped by area.
+3. `## What changed` — a ` ```filetree ` fence: every file with a change flag
+   (A/M/D/R) and a one-line purpose, grouped by area with `#` headings.
 4. `## Architecture` — a ` ```mermaid `/` ```nomnoml ` diagram when components,
    flows, or data paths moved (prefer a 2-D before/after or layered shape).
 5. `## Data & schema` — ` ```migration ` fences for schema changes.

@@ -154,6 +154,10 @@
       return renderOpenApiFence(code);
     }
 
+    if (language === 'filetree' || language === 'file-tree' || language === 'files') {
+      return renderFileTreeFence(code);
+    }
+
     let inner;
     if (window.hljs && language && window.hljs.getLanguage(language)) {
       try {
@@ -493,6 +497,48 @@
     </div>`;
   }
 
+  /* ---------- file-tree fence ---------- */
+
+  const FILE_FLAGS = {
+    a: 'added', m: 'modified', d: 'deleted', r: 'renamed',
+    added: 'added', modified: 'modified', changed: 'modified',
+    deleted: 'deleted', removed: 'deleted', renamed: 'renamed', moved: 'renamed',
+  };
+
+  /** Render a ` ```filetree ` fence: a "what changed" file map. Each line is
+      `<flag> <path>  <note>` (flag = A|M|D|R or added/modified/deleted/renamed;
+      note optional, separated by 2+ spaces, a tab, or " — "). A line starting
+      with `#` is a group heading. */
+  function renderFileTreeFence(code) {
+    const rows = code.split('\n').map((raw) => {
+      const line = raw.replace(/\s+$/, '');
+      if (!line.trim()) return null;
+      if (line.trim().startsWith('#')) return { group: line.replace(/^\s*#\s?/, '') };
+      let flag = '';
+      let rest = line.trim();
+      const fm = rest.match(/^([A-Za-z]+)\s+(\S.*)$/);
+      if (fm && FILE_FLAGS[fm[1].toLowerCase()]) { flag = FILE_FLAGS[fm[1].toLowerCase()]; rest = fm[2]; }
+      let path = rest.trim();
+      let note = '';
+      const sp = rest.match(/^(.*?)(?:\s{2,}|\t|\s+—\s+)(.+)$/);
+      if (sp) { path = sp[1].trim(); note = sp[2].trim(); }
+      return { flag, path, note };
+    }).filter(Boolean);
+
+    const flagBadge = (f) => f
+      ? `<span class="ft-flag ft-${f}" title="${f}">${f[0].toUpperCase()}</span>`
+      : '<span class="ft-flag ft-none"></span>';
+    const body = rows.map((r) => r.group !== undefined
+      ? `<div class="ft-group">${escapeHTML(r.group)}</div>`
+      : `<div class="ft-row">${flagBadge(r.flag)}<code class="ft-path">${escapeHTML(r.path)}</code>${r.note ? `<span class="ft-note">${escapeHTML(r.note)}</span>` : ''}</div>`
+    ).join('');
+
+    return `<div class="filetree-block" ${blockAttrs(code)}>
+      <div class="ft-head"><span class="mig-icon">${ICON.doc}</span><span class="mig-title">files changed</span></div>
+      ${body}
+    </div>`;
+  }
+
   /* ---------- markdown → sanitized HTML ---------- */
 
   function renderMarkdown(md) {
@@ -645,6 +691,7 @@
     ['.migration-block', 'migration'],
     ['.api-block', 'API exchange'],
     ['.openapi-block', 'OpenAPI spec'],
+    ['.filetree-block', 'file tree'],
   ];
 
   // Derived from COMPONENTS so there's one source of truth for the block set.

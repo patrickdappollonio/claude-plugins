@@ -60,8 +60,9 @@ surface with an ` ```openapi ` block (the read-only endpoint explorer) and/or
 ` ```api ` request/response cards. That is the headline for an API change; a
 handler `diff` is at most supporting evidence beside it, never a substitute.
 The same reflex applies elsewhere: schema/migration → ` ```migration `,
-architecture/flow → ` ```mermaid `/` ```nomnoml `. If a purpose-built block can
-carry the change, don't let a code diff stand in for it.
+architecture/flow → ` ```mermaid `/` ```nomnoml `, the changed-files map →
+` ```filetree ` (flags + notes, not a bullet list). If a purpose-built block can
+carry the change, don't let a code diff or a plain list stand in for it.
 
 ## 4. One sentence of intent above every structured fence
 

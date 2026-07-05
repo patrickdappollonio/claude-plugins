@@ -63,6 +63,27 @@ Nomnoml syntax primer (it is NOT Mermaid — do not mix syntaxes):
 - One edge per line. There are no sequence/gantt/ER modes — for those,
   use Mermaid.
 
+### File tree — ` ```filetree ` (aliases: ` ```files `, ` ```file-tree `)
+
+A "what changed" file map: one line per file as `<flag> <path>  <note>`, rendered
+with a coloured change badge, the path, and a muted note. Flags: `A` added
+(green), `M` modified (amber), `D` deleted (red), `R` renamed (blue) — or the
+words `added`/`modified`/`deleted`/`renamed`. The note is optional (separate it
+with 2+ spaces, a tab, or ` — `). A line starting with `#` is a group heading.
+This is the block for a recap's `## What changed` — prefer it over a plain
+bullet list.
+
+    ```filetree
+    # Server
+    A  server/lib/server.js     http server: routing, access gate
+    M  server/assets/app.js     the viewer
+    D  server/old.js            removed
+    R  a.js -> b.js             renamed
+
+    # Skills
+    A  skills/shared/guide.md   fence syntax
+    ```
+
 ### Diffs — ` ```diff ` (alias: ` ```patch `)
 
 Rendered as a rich diff viewer with a unified / side-by-side toggle. Prefer
