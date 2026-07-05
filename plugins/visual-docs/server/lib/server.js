@@ -44,10 +44,14 @@ function sniffImage(buf) {
   }
   if (buf.length >= 12 && buf.toString('latin1', 0, 4) === 'RIFF' && buf.toString('latin1', 8, 12) === 'WEBP') return 'image/webp';
   if (buf.length >= 12 && buf.toString('latin1', 4, 8) === 'ftyp' && /avif|avis/.test(buf.toString('latin1', 8, 12))) return 'image/avif';
-  if (buf.length >= 2 && buf[0] === 0x42 && buf[1] === 0x4d) return 'image/bmp';
+  // BMP: "BM" + a 14-byte header whose 4-byte reserved field is zero — more than
+  // the 2-byte magic so an arbitrary file starting with "BM" isn't accepted.
+  if (buf.length >= 14 && buf[0] === 0x42 && buf[1] === 0x4d && buf.readUInt32LE(6) === 0) return 'image/bmp';
   if (buf.length >= 4 && buf[0] === 0x00 && buf[1] === 0x00 && buf[2] === 0x01 && buf[3] === 0x00) return 'image/x-icon';
-  const head = buf.slice(0, 512).toString('utf8').replace(/^﻿/, '').trimStart();
-  if (head.startsWith('<?xml') || head.startsWith('<svg')) return 'image/svg+xml';
+  // SVG is XML text; allow an optional XML declaration, DOCTYPE, and comments
+  // before the root <svg> (common in Illustrator/Inkscape exports).
+  const head = buf.slice(0, 1024).toString('utf8').replace(/^﻿/, '');
+  if (/^\s*(<\?xml\b[^>]*\?>\s*)?(<!DOCTYPE\b[^>]*>\s*)?(<!--[\s\S]*?-->\s*)*<svg[\s>]/i.test(head)) return 'image/svg+xml';
   return null;
 }
 

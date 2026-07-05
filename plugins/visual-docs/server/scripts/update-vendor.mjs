@@ -16,23 +16,26 @@ const VENDOR_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'assets',
 const MANIFEST = join(VENDOR_DIR, 'manifest.json');
 const INDEX_HTML = join(VENDOR_DIR, '..', 'index.html');
 
-/** Find the <script>/<link> tag that loads /assets/vendor/<file>, capturing
-    (opening tag minus a trailing integrity attr) and the closing `>`. */
+/** Match the whole <script>/<link> tag that loads /assets/vendor/<file>. */
 function vendorTagRe(file) {
   const esc = file.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return new RegExp(`(<(?:script|link)\\b[^>]*?\\b(?:src|href)="/assets/vendor/${esc}"[^>]*?)(?:\\s+integrity="[^"]*")?(\\s*>)`, 'g');
+  return new RegExp(`<(?:script|link)\\b[^>]*?\\b(?:src|href)="/assets/vendor/${esc}"[^>]*?>`, 'g');
 }
 
-/** Return { file: integrity } for every vendored tag referenced in index.html. */
+/** Read a tag's real `integrity` attribute value, or null. The leading
+    boundary (start-of-string or whitespace) is required so this does NOT
+    match a decoy attribute like `data-integrity="…"`. */
+function tagIntegrity(tag) {
+  const m = tag.match(/(?:^|\s)integrity="([^"]*)"/);
+  return m ? m[1] : null;
+}
+
+/** Return { file: integrity|null } for every vendored tag in index.html. */
 function indexIntegrities(html) {
   const map = {};
   const re = /<(?:script|link)\b[^>]*?\b(?:src|href)="\/assets\/vendor\/([^"]+)"[^>]*?>/g;
   let m;
-  while ((m = re.exec(html))) {
-    const tag = m[0];
-    const integ = tag.match(/\bintegrity="([^"]*)"/);
-    map[m[1]] = integ ? integ[1] : null;
-  }
+  while ((m = re.exec(html))) map[m[1]] = tagIntegrity(m[0]);
   return map;
 }
 
@@ -207,12 +210,17 @@ async function verify() {
   console.log('All vendored assets match the source-pinned hashes (files + index.html SRI).');
 }
 
-/** Rewrite index.html so each vendored tag carries integrity="<pinned hash>". */
+/** Rewrite index.html so each vendored tag carries integrity="<pinned hash>".
+    Strips any existing integrity attribute wherever it sits before re-adding,
+    so a reordered tag can never end up with two integrity attributes. */
 async function syncIndexIntegrity(byFile) {
   let html = await fs.readFile(INDEX_HTML, 'utf8');
   for (const [file, hash] of Object.entries(byFile)) {
     if (!html.includes(`/assets/vendor/${file}"`)) continue;
-    html = html.replace(vendorTagRe(file), (_m, open, close) => `${open} integrity="${hash}"${close}`);
+    html = html.replace(vendorTagRe(file), (tag) => {
+      const stripped = tag.replace(/\s+integrity="[^"]*"/g, '').replace(/\s*>$/, '');
+      return `${stripped} integrity="${hash}">`;
+    });
   }
   await fs.writeFile(INDEX_HTML, html);
   console.log('Synced index.html SRI attributes.');
