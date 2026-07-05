@@ -1521,7 +1521,15 @@
      Components
      ================================================================ */
 
-  function Sidebar({ docs, current, conn, theme, open, onToggleTheme, onExpand, onCollapse }) {
+  function Sidebar({ docs, current, outline, conn, theme, open, onToggleTheme, onExpand, onCollapse }) {
+    // Outline (this doc's sections) vs Docs (the other files). Default to the
+    // outline — a short-doc set rarely needs a file list, but a table of contents
+    // is always useful. (useState must run before the early collapsed return.)
+    const [tab, setTab] = useState('outline');
+    const scrollToHeading = (id) => {
+      const el = id && document.getElementById(id);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
     // Show the icon of the mode you'll switch TO.
     const themeIcon = theme === 'dark' ? 'sun' : 'moon';
 
@@ -1552,13 +1560,24 @@
           <button id="theme-toggle" class="side-icon-btn" title=${`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`} aria-label="Toggle theme" onClick=${onToggleTheme}><${Icon} name=${themeIcon} /></button>
           <button id="nav-collapse" class="side-icon-btn" title="Collapse sidebar" aria-label="Collapse sidebar" onClick=${onCollapse}><${Icon} name="chevronLeft" /></button>
         </header>
-        <nav id="doc-list" aria-label="Documents">
-          ${docs.map((d) => html`
-            <a class="doc-link ${d.path === current ? 'active' : ''}" href=${`#/${d.path}`}>
-              <span class="dl-title">${d.title}</span>
-              <span class="dl-path mono">${d.path} · ${fmtTime(d.mtime)}</span>
-            </a>`)}
-        </nav>
+        <div class="side-tabs" data-active=${tab} role="tablist">
+          <span class="seg-indicator"></span>
+          <button class="seg-btn ${tab === 'outline' ? 'active' : ''}" role="tab" aria-selected=${tab === 'outline'} onClick=${() => setTab('outline')}>Outline</button>
+          <button class="seg-btn ${tab === 'docs' ? 'active' : ''}" role="tab" aria-selected=${tab === 'docs'} onClick=${() => setTab('docs')}>Docs${docs.length > 1 ? html` <span class="seg-count">${docs.length}</span>` : ''}</button>
+        </div>
+        ${tab === 'outline'
+          ? html`<nav id="doc-outline" aria-label="Outline">
+              ${outline && outline.length
+                ? outline.map((h) => html`<button class="ol-item lvl-${h.level}" title=${h.text} onClick=${() => scrollToHeading(h.id)}>${h.text}</button>`)
+                : html`<div class="side-empty">No sections in this document.</div>`}
+            </nav>`
+          : html`<nav id="doc-list" aria-label="Documents">
+              ${docs.map((d) => html`
+                <a class="doc-link ${d.path === current ? 'active' : ''}" href=${`#/${d.path}`}>
+                  <span class="dl-title">${d.title}</span>
+                  <span class="dl-path mono">${d.path} · ${fmtTime(d.mtime)}</span>
+                </a>`)}
+            </nav>`}
         <footer class="side-foot mono" title=${connTitle}>
           <span id="conn-dot" class="dot ${conn === 'on' ? 'on' : conn === 'off' ? 'off' : ''}"></span>
           <span id="conn-label">${connLabel}</span>
@@ -1588,7 +1607,7 @@
   /** Renders sanitized markdown into a Preact-owned-but-manually-managed
       element. Preact never touches the children (the article is empty in its
       vdom), so imperative hydration is safe. */
-  function DocView({ doc, comments, theme, raw, onOpenSection, onOpenComponent, onOpenText, onViewComments, onAnswer }) {
+  function DocView({ doc, comments, theme, raw, onOpenSection, onOpenComponent, onOpenText, onViewComments, onAnswer, onOutline }) {
     const ref = useRef(null);
     const lastPath = useRef(null);
     const commentsRef = useRef(comments);
@@ -1605,6 +1624,7 @@
       if (raw) {
         el.innerHTML = '<pre class="raw-md"></pre>';
         el.firstChild.textContent = doc.content;
+        if (onOutline) onOutline([]); // no headings to outline over raw source
         const changed = lastPath.current !== doc.path;
         lastPath.current = doc.path;
         window.scrollTo(0, changed ? 0 : y);
@@ -1626,6 +1646,10 @@
       // button is the affordance. The cancel flag stops a stale async mermaid
       // render from touching a doc/theme that has moved on.
       markCommentables(el);
+      // Report the heading outline (h2/h3, with their slug ids) for the sidebar TOC.
+      if (onOutline) {
+        onOutline([...el.querySelectorAll('h2, h3')].map((h) => ({ level: +h.tagName[1], text: h.textContent.trim(), id: h.id })));
+      }
       // Draw comment highlights/answered-state as the LAST step of the rebuild,
       // so this doesn't depend on effect declaration order — the sibling effect
       // below only handles later comment-set changes.
@@ -1944,6 +1968,7 @@
     const [status, setStatus] = useState(null);
     const [raw, setRaw] = useState(false);
     const [navOpen, setNavOpen] = useState(true);
+    const [outline, setOutline] = useState([]); // headings of the current doc, for the sidebar TOC
 
     const currentRef = useRef(current);
     currentRef.current = current;
@@ -2168,11 +2193,11 @@
     } else {
       main = html`<${DocView} doc=${doc} comments=${comments} theme=${theme} raw=${raw}
         onOpenSection=${openSection} onOpenComponent=${openComponent}
-        onOpenText=${openText} onViewComments=${openComments} onAnswer=${answerQuestion} />`;
+        onOpenText=${openText} onViewComments=${openComments} onAnswer=${answerQuestion} onOutline=${setOutline} />`;
     }
 
     return html`
-      <${Sidebar} docs=${docs} current=${current} conn=${conn} theme=${theme} open=${navOpen}
+      <${Sidebar} docs=${docs} current=${current} outline=${outline} conn=${conn} theme=${theme} open=${navOpen}
         onToggleTheme=${toggleTheme} onExpand=${() => setNavOpen(true)} onCollapse=${() => setNavOpen(false)} />
       <main id="main">
         ${doc && !doc.error ? html`<${TitleBlock} doc=${doc} openCount=${openCount} raw=${raw} onOpenComments=${openComments} onToggleRaw=${toggleRaw} onPrint=${printDoc} />` : null}
