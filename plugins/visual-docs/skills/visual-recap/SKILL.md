@@ -102,9 +102,9 @@ from a visual-plan earlier in the session) this just prints its URL and exits �
 new files appear in the sidebar automatically, no need to check first. To bind
 differently later (e.g. add `--host` for Tailscale), re-run with `--restart`.
 Give the user `http://127.0.0.1:<port>/#/<file>.md` and mention: live reload;
-they can **select any text** to comment on that exact snippet, hover a heading
-or a rendered component (diagram, diff, …) to pin a comment there, or use "Copy
-as prompt" for chat-style feedback.
+they can **select any text** to comment on that exact snippet, or hover a
+heading or a rendered component (diagram, diff, …) and click the margin button
+("Comment on …") to comment there; "Copy as prompt" gives chat-style feedback.
 
 ### 5. Respond to review
 

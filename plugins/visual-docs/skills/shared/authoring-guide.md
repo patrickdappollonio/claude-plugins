@@ -215,7 +215,8 @@ language tag. Untyped fences are auto-detected.
 
 Readers comment three ways: **select any text** to anchor a comment to that
 snippet, hover an H2 heading or a rendered component (diagram, diff, migration,
-API, OpenAPI) to pin one there, or leave a document-level comment. Comments are
+API, OpenAPI) and click the margin ("Comment on …") button, or leave a
+document-level comment. Comments are
 stored in `<served-dir>/.visual-docs/comments.json` and exposed at
 `GET /api/comments` (and the digest at `GET /agent/comments.md`).
 

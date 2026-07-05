@@ -796,28 +796,6 @@
     }
   }
 
-  /** Attach a comment pin to every H2, idempotently (safe to re-run when the
-      comment set changes without re-rendering the document body). Keyed on the
-      stable heading slug so a rename doesn't orphan a comment. */
-  function applySectionPins(container, comments, onOpen) {
-    container.querySelectorAll('.section-comment-btn').forEach((b) => b.remove());
-    for (const h2 of container.querySelectorAll('h2')) {
-      const title = h2.textContent.trim();
-      const slug = slugify(title);
-      h2.id = h2.id || slug;
-      const count = comments.filter((c) => commentSlug(c) === slug && commentStatus(c) !== 'resolved').length;
-      const btn = document.createElement('button');
-      btn.className = 'section-comment-btn' + (count > 0 ? ' has-comments' : '');
-      btn.type = 'button';
-      btn.innerHTML = ICON.edit + (count > 0 ? ` ${count}` : ' comment');
-      btn.title = `Comment on “${title}”`;
-      btn.addEventListener('click', () => onOpen(slug, title));
-      h2.appendChild(btn);
-    }
-  }
-
-  // Component blocks can't be text-selected meaningfully, so each gets its own
-  // "comment on this component" affordance instead.
   const ADMONITIONS = {
     NOTE: { cls: 'note', label: 'Note', icon: 'info' },
     TIP: { cls: 'tip', label: 'Tip', icon: 'tip' },
@@ -935,35 +913,29 @@
     return !!(el && el.closest(COMPONENT_SELECTOR + ', .question-block'));
   }
 
-  /** Attach a "💬" affordance to each rendered component block. Anchors a
-      comment to that component by type (with an ordinal when several share a
-      type), matching the "commented on component X" behaviour. */
-  function applyComponentPins(container, onOpen) {
-    container.querySelectorAll('.component-comment-btn').forEach((b) => b.remove());
-    for (const [sel, typeName] of COMPONENTS) {
-      const blocks = container.querySelectorAll(sel);
-      blocks.forEach((blk, i) => {
-        blk.classList.add('component-block'); // one class for the CSS hover rule
-        if (getComputedStyle(blk).position === 'static') blk.style.position = 'relative';
-        const label = blocks.length > 1 ? `${typeName} #${i + 1}` : typeName;
-        const btn = document.createElement('button');
-        btn.className = 'component-comment-btn';
-        btn.type = 'button';
-        btn.innerHTML = ICON.comment;
-        btn.title = `Comment on this ${typeName}`;
-        btn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          onOpen({
-            kind: 'component',
-            type: typeName,
-            label,
-            id: blk.dataset.blockId || '',
-            hint: blk.dataset.blockHint || '',
-          });
-        });
-        blk.appendChild(btn);
-      });
+  /** Give every commentable element a stable handle: H2s get an id, component
+      blocks get the .component-block class (for the hover outline). No embedded
+      buttons — the single gutter button (setupGutter) is the affordance. */
+  function markCommentables(container) {
+    for (const h2 of container.querySelectorAll('h2')) {
+      h2.id = h2.id || slugify(h2.textContent.trim());
     }
+    for (const sel of COMPONENTS.map(([s]) => s)) {
+      container.querySelectorAll(sel).forEach((blk) => blk.classList.add('component-block'));
+    }
+  }
+
+  /** Resolve a component block to its comment anchor (type + ordinal label +
+      stable id + hint), matching the "commented on component X" behaviour. */
+  function componentAnchorFor(container, el) {
+    for (const [sel, typeName] of COMPONENTS) {
+      if (!el.matches(sel)) continue;
+      const blocks = [...container.querySelectorAll(sel)];
+      const i = blocks.indexOf(el);
+      const label = blocks.length > 1 ? `${typeName} #${i + 1}` : typeName;
+      return { kind: 'component', type: typeName, label, id: el.dataset.blockId || '', hint: el.dataset.blockHint || '' };
+    }
+    return null;
   }
 
   /** Highlight the quoted span of each unresolved text-anchored comment, so the
@@ -1152,6 +1124,8 @@
   function DocView({ doc, comments, theme, raw, onOpenSection, onOpenComponent, onOpenText, onViewComments, onAnswer }) {
     const ref = useRef(null);
     const lastPath = useRef(null);
+    const commentsRef = useRef(comments);
+    commentsRef.current = comments;
 
     // Body render + fence hydration + component pins: only on doc/theme change.
     useEffect(() => {
@@ -1178,29 +1152,111 @@
       hydrateNomnoml(el);
       hydrateQuestions(el, onAnswer);
       markAnsweredQuestions(el, comments);
-      // Pin the non-mermaid blocks now so their 💬 isn't gated on mermaid, then
-      // re-pin after mermaid replaces its own blocks' innerHTML. The cancel flag
-      // stops a stale async render from touching a doc/theme that has moved on.
-      applyComponentPins(el, onOpenComponent);
-      hydrateMermaid(el, () => cancelled).then(() => { if (!cancelled) applyComponentPins(el, onOpenComponent); });
+      // Mark headings/components as commentable (ids + hover class); the gutter
+      // button is the affordance. The cancel flag stops a stale async mermaid
+      // render from touching a doc/theme that has moved on.
+      markCommentables(el);
+      hydrateMermaid(el, () => cancelled);
       const changedDoc = lastPath.current !== doc.path;
       lastPath.current = doc.path;
       window.scrollTo(0, changedDoc ? 0 : y);
       return () => { cancelled = true; };
-    }, [doc, theme, raw, onOpenComponent, onAnswer]);
+    }, [doc, theme, raw, onAnswer]);
 
-    // Section pins + text highlights + answered-question state: re-applied
-    // whenever the comment set changes.
+    // Text highlights + answered-question state: re-applied whenever the comment
+    // set changes.
     useEffect(() => {
       const el = ref.current;
-      if (!el || raw) return; // no pins/highlights over raw source
-      applySectionPins(el, comments, onOpenSection);
+      if (!el || raw) return; // nothing to mark over raw source
       applyTextHighlights(el, comments, onViewComments);
       markAnsweredQuestions(el, comments);
       // doc/theme/raw are dependencies (not all read here) only so this effect
       // re-runs AFTER the sibling effect rebuilds el.innerHTML — Preact runs
       // effects in declaration order. Don't drop them.
-    }, [doc, comments, theme, raw, onOpenSection, onViewComments]);
+    }, [doc, comments, theme, raw, onViewComments]);
+
+    // Notion-style gutter comment button: a single button that follows the
+    // hovered heading or component into the document's right margin, labelled
+    // for what it targets. Clicking opens the drawer anchored there.
+    useEffect(() => {
+      const content = ref.current;
+      if (!content || raw) return;
+      const btn = document.createElement('button');
+      btn.className = 'gutter-comment-btn';
+      btn.type = 'button';
+      btn.hidden = true;
+      document.body.appendChild(btn);
+      let target = null;
+      let action = null;
+      let hideTimer = null;
+      const clearHide = () => { if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; } };
+      const scheduleHide = () => { clearHide(); hideTimer = setTimeout(() => { btn.hidden = true; target = null; action = null; }, 200); };
+
+      const place = () => {
+        if (!target || btn.hidden) return;
+        const r = target.getBoundingClientRect();
+        const cr = content.getBoundingClientRect();
+        let x = cr.right + 14;
+        const maxX = window.innerWidth - btn.offsetWidth - 10;
+        if (x > maxX) x = maxX;
+        btn.style.left = `${Math.round(x)}px`;
+        btn.style.top = `${Math.round(Math.max(12, r.top))}px`;
+      };
+
+      const showFor = (el) => {
+        const comments = commentsRef.current;
+        let label = '';
+        let count = 0;
+        if (el.matches(COMPONENT_SELECTOR)) {
+          const anchor = componentAnchorFor(content, el);
+          if (!anchor) return;
+          count = comments.filter((c) => c.anchor && c.anchor.kind === 'component' && c.anchor.id === anchor.id && commentStatus(c) !== 'resolved').length;
+          label = `Comment on ${anchor.label}`;
+          action = () => onOpenComponent(anchor);
+        } else {
+          const title = el.textContent.trim();
+          const slug = slugify(title);
+          count = comments.filter((c) => commentSlug(c) === slug && commentStatus(c) !== 'resolved').length;
+          const short = title.length > 42 ? title.slice(0, 42) + '…' : title;
+          label = `Comment on “${short}”`;
+          action = () => onOpenSection(slug, title);
+        }
+        target = el;
+        const badge = count ? `<span class="gcb-count">${count}</span>` : '';
+        btn.innerHTML = ICON.comment + `<span class="gcb-label">${escapeHTML(label)}</span>` + badge;
+        btn.hidden = false;
+        place();
+      };
+
+      const onMove = (e) => {
+        if (e.target === btn || btn.contains(e.target)) { clearHide(); return; }
+        const comp = e.target.closest(COMPONENT_SELECTOR);
+        const cand = (comp && content.contains(comp)) ? comp : e.target.closest('h2');
+        if (cand && content.contains(cand)) {
+          clearHide();
+          if (cand !== target) showFor(cand);
+        } else {
+          scheduleHide();
+        }
+      };
+      const onScroll = () => place();
+
+      content.addEventListener('mousemove', onMove);
+      content.addEventListener('mouseleave', scheduleHide);
+      btn.addEventListener('mouseenter', clearHide);
+      btn.addEventListener('mouseleave', scheduleHide);
+      btn.addEventListener('click', () => { if (action) action(); });
+      window.addEventListener('scroll', onScroll, true);
+      window.addEventListener('resize', onScroll);
+      return () => {
+        content.removeEventListener('mousemove', onMove);
+        content.removeEventListener('mouseleave', scheduleHide);
+        window.removeEventListener('scroll', onScroll, true);
+        window.removeEventListener('resize', onScroll);
+        clearHide();
+        btn.remove();
+      };
+    }, [doc, raw, onOpenSection, onOpenComponent]);
 
     // Text-selection → floating "comment" affordance.
     useEffect(() => {

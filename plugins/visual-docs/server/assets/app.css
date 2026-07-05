@@ -55,9 +55,8 @@ body {
 .icon { width: 1em; height: 1em; display: block; flex: 0 0 auto; }
 .icon-wrap { display: inline-flex; align-items: center; }
 /* Buttons/labels that pair an icon with text line them up with a small gap. */
-.section-comment-btn, .selection-comment-btn, .api-half-label,
-.migration-pane .pane-label, #theme-toggle, .mig-icon, .side-mark,
-.component-comment-btn, #drawer-close, .ctx-clear {
+.selection-comment-btn, .api-half-label, .migration-pane .pane-label,
+#theme-toggle, .mig-icon, .side-mark, #drawer-close, .ctx-clear {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -609,25 +608,40 @@ button { font: inherit; cursor: pointer; }
 .q-ans-label .icon { color: var(--ok); }
 .q-ans { color: var(--ink); font-size: 0.9rem; }
 
-/* ---------- Section comment pins ---------- */
-.section-comment-btn {
-  position: absolute;
-  right: 0;
-  top: 0.15em;
-  border: 1px solid var(--line);
+/* ---------- Gutter comment button (Notion-style) ----------
+   A single floating button that follows the hovered heading/component into the
+   right margin, labelled for its target. */
+.gutter-comment-btn {
+  position: fixed;
+  z-index: 40;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 260px;
+  padding: 5px 10px;
   background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
   color: var(--ink-soft);
-  border-radius: 6px;
-  font-size: 0.7rem;
-  font-family: var(--mono);
-  padding: 2px 8px;
-  opacity: 0;
-  transition: opacity 120ms;
+  font-size: 0.76rem;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+  transition: color 120ms, border-color 120ms;
 }
-.markdown-body h2:hover .section-comment-btn,
-.section-comment-btn:focus-visible { opacity: 1; }
-.section-comment-btn:hover { color: var(--accent); border-color: var(--accent); }
-.section-comment-btn.has-comments { opacity: 1; color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+.gutter-comment-btn:hover { color: var(--accent); border-color: var(--accent); }
+.gutter-comment-btn .icon { width: 0.95em; height: 0.95em; flex: 0 0 auto; }
+.gcb-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gcb-count {
+  flex: 0 0 auto;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 20px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  min-width: 15px;
+  text-align: center;
+}
 
 /* ---------- Comment drawer ---------- */
 #comment-drawer {
@@ -726,28 +740,10 @@ button { font: inherit; cursor: pointer; }
 }
 .selection-comment-btn:hover { filter: brightness(1.08); }
 
-/* Per-component comment affordance (top-right of a rendered block) */
-.component-comment-btn {
-  position: absolute;
-  top: 7px;
-  right: 7px;
-  z-index: 5;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: 4px 7px;
-  font-size: 0.72rem;
-  line-height: 1;
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 120ms;
-}
-/* Reserve the top-right corner in header bars so the pin can't overlap their
-   right-aligned controls (diff toggle, migration/openapi badges). */
-.diff-toolbar, .migration-head, .oa-head { padding-right: 44px; }
-.component-block:hover .component-comment-btn,
-.component-comment-btn:focus-visible { opacity: 1; }
-.component-comment-btn:hover { border-color: var(--accent); }
+/* Subtle hover outline on a commentable component (the gutter button carries
+   the actual affordance). */
+.component-block { border-radius: 10px; transition: box-shadow 120ms; }
+.component-block:hover { box-shadow: 0 0 0 2px var(--accent-soft); }
 
 /* Commented text ranges */
 mark.comment-highlight {

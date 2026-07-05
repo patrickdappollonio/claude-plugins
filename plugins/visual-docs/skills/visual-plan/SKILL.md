@@ -103,9 +103,9 @@ http://127.0.0.1:<port>/#/<file>.md
 ```
 
 Tell them, briefly: the page live-reloads as you edit; they can **select any
-text** to comment on that snippet, hover a section heading or a rendered
-component (diagram, diff, …) to pin a comment there, and "Copy as prompt" turns
-their feedback into a pasteable message if they prefer chat.
+text** to comment on that snippet, or hover a section heading or a rendered
+component (diagram, diff, …) and click the margin button to comment there;
+"Copy as prompt" turns their feedback into a pasteable message if they prefer chat.
 
 ### 6. Read feedback before revising — every time
 
