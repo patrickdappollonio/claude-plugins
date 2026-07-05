@@ -6,6 +6,23 @@ We will add a token-bucket rate limiter in front of the public REST API. Request
 
 > **Decision needed:** default limit of 100 req/min per key — is that acceptable for the enterprise tier, or do we need per-tier limits at launch?
 
+## Files touched
+
+```filetree
+# Server
+A  internal/ratelimit/bucket.go      token-bucket algorithm + Redis/in-memory stores
+A  internal/ratelimit/middleware.go  chi middleware: check bucket, emit 429 + Retry-After
+M  internal/server/router.go         wire the limiter in front of /api/v1
+M  internal/config/config.go         new RATE_LIMIT_RPM / REDIS_URL settings
+
+# Database
+A  migrations/0007_api_key_limits.sql  per-key limit overrides table
+
+# Tests
+A  internal/ratelimit/bucket_test.go   burst, refill, and fallback cases
+M  internal/server/router_test.go      assert 429 path end-to-end
+```
+
 ## Architecture
 
 ```mermaid
