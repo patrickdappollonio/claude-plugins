@@ -22,16 +22,24 @@ pointer; put the budget you'd spend narrating into the plan's coverage instead.
 Do the normal planning work first (read the code, understand the change). Then
 write the plan as a single markdown file. Choose the directory:
 
-- **Default (throwaway review):** a stable temp directory, created once and
-  reused for the whole session:
+- **Default (throwaway review):** a directory scoped to **this session and this
+  project**, so it starts empty every session and never overlaps another
+  project's docs (`CLAUDE_CODE_SESSION_ID` is unique per session):
   ```bash
-  DIR="${TMPDIR:-/tmp}/visual-docs-$(basename "$PWD")"
+  DIR="${TMPDIR:-/tmp}/visual-docs/$(basename "$PWD")-${CLAUDE_CODE_SESSION_ID:-$$}"
   mkdir -p "$DIR"
   ```
 - **User wants the plan kept:** write it where they say (e.g. `docs/plans/`)
   and serve that directory instead.
 
 Name the file after the task, e.g. `$DIR/add-rate-limiting.md`.
+
+**Always start fresh.** Write a new file for this session's work — do **not**
+search `/tmp` for an old `visual-docs*` directory or reuse a plan from an earlier
+session. Only update a pre-existing file when the user explicitly points you at
+one, and before you touch it, confirm it actually describes *this* change: a
+stale doc from another task or project can look deceptively similar, and
+overwriting it as if it were yours is the failure to avoid.
 
 ### 2. Take inventory before writing (silently)
 

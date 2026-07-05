@@ -49,10 +49,26 @@ audit.
 
 ### 3. Write the recap file
 
-Directory selection and serving are identical to the visual-plan skill:
-default to `DIR="${TMPDIR:-/tmp}/visual-docs-$(basename "$PWD")"` (create
-once, reuse), or a user-chosen repo path if they want it kept. Name the file
-after the change, e.g. `$DIR/recap-pr-142.md`.
+Directory selection and serving are identical to the visual-plan skill. Default
+to a directory scoped to **this session and this project** so it starts empty
+every session and never overlaps another project's recaps
+(`CLAUDE_CODE_SESSION_ID` is unique per session), or a user-chosen repo path if
+they want it kept:
+
+```bash
+DIR="${TMPDIR:-/tmp}/visual-docs/$(basename "$PWD")-${CLAUDE_CODE_SESSION_ID:-$$}"
+mkdir -p "$DIR"
+```
+
+Name the file after the change, e.g. `$DIR/recap-pr-142.md`.
+
+**Always start fresh.** Write a new recap for this session — do **not** hunt
+through `/tmp` for an existing `visual-docs*` directory or reuse a recap from an
+earlier session. Only update a pre-existing recap when the user explicitly asks
+you to update that specific one, and before editing it, confirm it describes
+*this* change: a stale recap from a different PR or project can read as almost
+the same, and updating it in place as if it were yours is precisely the mistake
+to avoid.
 
 **Read `${CLAUDE_PLUGIN_ROOT}/skills/shared/document-quality.md` once (silently)
 before writing** — it is the standard for making the document comprehensive,
