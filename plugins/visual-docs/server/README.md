@@ -45,9 +45,20 @@ visual-docs-server [dir] [options]
                   0.0.0.0 (all interfaces) and prints per-interface
                   "Network:" URLs — handy for reviewing from another device
                   over LAN or Tailscale.
+  --serve         Start in the background and print the URL, then return
+                  (cross-platform; no nohup/& needed)
   --restart       Replace an instance already serving this dir
   --stop          Stop the instance serving this dir, then exit
   --no-watch      Disable live reload
+```
+
+Agent-facing commands — each prints ready-to-read text (no JSON to parse, no
+shell glue), so an agent never has to write a script:
+
+```bash
+visual-docs-server --docdir                        # print a fresh, session-scoped docs dir
+visual-docs-server --comments <dir> [<file>.md]    # open-comments digest (markdown)
+visual-docs-server --status <dir> <id[,id2,…]> <state>   # set new|acknowledged|resolved
 ```
 
 The server records itself in `<dir>/.visual-docs/server.json` (pid, port, url),
@@ -73,12 +84,16 @@ Try the kitchen-sink example: `visual-docs-server examples/`.
 | `GET /api/doc?path=<rel>` | Raw markdown + mtime for one file |
 | `GET /api/comments[?path=<rel>]` | Reader comments (optionally per document) |
 | `POST /api/comments` | Add a comment: `{path, section, text}` |
+| `POST /api/comments/status` | Set lifecycle state: `{id\|ids, status}` (`new`/`acknowledged`/`resolved`) |
 | `GET /api/events` | SSE stream: `{type: "change"\|"comment", path}` |
-| `GET /agent/comments.md[?path=<rel>]` | Open comments as a readable markdown digest (for agents; structured JSON is at `/api/comments`) |
+| `GET /agent/comments.md[?path=<rel>]` | Open comments as a readable markdown digest |
 | `GET /files/<rel>` | Images referenced by documents (content-verified by magic bytes) |
 
-Comments live in `<dir>/.visual-docs/comments.json`; mark one addressed by
-setting `"resolved": true`.
+These endpoints exist for the browser client and direct use. **Agents should use
+the `--comments` / `--status` commands above instead** — they return formatted
+text, so there's no JSON to parse. Comments live in
+`<dir>/.visual-docs/comments.json` (lifecycle `new → acknowledged → resolved`;
+the legacy `"resolved": true` boolean is still honoured).
 
 ## Security posture
 

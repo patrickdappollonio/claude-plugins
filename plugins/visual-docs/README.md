@@ -142,8 +142,9 @@ A few choices worth explaining:
 
 ## FAQ
 
-**Do I need to approve anything?** The agent runs `node` from the plugin
-directory and `curl` against localhost; approve those and the whole flow is
+**Do I need to approve anything?** The agent only runs `node` from the plugin
+directory — starting the server, reading comments, and updating their status are
+all `node` commands (no `curl`, no scripts). Approve those and the whole flow is
 hands-off.
 
 **Where do the documents live?** Throwaway reviews go to a temp directory.
