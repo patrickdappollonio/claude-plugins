@@ -886,9 +886,10 @@
       return `“${q.length > 60 ? q.slice(0, 60) + '…' : q}”`;
     }
     if (c.anchor && c.anchor.kind === 'component') {
+      // Just the type + stable id in the UI — the code hint is noise here (the
+      // agent still gets it in the /agent digest to locate the block).
       const base = c.anchor.label || c.anchor.type;
-      const ref = [c.anchor.id, c.anchor.hint && `“${c.anchor.hint}”`].filter(Boolean).join(' · ');
-      return ref ? `${base} · ${ref}` : base;
+      return c.anchor.id ? `${base} #${c.anchor.id}` : base;
     }
     if (c.title || c.section) return `§ ${c.title || c.section}`;
     return '';
@@ -1119,6 +1120,7 @@
         <aside id="comment-drawer" class="collapsed">
           <button class="comment-rail" title="Open comments" aria-label="Open comments" onClick=${onExpand}>
             <span class="rail-icon"><${Icon} name="comment" /></span>
+            <${Icon} name="chevronLeft" />
             ${openCount > 0 ? html`<span class="rail-count">${openCount}</span>` : null}
             <span class="rail-label">comments</span>
           </button>
@@ -1145,7 +1147,7 @@
       <aside id="comment-drawer">
         <header class="drawer-head">
           <span class="mono tb-label">comments</span>
-          <button id="drawer-close" title="Collapse comments panel" aria-label="Collapse comments panel" onClick=${onCollapse}><${Icon} name="chevronRight" /></button>
+          <button id="drawer-close" class="side-icon-btn" title="Collapse comments panel" aria-label="Collapse comments panel" onClick=${onCollapse}><${Icon} name="chevronRight" /></button>
         </header>
         <div id="comment-list">
           ${ordered.length === 0

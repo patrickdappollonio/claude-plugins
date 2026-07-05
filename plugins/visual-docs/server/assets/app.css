@@ -500,7 +500,7 @@ button { font: inherit; cursor: pointer; }
 .ft-deleted { background: var(--danger); }
 .ft-renamed { background: var(--accent); }
 .ft-none { background: transparent; border: 1px solid var(--line); }
-.ft-path { font-family: var(--mono); font-size: 0.8rem; background: none; padding: 0; }
+.ft-path { font-family: var(--mono); font-size: 0.72rem; background: none; padding: 0; }
 .ft-note { color: var(--ink); font-size: 0.84rem; line-height: 1.5; }
 .ft-note code { font-size: 0.78rem; padding: 0.1em 0.35em; }
 .ft-note :first-child { margin-top: 0; }
@@ -545,8 +545,8 @@ button { font: inherit; cursor: pointer; }
   padding: 14px 16px;
   border-bottom: 1px solid var(--line);
 }
-#drawer-close { background: none; border: none; color: var(--ink-soft); font-size: 1.3rem; line-height: 1; cursor: pointer; padding: 0 4px; }
-#drawer-close:hover { color: var(--ink); }
+/* #drawer-close uses the shared .side-icon-btn style so the left (documents) and
+   right (comments) collapse toggles look identical. */
 
 /* Collapsed comments panel: a thin clickable rail on the right edge. */
 #comment-drawer.collapsed { width: 38px; }
@@ -565,6 +565,7 @@ button { font: inherit; cursor: pointer; }
 }
 .comment-rail:hover { background: var(--surface-2); color: var(--ink); }
 .rail-icon { font-size: 1rem; }
+.comment-rail .rail-icon { color: var(--accent); } /* match the documents rail */
 .rail-count {
   background: var(--accent);
   color: #fff;
