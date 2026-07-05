@@ -289,22 +289,21 @@ refers to.
 
 **Comment lifecycle.** Every comment has a `status`: `new` (just written by the
 reader), `acknowledged` (you've read it and are working on it), or `resolved`
-(you've addressed it). New comments start as `new`. As you work, POST to the
-status endpoint — **don't hand-edit `comments.json` or write a script for it:**
+(you've addressed it). New comments start as `new`. As you work, set status with
+the server's `--status` command — **don't hand-edit `comments.json`:**
 
-```bash
-curl -sX POST <url>api/comments/status \
-  -H 'content-type: application/json' \
-  -d '{"id":"<comment-id>","status":"acknowledged"}'   # then "resolved" when done
+```
+node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-server.js" --status "$DIR" <id> acknowledged
+# …then `resolved` when done. Pass comma-separated ids (id1,id2) to update several.
 ```
 
-Pass `{"ids":["…","…"],"status":"…"}` to update several at once. Each comment's
-`id` is printed in the digest alongside this exact command. The viewer shows
-each state distinctly and live-updates. (The legacy `"resolved": true` boolean
-is still honoured and treated as `resolved`; editing the JSON directly also
-still works, but the endpoint is the supported path.) The reader's "Copy as
-prompt" button copies only the `new` comments, so acknowledging promptly keeps
-that clean.
+It prints a plain confirmation, not JSON. Each comment's `id` is printed in the
+`--comments` digest. The viewer shows each state distinctly and live-updates.
+(The legacy `"resolved": true` boolean is still honoured and treated as
+`resolved`; under the hood `--status` calls `POST /api/comments/status`, which
+you can hit directly if you're not in a skill.) The reader's "Copy as prompt"
+button copies only the `new` comments, so acknowledging promptly keeps that
+clean.
 
 `anchor` is `{kind:"text", quote, prefix, suffix}` for a selection,
 `{kind:"component", type, label, id, hint}` for a diagram/diff/etc, or absent
@@ -321,26 +320,27 @@ refers to.
 Agent obligations:
 
 1. **Before every revision**, read open comments as a formatted digest:
-   `curl -s <url>agent/comments.md` (add `?path=<file>` to scope to one doc).
-   Each entry is labelled with its `[status]` and what it's anchored to — a
-   section, a quoted snippet, or a component. `<url>api/comments` gives JSON.
-2. Drive the lifecycle via the status endpoint: `POST <url>api/comments/status`
-   with `{"id":"<id>","status":"acknowledged"}` when you start on a comment and
-   `"resolved"` when done (or `{"ids":[…],"status":…}` for several). The viewer
+   `node "…/visual-docs-server.js" --comments "$DIR"` (append a `<file>.md` to
+   scope to one doc). Each entry is labelled with its `[status]`, `id`, and what
+   it's anchored to — a section, a quoted snippet, or a component. Plain text,
+   nothing to parse.
+2. Drive the lifecycle: `… --status "$DIR" <id> acknowledged` when you start on a
+   comment and `resolved` when done (comma-separated ids for several). The viewer
    live-updates and distinguishes the three states. Don't hand-edit the JSON.
 3. The viewer also offers "Copy as prompt" — users may paste feedback directly
    into chat instead; treat pasted prompts and stored comments the same way.
 
-## Agent endpoints (`/agent/…`)
+## Agent commands & endpoints
 
-A read-only endpoint that returns formatted data an agent can `curl` directly,
-so no JSON parsing or scripting is needed:
+Agents should use the **`node` commands** — they return formatted, ready-to-read
+text, so there's never JSON to parse or a script to write:
 
-- `GET /agent/comments.md` — open comments as a readable markdown digest,
-  each labelled with what it's anchored to (section, quoted text, or a
-  component and its id) and carrying its own `id`. Accepts `?path=<file>` to
-  scope to one document.
-- `POST /api/comments/status` — update a comment's lifecycle state without
-  editing `comments.json`. Body: `{"id":"<id>","status":"acknowledged"}` (or
-  `{"ids":[…],"status":…}`); valid statuses `new`/`acknowledged`/`resolved`.
-- Structured JSON (for programmatic use) is at `GET /api/comments`.
+- `--comments <dir> [<file>.md]` — open comments as a readable digest, each
+  labelled with its anchor and `id`.
+- `--status <dir> <id[,id2,…]> <state>` — set lifecycle state
+  (`new`/`acknowledged`/`resolved`); prints a plain confirmation.
+
+Under the hood these call the server's HTTP API, which is there for the browser
+client and direct/programmatic use (not something an agent needs to touch):
+`GET /agent/comments.md` (the same markdown digest), `POST /api/comments/status`,
+and `GET /api/comments` (raw JSON — browser only).

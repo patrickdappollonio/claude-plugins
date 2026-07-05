@@ -128,32 +128,29 @@ heading or a rendered component (diagram, diff, …) and click the margin button
 ### 5. Respond to review
 
 Before revising the recap (or acting on review feedback), read open comments as
-a ready-to-read digest — no JSON parsing needed:
+a ready-formatted digest — plain text, nothing to parse:
 
-```bash
-curl -s http://127.0.0.1:<port>/agent/comments.md
+```
+node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-server.js" --comments "$DIR"
 ```
 
-Each comment is labelled with what it's anchored to: a section, a quoted
-snippet of the document, or a component (e.g. "mermaid diagram"), and carries an
-`id`. Use `/api/comments` if you want the structured JSON, or add `?path=<file>`
-to scope to one document. Comments on a recap often request code changes, not
-document changes — when a comment asks for a fix, confirm scope with the user
-before editing code.
+(Append a file — `--comments "$DIR" <file>.md` — to scope to one document.) Each
+comment is labelled with what it's anchored to (a section, a quoted snippet, or a
+component like "mermaid diagram") and carries an `id`. Comments on a recap often
+request code changes, not document changes — when a comment asks for a fix,
+confirm scope with the user before editing code.
 
-Drive each comment's `status` by POSTing to the status endpoint — do **not**
-hand-edit `comments.json` or write a script for it:
+Drive each comment's `status` with the same tool — no JSON, no hand-editing
+`comments.json`:
 
-```bash
-curl -sX POST http://127.0.0.1:<port>/api/comments/status \
-  -H 'content-type: application/json' \
-  -d '{"id":"<comment-id>","status":"acknowledged"}'   # then "resolved" when done
+```
+node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-server.js" --status "$DIR" <id> acknowledged
+# …then `resolved` when done. Pass comma-separated ids (id1,id2) to update several.
 ```
 
-Pass `{"ids":["…","…"],"status":"…"}` to update several at once. The digest
-prints each comment's id and this exact command; the viewer live-updates and
-shows the three states (`new` → `acknowledged` → `resolved`). Treat pasted
-"Copy as prompt" blocks exactly like stored comments.
+It prints a plain confirmation (`Updated N comment(s) to "acknowledged".`); the
+viewer live-updates and shows the three states (`new` → `acknowledged` →
+`resolved`). Treat pasted "Copy as prompt" blocks exactly like stored comments.
 
 ## Cleanup
 

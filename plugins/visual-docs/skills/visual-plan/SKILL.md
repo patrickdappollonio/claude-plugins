@@ -122,31 +122,29 @@ component (diagram, diff, …) and click the margin button to comment there;
 ### 6. Read feedback before revising — every time
 
 Before any revision (user asks for changes, or you're checking in), read the
-open comments as a ready-to-read digest — no JSON parsing needed:
+open comments as a ready-formatted digest — plain text, nothing to parse:
 
-```bash
-curl -s http://127.0.0.1:<port>/agent/comments.md
+```
+node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-server.js" --comments "$DIR"
 ```
 
-Each comment is labelled with what it's anchored to: a section, a quoted
-snippet, or a component, and carries an `id`. Use `/api/comments` for the
-structured JSON, or add `?path=<file>` to scope to one document. Address every
-open comment and edit the markdown file in place (the browser reloads
-automatically).
+(Append a file — `--comments "$DIR" <file>.md` — to scope to one document.) Each
+comment is labelled with what it's anchored to (a section, a quoted snippet, or a
+component) and carries an `id`. Address every open comment and edit the markdown
+file in place (the browser reloads automatically).
 
-Drive each comment's `status` by POSTing to the status endpoint — do **not**
-hand-edit `comments.json` or write a script for it:
+Drive each comment's `status` with the same tool — no JSON, no hand-editing
+`comments.json`:
 
-```bash
-curl -sX POST http://127.0.0.1:<port>/api/comments/status \
-  -H 'content-type: application/json' \
-  -d '{"id":"<comment-id>","status":"acknowledged"}'   # then "resolved" when done
+```
+node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-server.js" --status "$DIR" <id> acknowledged
+# …then `resolved` when done. Pass comma-separated ids (id1,id2) to update several.
 ```
 
-Pass `{"ids":["…","…"],"status":"…"}` to update several at once. The digest
-prints each comment's id and this exact command. The viewer shows the three
-states (`new` → `acknowledged` → `resolved`) and live-updates. If the user
-pastes a "Copy as prompt" block into chat instead, treat it identically.
+It prints a plain confirmation (`Updated N comment(s) to "acknowledged".`). The
+viewer shows the three states (`new` → `acknowledged` → `resolved`) and live-
+updates. If the user pastes a "Copy as prompt" block into chat instead, treat it
+identically.
 
 ### 7. Approval gate
 

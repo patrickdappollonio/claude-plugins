@@ -383,10 +383,9 @@ function renderCommentsMarkdown(comments, scopePath, base = 'http://127.0.0.1') 
     byPath.get(key).push(c);
   }
   let out = `# Open comments (${open.length})\n`;
-  // Point the agent at the status endpoint instead of hand-editing JSON.
-  out += '\n_Lifecycle: mark a comment `acknowledged` when you start it and `resolved` when done. Update status with a single request — no need to edit `.visual-docs/comments.json` or run a script:_\n';
-  out += `\n\`\`\`bash\ncurl -sX POST ${base}/api/comments/status \\\n  -H 'content-type: application/json' \\\n  -d '{"id":"<comment-id>","status":"acknowledged"}'\n\`\`\`\n`;
-  out += '\n_Pass `{"ids":["…","…"],"status":"resolved"}` to update several at once. Valid statuses: `new`, `acknowledged`, `resolved`. Each comment\'s id is shown below._\n';
+  // Tool-neutral: the skill runs a `--status` CLI command; direct API/curl users
+  // get the endpoint. Either way, never hand-edit comments.json.
+  out += '\n_Lifecycle: mark a comment `acknowledged` when you start it and `resolved` when done — set status with your skill\'s status command (each comment\'s id is shown below), or `POST /api/comments/status` with `{"id":"<id>","status":"<state>"}` (pass `"ids":[…]` for several). Valid statuses: `new`, `acknowledged`, `resolved`. Don\'t hand-edit `.visual-docs/comments.json`._\n';
   if (!open.length) out += '\n_No open comments._\n';
   for (const [p, list] of byPath) {
     out += `\n## ${p}\n`;

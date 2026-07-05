@@ -28,6 +28,10 @@ Options:
                    (cross-platform temp dir; write your .md there, then serve it)
   --serve          Start in the background and print the URL, then return
                    (cross-platform; no nohup/& needed)
+  --comments <dir> [<path.md>]
+                   Print the open-comments digest for a served dir
+  --status <dir> <id[,id2,…]> <state>
+                   Set a comment's lifecycle state (new|acknowledged|resolved)
   -h, --help       Show this help
 `);
 }
@@ -121,6 +125,48 @@ if (args.includes('--docdir')) {
   mkdirSync(dir, { recursive: true });
   process.stdout.write(dir + '\n');
   process.exit(0);
+}
+
+// Agent comment helpers — thin Node wrappers over the running server's HTTP API
+// so the whole review loop is `node …` (no curl, no shell). They locate the
+// server via its lock file, so you pass the served directory, not a URL.
+//   --comments <dir> [<path.md>]          → print the open-comments digest
+//   --status   <dir> <id[,id2,…]> <state> → set lifecycle state (new|acknowledged|resolved)
+if (args[0] === '--comments' || args[0] === '--status') {
+  const dir = resolve(args[1] || process.cwd());
+  const lock = liveLock(dir);
+  if (!lock || !lock.url) {
+    console.error(`No visual-docs server is running for ${dir}. Start one with --serve first.`);
+    process.exit(1);
+  }
+  const base = lock.url.replace(/\/+$/, '');
+  try {
+    if (args[0] === '--comments') {
+      const p = args[2] && !args[2].startsWith('-') ? args[2] : '';
+      const res = await fetch(`${base}/agent/comments.md${p ? `?path=${encodeURIComponent(p)}` : ''}`);
+      process.stdout.write(await res.text());
+      process.exit(res.ok ? 0 : 1);
+    }
+    // --status
+    const ids = String(args[2] || '').split(',').map((s) => s.trim()).filter(Boolean);
+    const status = args[3];
+    if (!ids.length || !status) {
+      console.error('usage: --status <dir> <comment-id[,id2,…]> <new-status>  (new | acknowledged | resolved)');
+      process.exit(2);
+    }
+    const res = await fetch(`${base}/api/comments/status`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(ids.length === 1 ? { id: ids[0], status } : { ids, status }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) { console.error(`Status update failed: ${body.error || res.status}`); process.exit(1); }
+    console.log(`Updated ${body.updated} comment(s) to "${status}".`);
+    process.exit(0);
+  } catch (err) {
+    console.error(`Request failed: ${err.message}`);
+    process.exit(1);
+  }
 }
 
 const opts = { dir: process.cwd(), port: 0, host: '127.0.0.1', watch: true };

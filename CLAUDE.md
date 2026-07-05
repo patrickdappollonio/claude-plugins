@@ -52,12 +52,16 @@ validate its shape, so `visual-docs-lint` covers every component.
 
 ### Comments
 
-Stored in `<served-dir>/.visual-docs/comments.json`; exposed at `GET
-/api/comments` (JSON) and `GET /agent/comments.md` (agent-readable digest).
-Lifecycle `status`: **new → acknowledged → resolved** (legacy `resolved:true`
-still honored). The agent drives status via `POST /api/comments/status`
-(`{id|ids, status}`) — the digest prints each comment's id + the curl for it;
-hand-editing the JSON still works but the endpoint is the supported path.
+Stored in `<served-dir>/.visual-docs/comments.json`. **Agents use the `node` CLI
+— never JSON:** `visual-docs-server.js --comments <dir>` prints the digest,
+`--status <dir> <id[,…]> <state>` sets lifecycle state (plain-text confirmation).
+Those wrap the HTTP API, which exists for the browser client / direct use: `GET
+/agent/comments.md` (same markdown digest), `POST /api/comments/status`
+(`{id|ids, status}`), `GET /api/comments` (raw JSON, browser only). Lifecycle
+`status`: **new → acknowledged → resolved** (legacy `resolved:true` still
+honored); hand-editing the JSON still works but the CLI/endpoint is supported.
+Rule of thumb: **don't serve JSON to the agent — format it** (markdown digest,
+`--docdir`/`--serve`/`--status` all print ready-to-read text).
 Anchors: text (quote+prefix/suffix), component (type+stable-id+hint), or section
 (heading). A best-effort `line` is resolved (client + server) by normalizing the
 rendered quote and raw markdown to bare alphanumerics before matching, so
