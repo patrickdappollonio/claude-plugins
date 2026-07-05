@@ -126,8 +126,8 @@ curl -s http://127.0.0.1:<port>/agent/comments.md
 
 Each comment is labelled with what it's anchored to: a section, a quoted
 snippet of the document, or a component (e.g. "mermaid diagram"). Use
-`/agent/comments.json` if you want the structured form, or add `?path=<file>`
-to scope to one document. Comments on a recap often request code changes, not
+`/api/comments` if you want the structured JSON, or add `?path=<file>` to
+scope to one document. Comments on a recap often request code changes, not
 document changes — when a comment asks for a fix, confirm scope with the user
 before editing code. After handling a comment, set its `"resolved": true` in
 `$DIR/.visual-docs/comments.json` (the viewer live-updates). Treat pasted

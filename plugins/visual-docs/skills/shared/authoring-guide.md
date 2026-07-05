@@ -167,16 +167,23 @@ text range, a component, or (for headings) the `section`/`title` fields:
 ```
 
 `anchor` is `{kind:"text", quote, prefix, suffix}` for a selection,
-`{kind:"component", type, label}` for a diagram/diff/etc, or absent for a
-heading/document comment. The digest at `/agent/comments.md` labels each
-comment by its anchor, so you always know exactly what a comment refers to.
+`{kind:"component", type, label, id, hint}` for a diagram/diff/etc, or absent
+for a heading/document comment.
+
+For a **component** comment, `id` is a stable hash of that block's fence source
+and `hint` is its first line — so you can find the exact block it refers to.
+The digest shows both, e.g. `mermaid diagram [id a3f9c2 · "flowchart LR"]`; to
+locate it, find the fence in the markdown whose first line matches the hint
+(the `id` disambiguates if several match). The digest at `/agent/comments.md`
+labels every comment by its anchor, so you always know exactly what a comment
+refers to.
 
 Agent obligations:
 
 1. **Before every revision**, read open comments as a formatted digest:
    `curl -s <url>agent/comments.md` (add `?path=<file>` to scope to one doc).
    Each entry is labelled with what it's anchored to — a section, a quoted
-   snippet, or a component. `<url>agent/comments.json` gives the structured form.
+   snippet, or a component. `<url>api/comments` gives the structured JSON.
 2. After addressing a comment, set its `"resolved": true` in
    `.visual-docs/comments.json` so the reader sees it cleared (live-updates).
 3. The viewer also offers "Copy as prompt" — users may paste feedback directly
@@ -184,10 +191,10 @@ Agent obligations:
 
 ## Agent endpoints (`/agent/…`)
 
-Read-only endpoints that return formatted data an agent can `curl` directly,
+A read-only endpoint that returns formatted data an agent can `curl` directly,
 so no JSON parsing or scripting is needed:
 
-- `GET /agent/comments.md` — open comments as a readable markdown digest.
-- `GET /agent/comments.json` — the structured comment list.
-- Both accept `?path=<file>` to scope to a single document, and honour the
-  `Accept` header (`text/markdown` → the digest) when no extension is given.
+- `GET /agent/comments.md` — open comments as a readable markdown digest,
+  each labelled with what it's anchored to (section, quoted text, or a
+  component and its id). Accepts `?path=<file>` to scope to one document.
+- Structured JSON (for programmatic use) is at `GET /api/comments`.

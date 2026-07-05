@@ -61,6 +61,33 @@
     return m ? m[1].trim() : null;
   }
 
+  /** Stable short id for a component, derived from its source (FNV-1a → base36).
+      Same source → same id across re-renders, so a comment on a diagram keeps
+      pointing at it even as the document changes around it. */
+  function blockHash(s) {
+    let h = 2166136261 >>> 0;
+    for (let i = 0; i < s.length; i++) {
+      h ^= s.charCodeAt(i);
+      h = Math.imul(h, 16777619) >>> 0;
+    }
+    return h.toString(36).padStart(7, '0').slice(-7);
+  }
+
+  /** First non-empty line of a source, trimmed and clamped — a human/agent-
+      readable hint for locating a component in the markdown. Angle brackets are
+      stripped so the value stays safe in an attribute (DOMPurify drops
+      attributes whose value contains markup-like content). */
+  function blockHint(code) {
+    const line = (code.split('\n').find((l) => l.trim()) || '').trim().replace(/[<>]/g, '');
+    return line.length > 50 ? line.slice(0, 50) + '…' : line;
+  }
+
+  /** The `data-block-*` attributes every component block carries, so its comment
+      anchor can reference the exact block by a stable id plus a source hint. */
+  function blockAttrs(code) {
+    return `data-block-id="${blockHash(code)}" data-block-hint="${escapeHTML(blockHint(code))}"`;
+  }
+
   async function api(path, opts) {
     const res = await fetch(path, opts);
     if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
@@ -75,7 +102,7 @@
     if (language === 'mermaid') {
       // Source lives base64-encoded in a data-* attribute (not a <script>) so it
       // survives HTML sanitization intact; hydrateMermaid decodes it.
-      return `<div class="mermaid-block" data-mermaid-source="${encodeSrc(code)}"></div>`;
+      return `<div class="mermaid-block" ${blockAttrs(code)} data-mermaid-source="${encodeSrc(code)}"></div>`;
     }
 
     if (language === 'diff' || language === 'patch') {
@@ -91,7 +118,7 @@
     }
 
     if (language === 'nomnoml') {
-      return `<div class="nomnoml-block" data-nomnoml-source="${encodeSrc(code)}"></div>`;
+      return `<div class="nomnoml-block" ${blockAttrs(code)} data-nomnoml-source="${encodeSrc(code)}"></div>`;
     }
 
     if (language === 'openapi' || language === 'swagger') {
@@ -127,7 +154,7 @@
   }
 
   function renderDiffFence(code) {
-    return `<div class="diff-block" data-diff data-diff-source="${encodeSrc(code)}">
+    return `<div class="diff-block" ${blockAttrs(code)} data-diff data-diff-source="${encodeSrc(code)}">
       <div class="diff-toolbar">
         <span class="tb-label">diff</span>
         <button type="button" data-mode="line-by-line" class="active">unified</button>
@@ -197,7 +224,7 @@
       panes = `<div class="migration-panes">${pane('up', 'migration', m.other)}</div>`;
     }
     const reversible = m.up && m.down ? 'reversible' : 'irreversible';
-    return `<div class="migration-block">
+    return `<div class="migration-block" ${blockAttrs(code)}>
       <div class="migration-head">
         <span class="mig-icon">⛁</span>
         <span class="mig-title">${escapeHTML(m.title)}</span>
@@ -319,7 +346,7 @@
     if (!request.startLine && !response.startLine) {
       return `<div class="codewrap"><span class="lang-tag">api</span><pre><code class="hljs">${escapeHTML(code)}</code></pre></div>`;
     }
-    return `<div class="api-block">${renderApiHalf('request', request)}${renderApiHalf('response', response)}</div>`;
+    return `<div class="api-block" ${blockAttrs(code)}>${renderApiHalf('request', request)}${renderApiHalf('response', response)}</div>`;
   }
 
   /* ---------- OpenAPI fences ---------- */
@@ -411,7 +438,7 @@
         ops.push(renderOpenApiOperation(path, method, op));
       }
     }
-    return `<div class="openapi-block">
+    return `<div class="openapi-block" ${blockAttrs(code)}>
       <div class="oa-head">
         <span class="mig-icon">⇄</span>
         <span class="mig-title">${escapeHTML(title)}${escapeHTML(version)}</span>
@@ -593,7 +620,13 @@
         btn.title = `Comment on this ${typeName}`;
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
-          onOpen({ kind: 'component', type: typeName, label });
+          onOpen({
+            kind: 'component',
+            type: typeName,
+            label,
+            id: blk.dataset.blockId || '',
+            hint: blk.dataset.blockHint || '',
+          });
         });
         blk.appendChild(btn);
       });
@@ -641,7 +674,10 @@
       const q = c.anchor.quote.replace(/\s+/g, ' ').trim();
       return `“${q.length > 60 ? q.slice(0, 60) + '…' : q}”`;
     }
-    if (c.anchor && c.anchor.kind === 'component') return c.anchor.label || c.anchor.type;
+    if (c.anchor && c.anchor.kind === 'component') {
+      const base = c.anchor.label || c.anchor.type;
+      return c.anchor.id ? `${base} · ${c.anchor.id}` : base;
+    }
     if (c.title || c.section) return `§ ${c.title || c.section}`;
     return '';
   }

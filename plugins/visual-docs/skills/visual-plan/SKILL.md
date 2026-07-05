@@ -117,7 +117,7 @@ curl -s http://127.0.0.1:<port>/agent/comments.md
 ```
 
 Each comment is labelled with what it's anchored to: a section, a quoted
-snippet, or a component. Use `/agent/comments.json` for the structured form, or
+snippet, or a component. Use `/api/comments` for the structured JSON, or
 add `?path=<file>` to scope to one document. Address every open comment, edit
 the markdown file in place (the browser reloads automatically), then mark the
 comments you handled with `"resolved": true` in

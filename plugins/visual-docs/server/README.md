@@ -67,8 +67,7 @@ Try the kitchen-sink example: `visual-docs-server examples/`.
 | `GET /api/comments[?path=<rel>]` | Reader comments (optionally per document) |
 | `POST /api/comments` | Add a comment: `{path, section, text}` |
 | `GET /api/events` | SSE stream: `{type: "change"\|"comment", path}` |
-| `GET /agent/comments.md[?path=<rel>]` | Open comments as a readable markdown digest (for agents) |
-| `GET /agent/comments.json[?path=<rel>]` | Comments as structured JSON |
+| `GET /agent/comments.md[?path=<rel>]` | Open comments as a readable markdown digest (for agents; structured JSON is at `/api/comments`) |
 | `GET /files/<rel>` | Images referenced by documents (content-verified by magic bytes) |
 
 Comments live in `<dir>/.visual-docs/comments.json`; mark one addressed by

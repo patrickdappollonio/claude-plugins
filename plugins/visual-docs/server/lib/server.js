@@ -227,7 +227,7 @@ function sanitizeAnchor(a) {
   if (a.kind === 'component') {
     const type = str(a.type, 60);
     if (!type) return null;
-    return { kind: 'component', type, label: str(a.label, 120) || type };
+    return { kind: 'component', type, label: str(a.label, 120) || type, id: str(a.id, 32), hint: str(a.hint, 120) };
   }
   return null;
 }
@@ -239,7 +239,12 @@ function anchorLabel(c) {
     const q = c.anchor.quote.replace(/\s+/g, ' ').trim();
     return `“${q.length > 100 ? q.slice(0, 100) + '…' : q}”`;
   }
-  if (c.anchor && c.anchor.kind === 'component') return c.anchor.label || c.anchor.type || 'component';
+  if (c.anchor && c.anchor.kind === 'component') {
+    const a = c.anchor;
+    const base = a.label || a.type || 'component';
+    const ref = [a.id && `id ${a.id}`, a.hint && `“${a.hint}”`].filter(Boolean).join(' · ');
+    return ref ? `${base} [${ref}]` : base;
+  }
   return c.title || c.section || 'document';
 }
 
@@ -359,19 +364,14 @@ export async function startServer({ dir, port = 0, host = '127.0.0.1', watch: en
         return sendJSON(res, 201, { comment: result.comment });
       }
 
-      // Agent-facing read endpoints: formatted data an agent can curl directly.
-      // Format is chosen by extension (.md | .json), with Accept as a fallback.
-      if (pathname.startsWith('/agent/comments') && req.method === 'GET') {
+      // Agent-facing read endpoint: comments as a ready-to-read markdown digest
+      // an agent can curl directly (structured JSON already lives at /api/comments).
+      if ((pathname === '/agent/comments' || pathname === '/agent/comments.md') && req.method === 'GET') {
         const data = await readComments(root);
         const p = url.searchParams.get('path');
         const comments = p ? data.comments.filter((c) => c.path === p) : data.comments;
-        const wantsMd = pathname.endsWith('.md')
-          || (!pathname.endsWith('.json') && /text\/(markdown|plain)/.test(req.headers.accept || ''));
-        if (wantsMd) {
-          res.writeHead(200, { 'content-type': 'text/markdown; charset=utf-8', 'cache-control': 'no-store' });
-          return res.end(renderCommentsMarkdown(comments, p));
-        }
-        return sendJSON(res, 200, { comments });
+        res.writeHead(200, { 'content-type': 'text/markdown; charset=utf-8', 'cache-control': 'no-store' });
+        return res.end(renderCommentsMarkdown(comments, p));
       }
 
       if (pathname === '/api/events' && req.method === 'GET') {
