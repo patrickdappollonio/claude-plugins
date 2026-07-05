@@ -128,6 +128,14 @@ function lintFence(lang, body, start, add) {
     else if (hasUp && !hasDown) add(at, 'warn', 'migration has -- up but no -- down — it will be badged irreversible (fine if intended).');
   } else if (lang === 'diff' || lang === 'patch') {
     if (!/^[+-]/m.test(text)) add(at, 'warn', 'diff fence has no +/- lines — is it really a diff?');
+    // A `@@` line must be a real hunk header (`@@ -a,b +c,d @@`); a bare label
+    // like `@@ someFunction` is passed to diff2html verbatim and renders wrong.
+    // Omitting the `@@` line entirely is fine — the renderer synthesizes one.
+    body.forEach((line, k) => {
+      if (/^@@/.test(line) && !/^@@ -\d+(,\d+)? \+\d+(,\d+)? @@/.test(line)) {
+        add(start + 2 + k, 'warn', `malformed hunk header \`${line.trim().slice(0, 30)}\` — use \`@@ -old,count +new,count @@\`, or drop the \`@@\` line and the renderer will synthesize one.`);
+      }
+    });
   } else if (lang === 'api' || lang === 'http') {
     if (!/\b(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\b/i.test(text)) add(at, 'warn', 'api fence has no request line (e.g. `POST /path`).');
   } else if (lang === 'filetree' || lang === 'files' || lang === 'file-tree') {

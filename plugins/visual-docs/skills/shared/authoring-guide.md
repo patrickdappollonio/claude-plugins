@@ -159,7 +159,15 @@ questions` section (or wherever a decision is needed).
 Rendered as a rich diff viewer with a unified / side-by-side toggle. Prefer
 real unified diffs (with `--- a/…` / `+++ b/…` headers) taken from
 `git diff`; the file name shown comes from those headers. Bare `+`/`-`
-snippets also work — they are wrapped in a synthetic header.
+snippets also work — they are wrapped in a synthetic header, and a new file can
+just be `--- /dev/null` + all `+` lines (rendered as **added**).
+
+**`@@` hunk-header lines are optional but must be well-formed if present** — a
+real `@@ -old,count +new,count @@` (a trailing section label after the second
+`@@` is fine). Don't use a bare `@@ funcName` as a section marker: it isn't a
+valid hunk header, renders wrong, and the linter flags it. If you don't have
+exact line numbers, **omit the `@@` line entirely** and the renderer synthesizes
+a correct one.
 
     ```diff
     --- a/internal/server/router.go
