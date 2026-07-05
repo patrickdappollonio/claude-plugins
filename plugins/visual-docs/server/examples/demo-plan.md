@@ -149,6 +149,15 @@ paths:
                   updated_at: { type: string, format: date-time }
         "404":
           description: Key not found
+        "429":
+          description: Rate limited — the admin API is itself throttled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string }
+                  retry_after_seconds: { type: integer }
     put:
       summary: Set a custom limit for a key
       requestBody:
@@ -162,6 +171,10 @@ paths:
       responses:
         "204":
           description: Limit updated
+        "400":
+          description: Invalid per_minute value
+        "404":
+          description: Key not found
 ```
 
 ## Rollout
