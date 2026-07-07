@@ -692,20 +692,26 @@
       if (fm && FILE_FLAGS[fm[1].toLowerCase()]) { flag = FILE_FLAGS[fm[1].toLowerCase()]; rest = fm[2]; }
       let path = rest.trim();
       let note = '';
+      // A rename ("old -> new") legitimately has spaces inside the path itself,
+      // so its "path contains whitespace" isn't a sign of a bad split.
+      const isRenameShape = /\s(?:->|→)\s/.test(rest);
       const sp = rest.match(/^(.*?)(?:\s{2,}|\t|\s+—\s+)(.+)$/);
-      if (sp) {
+      if (sp && (isRenameShape || !/\s/.test(sp[1].trim()))) {
         path = sp[1].trim();
         note = sp[2].trim();
       } else {
-        // Forgiving: a single space typed instead of the 2-space/tab/"—"
-        // separator is easy to do by accident — split so the note doesn't fold
-        // into the path chip. A rename ("old -> new") legitimately contains
-        // spaces, so split its note off after the new path.
+        // Either there was no 2-space/tab/"—" separator, or the primary regex's
+        // non-greedy match found one *inside the note* (e.g. a note containing
+        // " — ") and swallowed a whitespace-containing prefix as the "path" —
+        // a single space typed instead of the real separator is easy to do by
+        // accident. Re-split so the note doesn't fold into the path chip: the
+        // path is the first whitespace-delimited token when it looks like a
+        // path (contains '.' or '/'), and everything after it is the note.
         const renameNote = rest.match(/^(\S+\s*(?:->|→)\s*\S+)\s+(\S.*)$/);
         if (renameNote) {
           path = renameNote[1].trim();
           note = renameNote[2].trim();
-        } else if (!/\s(?:->|→)\s/.test(rest)) {
+        } else if (!isRenameShape) {
           const one = rest.match(/^(\S+)\s+(\S.*)$/);
           if (one && /[./]/.test(one[1])) { path = one[1]; note = one[2].trim(); }
         }

@@ -139,11 +139,54 @@ function lintFence(lang, body, start, add) {
   } else if (lang === 'api' || lang === 'http') {
     if (!/\b(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\b/i.test(text)) add(at, 'warn', 'api fence has no request line (e.g. `POST /path`).');
   } else if (lang === 'filetree' || lang === 'files' || lang === 'file-tree') {
-    const entries = body.map((l) => l.trim()).filter((l) => l && !l.startsWith('#'));
-    if (!entries.length) add(at, 'warn', 'filetree fence has no file entries.');
+    const entryLines = [];
+    body.forEach((l, k) => { if (l.trim() && !l.trim().startsWith('#')) entryLines.push(k); });
+    if (!entryLines.length) add(at, 'warn', 'filetree fence has no file entries.');
+    for (const k of entryLines) lintFiletreeEntry(body[k], start + 2 + k, add);
   }
   // tldr/tl;dr/summary need no extra shape check — the generic empty-fence guard
   // above already requires prose content.
+}
+
+// Keep in sync with FILE_FLAGS in assets/app.js.
+const FILETREE_FLAGS = new Set([
+  'a', 'm', 'd', 'r', 'added', 'modified', 'changed', 'deleted', 'removed', 'renamed', 'moved',
+]);
+
+// Mirrors renderFileTreeFence's split rules in assets/app.js: resolve
+// flag/path/note the same way the renderer will, then warn about shapes that
+// only resolved thanks to the forgiving single-space fallback, or a
+// non-rename path that still contains whitespace after that fallback — both
+// are signs the separator was ambiguous.
+function lintFiletreeEntry(line, lineNo, add) {
+  let rest = line.trim();
+  const fm = rest.match(/^([A-Za-z]+)\s+(\S.*)$/);
+  if (fm && FILETREE_FLAGS.has(fm[1].toLowerCase())) rest = fm[2];
+
+  const isRenameShape = /\s(?:->|→)\s/.test(rest);
+  const sp = rest.match(/^(.*?)(?:\s{2,}|\t|\s+—\s+)(.+)$/);
+  let path;
+  let usedFallback = false;
+  if (sp && (isRenameShape || !/\s/.test(sp[1].trim()))) {
+    path = sp[1].trim();
+  } else {
+    usedFallback = true;
+    const renameNote = rest.match(/^(\S+\s*(?:->|→)\s*\S+)\s+(\S.*)$/);
+    if (renameNote) {
+      path = renameNote[1].trim();
+    } else if (!isRenameShape) {
+      const one = rest.match(/^(\S+)\s+(\S.*)$/);
+      path = one && /[./]/.test(one[1]) ? one[1] : rest.trim();
+    } else {
+      path = rest.trim();
+    }
+  }
+
+  if (usedFallback) {
+    add(lineNo, 'warn', `filetree entry's path/note split relied on the single-space fallback ("${line.trim().slice(0, 60)}") — separate the note with 2+ spaces, a tab, or " — " (canonical shape: \`<flag> <path>  <note>\`).`);
+  } else if (!isRenameShape && /\s/.test(path)) {
+    add(lineNo, 'warn', `filetree entry's resolved path still contains whitespace ("${path.slice(0, 60)}") — separate the note with 2+ spaces, a tab, or " — " (canonical shape: \`<flag> <path>  <note>\`).`);
+  }
 }
 
 // ---- CLI ----

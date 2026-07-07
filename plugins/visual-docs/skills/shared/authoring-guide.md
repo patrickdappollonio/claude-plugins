@@ -100,11 +100,15 @@ directory tree**. One line per file as `<flag> <path>  <note>`. Flags: `A` added
 words `added`/`modified`/`deleted`/`renamed`. This is the block for a recap's
 `## What changed` — prefer it over a plain bullet list.
 
-- **Note** — separate it from the path with **2+ spaces** (clearest), a tab, or
-  ` — `. It's optional, may be **as long as you need**, and supports inline
-  markdown: `` `code` ``, **bold**, *italic*, and links. Use it to actually
-  explain the change, not just label it. (A single space also works when the path
-  has no spaces, but 2+ spaces reads best and never surprises.)
+- **Note** — separate it from the path with **2+ spaces**, a tab, or ` — `.
+  This is the contract, not a suggestion: use one of these three, always. It's
+  optional, may be **as long as you need**, and supports inline markdown:
+  `` `code` ``, **bold**, *italic*, and links. Use it to actually explain the
+  change, not just label it. A single space is **ambiguous** — the renderer
+  falls back to guessing where the path ends, and if the note itself later
+  contains " — " (an em-dash aside, a link, anything with 2+ spaces), the guess
+  can go wrong and part of the note leaks into the path chip. `visual-docs-lint`
+  warns whenever an entry needed that fallback, so don't rely on it.
 - **Paths shrink automatically** — shared directories collapse into folder rows
   and filenames show as basenames, so you always write the full path and the
   renderer builds the tree. Single-child chains (`a/b/c`) collapse into one row.
