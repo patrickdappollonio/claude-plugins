@@ -159,6 +159,84 @@
     return res.json();
   }
 
+  /* ---------- persisted preferences (server-backed, cross-session) ----------
+     The server binds a random port each start, so localStorage (origin-keyed)
+     does NOT survive across sessions — it silently resets every restart. The
+     server also persists a flat preferences object outside the served dir
+     (see prefsFile()/PREF_SCHEMA in lib/server.js) that survives restarts and
+     origins. Each preference keeps its own localStorage mirror for an instant,
+     network-free value at boot; readLocalPref/writeLocalPref/setPref are the
+     one place that talks to both. */
+  const PREF_LOCAL_KEYS = {
+    viewMode: 'vd-view-mode',
+    theme: 'vd-theme',
+    navOpen: 'vd-nav-open',
+    sidebarTab: 'vd-sidebar-tab',
+  };
+
+  /** Read a preference's localStorage mirror, or `undefined` if never set.
+      Booleans are stored as the strings 'true'/'false' and coerced back. */
+  function readLocalPref(key) {
+    const raw = localStorage.getItem(PREF_LOCAL_KEYS[key]);
+    if (raw === null) return undefined;
+    return raw === 'true' ? true : raw === 'false' ? false : raw;
+  }
+
+  function writeLocalPref(key, value) {
+    localStorage.setItem(PREF_LOCAL_KEYS[key], String(value));
+  }
+
+  /** Update the localStorage mirror immediately (instant, synchronous) and
+      fire-and-forget POST the single changed key to the server. The viewer
+      must keep working even offline or if the write fails — no user-visible
+      error, just a preference that won't survive this session. */
+  // Keys the user changed this session. The mount-time server reconcile skips
+  // these: a slow GET /api/prefs must not overwrite a choice the user already
+  // made while the response (a pre-change snapshot) was in flight.
+  const touchedPrefs = new Set();
+
+  function setPref(key, value) {
+    touchedPrefs.add(key);
+    writeLocalPref(key, value);
+    api('/api/prefs', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ [key]: value }),
+    }).catch(() => {});
+  }
+
+  /* ---------- global view-mode (diff/migration unified ⇄ side-by-side) ----------
+     One preference drives every diff and migration toolbar on the page. `null`
+     means "no preference yet" — each component falls back to its own historical
+     default (diff → unified, migration → side-by-side). Once the user clicks any
+     toggle, the choice is global and persists (localStorage for instant boot,
+     the server for cross-session/cross-agent survival). */
+  let currentViewMode = readLocalPref('viewMode') === 'side-by-side' ? 'side-by-side'
+    : readLocalPref('viewMode') === 'unified' ? 'unified' : null;
+
+  /** Apply `mode` ('unified' | 'side-by-side') to every diff and migration block
+      currently in the DOM, sync their toolbar buttons, persist the choice, and
+      remember it as the default for blocks hydrated later (live reload, nav).
+      Pass `persist = false` when reflecting a value that CAME from the server
+      (mount reconcile) — persisting would just echo it straight back. */
+  function applyViewMode(mode, persist = true) {
+    currentViewMode = mode;
+    const diffMode = mode === 'side-by-side' ? 'side-by-side' : 'line-by-line';
+    document.querySelectorAll('[data-diff]').forEach((block) => {
+      block.querySelectorAll('.diff-toolbar button').forEach((b) => b.classList.toggle('active', b.dataset.mode === diffMode));
+      if (typeof block._draw === 'function') block._draw(diffMode);
+    });
+    document.querySelectorAll('.migration-toolbar').forEach((tb) => {
+      const block = tb.closest('.migration-block');
+      const panes = block && block.querySelector('.mig-updown');
+      if (!panes) return;
+      tb.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.mode === mode));
+      panes.classList.toggle('side-by-side', mode === 'side-by-side');
+      panes.classList.toggle('unified', mode === 'unified');
+    });
+    if (persist) setPref('viewMode', mode);
+  }
+
   /* ---------- custom fence renderers ---------- */
 
   // NOTE: the set of structured fence languages dispatched below is mirrored in
@@ -379,20 +457,21 @@
     </div>`;
   }
 
-  /** Wire the migration up/down side-by-side ⇄ unified toggle. */
+  /** Wire the migration up/down side-by-side ⇄ unified toggle. Shares the same
+      global view-mode preference as the diff toolbar (see applyViewMode). */
   function hydrateMigrations(container) {
     container.querySelectorAll('.migration-toolbar').forEach((tb) => {
       const block = tb.closest('.migration-block');
       const panes = block && block.querySelector('.mig-updown');
       if (!panes) return;
       tb.querySelectorAll('button').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          tb.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b === btn));
-          const sbs = btn.dataset.mode === 'side-by-side';
-          panes.classList.toggle('side-by-side', sbs);
-          panes.classList.toggle('unified', !sbs);
-        });
+        btn.addEventListener('click', () => applyViewMode(btn.dataset.mode === 'unified' ? 'unified' : 'side-by-side'));
       });
+      // No global preference yet → this component's historical default (side-by-side).
+      const mode = currentViewMode === 'unified' ? 'unified' : 'side-by-side';
+      tb.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.mode === mode));
+      panes.classList.toggle('side-by-side', mode === 'side-by-side');
+      panes.classList.toggle('unified', mode === 'unified');
     });
   }
 
@@ -653,20 +732,34 @@
       if (fm && FILE_FLAGS[fm[1].toLowerCase()]) { flag = FILE_FLAGS[fm[1].toLowerCase()]; rest = fm[2]; }
       let path = rest.trim();
       let note = '';
-      const sp = rest.match(/^(.*?)(?:\s{2,}|\t|\s+—\s+)(.+)$/);
-      if (sp) {
-        path = sp[1].trim();
-        note = sp[2].trim();
+      // A rename ("old -> new") legitimately has spaces inside the path itself,
+      // so its "path contains whitespace" isn't a sign of a bad split.
+      const isRenameShape = /\s(?:->|→)\s/.test(rest);
+      // A deliberate 2+-space/tab separator is unambiguous — trust it even when
+      // the path itself contains single spaces ("My Documents/report v2.txt").
+      const explicit = rest.match(/^(.*?)(?:\s{2,}|\t)(.+)$/);
+      // " — " is also a real separator, EXCEPT when it appears to sit *inside
+      // the note* of a single-space-separated entry: the captured "path" has
+      // internal spaces AND the line starts with a path-looking token
+      // (contains '.' or '/'), e.g. "A src/x/route.ts PUT stuff — proxies Y".
+      const dash = explicit ? null : rest.match(/^(.*?)\s+—\s+(.+)$/);
+      if (explicit) {
+        path = explicit[1].trim();
+        note = explicit[2].trim();
+      } else if (dash && (isRenameShape || !/\s/.test(dash[1].trim()) || !/^\S*[./]/.test(rest))) {
+        path = dash[1].trim();
+        note = dash[2].trim();
       } else {
-        // Forgiving: a single space typed instead of the 2-space/tab/"—"
-        // separator is easy to do by accident — split so the note doesn't fold
-        // into the path chip. A rename ("old -> new") legitimately contains
-        // spaces, so split its note off after the new path.
+        // No separator (bare entry / single-space note), or a rejected " — ".
+        // A single space typed instead of the real separator is easy to do by
+        // accident — re-split so the note doesn't fold into the path chip: the
+        // path is the first whitespace-delimited token when it looks like a
+        // path (contains '.' or '/'), and everything after it is the note.
         const renameNote = rest.match(/^(\S+\s*(?:->|→)\s*\S+)\s+(\S.*)$/);
         if (renameNote) {
           path = renameNote[1].trim();
           note = renameNote[2].trim();
-        } else if (!/\s(?:->|→)\s/.test(rest)) {
+        } else if (!isRenameShape) {
           const one = rest.match(/^(\S+)\s+(\S.*)$/);
           if (one && /[./]/.test(one[1])) { path = one[1]; note = one[2].trim(); }
         }
@@ -747,7 +840,7 @@
     }).join('');
 
     return `<div class="filetree-block" ${blockAttrs(code)}>
-      <table class="ft-table"><tbody>${rows}</tbody></table>
+      <div class="ft-scroll"><table class="ft-table"><tbody>${rows}</tbody></table></div>
     </div>`;
   }
 
@@ -1025,6 +1118,37 @@
     document.addEventListener('keydown', onKey);
   }
 
+  /** A very wide/short diagram (e.g. a long left-to-right flowchart chain)
+      scaled down by `max-width:100%` to fit the card can become illegible —
+      shrinking a ~300px-tall diagram to fit a 700px-wide card can leave text a
+      few px tall. If fitting the diagram to the card would shrink it past a
+      legibility floor, keep it at natural size instead and let the card's own
+      overflow-x:auto (already set) scroll horizontally. Diagrams that already
+      fit (scale >= 1) are left untouched — no gratuitous scrollbars. */
+  function fitDiagramSvg(block, svg) {
+    // Not laid out (display:none ancestor / detached): clientWidth reads 0 and
+    // the scale math below would pin every diagram wide. Skip — the default
+    // max-width:100% behavior is the safe fallback.
+    if (!block.clientWidth) return;
+    const vb = svg.viewBox && svg.viewBox.baseVal;
+    const rect = svg.getBoundingClientRect();
+    const natW = (vb && vb.width) || rect.width;
+    const natH = (vb && vb.height) || rect.height;
+    if (!natW || !natH) return;
+    const cs = getComputedStyle(block);
+    const padX = parseFloat(cs.paddingLeft || '0') + parseFloat(cs.paddingRight || '0');
+    const innerW = Math.max(1, block.clientWidth - padX);
+    const scale = innerW / natW;
+    // Legibility floor: below ~220px rendered height, or a scale factor below
+    // 0.7x, text reads as illegible — chosen from observing a ~290px-tall
+    // diagram shrink to ~110px (0.38x) on a 10-node `flowchart LR` chain.
+    if (scale < 1 && (natH * scale < 220 || scale < 0.7)) {
+      svg.style.maxWidth = 'none';
+      svg.style.width = `${natW}px`;
+      block.classList.add('diagram-wide');
+    }
+  }
+
   /** Give a rendered diagram card a hover "expand" button and click-to-open. */
   function addDiagramExpand(block) {
     const svg = block.querySelector('svg');
@@ -1059,6 +1183,8 @@
         const { svg } = await window.mermaid.render(id, src);
         if (isCancelled()) return;
         b.innerHTML = sanitizeSvg(svg);
+        const svgEl = b.querySelector('svg');
+        if (svgEl) fitDiagramSvg(b, svgEl);
         addDiagramExpand(b);
       } catch (err) {
         document.getElementById(`d${id}`)?.remove(); // mermaid leaves an error node behind
@@ -1077,7 +1203,10 @@
       try {
         b.innerHTML = sanitizeSvg(window.nomnoml.renderSvg(src));
         const svg = b.querySelector('svg');
-        if (svg) { svg.removeAttribute('width'); svg.removeAttribute('height'); svg.style.maxWidth = '100%'; }
+        if (svg) {
+          svg.removeAttribute('width'); svg.removeAttribute('height'); svg.style.maxWidth = '100%';
+          fitDiagramSvg(b, svg);
+        }
         addDiagramExpand(b);
       } catch (err) {
         b.innerHTML = `<div class="render-error">nomnoml: ${escapeHTML(String(err.message || err))}\n\n${escapeHTML(src)}</div>`;
@@ -1116,14 +1245,17 @@
         }
         body.innerHTML = renderPlainDiff(src);
       };
+      // Stashed on the element so the global applyViewMode() can redraw this
+      // specific block from outside this loop's closure.
+      block._draw = draw;
       const buttons = block.querySelectorAll('.diff-toolbar button');
       buttons.forEach((btn) => {
-        btn.addEventListener('click', () => {
-          buttons.forEach((b) => b.classList.toggle('active', b === btn));
-          draw(btn.dataset.mode);
-        });
+        btn.addEventListener('click', () => applyViewMode(btn.dataset.mode === 'side-by-side' ? 'side-by-side' : 'unified'));
       });
-      draw('line-by-line');
+      // No global preference yet → this component's historical default (unified).
+      const diffMode = currentViewMode === 'side-by-side' ? 'side-by-side' : 'line-by-line';
+      buttons.forEach((b) => b.classList.toggle('active', b.dataset.mode === diffMode));
+      draw(diffMode);
     }
   }
 
@@ -1521,11 +1653,11 @@
      Components
      ================================================================ */
 
-  function Sidebar({ docs, current, outline, conn, theme, open, onToggleTheme, onExpand, onCollapse }) {
+  function Sidebar({ docs, current, outline, conn, theme, open, tab, onTabChange, onToggleTheme, onExpand, onCollapse }) {
     // Outline (this doc's sections) vs Docs (the other files). Default to the
     // outline — a short-doc set rarely needs a file list, but a table of contents
-    // is always useful. (useState must run before the early collapsed return.)
-    const [tab, setTab] = useState('outline');
+    // is always useful. Lifted to App (as `sidebarTab`) so it can be persisted.
+    const setTab = onTabChange;
     const scrollToHeading = (id) => {
       const el = id && document.getElementById(id);
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1955,8 +2087,22 @@
      App: state, routing, data loading, live reload
      ================================================================ */
 
+  /* No pref saved yet (fresh machine/browser) → keep the OS-level light/dark
+     signal, same as before prefs.json existed. Applied to <html data-theme>
+     synchronously at the bottom of this file, before Preact ever renders, so
+     there's no flash of the wrong theme. */
   function initialTheme() {
-    return localStorage.getItem('vd-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    const stored = readLocalPref('theme');
+    return stored === 'light' || stored === 'dark' ? stored : (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  }
+
+  function initialNavOpen() {
+    const stored = readLocalPref('navOpen');
+    return typeof stored === 'boolean' ? stored : true;
+  }
+
+  function initialSidebarTab() {
+    return readLocalPref('sidebarTab') === 'docs' ? 'docs' : 'outline';
   }
 
   function App() {
@@ -1970,16 +2116,22 @@
     const [drawer, setDrawer] = useState({ open: false, target: {} });
     const [status, setStatus] = useState(null);
     const [raw, setRaw] = useState(false);
-    const [navOpen, setNavOpen] = useState(true);
+    const [navOpen, setNavOpenState] = useState(initialNavOpen());
+    const [sidebarTab, setSidebarTabState] = useState(initialSidebarTab());
     const [outline, setOutline] = useState([]); // headings of the current doc, for the sidebar TOC
+    // What version the server reported it's running vs. what's on disk now —
+    // populated from /api/docs and /api/doc responses (never a dedicated fetch).
+    const [versionInfo, setVersionInfo] = useState({ serverVersion: null, installedVersion: null });
+    const [versionDismissed, setVersionDismissed] = useState(false);
 
     const currentRef = useRef(current);
     currentRef.current = current;
 
     const loadDocs = useCallback(async () => {
       try {
-        const { docs } = await api('/api/docs');
+        const { docs, serverVersion, installedVersion } = await api('/api/docs');
         setDocs(docs);
+        setVersionInfo({ serverVersion: serverVersion ?? null, installedVersion: installedVersion ?? null });
         return docs;
       } catch {
         // Keep the last-known list rather than blanking the sidebar — a failed
@@ -1996,6 +2148,43 @@
       } catch {
         if (currentRef.current === path) setComments([]);
       }
+    }, []);
+
+    // Preferences: each one's localStorage mirror was already applied at
+    // module load / initial state (view mode, theme, sidebar) so the first
+    // paint never waits on the network. Fetch the server copy once and let it
+    // win on a mismatch (e.g. a preference was changed from another
+    // machine/session, or this is a fresh browser context with no
+    // localStorage at all — the exact case a random per-start port breaks).
+    // A key in touchedPrefs was changed by the USER while this fetch was in
+    // flight — the response is a pre-change snapshot, so skip it. viewMode is
+    // applied with persist=false: the value came FROM the server, POSTing it
+    // back would be a pointless echo (and could re-persist a stale value).
+    useEffect(() => {
+      api('/api/prefs').then((prefs) => {
+        if (!touchedPrefs.has('viewMode') && prefs.viewMode && prefs.viewMode !== currentViewMode) {
+          applyViewMode(prefs.viewMode, false);
+          writeLocalPref('viewMode', prefs.viewMode);
+        }
+        if (!touchedPrefs.has('theme') && (prefs.theme === 'light' || prefs.theme === 'dark')) {
+          setTheme((prev) => {
+            if (prefs.theme !== prev) writeLocalPref('theme', prefs.theme);
+            return prefs.theme;
+          });
+        }
+        if (!touchedPrefs.has('navOpen') && typeof prefs.navOpen === 'boolean') {
+          setNavOpenState((prev) => {
+            if (prefs.navOpen !== prev) writeLocalPref('navOpen', prefs.navOpen);
+            return prefs.navOpen;
+          });
+        }
+        if (!touchedPrefs.has('sidebarTab') && (prefs.sidebarTab === 'outline' || prefs.sidebarTab === 'docs')) {
+          setSidebarTabState((prev) => {
+            if (prefs.sidebarTab !== prev) writeLocalPref('sidebarTab', prefs.sidebarTab);
+            return prefs.sidebarTab;
+          });
+        }
+      }).catch(() => { /* offline or first run — keep the local/default values */ });
     }, []);
 
     // Routing: hash → current path.
@@ -2024,7 +2213,10 @@
       (async () => {
         try {
           const d = await api(`/api/doc?path=${encodeURIComponent(current)}`);
-          if (!cancelled) setDoc(d);
+          if (!cancelled) {
+            setDoc(d);
+            setVersionInfo({ serverVersion: d.serverVersion ?? null, installedVersion: d.installedVersion ?? null });
+          }
         } catch (err) {
           // Distinguish a real 404 from a server/network failure.
           if (!cancelled) setDoc({ error: true, path: current, missing: err && err.status === 404 });
@@ -2034,14 +2226,16 @@
       return () => { cancelled = true; };
     }, [current, loadComments]);
 
-    // Theme side effects (document attribute, hljs stylesheet, persistence).
+    // Theme side effects (document attribute, hljs stylesheet). Persistence
+    // (localStorage mirror + server) happens explicitly in toggleTheme, not
+    // here — this effect also re-runs for printDoc's temporary light-mode
+    // flip, which must never overwrite the user's saved preference.
     useEffect(() => {
       document.documentElement.setAttribute('data-theme', theme);
       const light = document.getElementById('hljs-light');
       const dark = document.getElementById('hljs-dark');
       if (light) light.disabled = theme === 'dark';
       if (dark) dark.disabled = theme !== 'dark';
-      localStorage.setItem('vd-theme', theme);
       initMermaid(theme);
     }, [theme]);
 
@@ -2087,7 +2281,13 @@
     // Reset to the rendered view whenever the document changes.
     useEffect(() => setRaw(false), [current]);
 
-    const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
+    const toggleTheme = () => setTheme((t) => {
+      const next = t === 'dark' ? 'light' : 'dark';
+      setPref('theme', next);
+      return next;
+    });
+    const setNavOpen = (v) => { setNavOpenState(v); setPref('navOpen', v); };
+    const setSidebarTab = (v) => { setSidebarTabState(v); setPref('sidebarTab', v); };
     const toggleRaw = () => setRaw((r) => !r);
     // Print the rendered document (never raw) in light theme; print CSS hides the
     // shell. Restore the prior theme after the print dialog closes.
@@ -2185,6 +2385,7 @@
     };
 
     const openCount = comments.filter((c) => commentStatus(c) !== 'resolved').length;
+    const versionMismatch = !!(versionInfo.installedVersion && versionInfo.installedVersion !== versionInfo.serverVersion);
 
     let main;
     if (!doc) {
@@ -2200,7 +2401,14 @@
     }
 
     return html`
+      ${versionMismatch && !versionDismissed ? html`
+        <div class="update-banner" role="status">
+          <${Icon} name="info" />
+          <span>A new version of visual-docs (v${versionInfo.installedVersion}) is installed — restart the server to pick it up.</span>
+          <button class="update-banner-dismiss" onClick=${() => setVersionDismissed(true)} aria-label="Dismiss"><${Icon} name="close" /></button>
+        </div>` : null}
       <${Sidebar} docs=${docs} current=${current} outline=${outline} conn=${conn} theme=${theme} open=${navOpen}
+        tab=${sidebarTab} onTabChange=${setSidebarTab}
         onToggleTheme=${toggleTheme} onExpand=${() => setNavOpen(true)} onCollapse=${() => setNavOpen(false)} />
       <main id="main">
         ${doc && !doc.error ? html`<${TitleBlock} doc=${doc} openCount=${openCount} raw=${raw} onOpenComments=${openComments} onToggleRaw=${toggleRaw} onPrint=${printDoc} />` : null}

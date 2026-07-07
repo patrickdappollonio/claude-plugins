@@ -3,6 +3,8 @@ import { promises as fs, watch } from 'node:fs';
 import { join, resolve, relative, extname, dirname, sep, isAbsolute, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
+import { readPluginVersion, makeCachedVersionReader } from './version.js';
+import { PREF_SCHEMA, readPrefs, sanitizePrefs, updatePrefs } from './prefs.js';
 
 const ASSETS_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'assets');
 
@@ -295,6 +297,9 @@ async function writeComments(root, data, expectedHash) {
   return true;
 }
 
+// Persisted viewer preferences live in lib/prefs.js (shared with the CLI's
+// --prefs command); the endpoints below are the browser-facing wrapper.
+
 function sendJSON(res, status, obj) {
   const body = JSON.stringify(obj);
   res.writeHead(status, {
@@ -414,6 +419,11 @@ export async function startServer({ dir, port = 0, host = '127.0.0.1', watch: en
   const root = resolve(dir);
   const rootReal = await fs.realpath(root).catch(() => root);
   const assetsReal = await fs.realpath(ASSETS_DIR).catch(() => ASSETS_DIR);
+  // The version this running process was started from (fixed for its lifetime),
+  // vs. a cheap TTL-cached re-read of what's on disk NOW — so the browser can
+  // notice a plugin update without a stat+parse on every request.
+  const serverVersion = readPluginVersion();
+  const getInstalledVersion = makeCachedVersionReader(5000);
   const sseClients = new Set();
   const shellHTML = await fs.readFile(join(ASSETS_DIR, 'index.html'), 'utf8');
 
@@ -431,7 +441,7 @@ export async function startServer({ dir, port = 0, host = '127.0.0.1', watch: en
       const pathname = url.pathname;
 
       if (pathname === '/api/docs' && req.method === 'GET') {
-        return sendJSON(res, 200, { docs: await listMarkdownFiles(root) });
+        return sendJSON(res, 200, { docs: await listMarkdownFiles(root), serverVersion, installedVersion: getInstalledVersion() });
       }
 
       if (pathname === '/api/doc' && req.method === 'GET') {
@@ -443,7 +453,7 @@ export async function startServer({ dir, port = 0, host = '127.0.0.1', watch: en
           const stat = await fs.stat(abs);
           if (stat.size > MAX_DOC_BYTES) return sendJSON(res, 413, { error: `document exceeds ${MAX_DOC_BYTES} bytes` });
           const content = await fs.readFile(abs, 'utf8');
-          return sendJSON(res, 200, { path: p, content, mtime: stat.mtimeMs });
+          return sendJSON(res, 200, { path: p, content, mtime: stat.mtimeMs, serverVersion, installedVersion: getInstalledVersion() });
         } catch {
           return sendJSON(res, 404, { error: 'not found' });
         }
@@ -564,6 +574,44 @@ export async function startServer({ dir, port = 0, host = '127.0.0.1', watch: en
         const base = `http://${req.headers.host || '127.0.0.1'}`;
         res.writeHead(200, { 'content-type': 'text/markdown; charset=utf-8', 'cache-control': 'no-store' });
         return res.end(renderCommentsMarkdown(comments, p, base));
+      }
+
+      // Global, per-machine-user viewer preferences (view mode, theme, sidebar
+      // state, ...). Stored outside the served dir — see prefsFile(). The
+      // allowed keys and their validators live in one place: PREF_SCHEMA.
+      if (pathname === '/api/prefs' && req.method === 'GET') {
+        const prefs = await readPrefs();
+        return sendJSON(res, 200, sanitizePrefs(prefs));
+      }
+
+      if (pathname === '/api/prefs' && req.method === 'POST') {
+        if (crossOrigin(req)) return sendJSON(res, 403, { error: 'cross-origin request refused' });
+        let payload;
+        try {
+          payload = JSON.parse(await readBody(req));
+        } catch {
+          return sendJSON(res, 400, { error: 'invalid JSON body' });
+        }
+        if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+          return sendJSON(res, 400, { error: 'body must be a JSON object' });
+        }
+        // Validate every provided key up front — an all-or-nothing POST, so a
+        // typo in one key can't silently apply the rest and hide the mistake.
+        for (const key of Object.keys(payload)) {
+          if (!Object.prototype.hasOwnProperty.call(PREF_SCHEMA, key)) {
+            return sendJSON(res, 400, { error: `unknown preference: ${key}` });
+          }
+          if (!PREF_SCHEMA[key](payload[key])) {
+            return sendJSON(res, 400, { error: `invalid value for ${key}` });
+          }
+        }
+        let merged;
+        try {
+          merged = await updatePrefs(payload);
+        } catch (err) {
+          return sendJSON(res, 500, { error: `failed to persist preferences: ${err.message}` });
+        }
+        return sendJSON(res, 200, sanitizePrefs(merged));
       }
 
       if (pathname === '/api/events' && req.method === 'GET') {

@@ -100,6 +100,22 @@ function lintText(text, file) {
     if (am && !ADMONITIONS.has(am[1].toUpperCase())) {
       add(i + 1, 'warn', `Unknown admonition [!${am[1]}] — use NOTE, TIP, IMPORTANT, WARNING, or CAUTION.`);
     }
+    // bold-keyword blockquote idiom (`> **Risk:** …`) instead of a real
+    // admonition — only flag the first line of a blockquote run, not
+    // continuation lines mid-quote.
+    const bk = lines[i].match(/^>\s*\*\*([^*]+)\*\*/);
+    const prevLine = i > 0 ? lines[i - 1] : '';
+    if (bk && !am && !/^>/.test(prevLine)) {
+      const label = bk[1].replace(/:\s*$/, '');
+      const keyword = label.toLowerCase();
+      let suggestion;
+      if (/risk|warning|caution|danger/.test(keyword)) suggestion = '`[!WARNING]` or `[!CAUTION]`';
+      else if (/decision|important/.test(keyword)) suggestion = '`[!IMPORTANT]`';
+      else if (/tip/.test(keyword)) suggestion = '`[!TIP]`';
+      else if (/note|info/.test(keyword)) suggestion = '`[!NOTE]`';
+      else suggestion = 'a GitHub admonition (`[!NOTE]`/`[!TIP]`/`[!IMPORTANT]`/`[!WARNING]`/`[!CAUTION]`)';
+      add(i + 1, 'warn', `Bold-keyword blockquote ("**${label}:**") instead of a real admonition — use ${suggestion} on its own \`>\` line (authoring-guide.md).`);
+    }
     // obvious unredacted secrets
     const sec = lines[i].match(SECRET_RE);
     if (sec) add(i + 1, 'warn', `Possible unredacted secret ("${sec[0].slice(0, 10)}…") — redact as <redacted> or sk-•••.`);
@@ -139,11 +155,51 @@ function lintFence(lang, body, start, add) {
   } else if (lang === 'api' || lang === 'http') {
     if (!/\b(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\b/i.test(text)) add(at, 'warn', 'api fence has no request line (e.g. `POST /path`).');
   } else if (lang === 'filetree' || lang === 'files' || lang === 'file-tree') {
-    const entries = body.map((l) => l.trim()).filter((l) => l && !l.startsWith('#'));
-    if (!entries.length) add(at, 'warn', 'filetree fence has no file entries.');
+    const entryLines = [];
+    body.forEach((l, k) => { if (l.trim() && !l.trim().startsWith('#')) entryLines.push(k); });
+    if (!entryLines.length) add(at, 'warn', 'filetree fence has no file entries.');
+    for (const k of entryLines) lintFiletreeEntry(body[k], start + 2 + k, add);
   }
   // tldr/tl;dr/summary need no extra shape check — the generic empty-fence guard
   // above already requires prose content.
+}
+
+// Keep in sync with FILE_FLAGS in assets/app.js.
+const FILETREE_FLAGS = new Set([
+  'a', 'm', 'd', 'r', 'added', 'modified', 'changed', 'deleted', 'removed', 'renamed', 'moved',
+]);
+
+// Mirrors renderFileTreeFence's split rules in assets/app.js: resolve
+// flag/path/note the same way the renderer will, then warn about shapes that
+// only resolved thanks to the forgiving single-space fallback, or a
+// non-rename path that still contains whitespace after that fallback — both
+// are signs the separator was ambiguous.
+function lintFiletreeEntry(line, lineNo, add) {
+  let rest = line.trim();
+  const fm = rest.match(/^([A-Za-z]+)\s+(\S.*)$/);
+  if (fm && FILETREE_FLAGS.has(fm[1].toLowerCase())) rest = fm[2];
+
+  const isRenameShape = /\s(?:->|→)\s/.test(rest);
+  // A deliberate 2+-space/tab separator is unambiguous — trust it, as the
+  // renderer does, even when the path itself contains single spaces.
+  if (/^(.*?)(?:\s{2,}|\t)(.+)$/.test(rest)) return;
+  // " — " is also trusted unless it appears to sit *inside the note* of a
+  // single-space-separated entry (path capture has internal spaces and the
+  // line starts with a path-looking token containing '.' or '/').
+  const dash = rest.match(/^(.*?)\s+—\s+(.+)$/);
+  if (dash && (isRenameShape || !/\s/.test(dash[1].trim()) || !/^\S*[./]/.test(rest))) return;
+
+  // From here the renderer either takes the forgiving single-space fallback
+  // (warn: the author almost certainly meant a real separator) or leaves the
+  // whole line as the path (fine when it's a bare no-note entry; warn when
+  // whitespace remains in a non-rename path).
+  const renameNote = rest.match(/^(\S+\s*(?:->|→)\s*\S+)\s+(\S.*)$/);
+  const one = !isRenameShape && rest.match(/^(\S+)\s+(\S.*)$/);
+  if (renameNote || (one && /[./]/.test(one[1]))) {
+    add(lineNo, 'warn', `filetree entry's path/note split relied on the single-space fallback ("${line.trim().slice(0, 60)}") — separate the note with 2+ spaces, a tab, or " — " (canonical shape: \`<flag> <path>  <note>\`).`);
+  } else if (!isRenameShape && /\s/.test(rest)) {
+    add(lineNo, 'warn', `filetree entry's resolved path still contains whitespace ("${rest.slice(0, 60)}") — separate the note with 2+ spaces, a tab, or " — " (canonical shape: \`<flag> <path>  <note>\`).`);
+  }
 }
 
 // ---- CLI ----

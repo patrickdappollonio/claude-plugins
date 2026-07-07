@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 import { startServer } from '../lib/server.js';
+import { readPluginVersion } from '../lib/version.js';
+import { PREF_SCHEMA, prefsFile, readPrefs, sanitizePrefs, updatePrefs } from '../lib/prefs.js';
 import { resolve, join, dirname, basename } from 'node:path';
 import { statSync, readFileSync, writeFileSync, unlinkSync, mkdirSync } from 'node:fs';
 import { networkInterfaces, tmpdir } from 'node:os';
@@ -32,6 +34,9 @@ Options:
                    Print the open-comments digest for a served dir
   --status <dir> <id[,id2,…]> <state>
                    Set a comment's lifecycle state (new|acknowledged|resolved)
+  --prefs [<key> <value>]
+                   Print the persisted viewer preferences, or set one
+                   (viewMode|theme|navOpen|sidebarTab; no server needed)
   -h, --help       Show this help
 `);
 }
@@ -103,6 +108,17 @@ function liveLock(dir) {
   return null;
 }
 
+/** If the plugin on disk has moved on from the version a live server was
+    started with, print one informational line so the agent (or a human
+    reading the output) knows a --restart would pick up new capabilities.
+    Never errors, never affects exit status — purely informational. */
+function printVersionNote(lockVersion) {
+  const current = readPluginVersion();
+  if (current && lockVersion !== current) {
+    console.log(`note: this server is running visual-docs v${lockVersion || 'unknown'} but v${current} is now installed — restart it (node visual-docs-server.js --restart <dir>) to pick up new capabilities.`);
+  }
+}
+
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function stopPid(pid) {
@@ -127,6 +143,45 @@ if (args.includes('--docdir')) {
   process.exit(0);
 }
 
+// Viewer preferences — direct file access (lib/prefs.js), no server needed.
+// Formatted text either way, so an agent never parses JSON:
+//   --prefs                → print every persisted preference (and the file path)
+//   --prefs <key> <value>  → set one (validated against PREF_SCHEMA)
+if (args[0] === '--prefs') {
+  const known = Object.keys(PREF_SCHEMA).join(' | ');
+  if (args.length === 1) {
+    const prefs = sanitizePrefs(await readPrefs());
+    console.log(`Viewer preferences (${prefsFile()}):`);
+    for (const key of Object.keys(PREF_SCHEMA)) {
+      console.log(`  ${key.padEnd(11)} ${key in prefs ? prefs[key] : '(not set — viewer default)'}`);
+    }
+    process.exit(0);
+  }
+  const [, key, rawValue] = args;
+  if (!key || rawValue === undefined) {
+    console.error(`usage: --prefs [<key> <value>]  (keys: ${known})`);
+    process.exit(2);
+  }
+  if (!Object.prototype.hasOwnProperty.call(PREF_SCHEMA, key)) {
+    console.error(`Unknown preference "${key}". Known keys: ${known}.`);
+    process.exit(2);
+  }
+  // navOpen is a boolean; everything else is a string enum.
+  const value = rawValue === 'true' ? true : rawValue === 'false' ? false : rawValue;
+  if (!PREF_SCHEMA[key](value)) {
+    console.error(`Invalid value "${rawValue}" for ${key}.`);
+    process.exit(2);
+  }
+  try {
+    await updatePrefs({ [key]: value });
+  } catch (err) {
+    console.error(`Failed to persist preference: ${err.message}`);
+    process.exit(1);
+  }
+  console.log(`${key} set to ${value}. Open viewer pages pick it up on their next load.`);
+  process.exit(0);
+}
+
 // Agent comment helpers — thin Node wrappers over the running server's HTTP API
 // so the whole review loop is `node …` (no curl, no shell). They locate the
 // server via its lock file, so you pass the served directory, not a URL.
@@ -145,6 +200,7 @@ if (args[0] === '--comments' || args[0] === '--status') {
       const p = args[2] && !args[2].startsWith('-') ? args[2] : '';
       const res = await fetch(`${base}/agent/comments.md${p ? `?path=${encodeURIComponent(p)}` : ''}`);
       process.stdout.write(await res.text());
+      printVersionNote(lock.version);
       process.exit(res.ok ? 0 : 1);
     }
     // --status
@@ -162,6 +218,7 @@ if (args[0] === '--comments' || args[0] === '--status') {
     const body = await res.json().catch(() => ({}));
     if (!res.ok) { console.error(`Status update failed: ${body.error || res.status}`); process.exit(1); }
     console.log(`Updated ${body.updated} comment(s) to "${status}".`);
+    printVersionNote(lock.version);
     process.exit(0);
   } catch (err) {
     console.error(`Request failed: ${err.message}`);
@@ -218,6 +275,7 @@ if (args.includes('--serve')) {
     console.log(`Serving ${opts.dir}`);
     console.log(`VISUAL_DOCS_URL=${live.url}`);
     printNetwork(live.host, live.port);
+    printVersionNote(live.version);
     process.exit(0);
   }
   const { spawn } = await import('node:child_process');
@@ -268,13 +326,15 @@ if (existing) {
     console.log(`Serving ${opts.dir}`);
     console.log(`VISUAL_DOCS_URL=${existing.url}`);
     console.log('(already running — use --restart to apply new options, --stop to stop)');
+    printVersionNote(existing.version);
     process.exit(0);
   }
 }
 
 const startedAt = new Date().toISOString();
+const runningVersion = readPluginVersion();
 const writeLock = (extra, flag) =>
-  writeFileSync(lockPath(opts.dir), JSON.stringify({ pid: process.pid, startedAt, ...extra }, null, 2) + '\n', flag ? { flag } : undefined);
+  writeFileSync(lockPath(opts.dir), JSON.stringify({ pid: process.pid, startedAt, version: runningVersion, ...extra }, null, 2) + '\n', flag ? { flag } : undefined);
 
 // Claim this directory ATOMICALLY (O_EXCL) before starting, so two invocations
 // racing for the same dir can't both bind — the loser sees the winner's lock.
@@ -290,6 +350,7 @@ try {
       console.log(`Serving ${opts.dir}`);
       console.log(`VISUAL_DOCS_URL=${other.url}`);
       console.log('(another process just claimed this directory — already running)');
+      printVersionNote(other.version);
       process.exit(0);
     }
     if (other) { await stopPid(other.pid); }
