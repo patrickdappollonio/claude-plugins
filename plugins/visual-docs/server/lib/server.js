@@ -3,6 +3,7 @@ import { promises as fs, watch } from 'node:fs';
 import { join, resolve, relative, extname, dirname, sep, isAbsolute, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
+import { readPluginVersion, makeCachedVersionReader } from './version.js';
 
 const ASSETS_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'assets');
 
@@ -414,6 +415,11 @@ export async function startServer({ dir, port = 0, host = '127.0.0.1', watch: en
   const root = resolve(dir);
   const rootReal = await fs.realpath(root).catch(() => root);
   const assetsReal = await fs.realpath(ASSETS_DIR).catch(() => ASSETS_DIR);
+  // The version this running process was started from (fixed for its lifetime),
+  // vs. a cheap TTL-cached re-read of what's on disk NOW — so the browser can
+  // notice a plugin update without a stat+parse on every request.
+  const serverVersion = readPluginVersion();
+  const getInstalledVersion = makeCachedVersionReader(5000);
   const sseClients = new Set();
   const shellHTML = await fs.readFile(join(ASSETS_DIR, 'index.html'), 'utf8');
 
@@ -431,7 +437,7 @@ export async function startServer({ dir, port = 0, host = '127.0.0.1', watch: en
       const pathname = url.pathname;
 
       if (pathname === '/api/docs' && req.method === 'GET') {
-        return sendJSON(res, 200, { docs: await listMarkdownFiles(root) });
+        return sendJSON(res, 200, { docs: await listMarkdownFiles(root), serverVersion, installedVersion: getInstalledVersion() });
       }
 
       if (pathname === '/api/doc' && req.method === 'GET') {
@@ -443,7 +449,7 @@ export async function startServer({ dir, port = 0, host = '127.0.0.1', watch: en
           const stat = await fs.stat(abs);
           if (stat.size > MAX_DOC_BYTES) return sendJSON(res, 413, { error: `document exceeds ${MAX_DOC_BYTES} bytes` });
           const content = await fs.readFile(abs, 'utf8');
-          return sendJSON(res, 200, { path: p, content, mtime: stat.mtimeMs });
+          return sendJSON(res, 200, { path: p, content, mtime: stat.mtimeMs, serverVersion, installedVersion: getInstalledVersion() });
         } catch {
           return sendJSON(res, 404, { error: 'not found' });
         }

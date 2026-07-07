@@ -718,6 +718,24 @@ mark.comment-highlight.st-resolved { border-bottom-color: transparent; opacity: 
 #comment-status { color: var(--ok); font-size: 0.78rem; }
 #comment-status[data-tone="warn"] { color: var(--warn); }
 
+.update-banner {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 16px; background: var(--warn-soft); color: var(--ink);
+  border-bottom: 1px solid var(--warn); font-size: 0.84rem;
+}
+.update-banner .icon-wrap { color: var(--warn); display: inline-flex; flex-shrink: 0; }
+.update-banner .icon-wrap .icon { width: 16px; height: 16px; }
+.update-banner span { flex: 1; }
+.update-banner-dismiss {
+  background: none; border: none; cursor: pointer; color: var(--ink-soft);
+  display: inline-flex; padding: 4px; border-radius: 6px; flex-shrink: 0;
+}
+.update-banner-dismiss:hover { color: var(--ink); background: rgba(120,118,113,.16); }
+.update-banner-dismiss .icon { width: 14px; height: 14px; }
+/* Push the layout down so the fixed banner never overlaps the sidebar/header. */
+body:has(.update-banner) #app { padding-top: 37px; }
+
 .empty-state { text-align: center; color: var(--ink-soft); margin-top: 15vh; }
 
 /* ---------- Responsive ---------- */

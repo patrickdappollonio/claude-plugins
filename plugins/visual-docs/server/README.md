@@ -61,10 +61,14 @@ visual-docs-server --comments <dir> [<file>.md]    # open-comments digest (markd
 visual-docs-server --status <dir> <id[,id2,…]> <state>   # set new|acknowledged|resolved
 ```
 
-The server records itself in `<dir>/.visual-docs/server.json` (pid, port, url),
-so starting again for an already-served directory just prints its URL instead of
-failing on a port clash, `--restart` swaps options (e.g. add `--host`) in one
-command, and `--stop` shuts down exactly that instance — no manual PID handling.
+The server records itself in `<dir>/.visual-docs/server.json` (pid, port, url,
+version), so starting again for an already-served directory just prints its URL
+instead of failing on a port clash, `--restart` swaps options (e.g. add
+`--host`) in one command, and `--stop` shuts down exactly that instance — no
+manual PID handling. If the plugin on disk has moved past the version a running
+server started with, `--comments`/`--status`/a plain reuse print a one-line
+note recommending `--restart`; the browser shows the same nudge as a
+dismissible banner.
 
 The process prints a machine-readable line for scripts and agents:
 
