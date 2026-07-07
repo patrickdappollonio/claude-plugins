@@ -159,15 +159,54 @@
     return res.json();
   }
 
+  /* ---------- persisted preferences (server-backed, cross-session) ----------
+     The server binds a random port each start, so localStorage (origin-keyed)
+     does NOT survive across sessions — it silently resets every restart. The
+     server also persists a flat preferences object outside the served dir
+     (see prefsFile()/PREF_SCHEMA in lib/server.js) that survives restarts and
+     origins. Each preference keeps its own localStorage mirror for an instant,
+     network-free value at boot; readLocalPref/writeLocalPref/setPref are the
+     one place that talks to both. */
+  const PREF_LOCAL_KEYS = {
+    viewMode: 'vd-view-mode',
+    theme: 'vd-theme',
+    navOpen: 'vd-nav-open',
+    sidebarTab: 'vd-sidebar-tab',
+  };
+
+  /** Read a preference's localStorage mirror, or `undefined` if never set.
+      Booleans are stored as the strings 'true'/'false' and coerced back. */
+  function readLocalPref(key) {
+    const raw = localStorage.getItem(PREF_LOCAL_KEYS[key]);
+    if (raw === null) return undefined;
+    return raw === 'true' ? true : raw === 'false' ? false : raw;
+  }
+
+  function writeLocalPref(key, value) {
+    localStorage.setItem(PREF_LOCAL_KEYS[key], String(value));
+  }
+
+  /** Update the localStorage mirror immediately (instant, synchronous) and
+      fire-and-forget POST the single changed key to the server. The viewer
+      must keep working even offline or if the write fails — no user-visible
+      error, just a preference that won't survive this session. */
+  function setPref(key, value) {
+    writeLocalPref(key, value);
+    api('/api/prefs', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ [key]: value }),
+    }).catch(() => {});
+  }
+
   /* ---------- global view-mode (diff/migration unified ⇄ side-by-side) ----------
      One preference drives every diff and migration toolbar on the page. `null`
      means "no preference yet" — each component falls back to its own historical
      default (diff → unified, migration → side-by-side). Once the user clicks any
      toggle, the choice is global and persists (localStorage for instant boot,
      the server for cross-session/cross-agent survival). */
-  const VIEW_MODE_KEY = 'vd-view-mode';
-  let currentViewMode = localStorage.getItem(VIEW_MODE_KEY) === 'side-by-side' ? 'side-by-side'
-    : localStorage.getItem(VIEW_MODE_KEY) === 'unified' ? 'unified' : null;
+  let currentViewMode = readLocalPref('viewMode') === 'side-by-side' ? 'side-by-side'
+    : readLocalPref('viewMode') === 'unified' ? 'unified' : null;
 
   /** Apply `mode` ('unified' | 'side-by-side') to every diff and migration block
       currently in the DOM, sync their toolbar buttons, persist the choice, and
@@ -187,14 +226,7 @@
       panes.classList.toggle('side-by-side', mode === 'side-by-side');
       panes.classList.toggle('unified', mode === 'unified');
     });
-    localStorage.setItem(VIEW_MODE_KEY, mode);
-    // Best-effort cross-session persistence; the viewer must keep working even
-    // offline or if the write fails (no user-visible error).
-    api('/api/prefs', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ viewMode: mode }),
-    }).catch(() => {});
+    setPref('viewMode', mode);
   }
 
   /* ---------- custom fence renderers ---------- */
@@ -1601,11 +1633,11 @@
      Components
      ================================================================ */
 
-  function Sidebar({ docs, current, outline, conn, theme, open, onToggleTheme, onExpand, onCollapse }) {
+  function Sidebar({ docs, current, outline, conn, theme, open, tab, onTabChange, onToggleTheme, onExpand, onCollapse }) {
     // Outline (this doc's sections) vs Docs (the other files). Default to the
     // outline — a short-doc set rarely needs a file list, but a table of contents
-    // is always useful. (useState must run before the early collapsed return.)
-    const [tab, setTab] = useState('outline');
+    // is always useful. Lifted to App (as `sidebarTab`) so it can be persisted.
+    const setTab = onTabChange;
     const scrollToHeading = (id) => {
       const el = id && document.getElementById(id);
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -2035,8 +2067,22 @@
      App: state, routing, data loading, live reload
      ================================================================ */
 
+  /* No pref saved yet (fresh machine/browser) → keep the OS-level light/dark
+     signal, same as before prefs.json existed. Applied to <html data-theme>
+     synchronously at the bottom of this file, before Preact ever renders, so
+     there's no flash of the wrong theme. */
   function initialTheme() {
-    return localStorage.getItem('vd-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    const stored = readLocalPref('theme');
+    return stored === 'light' || stored === 'dark' ? stored : (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  }
+
+  function initialNavOpen() {
+    const stored = readLocalPref('navOpen');
+    return typeof stored === 'boolean' ? stored : true;
+  }
+
+  function initialSidebarTab() {
+    return readLocalPref('sidebarTab') === 'docs' ? 'docs' : 'outline';
   }
 
   function App() {
@@ -2050,7 +2096,8 @@
     const [drawer, setDrawer] = useState({ open: false, target: {} });
     const [status, setStatus] = useState(null);
     const [raw, setRaw] = useState(false);
-    const [navOpen, setNavOpen] = useState(true);
+    const [navOpen, setNavOpenState] = useState(initialNavOpen());
+    const [sidebarTab, setSidebarTabState] = useState(initialSidebarTab());
     const [outline, setOutline] = useState([]); // headings of the current doc, for the sidebar TOC
     // What version the server reported it's running vs. what's on disk now —
     // populated from /api/docs and /api/doc responses (never a dedicated fetch).
@@ -2083,14 +2130,34 @@
       }
     }, []);
 
-    // View-mode preference: localStorage already applied at module load (see
-    // `currentViewMode` init above, read by hydrateDiffs/hydrateMigrations on
-    // first render); fetch the server copy once and let it win on a mismatch
-    // (e.g. the preference was changed from another machine/session).
+    // Preferences: each one's localStorage mirror was already applied at
+    // module load / initial state (view mode, theme, sidebar) so the first
+    // paint never waits on the network. Fetch the server copy once and let it
+    // win on a mismatch (e.g. a preference was changed from another
+    // machine/session, or this is a fresh browser context with no
+    // localStorage at all — the exact case a random per-start port breaks).
     useEffect(() => {
-      api('/api/prefs').then(({ viewMode }) => {
-        if (viewMode && viewMode !== currentViewMode) applyViewMode(viewMode);
-      }).catch(() => { /* offline or first run — keep the local/default mode */ });
+      api('/api/prefs').then((prefs) => {
+        if (prefs.viewMode && prefs.viewMode !== currentViewMode) applyViewMode(prefs.viewMode);
+        if (prefs.theme === 'light' || prefs.theme === 'dark') {
+          setTheme((prev) => {
+            if (prefs.theme !== prev) writeLocalPref('theme', prefs.theme);
+            return prefs.theme;
+          });
+        }
+        if (typeof prefs.navOpen === 'boolean') {
+          setNavOpenState((prev) => {
+            if (prefs.navOpen !== prev) writeLocalPref('navOpen', prefs.navOpen);
+            return prefs.navOpen;
+          });
+        }
+        if (prefs.sidebarTab === 'outline' || prefs.sidebarTab === 'docs') {
+          setSidebarTabState((prev) => {
+            if (prefs.sidebarTab !== prev) writeLocalPref('sidebarTab', prefs.sidebarTab);
+            return prefs.sidebarTab;
+          });
+        }
+      }).catch(() => { /* offline or first run — keep the local/default values */ });
     }, []);
 
     // Routing: hash → current path.
@@ -2132,14 +2199,16 @@
       return () => { cancelled = true; };
     }, [current, loadComments]);
 
-    // Theme side effects (document attribute, hljs stylesheet, persistence).
+    // Theme side effects (document attribute, hljs stylesheet). Persistence
+    // (localStorage mirror + server) happens explicitly in toggleTheme, not
+    // here — this effect also re-runs for printDoc's temporary light-mode
+    // flip, which must never overwrite the user's saved preference.
     useEffect(() => {
       document.documentElement.setAttribute('data-theme', theme);
       const light = document.getElementById('hljs-light');
       const dark = document.getElementById('hljs-dark');
       if (light) light.disabled = theme === 'dark';
       if (dark) dark.disabled = theme !== 'dark';
-      localStorage.setItem('vd-theme', theme);
       initMermaid(theme);
     }, [theme]);
 
@@ -2185,7 +2254,13 @@
     // Reset to the rendered view whenever the document changes.
     useEffect(() => setRaw(false), [current]);
 
-    const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
+    const toggleTheme = () => setTheme((t) => {
+      const next = t === 'dark' ? 'light' : 'dark';
+      setPref('theme', next);
+      return next;
+    });
+    const setNavOpen = (v) => { setNavOpenState(v); setPref('navOpen', v); };
+    const setSidebarTab = (v) => { setSidebarTabState(v); setPref('sidebarTab', v); };
     const toggleRaw = () => setRaw((r) => !r);
     // Print the rendered document (never raw) in light theme; print CSS hides the
     // shell. Restore the prior theme after the print dialog closes.
@@ -2306,6 +2381,7 @@
           <button class="update-banner-dismiss" onClick=${() => setVersionDismissed(true)} aria-label="Dismiss"><${Icon} name="close" /></button>
         </div>` : null}
       <${Sidebar} docs=${docs} current=${current} outline=${outline} conn=${conn} theme=${theme} open=${navOpen}
+        tab=${sidebarTab} onTabChange=${setSidebarTab}
         onToggleTheme=${toggleTheme} onExpand=${() => setNavOpen(true)} onCollapse=${() => setNavOpen(false)} />
       <main id="main">
         ${doc && !doc.error ? html`<${TitleBlock} doc=${doc} openCount=${openCount} raw=${raw} onOpenComments=${openComments} onToggleRaw=${toggleRaw} onPrint=${printDoc} />` : null}

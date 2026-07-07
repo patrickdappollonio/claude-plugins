@@ -71,9 +71,10 @@ but in the viewer these fences get special treatment:
 
 The unified/side-by-side choice is a single **global** preference: clicking
 either toggle on any diff or migration block applies it to every diff and
-migration block on the page. It's remembered across reloads (`localStorage`)
-and across sessions/agents (`GET`/`POST /api/prefs`, stored per-user outside
-the served directory), so once you pick a view it stays picked.
+migration block on the page. Like theme and sidebar state, it's remembered
+across reloads and across sessions/agents in a small preferences file (see
+[Preferences](#preferences) below), so once you pick a view it stays picked —
+even though the server binds a new random port every time it starts.
 
 Everything degrades gracefully: if a block can't render, you get a plain
 readable code block instead. The renderer libraries (marked, mermaid,
@@ -95,6 +96,33 @@ title block showing the document, file, last update, and open comment count.
   `.visual-docs/comments.json`, as plain JSON you can read or delete.
 - It's a single `node` process with no dependencies; stop it any time with
   `pkill -f visual-docs-server`.
+
+## Preferences
+
+Because the server binds a **new random port every time it starts**, the
+browser's `localStorage` (which is keyed per-origin, i.e. per-port) gets wiped
+every session — it's only a fast-path cache for instant boot, not the source
+of truth. The real, cross-session store is a small JSON file the server reads
+and writes on your machine, outside any served directory:
+
+- Linux/macOS: `$XDG_CONFIG_HOME/visual-docs/prefs.json`, falling back to
+  `~/.config/visual-docs/prefs.json` if `XDG_CONFIG_HOME` isn't set.
+- Windows: `%APPDATA%\visual-docs\prefs.json`.
+
+It currently stores:
+
+| Key | Values |
+| :-- | :----- |
+| `viewMode` | `"unified"` \| `"side-by-side"` — diff/migration toggle |
+| `theme` | `"light"` \| `"dark"` |
+| `navOpen` | `true` \| `false` — sidebar expanded/collapsed |
+| `sidebarTab` | `"outline"` \| `"docs"` — sidebar's Outline/Docs toggle |
+
+It's plain JSON and safe to hand-edit while no server is running against it.
+Unknown keys or invalid values are **ignored on read and rejected (400) on
+write** rather than crashing the server or the viewer. Deleting the file (or
+any key in it) just resets that preference to its default the next time it's
+read — nothing else depends on it existing.
 
 ## Running the server yourself
 

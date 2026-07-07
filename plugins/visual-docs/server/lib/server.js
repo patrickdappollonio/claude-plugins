@@ -299,10 +299,24 @@ async function writeComments(root, data, expectedHash) {
 
 const VIEW_MODES = ['unified', 'side-by-side'];
 
-/** Per-user viewer preferences (currently just the diff/migration view mode),
-    stored OUTSIDE the served dir so they persist across sessions/agents/docs.
-    Deliberately not in .visual-docs/ (that lives inside the served directory
-    and is per-project); this is a global, per-machine-user setting. */
+/** Single source of truth for every persisted viewer preference: the set of
+    allowed keys and, for each, a validator for the value a client may set.
+    GET /api/prefs only ever returns keys listed here (with a valid value);
+    POST /api/prefs rejects any key not listed here, or any value that fails
+    its validator, with 400 -- the store never accumulates junk. Add a new
+    persisted preference by adding one line here. */
+const PREF_SCHEMA = {
+  viewMode: (v) => VIEW_MODES.includes(v),
+  theme: (v) => v === 'light' || v === 'dark',
+  navOpen: (v) => typeof v === 'boolean',
+  sidebarTab: (v) => v === 'outline' || v === 'docs',
+};
+
+/** Per-user viewer preferences (diff/migration view mode, theme, sidebar
+    state, ...), stored OUTSIDE the served dir so they persist across
+    sessions/agents/docs. Deliberately not in .visual-docs/ (that lives
+    inside the served directory and is per-project); this is a global,
+    per-machine-user setting. */
 function prefsFile() {
   const configHome = process.env.XDG_CONFIG_HOME
     || (process.platform === 'win32' ? process.env.APPDATA : join(os.homedir(), '.config'));
@@ -327,6 +341,17 @@ async function writePrefs(data) {
   const tmp = `${file}.tmp-${process.pid}`;
   await fs.writeFile(tmp, JSON.stringify(data, null, 2) + '\n');
   await fs.rename(tmp, file);
+}
+
+/** Strip a raw prefs object down to only the keys PREF_SCHEMA recognizes and
+    whose stored value still validates -- so a hand-edited or stale file can
+    never leak a bad value back to the client. */
+function sanitizePrefs(raw) {
+  const out = {};
+  for (const key of Object.keys(PREF_SCHEMA)) {
+    if (Object.prototype.hasOwnProperty.call(raw, key) && PREF_SCHEMA[key](raw[key])) out[key] = raw[key];
+  }
+  return out;
 }
 
 function sendJSON(res, status, obj) {
@@ -605,11 +630,12 @@ export async function startServer({ dir, port = 0, host = '127.0.0.1', watch: en
         return res.end(renderCommentsMarkdown(comments, p, base));
       }
 
-      // Global, per-machine-user viewer preference (currently: diff/migration
-      // view mode). Stored outside the served dir — see prefsFile().
+      // Global, per-machine-user viewer preferences (view mode, theme, sidebar
+      // state, ...). Stored outside the served dir — see prefsFile(). The
+      // allowed keys and their validators live in one place: PREF_SCHEMA.
       if (pathname === '/api/prefs' && req.method === 'GET') {
         const prefs = await readPrefs();
-        return sendJSON(res, 200, { viewMode: VIEW_MODES.includes(prefs.viewMode) ? prefs.viewMode : null });
+        return sendJSON(res, 200, sanitizePrefs(prefs));
       }
 
       if (pathname === '/api/prefs' && req.method === 'POST') {
@@ -620,18 +646,27 @@ export async function startServer({ dir, port = 0, host = '127.0.0.1', watch: en
         } catch {
           return sendJSON(res, 400, { error: 'invalid JSON body' });
         }
-        if (!payload || typeof payload !== 'object') return sendJSON(res, 400, { error: 'body must be a JSON object' });
-        if (!VIEW_MODES.includes(payload.viewMode)) {
-          return sendJSON(res, 400, { error: `viewMode must be one of: ${VIEW_MODES.join(', ')}` });
+        if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+          return sendJSON(res, 400, { error: 'body must be a JSON object' });
+        }
+        // Validate every provided key up front — an all-or-nothing POST, so a
+        // typo in one key can't silently apply the rest and hide the mistake.
+        for (const key of Object.keys(payload)) {
+          if (!Object.prototype.hasOwnProperty.call(PREF_SCHEMA, key)) {
+            return sendJSON(res, 400, { error: `unknown preference: ${key}` });
+          }
+          if (!PREF_SCHEMA[key](payload[key])) {
+            return sendJSON(res, 400, { error: `invalid value for ${key}` });
+          }
         }
         const prefs = await readPrefs();
-        prefs.viewMode = payload.viewMode;
+        Object.assign(prefs, payload);
         try {
           await writePrefs(prefs);
         } catch (err) {
-          return sendJSON(res, 500, { error: `failed to persist preference: ${err.message}` });
+          return sendJSON(res, 500, { error: `failed to persist preferences: ${err.message}` });
         }
-        return sendJSON(res, 200, { viewMode: prefs.viewMode });
+        return sendJSON(res, 200, sanitizePrefs(prefs));
       }
 
       if (pathname === '/api/events' && req.method === 'GET') {
