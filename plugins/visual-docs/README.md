@@ -124,6 +124,14 @@ write** rather than crashing the server or the viewer. Deleting the file (or
 any key in it) just resets that preference to its default the next time it's
 read — nothing else depends on it existing.
 
+You (or an agent) can also read and change preferences from the command line —
+no running server needed, and no JSON to parse:
+
+```bash
+node <plugin-dir>/server/bin/visual-docs-server.js --prefs              # print all
+node <plugin-dir>/server/bin/visual-docs-server.js --prefs theme dark   # set one
+```
+
 ## Running the server yourself
 
 The renderer is also a standalone npm package you can point at any folder of

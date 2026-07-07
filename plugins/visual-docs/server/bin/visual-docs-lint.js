@@ -180,28 +180,25 @@ function lintFiletreeEntry(line, lineNo, add) {
   if (fm && FILETREE_FLAGS.has(fm[1].toLowerCase())) rest = fm[2];
 
   const isRenameShape = /\s(?:->|→)\s/.test(rest);
-  const sp = rest.match(/^(.*?)(?:\s{2,}|\t|\s+—\s+)(.+)$/);
-  let path;
-  let usedFallback = false;
-  if (sp && (isRenameShape || !/\s/.test(sp[1].trim()))) {
-    path = sp[1].trim();
-  } else {
-    usedFallback = true;
-    const renameNote = rest.match(/^(\S+\s*(?:->|→)\s*\S+)\s+(\S.*)$/);
-    if (renameNote) {
-      path = renameNote[1].trim();
-    } else if (!isRenameShape) {
-      const one = rest.match(/^(\S+)\s+(\S.*)$/);
-      path = one && /[./]/.test(one[1]) ? one[1] : rest.trim();
-    } else {
-      path = rest.trim();
-    }
-  }
+  // A deliberate 2+-space/tab separator is unambiguous — trust it, as the
+  // renderer does, even when the path itself contains single spaces.
+  if (/^(.*?)(?:\s{2,}|\t)(.+)$/.test(rest)) return;
+  // " — " is also trusted unless it appears to sit *inside the note* of a
+  // single-space-separated entry (path capture has internal spaces and the
+  // line starts with a path-looking token containing '.' or '/').
+  const dash = rest.match(/^(.*?)\s+—\s+(.+)$/);
+  if (dash && (isRenameShape || !/\s/.test(dash[1].trim()) || !/^\S*[./]/.test(rest))) return;
 
-  if (usedFallback) {
+  // From here the renderer either takes the forgiving single-space fallback
+  // (warn: the author almost certainly meant a real separator) or leaves the
+  // whole line as the path (fine when it's a bare no-note entry; warn when
+  // whitespace remains in a non-rename path).
+  const renameNote = rest.match(/^(\S+\s*(?:->|→)\s*\S+)\s+(\S.*)$/);
+  const one = !isRenameShape && rest.match(/^(\S+)\s+(\S.*)$/);
+  if (renameNote || (one && /[./]/.test(one[1]))) {
     add(lineNo, 'warn', `filetree entry's path/note split relied on the single-space fallback ("${line.trim().slice(0, 60)}") — separate the note with 2+ spaces, a tab, or " — " (canonical shape: \`<flag> <path>  <note>\`).`);
-  } else if (!isRenameShape && /\s/.test(path)) {
-    add(lineNo, 'warn', `filetree entry's resolved path still contains whitespace ("${path.slice(0, 60)}") — separate the note with 2+ spaces, a tab, or " — " (canonical shape: \`<flag> <path>  <note>\`).`);
+  } else if (!isRenameShape && /\s/.test(rest)) {
+    add(lineNo, 'warn', `filetree entry's resolved path still contains whitespace ("${rest.slice(0, 60)}") — separate the note with 2+ spaces, a tab, or " — " (canonical shape: \`<flag> <path>  <note>\`).`);
   }
 }
 

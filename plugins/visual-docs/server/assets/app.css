@@ -741,7 +741,10 @@ mark.comment-highlight.st-resolved { border-bottom-color: transparent; opacity: 
   padding: 9px 16px; background: var(--warn-soft); color: var(--ink);
   border-bottom: 1px solid var(--warn); font-size: 0.84rem;
 }
-.update-banner .icon-wrap { color: var(--warn); display: inline-flex; flex-shrink: 0; }
+/* `flex: none` (not just flex-shrink: 0) — the bare `span` rule below also
+   matches this wrapper, and its flex-grow/basis would win per-longhand,
+   making the icon compete with the message for space. */
+.update-banner .icon-wrap { color: var(--warn); display: inline-flex; flex: none; }
 .update-banner .icon-wrap .icon { width: 16px; height: 16px; }
 .update-banner span { flex: 1; }
 .update-banner-dismiss {

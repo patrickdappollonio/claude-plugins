@@ -3,8 +3,8 @@ import { promises as fs, watch } from 'node:fs';
 import { join, resolve, relative, extname, dirname, sep, isAbsolute, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
-import os from 'node:os';
 import { readPluginVersion, makeCachedVersionReader } from './version.js';
+import { PREF_SCHEMA, readPrefs, sanitizePrefs, updatePrefs } from './prefs.js';
 
 const ASSETS_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'assets');
 
@@ -297,62 +297,8 @@ async function writeComments(root, data, expectedHash) {
   return true;
 }
 
-const VIEW_MODES = ['unified', 'side-by-side'];
-
-/** Single source of truth for every persisted viewer preference: the set of
-    allowed keys and, for each, a validator for the value a client may set.
-    GET /api/prefs only ever returns keys listed here (with a valid value);
-    POST /api/prefs rejects any key not listed here, or any value that fails
-    its validator, with 400 -- the store never accumulates junk. Add a new
-    persisted preference by adding one line here. */
-const PREF_SCHEMA = {
-  viewMode: (v) => VIEW_MODES.includes(v),
-  theme: (v) => v === 'light' || v === 'dark',
-  navOpen: (v) => typeof v === 'boolean',
-  sidebarTab: (v) => v === 'outline' || v === 'docs',
-};
-
-/** Per-user viewer preferences (diff/migration view mode, theme, sidebar
-    state, ...), stored OUTSIDE the served dir so they persist across
-    sessions/agents/docs. Deliberately not in .visual-docs/ (that lives
-    inside the served directory and is per-project); this is a global,
-    per-machine-user setting. */
-function prefsFile() {
-  const configHome = process.env.XDG_CONFIG_HOME
-    || (process.platform === 'win32' ? process.env.APPDATA : join(os.homedir(), '.config'));
-  return join(configHome, 'visual-docs', 'prefs.json');
-}
-
-/** Tolerate a missing/corrupt prefs file as "no preference yet" rather than erroring. */
-async function readPrefs() {
-  try {
-    const raw = await fs.readFile(prefsFile(), 'utf8');
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === 'object' ? parsed : {};
-  } catch {
-    return {};
-  }
-}
-
-/** Atomic replace (tmp file + rename), same idiom as writeComments. */
-async function writePrefs(data) {
-  const file = prefsFile();
-  await fs.mkdir(dirname(file), { recursive: true });
-  const tmp = `${file}.tmp-${process.pid}`;
-  await fs.writeFile(tmp, JSON.stringify(data, null, 2) + '\n');
-  await fs.rename(tmp, file);
-}
-
-/** Strip a raw prefs object down to only the keys PREF_SCHEMA recognizes and
-    whose stored value still validates -- so a hand-edited or stale file can
-    never leak a bad value back to the client. */
-function sanitizePrefs(raw) {
-  const out = {};
-  for (const key of Object.keys(PREF_SCHEMA)) {
-    if (Object.prototype.hasOwnProperty.call(raw, key) && PREF_SCHEMA[key](raw[key])) out[key] = raw[key];
-  }
-  return out;
-}
+// Persisted viewer preferences live in lib/prefs.js (shared with the CLI's
+// --prefs command); the endpoints below are the browser-facing wrapper.
 
 function sendJSON(res, status, obj) {
   const body = JSON.stringify(obj);
@@ -659,14 +605,13 @@ export async function startServer({ dir, port = 0, host = '127.0.0.1', watch: en
             return sendJSON(res, 400, { error: `invalid value for ${key}` });
           }
         }
-        const prefs = await readPrefs();
-        Object.assign(prefs, payload);
+        let merged;
         try {
-          await writePrefs(prefs);
+          merged = await updatePrefs(payload);
         } catch (err) {
           return sendJSON(res, 500, { error: `failed to persist preferences: ${err.message}` });
         }
-        return sendJSON(res, 200, sanitizePrefs(prefs));
+        return sendJSON(res, 200, sanitizePrefs(merged));
       }
 
       if (pathname === '/api/events' && req.method === 'GET') {

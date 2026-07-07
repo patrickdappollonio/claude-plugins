@@ -190,7 +190,13 @@
       fire-and-forget POST the single changed key to the server. The viewer
       must keep working even offline or if the write fails — no user-visible
       error, just a preference that won't survive this session. */
+  // Keys the user changed this session. The mount-time server reconcile skips
+  // these: a slow GET /api/prefs must not overwrite a choice the user already
+  // made while the response (a pre-change snapshot) was in flight.
+  const touchedPrefs = new Set();
+
   function setPref(key, value) {
+    touchedPrefs.add(key);
     writeLocalPref(key, value);
     api('/api/prefs', {
       method: 'POST',
@@ -210,8 +216,10 @@
 
   /** Apply `mode` ('unified' | 'side-by-side') to every diff and migration block
       currently in the DOM, sync their toolbar buttons, persist the choice, and
-      remember it as the default for blocks hydrated later (live reload, nav). */
-  function applyViewMode(mode) {
+      remember it as the default for blocks hydrated later (live reload, nav).
+      Pass `persist = false` when reflecting a value that CAME from the server
+      (mount reconcile) — persisting would just echo it straight back. */
+  function applyViewMode(mode, persist = true) {
     currentViewMode = mode;
     const diffMode = mode === 'side-by-side' ? 'side-by-side' : 'line-by-line';
     document.querySelectorAll('[data-diff]').forEach((block) => {
@@ -226,7 +234,7 @@
       panes.classList.toggle('side-by-side', mode === 'side-by-side');
       panes.classList.toggle('unified', mode === 'unified');
     });
-    setPref('viewMode', mode);
+    if (persist) setPref('viewMode', mode);
   }
 
   /* ---------- custom fence renderers ---------- */
@@ -727,16 +735,24 @@
       // A rename ("old -> new") legitimately has spaces inside the path itself,
       // so its "path contains whitespace" isn't a sign of a bad split.
       const isRenameShape = /\s(?:->|→)\s/.test(rest);
-      const sp = rest.match(/^(.*?)(?:\s{2,}|\t|\s+—\s+)(.+)$/);
-      if (sp && (isRenameShape || !/\s/.test(sp[1].trim()))) {
-        path = sp[1].trim();
-        note = sp[2].trim();
+      // A deliberate 2+-space/tab separator is unambiguous — trust it even when
+      // the path itself contains single spaces ("My Documents/report v2.txt").
+      const explicit = rest.match(/^(.*?)(?:\s{2,}|\t)(.+)$/);
+      // " — " is also a real separator, EXCEPT when it appears to sit *inside
+      // the note* of a single-space-separated entry: the captured "path" has
+      // internal spaces AND the line starts with a path-looking token
+      // (contains '.' or '/'), e.g. "A src/x/route.ts PUT stuff — proxies Y".
+      const dash = explicit ? null : rest.match(/^(.*?)\s+—\s+(.+)$/);
+      if (explicit) {
+        path = explicit[1].trim();
+        note = explicit[2].trim();
+      } else if (dash && (isRenameShape || !/\s/.test(dash[1].trim()) || !/^\S*[./]/.test(rest))) {
+        path = dash[1].trim();
+        note = dash[2].trim();
       } else {
-        // Either there was no 2-space/tab/"—" separator, or the primary regex's
-        // non-greedy match found one *inside the note* (e.g. a note containing
-        // " — ") and swallowed a whitespace-containing prefix as the "path" —
-        // a single space typed instead of the real separator is easy to do by
-        // accident. Re-split so the note doesn't fold into the path chip: the
+        // No separator (bare entry / single-space note), or a rejected " — ".
+        // A single space typed instead of the real separator is easy to do by
+        // accident — re-split so the note doesn't fold into the path chip: the
         // path is the first whitespace-delimited token when it looks like a
         // path (contains '.' or '/'), and everything after it is the note.
         const renameNote = rest.match(/^(\S+\s*(?:->|→)\s*\S+)\s+(\S.*)$/);
@@ -1110,6 +1126,10 @@
       overflow-x:auto (already set) scroll horizontally. Diagrams that already
       fit (scale >= 1) are left untouched — no gratuitous scrollbars. */
   function fitDiagramSvg(block, svg) {
+    // Not laid out (display:none ancestor / detached): clientWidth reads 0 and
+    // the scale math below would pin every diagram wide. Skip — the default
+    // max-width:100% behavior is the safe fallback.
+    if (!block.clientWidth) return;
     const vb = svg.viewBox && svg.viewBox.baseVal;
     const rect = svg.getBoundingClientRect();
     const natW = (vb && vb.width) || rect.width;
@@ -2136,22 +2156,29 @@
     // win on a mismatch (e.g. a preference was changed from another
     // machine/session, or this is a fresh browser context with no
     // localStorage at all — the exact case a random per-start port breaks).
+    // A key in touchedPrefs was changed by the USER while this fetch was in
+    // flight — the response is a pre-change snapshot, so skip it. viewMode is
+    // applied with persist=false: the value came FROM the server, POSTing it
+    // back would be a pointless echo (and could re-persist a stale value).
     useEffect(() => {
       api('/api/prefs').then((prefs) => {
-        if (prefs.viewMode && prefs.viewMode !== currentViewMode) applyViewMode(prefs.viewMode);
-        if (prefs.theme === 'light' || prefs.theme === 'dark') {
+        if (!touchedPrefs.has('viewMode') && prefs.viewMode && prefs.viewMode !== currentViewMode) {
+          applyViewMode(prefs.viewMode, false);
+          writeLocalPref('viewMode', prefs.viewMode);
+        }
+        if (!touchedPrefs.has('theme') && (prefs.theme === 'light' || prefs.theme === 'dark')) {
           setTheme((prev) => {
             if (prefs.theme !== prev) writeLocalPref('theme', prefs.theme);
             return prefs.theme;
           });
         }
-        if (typeof prefs.navOpen === 'boolean') {
+        if (!touchedPrefs.has('navOpen') && typeof prefs.navOpen === 'boolean') {
           setNavOpenState((prev) => {
             if (prefs.navOpen !== prev) writeLocalPref('navOpen', prefs.navOpen);
             return prefs.navOpen;
           });
         }
-        if (prefs.sidebarTab === 'outline' || prefs.sidebarTab === 'docs') {
+        if (!touchedPrefs.has('sidebarTab') && (prefs.sidebarTab === 'outline' || prefs.sidebarTab === 'docs')) {
           setSidebarTabState((prev) => {
             if (prefs.sidebarTab !== prev) writeLocalPref('sidebarTab', prefs.sidebarTab);
             return prefs.sidebarTab;

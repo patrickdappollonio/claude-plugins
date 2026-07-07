@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { startServer } from '../lib/server.js';
 import { readPluginVersion } from '../lib/version.js';
+import { PREF_SCHEMA, prefsFile, readPrefs, sanitizePrefs, updatePrefs } from '../lib/prefs.js';
 import { resolve, join, dirname, basename } from 'node:path';
 import { statSync, readFileSync, writeFileSync, unlinkSync, mkdirSync } from 'node:fs';
 import { networkInterfaces, tmpdir } from 'node:os';
@@ -33,6 +34,9 @@ Options:
                    Print the open-comments digest for a served dir
   --status <dir> <id[,id2,…]> <state>
                    Set a comment's lifecycle state (new|acknowledged|resolved)
+  --prefs [<key> <value>]
+                   Print the persisted viewer preferences, or set one
+                   (viewMode|theme|navOpen|sidebarTab; no server needed)
   -h, --help       Show this help
 `);
 }
@@ -136,6 +140,45 @@ if (args.includes('--docdir')) {
   const dir = join(tmpdir(), 'visual-docs', name);
   mkdirSync(dir, { recursive: true });
   process.stdout.write(dir + '\n');
+  process.exit(0);
+}
+
+// Viewer preferences — direct file access (lib/prefs.js), no server needed.
+// Formatted text either way, so an agent never parses JSON:
+//   --prefs                → print every persisted preference (and the file path)
+//   --prefs <key> <value>  → set one (validated against PREF_SCHEMA)
+if (args[0] === '--prefs') {
+  const known = Object.keys(PREF_SCHEMA).join(' | ');
+  if (args.length === 1) {
+    const prefs = sanitizePrefs(await readPrefs());
+    console.log(`Viewer preferences (${prefsFile()}):`);
+    for (const key of Object.keys(PREF_SCHEMA)) {
+      console.log(`  ${key.padEnd(11)} ${key in prefs ? prefs[key] : '(not set — viewer default)'}`);
+    }
+    process.exit(0);
+  }
+  const [, key, rawValue] = args;
+  if (!key || rawValue === undefined) {
+    console.error(`usage: --prefs [<key> <value>]  (keys: ${known})`);
+    process.exit(2);
+  }
+  if (!Object.prototype.hasOwnProperty.call(PREF_SCHEMA, key)) {
+    console.error(`Unknown preference "${key}". Known keys: ${known}.`);
+    process.exit(2);
+  }
+  // navOpen is a boolean; everything else is a string enum.
+  const value = rawValue === 'true' ? true : rawValue === 'false' ? false : rawValue;
+  if (!PREF_SCHEMA[key](value)) {
+    console.error(`Invalid value "${rawValue}" for ${key}.`);
+    process.exit(2);
+  }
+  try {
+    await updatePrefs({ [key]: value });
+  } catch (err) {
+    console.error(`Failed to persist preference: ${err.message}`);
+    process.exit(1);
+  }
+  console.log(`${key} set to ${value}. Open viewer pages pick it up on their next load.`);
   process.exit(0);
 }
 
