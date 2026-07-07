@@ -18,11 +18,19 @@ block, so a document is always readable — even in a bare text editor.
   why it matters — a bare fence makes the reader reverse-engineer intent.
   `visual-docs-lint` warns when this is missing. (Questions are self-describing
   and exempt.)
-- Blockquotes starting with `**Decision needed:**` or `**Risk:**` are the
-  idiom for calling out things the reader must weigh in on.
-- **GitHub-style admonitions** render as coloured callouts: start a blockquote
-  with `> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WARNING]`, or
-  `> [!CAUTION]` on its own line, then the content on the next `>` lines.
+- **Callouts MUST use GitHub-style admonitions** — start a blockquote with
+  `> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WARNING]`, or `> [!CAUTION]`
+  on its own line, then the content on the next `>` lines. **A bold-keyword
+  blockquote (`> **Risk:**`, `> **Note:**`, `> **Decision needed:**`,
+  `> **Warning:**`, …) is forbidden** — it renders as a bland, uncoloured
+  quote instead of a styled callout. Map the keyword to a marker:
+
+  | Keyword idiom                          | Use instead      |
+  |-----------------------------------------|------------------|
+  | Risk / Danger                           | `[!CAUTION]` or `[!WARNING]` |
+  | Decision needed / Important / Key point | `[!IMPORTANT]`   |
+  | Tip / Recommendation                    | `[!TIP]`         |
+  | Note / Info / Context                   | `[!NOTE]`        |
 
       > [!WARNING]
       > Enabling this in production sheds traffic immediately — stage it first.

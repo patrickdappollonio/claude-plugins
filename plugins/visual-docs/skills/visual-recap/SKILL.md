@@ -101,8 +101,8 @@ has items for it, skip one only when the inventory had nothing there:
    a ` ```tldr ` summary card (recommended for anything non-trivial): 2–4
    sentences a reader absorbs in one glance before scrolling.
 2. `## Outcome` — birds-eye first: 1–3 plain-terms paragraphs a non-author
-   follows, **no code/symbol names**, then what to scrutinize; flag with
-   `> **Risk:** …`.
+   follows, **no code/symbol names**, then what to scrutinize; flag it with a
+   `> [!WARNING]` or `> [!CAUTION]` admonition, never a bold-keyword blockquote.
 3. `## What changed` — a ` ```filetree ` fence: every file with a change flag
    (A/M/D/R) and a one-line purpose, grouped by area with `#` headings.
 4. `## Architecture` — a ` ```mermaid `/` ```nomnoml ` diagram when components,

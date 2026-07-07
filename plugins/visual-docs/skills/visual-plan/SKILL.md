@@ -82,8 +82,8 @@ has items, skip one only when it had nothing there:
    summary card (recommended for anything non-trivial): 2–4 sentences a reader
    absorbs in one glance before scrolling.
 2. `## Summary` — birds-eye first: a plain-terms paragraph on what you'll do and
-   *why*, **no code/symbol names**, then `> **Decision needed:** …` for anything
-   the user must decide.
+   *why*, **no code/symbol names**, then a `> [!IMPORTANT]` admonition (never a
+   bold-keyword blockquote) for anything the user must decide.
 3. `## Architecture` — a ` ```mermaid `/` ```nomnoml ` diagram when components or
    flows change (prefer a 2-D shape over a chain).
 4. `## Key changes` — one H3 per meaningful change, each led by a *why-it-matters*
