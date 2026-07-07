@@ -792,7 +792,7 @@
     }).join('');
 
     return `<div class="filetree-block" ${blockAttrs(code)}>
-      <table class="ft-table"><tbody>${rows}</tbody></table>
+      <div class="ft-scroll"><table class="ft-table"><tbody>${rows}</tbody></table></div>
     </div>`;
   }
 
@@ -1070,6 +1070,33 @@
     document.addEventListener('keydown', onKey);
   }
 
+  /** A very wide/short diagram (e.g. a long left-to-right flowchart chain)
+      scaled down by `max-width:100%` to fit the card can become illegible —
+      shrinking a ~300px-tall diagram to fit a 700px-wide card can leave text a
+      few px tall. If fitting the diagram to the card would shrink it past a
+      legibility floor, keep it at natural size instead and let the card's own
+      overflow-x:auto (already set) scroll horizontally. Diagrams that already
+      fit (scale >= 1) are left untouched — no gratuitous scrollbars. */
+  function fitDiagramSvg(block, svg) {
+    const vb = svg.viewBox && svg.viewBox.baseVal;
+    const rect = svg.getBoundingClientRect();
+    const natW = (vb && vb.width) || rect.width;
+    const natH = (vb && vb.height) || rect.height;
+    if (!natW || !natH) return;
+    const cs = getComputedStyle(block);
+    const padX = parseFloat(cs.paddingLeft || '0') + parseFloat(cs.paddingRight || '0');
+    const innerW = Math.max(1, block.clientWidth - padX);
+    const scale = innerW / natW;
+    // Legibility floor: below ~220px rendered height, or a scale factor below
+    // 0.7x, text reads as illegible — chosen from observing a ~290px-tall
+    // diagram shrink to ~110px (0.38x) on a 10-node `flowchart LR` chain.
+    if (scale < 1 && (natH * scale < 220 || scale < 0.7)) {
+      svg.style.maxWidth = 'none';
+      svg.style.width = `${natW}px`;
+      block.classList.add('diagram-wide');
+    }
+  }
+
   /** Give a rendered diagram card a hover "expand" button and click-to-open. */
   function addDiagramExpand(block) {
     const svg = block.querySelector('svg');
@@ -1104,6 +1131,8 @@
         const { svg } = await window.mermaid.render(id, src);
         if (isCancelled()) return;
         b.innerHTML = sanitizeSvg(svg);
+        const svgEl = b.querySelector('svg');
+        if (svgEl) fitDiagramSvg(b, svgEl);
         addDiagramExpand(b);
       } catch (err) {
         document.getElementById(`d${id}`)?.remove(); // mermaid leaves an error node behind
@@ -1122,7 +1151,10 @@
       try {
         b.innerHTML = sanitizeSvg(window.nomnoml.renderSvg(src));
         const svg = b.querySelector('svg');
-        if (svg) { svg.removeAttribute('width'); svg.removeAttribute('height'); svg.style.maxWidth = '100%'; }
+        if (svg) {
+          svg.removeAttribute('width'); svg.removeAttribute('height'); svg.style.maxWidth = '100%';
+          fitDiagramSvg(b, svg);
+        }
         addDiagramExpand(b);
       } catch (err) {
         b.innerHTML = `<div class="render-error">nomnoml: ${escapeHTML(String(err.message || err))}\n\n${escapeHTML(src)}</div>`;
