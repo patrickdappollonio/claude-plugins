@@ -3,6 +3,7 @@ import { promises as fs, watch } from 'node:fs';
 import { join, resolve, relative, extname, dirname, sep, isAbsolute, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
+import os from 'node:os';
 
 const ASSETS_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'assets');
 
@@ -295,6 +296,38 @@ async function writeComments(root, data, expectedHash) {
   return true;
 }
 
+const VIEW_MODES = ['unified', 'side-by-side'];
+
+/** Per-user viewer preferences (currently just the diff/migration view mode),
+    stored OUTSIDE the served dir so they persist across sessions/agents/docs.
+    Deliberately not in .visual-docs/ (that lives inside the served directory
+    and is per-project); this is a global, per-machine-user setting. */
+function prefsFile() {
+  const configHome = process.env.XDG_CONFIG_HOME
+    || (process.platform === 'win32' ? process.env.APPDATA : join(os.homedir(), '.config'));
+  return join(configHome, 'visual-docs', 'prefs.json');
+}
+
+/** Tolerate a missing/corrupt prefs file as "no preference yet" rather than erroring. */
+async function readPrefs() {
+  try {
+    const raw = await fs.readFile(prefsFile(), 'utf8');
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+/** Atomic replace (tmp file + rename), same idiom as writeComments. */
+async function writePrefs(data) {
+  const file = prefsFile();
+  await fs.mkdir(dirname(file), { recursive: true });
+  const tmp = `${file}.tmp-${process.pid}`;
+  await fs.writeFile(tmp, JSON.stringify(data, null, 2) + '\n');
+  await fs.rename(tmp, file);
+}
+
 function sendJSON(res, status, obj) {
   const body = JSON.stringify(obj);
   res.writeHead(status, {
@@ -564,6 +597,35 @@ export async function startServer({ dir, port = 0, host = '127.0.0.1', watch: en
         const base = `http://${req.headers.host || '127.0.0.1'}`;
         res.writeHead(200, { 'content-type': 'text/markdown; charset=utf-8', 'cache-control': 'no-store' });
         return res.end(renderCommentsMarkdown(comments, p, base));
+      }
+
+      // Global, per-machine-user viewer preference (currently: diff/migration
+      // view mode). Stored outside the served dir — see prefsFile().
+      if (pathname === '/api/prefs' && req.method === 'GET') {
+        const prefs = await readPrefs();
+        return sendJSON(res, 200, { viewMode: VIEW_MODES.includes(prefs.viewMode) ? prefs.viewMode : null });
+      }
+
+      if (pathname === '/api/prefs' && req.method === 'POST') {
+        if (crossOrigin(req)) return sendJSON(res, 403, { error: 'cross-origin request refused' });
+        let payload;
+        try {
+          payload = JSON.parse(await readBody(req));
+        } catch {
+          return sendJSON(res, 400, { error: 'invalid JSON body' });
+        }
+        if (!payload || typeof payload !== 'object') return sendJSON(res, 400, { error: 'body must be a JSON object' });
+        if (!VIEW_MODES.includes(payload.viewMode)) {
+          return sendJSON(res, 400, { error: `viewMode must be one of: ${VIEW_MODES.join(', ')}` });
+        }
+        const prefs = await readPrefs();
+        prefs.viewMode = payload.viewMode;
+        try {
+          await writePrefs(prefs);
+        } catch (err) {
+          return sendJSON(res, 500, { error: `failed to persist preference: ${err.message}` });
+        }
+        return sendJSON(res, 200, { viewMode: prefs.viewMode });
       }
 
       if (pathname === '/api/events' && req.method === 'GET') {

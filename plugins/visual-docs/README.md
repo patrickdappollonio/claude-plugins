@@ -62,12 +62,18 @@ but in the viewer these fences get special treatment:
 | ` ```mermaid ` | Mermaid diagram (flowchart, sequence, ER, state, …) |
 | ` ```nomnoml ` | Sketchy, hand-drawn-style diagram from a tiny UML text DSL |
 | ` ```diff ` / ` ```patch ` | Rich diff viewer with a **unified / side-by-side** toggle |
-| ` ```migration ` (also ` ```sql-migration `) | Database migration card with green **up** / red **down** panes and a reversible/irreversible badge |
+| ` ```migration ` (also ` ```sql-migration `) | Database migration card with green **up** / red **down** panes and a reversible/irreversible badge, with its own unified/side-by-side toggle |
 | ` ```api ` / ` ```http ` | Styled HTTP request/response cards, `curl -v` style — method & status badges, collapsible headers, pretty-printed JSON |
 | ` ```openapi ` / ` ```swagger ` | Read-only OpenAPI explorer — expandable endpoints with parameters, request bodies, and responses |
 | ` ```filetree ` / ` ```files ` | "What changed" file map — coloured A/M/D/R change badges, paths, and per-file notes, grouped by area |
 | ` ```question ` / ` ```ask ` | An interactive question — single/multi-select options plus a custom answer; the reply is saved as a comment for the agent |
 | Any other language | Syntax-highlighted code with a language tag |
+
+The unified/side-by-side choice is a single **global** preference: clicking
+either toggle on any diff or migration block applies it to every diff and
+migration block on the page. It's remembered across reloads (`localStorage`)
+and across sessions/agents (`GET`/`POST /api/prefs`, stored per-user outside
+the served directory), so once you pick a view it stays picked.
 
 Everything degrades gracefully: if a block can't render, you get a plain
 readable code block instead. The renderer libraries (marked, mermaid,

@@ -159,6 +159,44 @@
     return res.json();
   }
 
+  /* ---------- global view-mode (diff/migration unified ⇄ side-by-side) ----------
+     One preference drives every diff and migration toolbar on the page. `null`
+     means "no preference yet" — each component falls back to its own historical
+     default (diff → unified, migration → side-by-side). Once the user clicks any
+     toggle, the choice is global and persists (localStorage for instant boot,
+     the server for cross-session/cross-agent survival). */
+  const VIEW_MODE_KEY = 'vd-view-mode';
+  let currentViewMode = localStorage.getItem(VIEW_MODE_KEY) === 'side-by-side' ? 'side-by-side'
+    : localStorage.getItem(VIEW_MODE_KEY) === 'unified' ? 'unified' : null;
+
+  /** Apply `mode` ('unified' | 'side-by-side') to every diff and migration block
+      currently in the DOM, sync their toolbar buttons, persist the choice, and
+      remember it as the default for blocks hydrated later (live reload, nav). */
+  function applyViewMode(mode) {
+    currentViewMode = mode;
+    const diffMode = mode === 'side-by-side' ? 'side-by-side' : 'line-by-line';
+    document.querySelectorAll('[data-diff]').forEach((block) => {
+      block.querySelectorAll('.diff-toolbar button').forEach((b) => b.classList.toggle('active', b.dataset.mode === diffMode));
+      if (typeof block._draw === 'function') block._draw(diffMode);
+    });
+    document.querySelectorAll('.migration-toolbar').forEach((tb) => {
+      const block = tb.closest('.migration-block');
+      const panes = block && block.querySelector('.mig-updown');
+      if (!panes) return;
+      tb.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.mode === mode));
+      panes.classList.toggle('side-by-side', mode === 'side-by-side');
+      panes.classList.toggle('unified', mode === 'unified');
+    });
+    localStorage.setItem(VIEW_MODE_KEY, mode);
+    // Best-effort cross-session persistence; the viewer must keep working even
+    // offline or if the write fails (no user-visible error).
+    api('/api/prefs', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ viewMode: mode }),
+    }).catch(() => {});
+  }
+
   /* ---------- custom fence renderers ---------- */
 
   // NOTE: the set of structured fence languages dispatched below is mirrored in
@@ -379,20 +417,21 @@
     </div>`;
   }
 
-  /** Wire the migration up/down side-by-side ⇄ unified toggle. */
+  /** Wire the migration up/down side-by-side ⇄ unified toggle. Shares the same
+      global view-mode preference as the diff toolbar (see applyViewMode). */
   function hydrateMigrations(container) {
     container.querySelectorAll('.migration-toolbar').forEach((tb) => {
       const block = tb.closest('.migration-block');
       const panes = block && block.querySelector('.mig-updown');
       if (!panes) return;
       tb.querySelectorAll('button').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          tb.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b === btn));
-          const sbs = btn.dataset.mode === 'side-by-side';
-          panes.classList.toggle('side-by-side', sbs);
-          panes.classList.toggle('unified', !sbs);
-        });
+        btn.addEventListener('click', () => applyViewMode(btn.dataset.mode === 'unified' ? 'unified' : 'side-by-side'));
       });
+      // No global preference yet → this component's historical default (side-by-side).
+      const mode = currentViewMode === 'unified' ? 'unified' : 'side-by-side';
+      tb.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.mode === mode));
+      panes.classList.toggle('side-by-side', mode === 'side-by-side');
+      panes.classList.toggle('unified', mode === 'unified');
     });
   }
 
@@ -1116,14 +1155,17 @@
         }
         body.innerHTML = renderPlainDiff(src);
       };
+      // Stashed on the element so the global applyViewMode() can redraw this
+      // specific block from outside this loop's closure.
+      block._draw = draw;
       const buttons = block.querySelectorAll('.diff-toolbar button');
       buttons.forEach((btn) => {
-        btn.addEventListener('click', () => {
-          buttons.forEach((b) => b.classList.toggle('active', b === btn));
-          draw(btn.dataset.mode);
-        });
+        btn.addEventListener('click', () => applyViewMode(btn.dataset.mode === 'side-by-side' ? 'side-by-side' : 'unified'));
       });
-      draw('line-by-line');
+      // No global preference yet → this component's historical default (unified).
+      const diffMode = currentViewMode === 'side-by-side' ? 'side-by-side' : 'line-by-line';
+      buttons.forEach((b) => b.classList.toggle('active', b.dataset.mode === diffMode));
+      draw(diffMode);
     }
   }
 
@@ -1996,6 +2038,16 @@
       } catch {
         if (currentRef.current === path) setComments([]);
       }
+    }, []);
+
+    // View-mode preference: localStorage already applied at module load (see
+    // `currentViewMode` init above, read by hydrateDiffs/hydrateMigrations on
+    // first render); fetch the server copy once and let it win on a mismatch
+    // (e.g. the preference was changed from another machine/session).
+    useEffect(() => {
+      api('/api/prefs').then(({ viewMode }) => {
+        if (viewMode && viewMode !== currentViewMode) applyViewMode(viewMode);
+      }).catch(() => { /* offline or first run — keep the local/default mode */ });
     }, []);
 
     // Routing: hash → current path.
