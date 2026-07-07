@@ -162,6 +162,10 @@ comment is labelled with what it's anchored to (a section, a quoted snippet, or 
 component) and carries an `id`. Address every open comment and edit the markdown
 file in place (the browser reloads automatically).
 
+If the digest is followed by a `note: this server is running visual-docs vX but
+vY is now installed…` line, tell the user and suggest `--restart` (per the
+`--serve` step above) to pick up the newer version.
+
 Drive each comment's `status` with the same tool — no JSON, no hand-editing
 `comments.json`:
 

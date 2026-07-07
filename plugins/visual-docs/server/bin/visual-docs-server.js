@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { startServer } from '../lib/server.js';
+import { readPluginVersion } from '../lib/version.js';
 import { resolve, join, dirname, basename } from 'node:path';
 import { statSync, readFileSync, writeFileSync, unlinkSync, mkdirSync } from 'node:fs';
 import { networkInterfaces, tmpdir } from 'node:os';
@@ -103,6 +104,17 @@ function liveLock(dir) {
   return null;
 }
 
+/** If the plugin on disk has moved on from the version a live server was
+    started with, print one informational line so the agent (or a human
+    reading the output) knows a --restart would pick up new capabilities.
+    Never errors, never affects exit status — purely informational. */
+function printVersionNote(lockVersion) {
+  const current = readPluginVersion();
+  if (current && lockVersion !== current) {
+    console.log(`note: this server is running visual-docs v${lockVersion || 'unknown'} but v${current} is now installed — restart it (node visual-docs-server.js --restart <dir>) to pick up new capabilities.`);
+  }
+}
+
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function stopPid(pid) {
@@ -145,6 +157,7 @@ if (args[0] === '--comments' || args[0] === '--status') {
       const p = args[2] && !args[2].startsWith('-') ? args[2] : '';
       const res = await fetch(`${base}/agent/comments.md${p ? `?path=${encodeURIComponent(p)}` : ''}`);
       process.stdout.write(await res.text());
+      printVersionNote(lock.version);
       process.exit(res.ok ? 0 : 1);
     }
     // --status
@@ -162,6 +175,7 @@ if (args[0] === '--comments' || args[0] === '--status') {
     const body = await res.json().catch(() => ({}));
     if (!res.ok) { console.error(`Status update failed: ${body.error || res.status}`); process.exit(1); }
     console.log(`Updated ${body.updated} comment(s) to "${status}".`);
+    printVersionNote(lock.version);
     process.exit(0);
   } catch (err) {
     console.error(`Request failed: ${err.message}`);
@@ -218,6 +232,7 @@ if (args.includes('--serve')) {
     console.log(`Serving ${opts.dir}`);
     console.log(`VISUAL_DOCS_URL=${live.url}`);
     printNetwork(live.host, live.port);
+    printVersionNote(live.version);
     process.exit(0);
   }
   const { spawn } = await import('node:child_process');
@@ -268,13 +283,15 @@ if (existing) {
     console.log(`Serving ${opts.dir}`);
     console.log(`VISUAL_DOCS_URL=${existing.url}`);
     console.log('(already running — use --restart to apply new options, --stop to stop)');
+    printVersionNote(existing.version);
     process.exit(0);
   }
 }
 
 const startedAt = new Date().toISOString();
+const runningVersion = readPluginVersion();
 const writeLock = (extra, flag) =>
-  writeFileSync(lockPath(opts.dir), JSON.stringify({ pid: process.pid, startedAt, ...extra }, null, 2) + '\n', flag ? { flag } : undefined);
+  writeFileSync(lockPath(opts.dir), JSON.stringify({ pid: process.pid, startedAt, version: runningVersion, ...extra }, null, 2) + '\n', flag ? { flag } : undefined);
 
 // Claim this directory ATOMICALLY (O_EXCL) before starting, so two invocations
 // racing for the same dir can't both bind — the loser sees the winner's lock.
@@ -290,6 +307,7 @@ try {
       console.log(`Serving ${opts.dir}`);
       console.log(`VISUAL_DOCS_URL=${other.url}`);
       console.log('(another process just claimed this directory — already running)');
+      printVersionNote(other.version);
       process.exit(0);
     }
     if (other) { await stopPid(other.pid); }

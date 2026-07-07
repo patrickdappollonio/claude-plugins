@@ -2020,14 +2020,19 @@
     const [raw, setRaw] = useState(false);
     const [navOpen, setNavOpen] = useState(true);
     const [outline, setOutline] = useState([]); // headings of the current doc, for the sidebar TOC
+    // What version the server reported it's running vs. what's on disk now —
+    // populated from /api/docs and /api/doc responses (never a dedicated fetch).
+    const [versionInfo, setVersionInfo] = useState({ serverVersion: null, installedVersion: null });
+    const [versionDismissed, setVersionDismissed] = useState(false);
 
     const currentRef = useRef(current);
     currentRef.current = current;
 
     const loadDocs = useCallback(async () => {
       try {
-        const { docs } = await api('/api/docs');
+        const { docs, serverVersion, installedVersion } = await api('/api/docs');
         setDocs(docs);
+        setVersionInfo({ serverVersion: serverVersion ?? null, installedVersion: installedVersion ?? null });
         return docs;
       } catch {
         // Keep the last-known list rather than blanking the sidebar — a failed
@@ -2082,7 +2087,10 @@
       (async () => {
         try {
           const d = await api(`/api/doc?path=${encodeURIComponent(current)}`);
-          if (!cancelled) setDoc(d);
+          if (!cancelled) {
+            setDoc(d);
+            setVersionInfo({ serverVersion: d.serverVersion ?? null, installedVersion: d.installedVersion ?? null });
+          }
         } catch (err) {
           // Distinguish a real 404 from a server/network failure.
           if (!cancelled) setDoc({ error: true, path: current, missing: err && err.status === 404 });
@@ -2243,6 +2251,7 @@
     };
 
     const openCount = comments.filter((c) => commentStatus(c) !== 'resolved').length;
+    const versionMismatch = !!(versionInfo.installedVersion && versionInfo.installedVersion !== versionInfo.serverVersion);
 
     let main;
     if (!doc) {
@@ -2258,6 +2267,12 @@
     }
 
     return html`
+      ${versionMismatch && !versionDismissed ? html`
+        <div class="update-banner" role="status">
+          <${Icon} name="info" />
+          <span>A new version of visual-docs (v${versionInfo.installedVersion}) is installed — restart the server to pick it up.</span>
+          <button class="update-banner-dismiss" onClick=${() => setVersionDismissed(true)} aria-label="Dismiss"><${Icon} name="close" /></button>
+        </div>` : null}
       <${Sidebar} docs=${docs} current=${current} outline=${outline} conn=${conn} theme=${theme} open=${navOpen}
         onToggleTheme=${toggleTheme} onExpand=${() => setNavOpen(true)} onCollapse=${() => setNavOpen(false)} />
       <main id="main">

@@ -170,6 +170,10 @@ component like "mermaid diagram") and carries an `id`. Comments on a recap often
 request code changes, not document changes — when a comment asks for a fix,
 confirm scope with the user before editing code.
 
+If the digest is followed by a `note: this server is running visual-docs vX but
+vY is now installed…` line, tell the user and suggest `--restart` to pick up
+the newer version.
+
 Drive each comment's `status` with the same tool — no JSON, no hand-editing
 `comments.json`:
 
