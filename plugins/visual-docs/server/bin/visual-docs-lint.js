@@ -100,6 +100,22 @@ function lintText(text, file) {
     if (am && !ADMONITIONS.has(am[1].toUpperCase())) {
       add(i + 1, 'warn', `Unknown admonition [!${am[1]}] — use NOTE, TIP, IMPORTANT, WARNING, or CAUTION.`);
     }
+    // bold-keyword blockquote idiom (`> **Risk:** …`) instead of a real
+    // admonition — only flag the first line of a blockquote run, not
+    // continuation lines mid-quote.
+    const bk = lines[i].match(/^>\s*\*\*([^*]+)\*\*/);
+    const prevLine = i > 0 ? lines[i - 1] : '';
+    if (bk && !am && !/^>/.test(prevLine)) {
+      const label = bk[1].replace(/:\s*$/, '');
+      const keyword = label.toLowerCase();
+      let suggestion;
+      if (/risk|warning|caution|danger/.test(keyword)) suggestion = '`[!WARNING]` or `[!CAUTION]`';
+      else if (/decision|important/.test(keyword)) suggestion = '`[!IMPORTANT]`';
+      else if (/tip/.test(keyword)) suggestion = '`[!TIP]`';
+      else if (/note|info/.test(keyword)) suggestion = '`[!NOTE]`';
+      else suggestion = 'a GitHub admonition (`[!NOTE]`/`[!TIP]`/`[!IMPORTANT]`/`[!WARNING]`/`[!CAUTION]`)';
+      add(i + 1, 'warn', `Bold-keyword blockquote ("**${label}:**") instead of a real admonition — use ${suggestion} on its own \`>\` line (authoring-guide.md).`);
+    }
     // obvious unredacted secrets
     const sec = lines[i].match(SECRET_RE);
     if (sec) add(i + 1, 'warn', `Possible unredacted secret ("${sec[0].slice(0, 10)}…") — redact as <redacted> or sk-•••.`);

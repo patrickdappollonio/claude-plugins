@@ -71,7 +71,9 @@ handler `diff` is at most supporting evidence beside it, never a substitute.
 The same reflex applies elsewhere: schema/migration → ` ```migration `,
 architecture/flow → ` ```mermaid `/` ```nomnoml `, the changed-files map →
 ` ```filetree ` (flags + notes, not a bullet list). If a purpose-built block can
-carry the change, don't let a code diff or a plain list stand in for it.
+carry the change, don't let a code diff or a plain list stand in for it. The
+same applies to callouts: a risk or decision-needed aside is a `> [!WARNING]`/
+`> [!IMPORTANT]` admonition, never a bold-keyword blockquote standing in for one.
 
 ## 4. One sentence of intent above every structured fence
 
