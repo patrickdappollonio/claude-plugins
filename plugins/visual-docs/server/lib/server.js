@@ -565,6 +565,44 @@ export async function startServer({ dir, port = 0, host = '127.0.0.1', watch: en
         return sendJSON(res, 200, { updated: result.updated.length, comments: result.updated });
       }
 
+      // Browser-facing edit endpoint: change a comment's text while the agent
+      // hasn't started on it yet. Only 'new' comments are editable — once the
+      // agent has acknowledged it, the text is what the agent is acting on, so
+      // changing it out from under them would be confusing.
+      if (pathname === '/api/comments/edit' && req.method === 'POST') {
+        if (crossOrigin(req)) return sendJSON(res, 403, { error: 'cross-origin request refused' });
+        let payload;
+        try {
+          payload = JSON.parse(await readBody(req));
+        } catch {
+          return sendJSON(res, 400, { error: 'invalid JSON body' });
+        }
+        if (!payload || typeof payload !== 'object') return sendJSON(res, 400, { error: 'body must be a JSON object' });
+        if (typeof payload.id !== 'string' || !payload.id) return sendJSON(res, 400, { error: 'id is required' });
+        const text = typeof payload.text === 'string' ? payload.text.trim() : '';
+        if (!text) return sendJSON(res, 400, { error: 'text is required' });
+        if (text.length > MAX_COMMENT_LEN) return sendJSON(res, 413, { error: `text exceeds ${MAX_COMMENT_LEN} chars` });
+
+        const result = await withComments(async () => {
+          // Same optimistic-concurrency retry as the other comment-mutating routes.
+          for (let attempt = 0; attempt < 3; attempt++) {
+            const { data, hash } = await readCommentsRaw(root);
+            const comment = data.comments.find((c) => c.id === payload.id);
+            if (!comment) return { notFound: true };
+            if (commentStatus(comment) !== 'new') return { conflict: true };
+            comment.text = text;
+            comment.editedAt = new Date().toISOString();
+            if (await writeComments(root, data, hash)) return { comment };
+          }
+          return { error: 'write conflict — please retry' };
+        });
+        if (result.notFound) return sendJSON(res, 404, { error: 'no comment matched the given id' });
+        if (result.conflict) return sendJSON(res, 409, { error: 'only comments the agent hasn\'t acknowledged yet can be edited' });
+        if (result.error) return sendJSON(res, 409, { error: result.error });
+        broadcast({ type: 'comment', path: result.comment.path });
+        return sendJSON(res, 200, { comment: result.comment });
+      }
+
       // Agent-facing read endpoint: comments as a ready-to-read markdown digest
       // an agent can curl directly (structured JSON already lives at /api/comments).
       if (pathname === '/agent/comments.md' && req.method === 'GET') {

@@ -708,6 +708,20 @@ mark.comment-highlight.st-resolved { border-bottom-color: transparent; opacity: 
   color: var(--accent); opacity: 0.75;
 }
 .comment-item .c-text { font-size: 0.9rem; color: var(--ink); }
+.comment-item .c-edited { font-style: italic; opacity: 0.8; }
+.comment-item.st-new { cursor: default; }
+.comment-item.st-new:not(.editing) { cursor: pointer; }
+.comment-item .c-edit { display: flex; flex-direction: column; gap: 7px; }
+.comment-item .c-edit-text {
+  font: inherit; font-size: 0.88rem; resize: vertical; min-height: 60px; padding: 8px 10px;
+  border: 1px solid var(--accent); border-radius: 8px; background: var(--surface); color: var(--ink);
+}
+.comment-item .c-edit-text:focus { outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+.comment-item .c-edit-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.comment-item .c-edit-actions button { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 6px 13px; font-size: 0.8rem; font-weight: 500; cursor: pointer; }
+.comment-item .c-edit-actions button:hover { background: var(--accent-press); }
+.comment-item .c-edit-actions button.secondary { background: none; color: var(--ink); border: 1px solid var(--line-strong); }
+.comment-item .c-edit-actions button.secondary:hover { color: var(--accent); border-color: var(--accent); background: none; }
 
 #comment-context { display: flex; align-items: flex-start; gap: 8px; padding: 10px 12px; margin: 0 12px; border-radius: 8px; background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent); }
 #comment-context .ctx-body { flex: 1; min-width: 0; color: var(--accent); font-size: 0.72rem; line-height: 1.4; font-family: var(--mono); }

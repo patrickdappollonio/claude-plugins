@@ -1995,8 +1995,11 @@
       </article>`;
   }
 
-  function CommentDrawer({ open, target, comments, status, onExpand, onCollapse, onClearTarget, onSubmit, onCopy }) {
+  function CommentDrawer({ open, target, comments, status, onExpand, onCollapse, onClearTarget, onSubmit, onCopy, onEdit }) {
     const textRef = useRef(null);
+    const [editingId, setEditingId] = useState(null);
+    const [editText, setEditText] = useState('');
+    const editRef = useRef(null);
     const t = target || {};
     // What's being commented on. Text anchors show the quote itself; section and
     // component anchors show a short label.
@@ -2007,6 +2010,26 @@
     useEffect(() => {
       if (open && textRef.current) textRef.current.focus();
     }, [open, contextLabel, pendingQuote]);
+    useEffect(() => {
+      if (editingId && editRef.current) editRef.current.focus();
+    }, [editingId]);
+
+    const startEdit = (c) => {
+      if (commentStatus(c) !== 'new' || editingId === c.id) return;
+      setEditText(c.text);
+      setEditingId(c.id);
+    };
+    const cancelEdit = () => setEditingId(null);
+    const saveEdit = (id) => {
+      const text = editText.trim();
+      if (!text) return;
+      onEdit(id, text);
+      setEditingId(null);
+    };
+    const editKeyDown = (e, id) => {
+      if (e.key === 'Escape') { e.preventDefault(); cancelEdit(); }
+      else if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); saveEdit(id); }
+    };
 
     // Collapsed: a thin clickable rail on the right edge that reopens the panel.
     if (!open) {
@@ -2050,15 +2073,31 @@
               const isText = c.anchor && c.anchor.kind === 'text';
               const chip = isText ? '' : commentAnchorLabel(c);
               const st = commentStatus(c);
+              const editable = st === 'new';
+              const isEditing = editingId === c.id;
               return html`
-                <div class="comment-item st-${st}">
+                <div class="comment-item st-${st}${isEditing ? ' editing' : ''}"
+                  title=${editable && !isEditing ? 'Double-click to edit' : null}
+                  onDblClick=${() => startEdit(c)}>
                   <div class="c-meta">
                     <span class="c-status s-${st}">${statusLabel[st]}</span>
                     ${chip ? html`<span class="c-section">${chip}</span>` : null}
                     <span>${new Date(c.createdAt).toLocaleString()}</span>
+                    ${c.editedAt ? html`<span class="c-edited">(edited)</span>` : null}
                   </div>
                   ${isText ? html`<div class="c-quote">“${c.anchor.quote}”</div>` : null}
-                  <div class="c-text">${c.text}</div>
+                  ${isEditing
+                    ? html`
+                      <div class="c-edit">
+                        <textarea class="c-edit-text" ref=${editRef} rows="3"
+                          value=${editText} onInput=${(e) => setEditText(e.target.value)}
+                          onKeyDown=${(e) => editKeyDown(e, c.id)}></textarea>
+                        <div class="c-edit-actions">
+                          <button type="button" class="secondary" onClick=${cancelEdit}>Cancel</button>
+                          <button type="button" onClick=${() => saveEdit(c.id)}>Save</button>
+                        </div>
+                      </div>`
+                    : html`<div class="c-text">${c.text}</div>`}
                 </div>`;
             })}
         </div>
@@ -2351,6 +2390,7 @@
           body: JSON.stringify({ path: cur, ...entryFor(text) }),
         });
         setStatus({ msg: 'Saved. The agent reads comments before its next revision.', tone: 'ok' });
+        clearTarget();
         loadComments(cur);
       } catch (err) {
         // A 4xx is a validation problem (too long, bad anchor…) — show the reason
@@ -2366,6 +2406,22 @@
             : 'Saving failed and clipboard is unavailable — copy the text manually.',
           tone: 'warn',
         });
+      }
+    };
+
+    // Edit a not-yet-acknowledged comment's text (double-click in the drawer).
+    // Rejections (already acknowledged, unknown id) surface the server's reason.
+    const editComment = async (id, text) => {
+      const cur = currentRef.current;
+      try {
+        await api('/api/comments/edit', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ id, text }),
+        });
+        loadComments(cur);
+      } catch (err) {
+        setStatus({ msg: (err && err.serverMessage) || 'Editing failed.', tone: 'warn' });
       }
     };
 
@@ -2418,7 +2474,7 @@
       <${CommentDrawer}
         open=${drawer.open} target=${drawer.target}
         comments=${comments} status=${status}
-        onExpand=${openComments} onCollapse=${collapseDrawer} onClearTarget=${clearTarget} onSubmit=${submitComment} onCopy=${copyPrompt} />`;
+        onExpand=${openComments} onCollapse=${collapseDrawer} onClearTarget=${clearTarget} onSubmit=${submitComment} onCopy=${copyPrompt} onEdit=${editComment} />`;
   }
 
   /* ---------- boot ---------- */
