@@ -1393,13 +1393,54 @@
       form.dataset.wired = '1';
       const id = blk.dataset.blockId || '';
       const question = blk.querySelector('.q-title')?.textContent || '';
+      const opts = [...form.querySelectorAll('input[name="q-opt"]')];
+      const hasOptions = opts.length > 0;
+      const otherLabel = form.querySelector('.q-other-label');
+      const otherInput = form.querySelector('.q-other-input');
+
+      // The free-text input's role adapts live: with no option picked it's the
+      // whole answer ("or write your own"); with an option picked it becomes an
+      // optional note attached to that option.
+      const syncOtherRole = () => {
+        if (!otherLabel || !otherInput) return;
+        const anyPicked = opts.some((i) => i.checked);
+        if (anyPicked) {
+          otherLabel.textContent = 'add an optional comment to your answer';
+          otherInput.placeholder = 'Optional comment…';
+        } else {
+          otherLabel.textContent = hasOptions ? 'or write your own' : 'your answer';
+          otherInput.placeholder = 'Type a custom answer…';
+        }
+      };
+
+      // Radios are deselectable: clicking an already-checked radio clears it
+      // (standard mousedown+click trick — native radios can't otherwise be
+      // unchecked by clicking).
+      opts.forEach((input) => {
+        if (input.type === 'radio') {
+          input.addEventListener('mousedown', () => {
+            input.dataset.wasChecked = input.checked ? '1' : '0';
+          });
+          input.addEventListener('click', () => {
+            if (input.dataset.wasChecked === '1') {
+              input.checked = false;
+              syncOtherRole();
+            }
+          });
+        }
+        input.addEventListener('change', syncOtherRole);
+      });
+      syncOtherRole();
+
       form.addEventListener('submit', (e) => {
         e.preventDefault();
-        const picked = [...form.querySelectorAll('input[name="q-opt"]:checked')].map((i) => i.value);
-        const other = form.querySelector('.q-other-input')?.value.trim();
-        if (other) picked.push(other);
-        if (!picked.length) return;
-        const answer = picked.join('; ');
+        const picked = opts.filter((i) => i.checked).map((i) => i.value);
+        const other = otherInput?.value.trim();
+        let answer;
+        if (picked.length && other) answer = `${picked.join('; ')} — ${other}`;
+        else if (picked.length) answer = picked.join('; ');
+        else if (other) answer = other;
+        else return;
         onAnswer({ kind: 'component', type: 'question', label: 'question', id, hint: question.slice(0, 120) }, answer);
         showQuestionAnswered(blk, answer);
       });
