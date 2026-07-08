@@ -1844,9 +1844,28 @@
 
       // The top-level block child of the document under a node — so every block
       // (paragraph, list, table, heading, component, code…) is a comment target.
+      // A list item's own text, excluding any nested sub-list's text — so a
+      // two-level list's outer item quote doesn't swallow its children's text
+      // (each nested item gets its own quote via its own liOwnText() call).
+      const liOwnText = (li) => {
+        let out = '';
+        for (const child of li.childNodes) {
+          if (child.nodeType === 3) out += child.nodeValue;
+          else if (child.nodeType === 1 && !/^(UL|OL)$/.test(child.tagName)) out += child.textContent;
+        }
+        return out;
+      };
       const closestBlock = (node) => {
         let el = node && node.nodeType === 3 ? node.parentElement : node;
         if (!el || !content.contains(el)) return null;
+        // Individual list items are their own comment target — the deepest
+        // <li> under the pointer wins (so a nested item targets itself, not
+        // its parent), and the whole list stays reachable by hovering its own
+        // padding/margin, where no li is hit and we fall through to the loop
+        // below. Skip this inside components (e.g. a tldr card's markdown
+        // body) so their existing whole-block affordance is untouched.
+        const li = el.closest && el.closest('li');
+        if (li && content.contains(li) && !li.closest('.component-block')) return li;
         while (el && el.parentElement !== content) el = el.parentElement;
         return el && el.parentElement === content ? el : null;
       };
@@ -1880,10 +1899,11 @@
           label = `Comment on “${short}”`;
           action = () => onOpenSection(slug, title);
         } else {
-          const text = el.textContent.replace(/\s+/g, ' ').trim();
+          const isLi = el.tagName === 'LI';
+          const text = (isLi ? liOwnText(el) : el.textContent).replace(/\s+/g, ' ').trim();
           if (!text) { scheduleHide(); return; }
           const quote = text.slice(0, 400);
-          const name = BLOCK_NAMES[el.tagName] || (el.classList.contains('admonition') ? 'callout' : 'block');
+          const name = isLi ? 'list item' : (BLOCK_NAMES[el.tagName] || (el.classList.contains('admonition') ? 'callout' : 'block'));
           count = comments.filter((c) => c.anchor && c.anchor.kind === 'text' && c.anchor.quote === quote && commentStatus(c) !== 'resolved').length;
           label = `Comment on this ${name}`;
           action = () => onOpenText({ kind: 'text', quote, prefix: '', suffix: '' });
