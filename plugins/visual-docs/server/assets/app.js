@@ -1503,8 +1503,9 @@
 
   /** The one floating "comment" button, shared by the text-selection affordance
       and the gutter (heading/component) affordance so they look identical. The
-      caller adds a positioning modifier (`pos-selection` fixed-to-page /
-      `pos-gutter` fixed-to-viewport) and drives visibility via `hidden`. */
+      selection caller passes the `pos-selection` fixed-to-page modifier; the
+      gutter caller passes none (its `.gutter-comment` wrapper positions it).
+      Visibility is driven via `hidden`. */
   function makeCommentButton(posClass) {
     const btn = document.createElement('button');
     btn.className = `floating-comment-btn ${posClass}`;
