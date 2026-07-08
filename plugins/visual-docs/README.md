@@ -134,6 +134,29 @@ node <plugin-dir>/server/bin/visual-docs-server.js --prefs              # print 
 node <plugin-dir>/server/bin/visual-docs-server.js --prefs theme dark   # set one
 ```
 
+## Export
+
+Any document can be exported as **one self-contained HTML file** — same
+rendering fidelity as the live viewer (mermaid, diffs, migrations, file
+trees, API/OpenAPI blocks, admonitions, images), no server or network
+required to view it: open it straight from `file://` in any modern browser,
+or attach it to an email/ticket.
+
+In the viewer, click **export** in the document toolbar (downloads with
+`?download=1`). From the command line, no running server needed:
+
+```bash
+node <plugin-dir>/server/bin/visual-docs-server.js --export ./my-notes plan.md
+# /abs/path/plan.html
+# 3.8 MB (3,936,673 bytes)
+# self-contained — open in any browser or attach anywhere.
+```
+
+Pass `--out <file>` to control the output path. Referenced local images are
+inlined as `data:` URIs (through the same access gate the server itself
+uses); comments, live reload, and the `question` fence's answer form aren't
+part of the export — questions render read-only.
+
 ## Running the server yourself
 
 The renderer is also a standalone npm package you can point at any folder of

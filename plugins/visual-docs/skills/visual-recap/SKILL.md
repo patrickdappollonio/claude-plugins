@@ -186,6 +186,14 @@ It prints a plain confirmation (`Updated N comment(s) to "acknowledged".`); the
 viewer live-updates and shows the three states (`new` → `acknowledged` →
 `resolved`). Treat pasted "Copy as prompt" blocks exactly like stored comments.
 
+If the user wants to share or archive the recap (send it, attach it, keep a
+copy), offer `--export`: it builds one self-contained HTML file — no server
+needed to view it later — with the same rendering fidelity as the live page.
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-server.js" --export "$DIR" recap.md
+```
+
 ## Cleanup
 
 When the session is done, stop the server for this directory:

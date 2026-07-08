@@ -228,19 +228,20 @@ button { font: inherit; cursor: pointer; }
 /* Icons ride the baseline text: inline-block wrapper + vertical-align (the global
    .icon-wrap is inline-flex, which would hang off the wrong baseline here). */
 .metarow .m .icon-wrap,
-#tb-raw-btn .icon-wrap, #tb-print-btn .icon-wrap, #tb-comments-btn .icon-wrap {
+#tb-raw-btn .icon-wrap, #tb-print-btn .icon-wrap, #tb-export-btn .icon-wrap, #tb-comments-btn .icon-wrap {
   display: inline-block; vertical-align: -0.13em; margin-right: 5px;
 }
 .metarow .m .icon-wrap .icon,
-#tb-raw-btn .icon-wrap .icon, #tb-print-btn .icon-wrap .icon, #tb-comments-btn .icon-wrap .icon {
+#tb-raw-btn .icon-wrap .icon, #tb-print-btn .icon-wrap .icon, #tb-export-btn .icon-wrap .icon, #tb-comments-btn .icon-wrap .icon {
   width: 13px; height: 13px;
 }
 .metarow .spacer { flex: 1 1 auto; }
-#tb-raw-btn, #tb-print-btn, #tb-comments-btn {
+#tb-raw-btn, #tb-print-btn, #tb-export-btn, #tb-comments-btn {
   background: none; border: none; padding: 0;
   color: var(--accent); font: inherit; font-size: 13px; font-weight: 500; cursor: pointer;
+  text-decoration: none;
 }
-#tb-raw-btn:hover, #tb-print-btn:hover, #tb-comments-btn:hover { color: var(--accent-press); }
+#tb-raw-btn:hover, #tb-print-btn:hover, #tb-export-btn:hover, #tb-comments-btn:hover { color: var(--accent-press); }
 #tb-raw-btn.active { color: var(--ink); }
 
 /* ---------- Markdown body ---------- */
@@ -795,7 +796,7 @@ body:has(.update-banner) #app { padding-top: 37px; }
 @media print {
   #sidebar, #comment-drawer, .floating-comment-btn, .gutter-comment,
   .diff-toolbar, .migration-toolbar, .q-actions, .q-other,
-  #tb-raw-btn, #tb-print-btn, #tb-comments-btn, .metarow .spacer { display: none !important; }
+  #tb-raw-btn, #tb-print-btn, #tb-export-btn, #tb-comments-btn, .metarow .spacer { display: none !important; }
 
   #app { display: block; }
   #main { padding: 0 !important; }

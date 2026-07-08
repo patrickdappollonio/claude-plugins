@@ -2,6 +2,7 @@
 import { startServer } from '../lib/server.js';
 import { readPluginVersion } from '../lib/version.js';
 import { PREF_SCHEMA, prefsFile, readPrefs, sanitizePrefs, updatePrefs } from '../lib/prefs.js';
+import { buildExportHtml, docStem } from '../lib/export.js';
 import { resolve, join, dirname, basename } from 'node:path';
 import { statSync, readFileSync, writeFileSync, unlinkSync, mkdirSync } from 'node:fs';
 import { networkInterfaces, tmpdir } from 'node:os';
@@ -37,6 +38,10 @@ Options:
   --prefs [<key> <value>]
                    Print the persisted viewer preferences, or set one
                    (viewMode|theme|navOpen|sidebarTab; no server needed)
+  --export <dir> <doc.md> [--out <file>]
+                   Build one self-contained HTML file for a doc (no server
+                   needed) — full rendering fidelity, works offline from
+                   file://. Prints the output path and size.
   -h, --help       Show this help
 `);
 }
@@ -180,6 +185,47 @@ if (args[0] === '--prefs') {
   }
   console.log(`${key} set to ${value}. Open viewer pages pick it up on their next load.`);
   process.exit(0);
+}
+
+// Export a single doc as one self-contained HTML file — no running server
+// needed (direct file read + the same inlining GET /export/<doc> does on a
+// live server). Prints plain, ready-to-read text: the absolute output path,
+// its size, and a one-line reminder of what the file is.
+//   --export <dir> <doc.md> [--out <file>]
+if (args[0] === '--export') {
+  const dir = resolve(args[1] || process.cwd());
+  const docArg = args[2];
+  if (!docArg) {
+    console.error('usage: --export <dir> <doc.md> [--out <file>]');
+    process.exit(2);
+  }
+  let outArg = null;
+  for (let i = 3; i < args.length; i++) {
+    if (args[i] === '--out') outArg = args[++i];
+  }
+  try {
+    if (!statSync(dir).isDirectory()) throw new Error('not a directory');
+  } catch {
+    console.error(`Directory not found: ${dir}`);
+    process.exit(1);
+  }
+  try {
+    const html = await buildExportHtml(dir, docArg);
+    const outPath = resolve(outArg || `${docStem(docArg)}.html`);
+    writeFileSync(outPath, html);
+    const bytes = Buffer.byteLength(html);
+    const human = bytes >= 1024 * 1024 ? `${(bytes / (1024 * 1024)).toFixed(1)} MB` : `${(bytes / 1024).toFixed(1)} KB`;
+    console.log(outPath);
+    console.log(`${human} (${bytes.toLocaleString()} bytes)`);
+    console.log('self-contained — open in any browser or attach anywhere.');
+    process.exit(0);
+  } catch (err) {
+    const reason = err && (err.code === 'ENOTFOUND' ? `document not found or not servable: ${docArg}`
+      : err.code === 'ETOOBIG' ? err.message
+      : err.message) || String(err);
+    console.error(`Export failed: ${reason}`);
+    process.exit(1);
+  }
 }
 
 // Agent comment helpers — thin Node wrappers over the running server's HTTP API

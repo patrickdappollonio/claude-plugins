@@ -185,6 +185,14 @@ The plan is approved when the user says so (in chat or via a comment). Only
 then move on to implementation. Keep the server running during implementation
 if a recap will follow — the same server can serve both documents.
 
+If the user wants to share or archive the plan (send it, attach it, keep a
+copy), offer `--export`: it builds one self-contained HTML file — no server
+needed to view it later — with the same rendering fidelity as the live page.
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-server.js" --export "$DIR" plan.md
+```
+
 ## Cleanup
 
 When the session is done, stop the server for this directory:
