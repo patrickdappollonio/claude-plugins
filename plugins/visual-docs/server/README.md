@@ -19,6 +19,9 @@ document with:
   an agent can read and resolve them. A "Copy as prompt" fallback turns
   feedback into a pasteable message when the server isn't reachable.
 - Light/dark themes.
+- **Export**: any doc as one self-contained HTML file (`--export <dir>
+  <doc.md>`, or the toolbar's export button) — same rendering fidelity,
+  works offline from `file://`, no server needed to view it.
 
 No npm dependencies — the server is pure `node:http` (Node ≥ 18). The browser
 UI is a small [Preact](https://preactjs.com/) app (with htm, no build step),

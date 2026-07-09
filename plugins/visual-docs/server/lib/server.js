@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { readPluginVersion, makeCachedVersionReader } from './version.js';
 import { PREF_SCHEMA, readPrefs, sanitizePrefs, updatePrefs } from './prefs.js';
+import { buildExportHtml, docStem } from './export.js';
 
 const ASSETS_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'assets');
 
@@ -33,12 +34,12 @@ const ASSET_EXTS = new Set(['.js', '.css', '.svg', '.png', '.jpg', '.jpeg', '.gi
 // A document may reference only images via /files/ (markdown is served through
 // /api/doc). The extension is a fast pre-filter; the real gate is content
 // sniffing below, so a mislabeled non-image file is never served.
-const FILE_EXTS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.avif', '.svg', '.ico', '.bmp']);
+export const FILE_EXTS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.avif', '.svg', '.ico', '.bmp']);
 
 /** Detect an image type from magic bytes; returns a MIME string or null. SVG is
     XML text, so it's matched by leading token. This is what actually decides
     whether a /files/ response is served — the extension only narrows the set. */
-function sniffImage(buf) {
+export function sniffImage(buf) {
   if (buf.length >= 8 && buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47) return 'image/png';
   if (buf.length >= 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return 'image/jpeg';
   if (buf.length >= 6) {
@@ -65,7 +66,7 @@ const MAX_COMMENTS = 2000;
 const MAX_SSE_CLIENTS = 64;
 // A single markdown doc is read whole into memory + JSON; cap it so a stray huge
 // file can't balloon the response.
-const MAX_DOC_BYTES = 8 * 1024 * 1024;
+export const MAX_DOC_BYTES = 8 * 1024 * 1024;
 
 function isInside(baseReal, p) {
   const rel = relative(baseReal, p);
@@ -98,7 +99,7 @@ function hasHiddenSegment(baseReal, abs) {
  * hides behind a dotfile/ignored dir, resolves through a symlink pointing outside,
  * or has a disallowed extension. This is the single access gate for served files.
  */
-async function resolveServable(baseReal, relPath, exts) {
+export async function resolveServable(baseReal, relPath, exts) {
   const absLex = safeJoin(baseReal, relPath);
   if (!absLex) return null;
   if (hasHiddenSegment(baseReal, absLex)) return null;
@@ -118,7 +119,7 @@ async function resolveServable(baseReal, relPath, exts) {
 }
 
 /** First real H1 title, skipping any `#` line inside a fenced code block. */
-function firstH1(text) {
+export function firstH1(text) {
   let inFence = false;
   for (const line of text.split('\n')) {
     if (/^```/.test(line)) { inFence = !inFence; continue; }
@@ -457,6 +458,32 @@ export async function startServer({ dir, port = 0, host = '127.0.0.1', watch: en
         } catch {
           return sendJSON(res, 404, { error: 'not found' });
         }
+      }
+
+      // Self-contained HTML export of a single document — same access gate as
+      // /api/doc (resolveServable), no running-server dependency at read time
+      // beyond what already backs the live viewer. ?download=1 forces a save
+      // dialog; otherwise it renders inline (handy for a quick preview tab).
+      if (pathname.startsWith('/export/') && req.method === 'GET') {
+        // resolveServable (via safeJoin) does its own decodeURIComponent — pass
+        // the raw, still-encoded path segment, matching /assets/ and /files/.
+        const p = pathname.slice('/export/'.length);
+        let html;
+        try {
+          html = await buildExportHtml(root, p);
+        } catch (err) {
+          const status = err && err.code === 'ETOOBIG' ? 413 : 404;
+          res.writeHead(status, { 'content-type': 'text/plain' });
+          return res.end(status === 413 ? 'document too large to export' : 'not found');
+        }
+        const headers = { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' };
+        if (url.searchParams.get('download') === '1') {
+          let stem;
+          try { stem = docStem(decodeURIComponent(p)); } catch { stem = docStem(p); }
+          headers['content-disposition'] = `attachment; filename="${stem}.html"`;
+        }
+        res.writeHead(200, headers);
+        return res.end(html);
       }
 
       if (pathname === '/api/comments' && req.method === 'GET') {

@@ -1759,6 +1759,12 @@
       </aside>`;
   }
 
+  // /export/<path> with every segment percent-encoded (path may contain
+  // slashes, which must survive as separators, not become %2F).
+  function exportUrl(path) {
+    return `/export/${path.split('/').map(encodeURIComponent).join('/')}?download=1`;
+  }
+
   function TitleBlock({ doc, openCount, raw, onOpenComments, onToggleRaw, onPrint }) {
     const title = firstH1Text(doc.content) || doc.path.split('/').pop();
     return html`
@@ -1772,6 +1778,7 @@
             <span class="spacer"></span>
             <button id="tb-raw-btn" class="${raw ? 'active' : ''}" title=${raw ? 'Show the rendered document' : 'Show the raw markdown source'} onClick=${onToggleRaw}><${Icon} name=${raw ? 'doc' : 'code'} />${raw ? 'rendered' : 'raw'}</button>
             <button id="tb-print-btn" title="Print / Save as PDF (document only)" onClick=${onPrint}><${Icon} name="printer" />print</button>
+            <a id="tb-export-btn" href=${exportUrl(doc.path)} title="Download as a self-contained HTML file (works offline, opens in any browser)"><${Icon} name="download" />export</a>
             <button id="tb-comments-btn" onClick=${onOpenComments}><${Icon} name="comment" />${openCount} open</button>
           </div>
         </div>
@@ -2539,8 +2546,122 @@
         onExpand=${openComments} onCollapse=${collapseDrawer} onClearTarget=${clearTarget} onSubmit=${submitComment} onCopy=${copyPrompt} onEdit=${editComment} />`;
   }
 
+  /* ================================================================
+     Export mode: window.__VD_EXPORT__ is set only in a self-contained HTML
+     file produced by `--export` / GET /export/<doc>. It carries one static
+     doc (base64 markdown + a href->data-URI image map) and NO server to talk
+     to, so this path runs the SAME render/hydrate pipeline as DocView but
+     skips everything that needs a live server: SSE/live reload, the comments
+     drawer + gutter/selection comment affordances, the version-mismatch
+     banner, and the /api/prefs round-trip (localStorage-only prefs still
+     work — initialTheme()/currentViewMode already read them synchronously).
+     Question fences render read-only. ---------------------------------- */
+
+  /** Point every `<img src="/files/...">` produced by renderMarkdown at the
+      embedded data URI instead — the export has no server to serve /files/
+      from. Anything the export gate rejected (see server/lib/export.js) is
+      left without a src rather than pointed at a URL that can't resolve. */
+  function resolveExportImages(container, files) {
+    container.querySelectorAll('img[src]').forEach((img) => {
+      const src = img.getAttribute('src');
+      if (!src || !src.startsWith('/files/')) return;
+      const rel = src.slice('/files/'.length);
+      let decoded = rel;
+      try { decoded = decodeURIComponent(rel); } catch { /* keep as-is */ }
+      const uri = files[decoded] || files[rel];
+      if (uri) img.setAttribute('src', uri);
+      else img.removeAttribute('src');
+    });
+  }
+
+  /** Question fences are interactive (answers post as comments) in the live
+      viewer; there's nowhere for an answer to go here, so hide the form and
+      say so instead of rendering a dead submit button. */
+  function makeQuestionsReadOnly(container) {
+    container.querySelectorAll('.question-block').forEach((blk) => {
+      const form = blk.querySelector('.q-form');
+      if (form) form.hidden = true;
+      if (blk.querySelector('.q-export-note')) return;
+      const note = document.createElement('p');
+      note.className = 'q-export-note mono';
+      note.style.cssText = 'margin:10px 0 0;font-size:12.5px;color:var(--ink-soft);';
+      note.textContent = 'Answerable in the live viewer — this export is read-only.';
+      blk.appendChild(note);
+    });
+  }
+
+  function bootExport(data) {
+    let markdown = '';
+    try { markdown = decodeURIComponent(escape(atob(data.markdown || ''))); } catch { markdown = ''; }
+    const files = data.files && typeof data.files === 'object' ? data.files : {};
+    const theme0 = initialTheme();
+    document.documentElement.setAttribute('data-theme', theme0);
+
+    const title = firstH1Text(markdown) || (data.path || 'document').split('/').pop();
+    const app = document.getElementById('app');
+    app.innerHTML = `
+      <main id="main">
+        <div id="doc-header">
+          <div class="pagehead">
+            <div class="eyebrow">${ICON.doc}<span>document</span></div>
+            <h1 id="tb-doc-title"></h1>
+            <div class="metarow">
+              <span class="m mono"></span>
+              <span class="spacer"></span>
+              <button id="tb-theme-btn" class="side-icon-btn" title="Toggle light/dark"></button>
+            </div>
+          </div>
+        </div>
+        <article id="content" class="markdown-body"></article>
+        <footer id="doc-footer">
+          <span>Rendered with <a href="https://github.com/patrickdappollonio/claude-plugins" target="_blank" rel="noopener noreferrer">visual-docs</a> — exported v${escapeHTML(String(data.version || ''))}</span>
+        </footer>
+      </main>`;
+    app.querySelector('#tb-doc-title').textContent = title;
+    app.querySelector('.metarow .m.mono').textContent = data.path || '';
+    document.title = `${title} — Visual Docs export`;
+
+    const themeBtn = app.querySelector('#tb-theme-btn');
+    const paintThemeBtn = (t) => { themeBtn.innerHTML = t === 'dark' ? ICON.sun : ICON.moon; };
+    paintThemeBtn(theme0);
+    const content = app.querySelector('#content');
+
+    const renderBody = (theme) => {
+      document.documentElement.setAttribute('data-theme', theme);
+      const light = document.getElementById('hljs-light');
+      const dark = document.getElementById('hljs-dark');
+      if (light) light.disabled = theme === 'dark';
+      if (dark) dark.disabled = theme !== 'dark';
+      initMermaid(theme);
+      content.innerHTML = sanitizeHTML(renderMarkdown(markdown));
+      const h1 = content.querySelector('h1');
+      if (h1) h1.remove();
+      hydrateAdmonitions(content);
+      hydrateCallouts(content);
+      hydrateTldr(content);
+      hydrateDiffs(content);
+      hydrateMigrations(content);
+      hydrateNomnoml(content);
+      makeQuestionsReadOnly(content);
+      resolveExportImages(content, files);
+      hydrateMermaid(content, () => false);
+    };
+    renderBody(theme0);
+
+    themeBtn.addEventListener('click', () => {
+      const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      writeLocalPref('theme', next);
+      paintThemeBtn(next);
+      renderBody(next);
+    });
+  }
+
   /* ---------- boot ---------- */
 
-  document.documentElement.setAttribute('data-theme', initialTheme());
-  render(html`<${App} />`, document.getElementById('app'));
+  if (window.__VD_EXPORT__) {
+    bootExport(window.__VD_EXPORT__);
+  } else {
+    document.documentElement.setAttribute('data-theme', initialTheme());
+    render(html`<${App} />`, document.getElementById('app'));
+  }
 })();
