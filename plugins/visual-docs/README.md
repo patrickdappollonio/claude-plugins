@@ -46,7 +46,9 @@ Two skills your agent picks up automatically:
    or a rendered component — a diagram, diff, migration, API card — to pin a
    comment there, or use the comment drawer for document-level notes. The agent
    reads your comments (each labelled with what it's anchored to) before its
-   next revision and marks them resolved as it addresses them.
+   next revision and marks them resolved as it addresses them. Changed your
+   mind before the agent gets to it? Double-click a comment the agent hasn't
+   acknowledged yet to edit its text in place.
 6. If you'd rather talk to the agent directly — or the server was stopped —
    hit **"Copy as prompt"** and your feedback is turned into a ready-to-paste
    message for the chat.

@@ -1393,13 +1393,54 @@
       form.dataset.wired = '1';
       const id = blk.dataset.blockId || '';
       const question = blk.querySelector('.q-title')?.textContent || '';
+      const opts = [...form.querySelectorAll('input[name="q-opt"]')];
+      const hasOptions = opts.length > 0;
+      const otherLabel = form.querySelector('.q-other-label');
+      const otherInput = form.querySelector('.q-other-input');
+
+      // The free-text input's role adapts live: with no option picked it's the
+      // whole answer ("or write your own"); with an option picked it becomes an
+      // optional note attached to that option.
+      const syncOtherRole = () => {
+        if (!otherLabel || !otherInput) return;
+        const anyPicked = opts.some((i) => i.checked);
+        if (anyPicked) {
+          otherLabel.textContent = 'add an optional comment to your answer';
+          otherInput.placeholder = 'Optional comment…';
+        } else {
+          otherLabel.textContent = hasOptions ? 'or write your own' : 'your answer';
+          otherInput.placeholder = 'Type a custom answer…';
+        }
+      };
+
+      // Radios are deselectable: clicking an already-checked radio clears it
+      // (standard mousedown+click trick — native radios can't otherwise be
+      // unchecked by clicking).
+      opts.forEach((input) => {
+        if (input.type === 'radio') {
+          input.addEventListener('mousedown', () => {
+            input.dataset.wasChecked = input.checked ? '1' : '0';
+          });
+          input.addEventListener('click', () => {
+            if (input.dataset.wasChecked === '1') {
+              input.checked = false;
+              syncOtherRole();
+            }
+          });
+        }
+        input.addEventListener('change', syncOtherRole);
+      });
+      syncOtherRole();
+
       form.addEventListener('submit', (e) => {
         e.preventDefault();
-        const picked = [...form.querySelectorAll('input[name="q-opt"]:checked')].map((i) => i.value);
-        const other = form.querySelector('.q-other-input')?.value.trim();
-        if (other) picked.push(other);
-        if (!picked.length) return;
-        const answer = picked.join('; ');
+        const picked = opts.filter((i) => i.checked).map((i) => i.value);
+        const other = otherInput?.value.trim();
+        let answer;
+        if (picked.length && other) answer = `${picked.join('; ')} — ${other}`;
+        else if (picked.length) answer = picked.join('; ');
+        else if (other) answer = other;
+        else return;
         onAnswer({ kind: 'component', type: 'question', label: 'question', id, hint: question.slice(0, 120) }, answer);
         showQuestionAnswered(blk, answer);
       });
@@ -1462,8 +1503,9 @@
 
   /** The one floating "comment" button, shared by the text-selection affordance
       and the gutter (heading/component) affordance so they look identical. The
-      caller adds a positioning modifier (`pos-selection` fixed-to-page /
-      `pos-gutter` fixed-to-viewport) and drives visibility via `hidden`. */
+      selection caller passes the `pos-selection` fixed-to-page modifier; the
+      gutter caller passes none (its `.gutter-comment` wrapper positions it).
+      Visibility is driven via `hidden`. */
   function makeCommentButton(posClass) {
     const btn = document.createElement('button');
     btn.className = `floating-comment-btn ${posClass}`;
@@ -1844,9 +1886,28 @@
 
       // The top-level block child of the document under a node — so every block
       // (paragraph, list, table, heading, component, code…) is a comment target.
+      // A list item's own text, excluding any nested sub-list's text — so a
+      // two-level list's outer item quote doesn't swallow its children's text
+      // (each nested item gets its own quote via its own liOwnText() call).
+      const liOwnText = (li) => {
+        let out = '';
+        for (const child of li.childNodes) {
+          if (child.nodeType === 3) out += child.nodeValue;
+          else if (child.nodeType === 1 && !/^(UL|OL)$/.test(child.tagName)) out += child.textContent;
+        }
+        return out;
+      };
       const closestBlock = (node) => {
         let el = node && node.nodeType === 3 ? node.parentElement : node;
         if (!el || !content.contains(el)) return null;
+        // Individual list items are their own comment target — the deepest
+        // <li> under the pointer wins (so a nested item targets itself, not
+        // its parent), and the whole list stays reachable by hovering its own
+        // padding/margin, where no li is hit and we fall through to the loop
+        // below. Skip this inside components (e.g. a tldr card's markdown
+        // body) so their existing whole-block affordance is untouched.
+        const li = el.closest && el.closest('li');
+        if (li && content.contains(li) && !li.closest('.component-block')) return li;
         while (el && el.parentElement !== content) el = el.parentElement;
         return el && el.parentElement === content ? el : null;
       };
@@ -1880,10 +1941,11 @@
           label = `Comment on “${short}”`;
           action = () => onOpenSection(slug, title);
         } else {
-          const text = el.textContent.replace(/\s+/g, ' ').trim();
+          const isLi = el.tagName === 'LI';
+          const text = (isLi ? liOwnText(el) : el.textContent).replace(/\s+/g, ' ').trim();
           if (!text) { scheduleHide(); return; }
           const quote = text.slice(0, 400);
-          const name = BLOCK_NAMES[el.tagName] || (el.classList.contains('admonition') ? 'callout' : 'block');
+          const name = isLi ? 'list item' : (BLOCK_NAMES[el.tagName] || (el.classList.contains('admonition') ? 'callout' : 'block'));
           count = comments.filter((c) => c.anchor && c.anchor.kind === 'text' && c.anchor.quote === quote && commentStatus(c) !== 'resolved').length;
           label = `Comment on this ${name}`;
           action = () => onOpenText({ kind: 'text', quote, prefix: '', suffix: '' });
@@ -1995,8 +2057,11 @@
       </article>`;
   }
 
-  function CommentDrawer({ open, target, comments, status, onExpand, onCollapse, onClearTarget, onSubmit, onCopy }) {
+  function CommentDrawer({ open, target, comments, status, onExpand, onCollapse, onClearTarget, onSubmit, onCopy, onEdit }) {
     const textRef = useRef(null);
+    const [editingId, setEditingId] = useState(null);
+    const [editText, setEditText] = useState('');
+    const editRef = useRef(null);
     const t = target || {};
     // What's being commented on. Text anchors show the quote itself; section and
     // component anchors show a short label.
@@ -2007,6 +2072,26 @@
     useEffect(() => {
       if (open && textRef.current) textRef.current.focus();
     }, [open, contextLabel, pendingQuote]);
+    useEffect(() => {
+      if (editingId && editRef.current) editRef.current.focus();
+    }, [editingId]);
+
+    const startEdit = (c) => {
+      if (commentStatus(c) !== 'new' || editingId === c.id) return;
+      setEditText(c.text);
+      setEditingId(c.id);
+    };
+    const cancelEdit = () => setEditingId(null);
+    const saveEdit = (id) => {
+      const text = editText.trim();
+      if (!text) return;
+      onEdit(id, text);
+      setEditingId(null);
+    };
+    const editKeyDown = (e, id) => {
+      if (e.key === 'Escape') { e.preventDefault(); cancelEdit(); }
+      else if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); saveEdit(id); }
+    };
 
     // Collapsed: a thin clickable rail on the right edge that reopens the panel.
     if (!open) {
@@ -2050,15 +2135,31 @@
               const isText = c.anchor && c.anchor.kind === 'text';
               const chip = isText ? '' : commentAnchorLabel(c);
               const st = commentStatus(c);
+              const editable = st === 'new';
+              const isEditing = editingId === c.id;
               return html`
-                <div class="comment-item st-${st}">
+                <div class="comment-item st-${st}${isEditing ? ' editing' : ''}"
+                  title=${editable && !isEditing ? 'Double-click to edit' : null}
+                  onDblClick=${() => startEdit(c)}>
                   <div class="c-meta">
                     <span class="c-status s-${st}">${statusLabel[st]}</span>
                     ${chip ? html`<span class="c-section">${chip}</span>` : null}
                     <span>${new Date(c.createdAt).toLocaleString()}</span>
+                    ${c.editedAt ? html`<span class="c-edited">(edited)</span>` : null}
                   </div>
                   ${isText ? html`<div class="c-quote">“${c.anchor.quote}”</div>` : null}
-                  <div class="c-text">${c.text}</div>
+                  ${isEditing
+                    ? html`
+                      <div class="c-edit">
+                        <textarea class="c-edit-text" ref=${editRef} rows="3"
+                          value=${editText} onInput=${(e) => setEditText(e.target.value)}
+                          onKeyDown=${(e) => editKeyDown(e, c.id)}></textarea>
+                        <div class="c-edit-actions">
+                          <button type="button" class="secondary" onClick=${cancelEdit}>Cancel</button>
+                          <button type="button" onClick=${() => saveEdit(c.id)}>Save</button>
+                        </div>
+                      </div>`
+                    : html`<div class="c-text">${c.text}</div>`}
                 </div>`;
             })}
         </div>
@@ -2351,6 +2452,7 @@
           body: JSON.stringify({ path: cur, ...entryFor(text) }),
         });
         setStatus({ msg: 'Saved. The agent reads comments before its next revision.', tone: 'ok' });
+        clearTarget();
         loadComments(cur);
       } catch (err) {
         // A 4xx is a validation problem (too long, bad anchor…) — show the reason
@@ -2366,6 +2468,22 @@
             : 'Saving failed and clipboard is unavailable — copy the text manually.',
           tone: 'warn',
         });
+      }
+    };
+
+    // Edit a not-yet-acknowledged comment's text (double-click in the drawer).
+    // Rejections (already acknowledged, unknown id) surface the server's reason.
+    const editComment = async (id, text) => {
+      const cur = currentRef.current;
+      try {
+        await api('/api/comments/edit', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ id, text }),
+        });
+        loadComments(cur);
+      } catch (err) {
+        setStatus({ msg: (err && err.serverMessage) || 'Editing failed.', tone: 'warn' });
       }
     };
 
@@ -2418,7 +2536,7 @@
       <${CommentDrawer}
         open=${drawer.open} target=${drawer.target}
         comments=${comments} status=${status}
-        onExpand=${openComments} onCollapse=${collapseDrawer} onClearTarget=${clearTarget} onSubmit=${submitComment} onCopy=${copyPrompt} />`;
+        onExpand=${openComments} onCollapse=${collapseDrawer} onClearTarget=${clearTarget} onSubmit=${submitComment} onCopy=${copyPrompt} onEdit=${editComment} />`;
   }
 
   /* ---------- boot ---------- */

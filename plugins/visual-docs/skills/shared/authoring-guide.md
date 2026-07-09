@@ -148,8 +148,11 @@ markdown (`` `code` ``, **bold**, *italic*) for emphasis.
 
 When the reader answers, the answer is saved as a **comment anchored to the
 question** (it shows up in `/agent/comments.md` as `question … — <answer>`), so
-you read it back exactly like any other feedback. Put these in an `## Open
-questions` section (or wherever a decision is needed).
+you read it back exactly like any other feedback. A picked option is
+deselectable (click it again to clear), and the free-text box adapts to
+whatever's picked — pure custom text with no option selected, or an optional
+note appended to a selected option (stored as `<option> — <note>`). Put these
+in an `## Open questions` section (or wherever a decision is needed).
 
     ```question
     What should the default rate limit be?
