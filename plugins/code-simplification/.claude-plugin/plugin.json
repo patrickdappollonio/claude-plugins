@@ -1,0 +1,12 @@
+{
+  "name": "code-simplification",
+  "description": "Language-agnostic code simplification — reduces complexity (nesting, long functions, duplication, dead code, unclear names) while preserving exact behavior, applying one tested change at a time within a deliberate scope.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Patrick D'appollonio",
+    "email": "patrickdappollonio@gmail.com"
+  },
+  "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/code-simplification",
+  "license": "MIT",
+  "keywords": ["refactoring", "simplification", "code-quality", "readability", "maintainability"]
+}

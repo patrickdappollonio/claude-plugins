@@ -1,11 +1,7 @@
 # CLAUDE.md — patrickdappollonio/claude-plugins
 
 A Claude Code **plugin marketplace**. `.claude-plugin/marketplace.json` lists the
-plugins under `plugins/`:
-
-- **`plugins/adversarial-review`** — a skill that runs a hostile, bias-free review.
-- **`plugins/visual-docs`** — the main body of work here: local visual plans &
-  recaps (a bundled server renders agent-authored markdown in the browser).
+plugins under `plugins/`.
 
 ## Hard rules
 
@@ -13,6 +9,15 @@ plugins under `plugins/`:
   Claude`, no "Generated with Claude Code". This is a standing, non-negotiable
   constraint from the repo owner.
 - **Commit/push only when asked.** Work on a branch, not `main`.
+- **Bump the plugin's version on every meaningful change**, in its
+  `plugins/<name>/.claude-plugin/plugin.json`, following
+  [semver](https://semver.org/): **patch** for fixes and doc/wording tweaks,
+  **minor** for new backwards-compatible capability (a new command, fence, or
+  skill behavior), **major** for breaking changes (removed/renamed commands,
+  changed file formats or defaults users rely on). Pure repo chores that don't
+  touch a plugin (root README, CI) don't need a bump. Check the version isn't
+  already taken by a published release before reusing it — pick the next free
+  one.
 - The visual-docs server has **no authentication**. `--host` / `0.0.0.0` binding
   must stay opt-in and documented as trusted-network-only.
 - **Agents must never have to write code — not even a small script — to operate
