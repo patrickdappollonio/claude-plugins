@@ -39,6 +39,11 @@ This is not advisory: **the linter warns when plain-language sections (the
 preamble, Summary/Outcome, What changed, Architecture) name code symbols**, and
 lint findings must be fixed before the document is served.
 
+The rule governs the **document**, not the conversation around it. When the
+user asks you — in chat, or via a comment — to explain a topic in more depth,
+answer at whatever technical level they ask for; the CEO framing never means
+withholding detail from someone who requests it.
+
 The goal is a document that is **terse and detailed at the same time**. Those
 aren't in tension when you split them across two kinds of content:
 

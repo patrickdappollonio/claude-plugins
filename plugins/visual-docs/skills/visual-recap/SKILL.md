@@ -175,6 +175,15 @@ they can **select any text** to comment on that exact snippet, or hover a
 heading or a rendered component (diagram, diff, …) and click the margin button
 ("Comment on …") to comment there; "Copy as prompt" gives chat-style feedback.
 
+**End with a plain chat message, never a structured question tool.** If you
+want to ask what's next (review the recap, walk through a section, dig into a
+change), write the question as ordinary prose in your message — do not reach
+for an option-picker tool like AskUserQuestion: its canned choices scope the
+user down exactly when their answer should be free-form. And the CEO rule
+governs the *document*, not the conversation — if the user then asks you to
+explain a topic in more depth, answer in chat at whatever technical level they
+ask for.
+
 ### 5. Respond to review
 
 Before revising the recap (or acting on review feedback), read open comments as

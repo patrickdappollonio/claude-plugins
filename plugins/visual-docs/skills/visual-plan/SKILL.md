@@ -167,6 +167,15 @@ text** to comment on that snippet, or hover a section heading or a rendered
 component (diagram, diff, …) and click the margin button to comment there;
 "Copy as prompt" turns their feedback into a pasteable message if they prefer chat.
 
+**End with a plain chat message, never a structured question tool.** If you
+want to ask what's next (review the plan, walk through a section, adjust
+something), write the question as ordinary prose in your message — do not reach
+for an option-picker tool like AskUserQuestion: its canned choices scope the
+user down exactly when their answer should be free-form. And the CEO rule
+governs the *document*, not the conversation — if the user then asks you to
+explain a topic in more depth, answer in chat at whatever technical level they
+ask for.
+
 ### 6. Read feedback before revising — every time
 
 Before any revision (user asks for changes, or you're checking in), read the
