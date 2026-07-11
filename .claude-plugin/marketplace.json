@@ -31,6 +31,42 @@
       "license": "MIT"
     },
     {
+      "name": "read-the-docs-first",
+      "source": "./plugins/read-the-docs-first",
+      "description": "Docs-first discipline for anything involving third-party APIs, packages, providers, or fast-moving product behavior — the agent web-searches for current official docs and reads primary sources before assuming from memory, grounding answers in what the docs actually say.",
+      "category": "research",
+      "keywords": ["documentation", "docs-first", "api-drift", "web-search", "grounding", "official-docs"],
+      "author": {
+        "name": "Patrick D'appollonio"
+      },
+      "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/read-the-docs-first",
+      "license": "MIT"
+    },
+    {
+      "name": "use-claude-limits-efficiently",
+      "source": "./plugins/use-claude-limits-efficiently",
+      "description": "Budget loop for long-running or parallel agent work under Claude's 5-hour and weekly usage limits — run bounded waves, check real usage between them, pause before the cap, and resume with self-contained prompts only when the window is actually clear.",
+      "category": "orchestration",
+      "keywords": ["usage-limits", "rate-limits", "budget", "long-running", "overnight", "ccusage"],
+      "author": {
+        "name": "Patrick D'appollonio"
+      },
+      "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/use-claude-limits-efficiently",
+      "license": "MIT"
+    },
+    {
+      "name": "use-premium-models-efficiently",
+      "source": "./plugins/use-premium-models-efficiently",
+      "description": "Run expensive top-tier models (Claude Fable/Opus, GPT-5.6 Sol, or similar) efficiently — the premium model keeps judgment, architecture, synthesis, and final review, while cheaper subagents (Sonnet, Haiku, Terra, Luna) do bounded token-heavy research, coding, and testing with self-contained handoffs and verified results.",
+      "category": "orchestration",
+      "keywords": ["orchestration", "subagents", "delegation", "cost-efficiency", "claude-fable", "gpt-5.6"],
+      "author": {
+        "name": "Patrick D'appollonio"
+      },
+      "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/use-premium-models-efficiently",
+      "license": "MIT"
+    },
+    {
       "name": "visual-docs",
       "source": "./plugins/visual-docs",
       "description": "Fully local visual plans and recaps — the agent writes markdown, a bundled zero-dependency server renders it in your browser with Mermaid diagrams, rich diffs, styled DB migrations, API call cards, and a read-only OpenAPI view, with live reload and a comment feedback loop. No remote services.",

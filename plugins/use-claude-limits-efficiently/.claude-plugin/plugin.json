@@ -1,0 +1,12 @@
+{
+  "name": "use-claude-limits-efficiently",
+  "description": "Budget loop for long-running or parallel agent work under Claude's 5-hour and weekly usage limits — run bounded waves, check real usage between them, pause before the cap, and resume with self-contained prompts only when the window is actually clear.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Patrick D'appollonio",
+    "email": "patrickdappollonio@gmail.com"
+  },
+  "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/use-claude-limits-efficiently",
+  "license": "MIT",
+  "keywords": ["usage-limits", "rate-limits", "budget", "long-running", "overnight", "ccusage"]
+}
