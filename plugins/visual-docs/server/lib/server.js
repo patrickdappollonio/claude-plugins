@@ -362,7 +362,7 @@ function anchorLabel(c) {
   return c.title || c.section || 'document';
 }
 
-const COMMENT_STATUSES = ['new', 'acknowledged', 'resolved'];
+const COMMENT_STATUSES = ['new', 'acknowledged', 'resolved', 'dismissed'];
 
 /** A comment's lifecycle state. Prefers an explicit `status`; falls back to the
     legacy `resolved` boolean so older comments.json files keep working.
@@ -380,8 +380,9 @@ function renderCommentsMarkdown(comments, scopePath, base = 'http://127.0.0.1') 
   if (!comments.length) {
     return `# Comments${scopePath ? ` for ${scopePath}` : ''}\n\n_No comments yet._\n`;
   }
-  const open = comments.filter((c) => commentStatus(c) !== 'resolved');
-  const resolved = comments.length - open.length;
+  const open = comments.filter((c) => !['resolved', 'dismissed'].includes(commentStatus(c)));
+  const resolved = comments.filter((c) => commentStatus(c) === 'resolved').length;
+  const dismissed = comments.filter((c) => commentStatus(c) === 'dismissed').length;
   const byPath = new Map();
   for (const c of open) {
     const key = c.path || '(document)';
@@ -391,7 +392,7 @@ function renderCommentsMarkdown(comments, scopePath, base = 'http://127.0.0.1') 
   let out = `# Open comments (${open.length})\n`;
   // Tool-neutral: the skill runs a `--status` CLI command; direct API/curl users
   // get the endpoint. Either way, never hand-edit comments.json.
-  out += '\n_Lifecycle: mark a comment `acknowledged` when you start it and `resolved` when done — set status with your skill\'s status command (each comment\'s id is shown below), or `POST /api/comments/status` with `{"id":"<id>","status":"<state>"}` (pass `"ids":[…]` for several). Valid statuses: `new`, `acknowledged`, `resolved`. Don\'t hand-edit `.visual-docs/comments.json`._\n';
+  out += '\n_Lifecycle: mark a comment `acknowledged` when you start it and `resolved` when done — set status with your skill\'s status command (each comment\'s id is shown below), or `POST /api/comments/status` with `{"id":"<id>","status":"<state>"}` (pass `"ids":[…]` for several). Valid statuses: `new`, `acknowledged`, `resolved`, `dismissed` (a comment that won\'t be acted on; only allowed while it is still `new` or `acknowledged`). Don\'t hand-edit `.visual-docs/comments.json`._\n';
   if (!open.length) out += '\n_No open comments._\n';
   for (const [p, list] of byPath) {
     out += `\n## ${p}\n`;
@@ -401,7 +402,12 @@ function renderCommentsMarkdown(comments, scopePath, base = 'http://127.0.0.1') 
     }
     out += '\n';
   }
-  if (resolved) out += `\n---\n_${resolved} resolved comment(s) not shown._\n`;
+  if (resolved || dismissed) {
+    const parts = [];
+    if (resolved) parts.push(`${resolved} resolved`);
+    if (dismissed) parts.push(`${dismissed} dismissed`);
+    out += `\n---\n_${parts.join(' and ')} comment(s) not shown._\n`;
+  }
   return out;
 }
 
@@ -577,6 +583,11 @@ export async function startServer({ dir, port = 0, host = '127.0.0.1', watch: en
             const updated = [];
             for (const c of data.comments) {
               if (!idSet.has(c.id)) continue;
+              // A resolved comment is done — dismissing it would erase the record
+              // that it was addressed. Dismiss is only valid from new/acknowledged.
+              if (payload.status === 'dismissed' && commentStatus(c) === 'resolved') {
+                return { conflict: `comment ${c.id} is already resolved and can no longer be dismissed` };
+              }
               c.status = payload.status;
               c.resolved = payload.status === 'resolved'; // keep legacy flag in sync
               updated.push(c);
@@ -587,6 +598,7 @@ export async function startServer({ dir, port = 0, host = '127.0.0.1', watch: en
           return { error: 'write conflict — please retry' };
         });
         if (result.notFound) return sendJSON(res, 404, { error: 'no comment matched the given id(s)' });
+        if (result.conflict) return sendJSON(res, 409, { error: result.conflict });
         if (result.error) return sendJSON(res, 409, { error: result.error });
         broadcast({ type: 'comment', path: result.updated[0].path });
         return sendJSON(res, 200, { updated: result.updated.length, comments: result.updated });

@@ -75,6 +75,12 @@ document. Use `${CLAUDE_PLUGIN_ROOT}/skills/shared/authoring-guide.md` for fence
 syntax. The plan is where your tokens go: budget you didn't spend narrating
 belongs here.
 
+**Write for the CEO** (document-quality §0): a tech-savvy non-developer who
+needs the business logic — what changes, why, what could go wrong — not the
+implementation. Explain behavior in plain language; reach for diagrams, tables,
+and migration/API cards before code; include a code fence only when it's
+genuinely necessary to make the point.
+
 Author top to bottom against this skeleton; include a section when the inventory
 has items, skip one only when it had nothing there:
 
@@ -86,10 +92,11 @@ has items, skip one only when it had nothing there:
    bold-keyword blockquote) for anything the user must decide.
 3. `## Architecture` — a ` ```mermaid `/` ```nomnoml ` diagram when components or
    flows change (prefer a 2-D shape over a chain).
-4. `## Key changes` — one H3 per meaningful change, each led by a *why-it-matters*
-   sentence: real code in normal fences, proposed edits as ` ```diff ` hunks,
-   trimmed to the load-bearing lines with 2–4 annotation bullets (document-quality
-   §5). 3–8 is healthy.
+4. `## Key changes` — one H3 per meaningful change, each explained in plain
+   language first (*what* changes and *why it matters*). Add a ` ```diff ` hunk
+   only when seeing the code is necessary to evaluate the change — trimmed to
+   the load-bearing lines with 2–4 annotation bullets (document-quality §0, §5).
+   3–8 subsections is healthy; most need no code at all.
 5. `## Database changes` — ` ```migration ` fences with `-- up` / `-- down`.
 6. `## API behavior` / `## API surface` — ` ```api ` examples and/or ` ```openapi `.
 7. `## Rollout` — ordered steps, flags, sequencing.
@@ -162,6 +169,12 @@ comment is labelled with what it's anchored to (a section, a quoted snippet, or 
 component) and carries an `id`. Address every open comment and edit the markdown
 file in place (the browser reloads automatically).
 
+**Revise in place — one plan, never a change-log** (document-quality §8).
+Rewrite the affected sections so the document always reads as one coherent plan
+written fresh. Never add `## Update`/`## Revision`/"changed after review"
+headings, keep superseded sections "for context," or write prose that describes
+the edit instead of the plan.
+
 If the digest is followed by a `note: this server is running visual-docs vX but
 vY is now installed…` line, tell the user and suggest `--restart` (per the
 `--serve` step above) to pick up the newer version.
@@ -175,9 +188,11 @@ node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-server.js" --status "$DIR" <i
 ```
 
 It prints a plain confirmation (`Updated N comment(s) to "acknowledged".`). The
-viewer shows the three states (`new` → `acknowledged` → `resolved`) and live-
-updates. If the user pastes a "Copy as prompt" block into chat instead, treat it
-identically.
+viewer shows the lifecycle states (`new` → `acknowledged` → `resolved`, plus
+`dismissed` for comments the user retracts — only valid before a comment is
+resolved) and live-updates. Users can dismiss their own comments from the
+viewer; dismissed ones drop out of the digest. If the user pastes a "Copy as
+prompt" block into chat instead, treat it identically.
 
 ### 7. Approval gate
 

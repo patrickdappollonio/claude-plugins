@@ -314,9 +314,15 @@ Heading`), then the comment body — so you never have to guess what a comment
 refers to.
 
 **Comment lifecycle.** Every comment has a `status`: `new` (just written by the
-reader), `acknowledged` (you've read it and are working on it), or `resolved`
-(you've addressed it). New comments start as `new`. As you work, set status with
-the server's `--status` command — **don't hand-edit `comments.json`:**
+reader), `acknowledged` (you've read it and are working on it), `resolved`
+(you've addressed it), or `dismissed` (it won't be acted on — the reader can
+dismiss their own comment from the viewer, or you can set it when the user
+retracts one in chat). Dismissing is only allowed while the comment is still
+`new` or `acknowledged` — a `resolved` comment stays resolved (the server
+rejects the transition). Dismissed comments drop out of the open-comments digest
+and counts, like resolved ones. New comments start as `new`. As you work, set
+status with the server's `--status` command — **don't hand-edit
+`comments.json`:**
 
 ```
 node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-server.js" --status "$DIR" <id> acknowledged
@@ -351,8 +357,9 @@ Agent obligations:
    it's anchored to — a section, a quoted snippet, or a component. Plain text,
    nothing to parse.
 2. Drive the lifecycle: `… --status "$DIR" <id> acknowledged` when you start on a
-   comment and `resolved` when done (comma-separated ids for several). The viewer
-   live-updates and distinguishes the three states. Don't hand-edit the JSON.
+   comment and `resolved` when done (comma-separated ids for several); use
+   `dismissed` only when the user tells you a comment no longer applies. The
+   viewer live-updates and distinguishes every state. Don't hand-edit the JSON.
 3. The viewer also offers "Copy as prompt" — users may paste feedback directly
    into chat instead; treat pasted prompts and stored comments the same way.
 
@@ -364,7 +371,8 @@ text, so there's never JSON to parse or a script to write:
 - `--comments <dir> [<file>.md]` — open comments as a readable digest, each
   labelled with its anchor and `id`.
 - `--status <dir> <id[,id2,…]> <state>` — set lifecycle state
-  (`new`/`acknowledged`/`resolved`); prints a plain confirmation.
+  (`new`/`acknowledged`/`resolved`/`dismissed`); prints a plain confirmation.
+  `dismissed` is rejected once a comment is `resolved`.
 
 Under the hood these call the server's HTTP API, which is there for the browser
 client and direct/programmatic use (not something an agent needs to touch):

@@ -1413,23 +1413,28 @@
         }
       };
 
-      // Radios are deselectable: clicking an already-checked radio clears it
-      // (standard mousedown+click trick — native radios can't otherwise be
-      // unchecked by clicking).
-      opts.forEach((input) => {
-        if (input.type === 'radio') {
-          input.addEventListener('mousedown', () => {
-            input.dataset.wasChecked = input.checked ? '1' : '0';
-          });
+      // Radios are deselectable: clicking an already-checked option clears it
+      // (native radios can't otherwise be unchecked). Snapshot the checked
+      // state on the FORM in the capture phase — the interaction usually starts
+      // on the option's label/text, so a listener on the input itself never
+      // fires and the snapshot goes stale (the old bug that made options
+      // impossible to deselect). pointerdown covers mouse + touch; keydown
+      // covers Space on a focused radio.
+      const radios = opts.filter((i) => i.type === 'radio');
+      if (radios.length) {
+        const snapshot = () => radios.forEach((i) => { i.dataset.wasChecked = i.checked ? '1' : '0'; });
+        form.addEventListener('pointerdown', snapshot, true);
+        form.addEventListener('keydown', snapshot, true);
+        radios.forEach((input) => {
           input.addEventListener('click', () => {
             if (input.dataset.wasChecked === '1') {
               input.checked = false;
               syncOtherRole();
             }
           });
-        }
-        input.addEventListener('change', syncOtherRole);
-      });
+        });
+      }
+      opts.forEach((input) => input.addEventListener('change', syncOtherRole));
       syncOtherRole();
 
       form.addEventListener('submit', (e) => {
@@ -1540,8 +1545,8 @@
 
   /** Highlight the quoted span of every text-anchored comment, so the reader can
       always see what's been commented on — the highlight persists for the life of
-      the comment (new → acknowledged → resolved), resolved ones rendered a touch
-      softer. Idempotent: unwraps prior marks first. Quotes that span multiple
+      the comment (new → acknowledged → resolved, or dismissed), resolved and
+      dismissed ones rendered softer. Idempotent: unwraps prior marks first. Quotes that span multiple
       nodes are left unhighlighted (the comment still shows in the drawer). */
   function applyTextHighlights(container, comments, onOpen) {
     const existing = container.querySelectorAll('mark.comment-highlight');
@@ -1605,10 +1610,14 @@
       the copy-as-prompt text, so the same comment is never labelled two ways. */
   // Comment lifecycle state. Prefers explicit `status`; falls back to the legacy
   // `resolved` boolean. Mirrors commentStatus() in the server.
-  const COMMENT_STATUSES = ['new', 'acknowledged', 'resolved'];
+  const COMMENT_STATUSES = ['new', 'acknowledged', 'resolved', 'dismissed'];
   function commentStatus(c) {
     if (c && COMMENT_STATUSES.includes(c.status)) return c.status;
     return c && c.resolved ? 'resolved' : 'new';
+  }
+  // "Open" = still needs the agent's attention: not resolved, not dismissed.
+  function commentOpen(c) {
+    return !['resolved', 'dismissed'].includes(commentStatus(c));
   }
 
   function commentAnchorLabel(c) {
@@ -1919,7 +1928,7 @@
         return el && el.parentElement === content ? el : null;
       };
 
-      const countComponent = (comments, id) => comments.filter((c) => c.anchor && c.anchor.kind === 'component' && c.anchor.id === id && commentStatus(c) !== 'resolved').length;
+      const countComponent = (comments, id) => comments.filter((c) => c.anchor && c.anchor.kind === 'component' && c.anchor.id === id && commentOpen(c)).length;
 
       const showFor = (el) => {
         const comments = commentsRef.current;
@@ -1943,7 +1952,7 @@
         } else if (/^H[2-6]$/.test(el.tagName)) {
           const title = el.textContent.trim();
           const slug = slugify(title);
-          count = comments.filter((c) => commentSlug(c) === slug && commentStatus(c) !== 'resolved').length;
+          count = comments.filter((c) => commentSlug(c) === slug && commentOpen(c)).length;
           const short = title.length > 42 ? title.slice(0, 42) + '…' : title;
           label = `Comment on “${short}”`;
           action = () => onOpenSection(slug, title);
@@ -1953,7 +1962,7 @@
           if (!text) { scheduleHide(); return; }
           const quote = text.slice(0, 400);
           const name = isLi ? 'list item' : (BLOCK_NAMES[el.tagName] || (el.classList.contains('admonition') ? 'callout' : 'block'));
-          count = comments.filter((c) => c.anchor && c.anchor.kind === 'text' && c.anchor.quote === quote && commentStatus(c) !== 'resolved').length;
+          count = comments.filter((c) => c.anchor && c.anchor.kind === 'text' && c.anchor.quote === quote && commentOpen(c)).length;
           label = `Comment on this ${name}`;
           action = () => onOpenText({ kind: 'text', quote, prefix: '', suffix: '' });
         }
@@ -2064,7 +2073,7 @@
       </article>`;
   }
 
-  function CommentDrawer({ open, target, comments, status, onExpand, onCollapse, onClearTarget, onSubmit, onCopy, onEdit }) {
+  function CommentDrawer({ open, target, comments, status, onExpand, onCollapse, onClearTarget, onSubmit, onCopy, onEdit, onDismiss }) {
     const textRef = useRef(null);
     const [editingId, setEditingId] = useState(null);
     const [editText, setEditText] = useState('');
@@ -2075,7 +2084,7 @@
     const pendingQuote = t.anchor && t.anchor.kind === 'text' ? t.anchor.quote : '';
     const contextLabel = pendingQuote ? '' : commentAnchorLabel(t);
     const hasTarget = !!(pendingQuote || contextLabel);
-    const openCount = comments.filter((c) => commentStatus(c) !== 'resolved').length;
+    const openCount = comments.filter(commentOpen).length;
     useEffect(() => {
       if (open && textRef.current) textRef.current.focus();
     }, [open, contextLabel, pendingQuote]);
@@ -2122,13 +2131,13 @@
     };
     const copy = () => onCopy(textRef.current.value.trim());
 
-    // Newest first, but keep resolved comments sunk to the bottom.
-    const rank = { new: 0, acknowledged: 1, resolved: 2 };
+    // Newest first, but keep resolved/dismissed comments sunk to the bottom.
+    const rank = { new: 0, acknowledged: 1, resolved: 2, dismissed: 3 };
     const ordered = comments
       .map((c, i) => ({ c, i }))
       .sort((a, b) => (rank[commentStatus(a.c)] - rank[commentStatus(b.c)]) || (b.i - a.i))
       .map((x) => x.c);
-    const statusLabel = { new: 'new', acknowledged: 'acknowledged', resolved: 'resolved' };
+    const statusLabel = { new: 'new', acknowledged: 'acknowledged', resolved: 'resolved', dismissed: 'dismissed' };
     return html`
       <aside id="comment-drawer">
         <header class="drawer-head">
@@ -2143,6 +2152,8 @@
               const chip = isText ? '' : commentAnchorLabel(c);
               const st = commentStatus(c);
               const editable = st === 'new';
+              // Dismissable while the work hasn't been done: new or acknowledged.
+              const dismissable = st === 'new' || st === 'acknowledged';
               const isEditing = editingId === c.id;
               return html`
                 <div class="comment-item st-${st}${isEditing ? ' editing' : ''}"
@@ -2153,6 +2164,11 @@
                     ${chip ? html`<span class="c-section">${chip}</span>` : null}
                     <span>${new Date(c.createdAt).toLocaleString()}</span>
                     ${c.editedAt ? html`<span class="c-edited">(edited)</span>` : null}
+                    ${dismissable && !isEditing ? html`
+                      <button type="button" class="c-dismiss" title="Dismiss — the agent won't act on this comment"
+                        aria-label="Dismiss comment" onClick=${(e) => { e.stopPropagation(); onDismiss(c.id); }}>
+                        <${Icon} name="close" />
+                      </button>` : null}
                   </div>
                   ${isText ? html`<div class="c-quote">“${c.anchor.quote}”</div>` : null}
                   ${isEditing
@@ -2494,6 +2510,20 @@
       }
     };
 
+    const dismissComment = async (id) => {
+      const cur = currentRef.current;
+      try {
+        await api('/api/comments/status', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ id, status: 'dismissed' }),
+        });
+        loadComments(cur);
+      } catch (err) {
+        setStatus({ msg: (err && err.serverMessage) || 'Dismissing failed.', tone: 'warn' });
+      }
+    };
+
     const copyPrompt = async (draftText) => {
       const cur = currentRef.current;
       // Copy only the still-`new` comments — acknowledged ones are already being
@@ -2509,7 +2539,7 @@
       setStatus({ msg: ok ? 'Prompt copied — paste it to your agent.' : 'Copy failed — select the text manually.', tone: ok ? 'ok' : 'warn' });
     };
 
-    const openCount = comments.filter((c) => commentStatus(c) !== 'resolved').length;
+    const openCount = comments.filter(commentOpen).length;
     const versionMismatch = !!(versionInfo.installedVersion && versionInfo.installedVersion !== versionInfo.serverVersion);
 
     let main;
@@ -2543,7 +2573,7 @@
       <${CommentDrawer}
         open=${drawer.open} target=${drawer.target}
         comments=${comments} status=${status}
-        onExpand=${openComments} onCollapse=${collapseDrawer} onClearTarget=${clearTarget} onSubmit=${submitComment} onCopy=${copyPrompt} onEdit=${editComment} />`;
+        onExpand=${openComments} onCollapse=${collapseDrawer} onClearTarget=${clearTarget} onSubmit=${submitComment} onCopy=${copyPrompt} onEdit=${editComment} onDismiss=${dismissComment} />`;
   }
 
   /* ================================================================
