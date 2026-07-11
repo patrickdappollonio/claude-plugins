@@ -8,6 +8,14 @@ description: Use when the user wants a visual summary of work that was done — 
 Turn a change — a PR, branch, commit range, or the working tree — into an
 interactive review document served entirely from the user's machine.
 
+**Before anything else, fix who you're writing for: the CEO of the company — a
+tech-savvy non-developer.** Not a fellow engineer, not the person who wrote the
+code, and not someone who will ever open the repo. This shapes every sentence
+you write. They want the business logic — what changed, why it matters, what to
+watch — so explain behavior in plain language and reach for code only when the
+reader must see it to understand. The linter warns when plain-language sections
+name code symbols, and those findings must be fixed like any other.
+
 **Acknowledge first, then work quietly.** Before you do anything else, reply with
 one short sentence that acknowledges the request and says you're gathering what
 you need — e.g. *"On it — let me pull the diff together and build a visual recap
@@ -132,6 +140,10 @@ Do not write the file and stop.**
    ```
 2. **Self-review**: re-read the whole document top to bottom as the reviewer will
    see it, and check:
+   - **the CEO test first**: everything through `## Architecture` reads cleanly
+     to a non-developer — no function, file, or symbol names — and each
+     `## Key changes` subsection makes its point in plain language before any
+     code appears;
    - every inventory item maps to a block, or has a one-clause omission reason;
    - every fence is well-formed for its type — a ` ```diff ` has real `+`/`-`
      lines, a ` ```migration ` has `-- up` (and `-- down` unless deliberately

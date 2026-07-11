@@ -10,6 +10,15 @@ served entirely from their machine. The plan is a plain markdown file — the
 bundled server renders it with diagrams, diffs, and styled blocks, live-reloads
 as you edit it, and collects the user's comments for you to read back.
 
+**Before anything else, fix who you're writing for: the CEO of the company — a
+tech-savvy non-developer.** Not a fellow engineer, not the person who wrote the
+code, and not someone who will ever open the repo. This shapes every sentence
+you write. They decide based on business logic — what changes, why it's worth
+it, what could go wrong — so explain behavior in plain language and reach for
+code only when the reader must see it to decide. The linter warns when
+plain-language sections name code symbols, and those findings must be fixed
+like any other.
+
 **Acknowledge first, then work quietly.** Before you do anything else, reply with
 one short sentence that acknowledges the request and says you're gathering what
 you need — e.g. *"Got it — let me dig into the code and put together a visual plan
@@ -111,8 +120,11 @@ Do not write the file and stop.**
    node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-lint.js" "$DIR/<file>.md"
    ```
 2. **Self-review**: re-read the whole plan top to bottom as the user will see it,
-   and check: every inventory item maps to a block or has a one-clause omission
-   reason; every fence is well-formed for its type (a ` ```diff ` has real
+   and check: **the CEO test first** — everything through `## Architecture`
+   reads cleanly to a non-developer, with no function, file, or symbol names,
+   and each `## Key changes` subsection makes its point in plain language
+   before any code appears; every inventory item maps to a block or has a
+   one-clause omission reason; every fence is well-formed for its type (a ` ```diff ` has real
    `+`/`-` lines, a ` ```migration ` has `-- up`/`-- down`, an ` ```api ` has a
    request line, a ` ```mermaid ` is valid); no leftover placeholder or truncated
    block; secrets redacted. Fix what you find, then re-lint.

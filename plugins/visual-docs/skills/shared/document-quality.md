@@ -28,6 +28,17 @@ Concretely:
   raw code shows *how*, which this reader didn't ask for.
 - If a section only makes sense to someone who has the repo open, rewrite it.
 
+The failure mode to avoid: drifting back into writing for a fellow engineer —
+or worse, for the inventor of the programming language — because that's who
+you'd naturally talk to. The reader never sees the code, and every symbol name
+you drop is a word they must skip over. The litmus test for each sentence:
+*would the CEO understand this, and could they act on it?* If not, it's written
+for the wrong person.
+
+This is not advisory: **the linter warns when plain-language sections (the
+preamble, Summary/Outcome, What changed, Architecture) name code symbols**, and
+lint findings must be fixed before the document is served.
+
 The goal is a document that is **terse and detailed at the same time**. Those
 aren't in tension when you split them across two kinds of content:
 
