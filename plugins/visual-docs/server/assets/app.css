@@ -669,6 +669,8 @@ mark.comment-highlight {
 }
 /* Highlight persists once resolved, just settled — same yellow, no underline. */
 mark.comment-highlight.st-resolved { border-bottom-color: transparent; opacity: 0.72; }
+/* Dismissed: the comment won't be acted on — fade the highlight almost out. */
+mark.comment-highlight.st-dismissed { background: transparent; border-bottom-color: transparent; opacity: 0.55; }
 
 /* ---------- Comment drawer ---------- */
 #comment-drawer {
@@ -692,12 +694,24 @@ mark.comment-highlight.st-resolved { border-bottom-color: transparent; opacity: 
 .comment-item.st-new { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); background: color-mix(in srgb, var(--accent-soft) 45%, var(--surface)); }
 .comment-item.st-acknowledged { border-color: color-mix(in srgb, var(--warn) 40%, var(--line)); }
 .comment-item.st-resolved { opacity: 0.55; }
+.comment-item.st-dismissed { opacity: 0.45; }
+.comment-item.st-dismissed .c-text { text-decoration: line-through; text-decoration-color: var(--ink-soft); }
 .comment-item .c-meta { color: var(--ink-soft); font-family: var(--mono); font-size: 0.66rem; margin-bottom: 5px; display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
 .comment-item .c-section { color: var(--accent); }
 .c-status { text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.56rem; font-weight: 700; padding: 2px 7px; border-radius: 999px; color: #fff; }
 .c-status.s-new { background: var(--accent); }
 .c-status.s-acknowledged { background: var(--warn); }
 .c-status.s-resolved { background: var(--ok); }
+.c-status.s-dismissed { background: var(--ink-soft); }
+/* Dismiss button lives at the right edge of the meta row; quiet until hovered. */
+.comment-item .c-dismiss {
+  margin-left: auto; display: inline-flex; align-items: center; justify-content: center;
+  background: none; border: none; padding: 2px; border-radius: 6px; cursor: pointer;
+  color: var(--ink-soft); opacity: 0; transition: opacity 120ms, color 120ms;
+}
+.comment-item:hover .c-dismiss, .comment-item .c-dismiss:focus-visible { opacity: 1; }
+.comment-item .c-dismiss:hover { color: var(--ink); background: rgba(120,118,113,.16); }
+.comment-item .c-dismiss .icon { width: 14px; height: 14px; }
 /* Quoted anchor text — hanging quote mark instead of an accent rail. */
 .comment-item .c-quote {
   position: relative; margin: 3px 0 6px; padding: 5px 10px 5px 24px;

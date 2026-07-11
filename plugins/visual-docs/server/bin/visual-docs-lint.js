@@ -12,6 +12,8 @@
  *   - structured fences are non-empty and parse for their type
  *   - admonition markers are a known type
  *   - fences are balanced; obvious secrets are redacted
+ *   - plain-language sections (preamble, Summary/Outcome, What changed,
+ *     Architecture) name no code symbols — the reader is a non-developer
  */
 
 import fs from 'node:fs';
@@ -34,6 +36,36 @@ const NEEDS_INTENT = new Set([
   'api', 'http', 'openapi', 'swagger', 'filetree', 'files', 'file-tree',
   'mermaid', 'nomnoml',
 ]);
+
+// Sections whose prose must read plainly for a non-developer (document-quality
+// §0–1): the preamble before the first H2, and these H2s. Everything under any
+// other H2 (Key changes, API, Database changes, …) may name symbols.
+const PLAIN_H2_RE = /^(summary|outcome|overview|goals?|context|background|what changed)\b|^architecture\b/i;
+
+/** Code-symbol tokens that give away implementation detail in prose meant for a
+    non-developer: identifiers (camelCase, snake_case, calls), paths with file
+    extensions, CLI flags. Plain-word inline code (`dismissed`, `main`) is fine. */
+function audienceSymbols(line) {
+  const hits = [];
+  const symbolish = (t) =>
+    /[a-z][a-z0-9]*[A-Z]/.test(t) ||          // camelCase
+    /[A-Za-z0-9]_[A-Za-z0-9]/.test(t) ||      // snake_case
+    /\(\)/.test(t) ||                          // someCall()
+    /::|->/.test(t) ||                         // C++/Rust-style paths
+    /^--?[a-z]/.test(t) ||                     // CLI flags
+    /[\w-]\/[\w-]/.test(t) ||                  // paths
+    /\.[a-z]{1,4}$/i.test(t);                  // file extensions
+  // inline code spans: symbol-looking content only
+  const rest = line.replace(/`([^`]+)`/g, (_, span) => {
+    if (symbolish(span.trim())) hits.push(span.trim());
+    return ' ';
+  });
+  // bare identifiers outside backticks: calls, snake_case, paths-with-extension
+  for (const m of rest.matchAll(/\b[A-Za-z_][A-Za-z0-9_]*\(\)|\b[a-z0-9]+(?:_[a-z0-9]+)+\b|\b[\w.-]+\/[\w./-]*\.[A-Za-z0-9]{1,4}\b/g)) {
+    hits.push(m[0]);
+  }
+  return hits;
+}
 
 function lintText(text, file) {
   const findings = [];
@@ -60,6 +92,8 @@ function lintText(text, file) {
 
   // --- walk the document, fence by fence ---
   let i = 0;
+  // Preamble (before any H2) is part of the plain-language zone.
+  let plainZone = true;
   while (i < lines.length) {
     const open = lines[i].match(/^```(\S*)/);
     if (open) {
@@ -119,6 +153,16 @@ function lintText(text, file) {
     // obvious unredacted secrets
     const sec = lines[i].match(SECRET_RE);
     if (sec) add(i + 1, 'warn', `Possible unredacted secret ("${sec[0].slice(0, 10)}…") — redact as <redacted> or sk-•••.`);
+
+    // audience: prose in the plain-language zone must not name code symbols
+    const h2 = lines[i].match(/^##\s+(.+)/);
+    if (h2) plainZone = PLAIN_H2_RE.test(h2[1].trim());
+    else if (plainZone && !/^#/.test(lines[i])) {
+      const syms = audienceSymbols(lines[i]);
+      if (syms.length) {
+        add(i + 1, 'warn', `Plain-language section names code symbols (${syms.slice(0, 3).map((s) => `\`${s}\``).join(', ')}${syms.length > 3 ? ', …' : ''}) — the reader is a non-developer; describe the behavior instead, and keep symbols to Key changes and fences (document-quality §0–1).`);
+      }
+    }
 
     i++;
   }

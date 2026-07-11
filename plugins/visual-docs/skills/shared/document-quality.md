@@ -5,6 +5,45 @@ serving, reading comments) should be nearly silent; the document should be the
 one place you spend tokens lavishly. Read this once before authoring, then apply
 it — don't quote it back into chat.
 
+## 0. Audience: write for the CEO
+
+Write the document for **the CEO of the company: tech-savvy, but not a
+developer.** They understand products, systems, data, risk, and tradeoffs; they
+do not read code, and a wall of diffs tells them nothing. Every section must
+answer *what changes for the business or the user, why it's worth doing, and
+what could go wrong* — in plain language a smart non-programmer follows without
+translation.
+
+Concretely:
+
+- **Explain behavior and business logic, never implementation mechanics.**
+  "Users who cancel mid-trial keep access until the period ends" — not "the
+  `subscription.cancel` handler now checks `period_end`."
+- **Code appears only when it's genuinely necessary to make the point** — a
+  contract the reader must approve, a before/after that words can't carry. When
+  it does, trim it hard and introduce it in plain language so the section still
+  works for someone who skips the fence.
+- **Prefer the visual, non-code blocks** — diagrams, file maps, migration and
+  API cards, tables — over code fences. Those show *what the system does*;
+  raw code shows *how*, which this reader didn't ask for.
+- If a section only makes sense to someone who has the repo open, rewrite it.
+
+The failure mode to avoid: drifting back into writing for a fellow engineer —
+or worse, for the inventor of the programming language — because that's who
+you'd naturally talk to. The reader never sees the code, and every symbol name
+you drop is a word they must skip over. The litmus test for each sentence:
+*would the CEO understand this, and could they act on it?* If not, it's written
+for the wrong person.
+
+This is not advisory: **the linter warns when plain-language sections (the
+preamble, Summary/Outcome, What changed, Architecture) name code symbols**, and
+lint findings must be fixed before the document is served.
+
+The rule governs the **document**, not the conversation around it. When the
+user asks you — in chat, or via a comment — to explain a topic in more depth,
+answer at whatever technical level they ask for; the CEO framing never means
+withholding detail from someone who requests it.
+
 The goal is a document that is **terse and detailed at the same time**. Those
 aren't in tension when you split them across two kinds of content:
 
@@ -37,6 +76,8 @@ architecture → data/API → the actual code → risks. Hold that gradient.
 - Only `## Key changes` and the structured fences below it may name specific
   functions, symbols, or lines — and only when the reader needs *that specific
   one* to follow the story. Never drop a symbol in for color or false precision.
+  Even there, the lead-in sentence must carry the meaning on its own (§0): the
+  fence is evidence for a claim already made in plain language, not the claim.
 - Put the concrete, legible thing early; push the dense mechanics down.
 
 ## 2. Cover everything (inventory → represent → audit)
@@ -109,7 +150,28 @@ Cut any sentence whose only content is describing or disclaiming the document:
 padding, not coverage. Every prose sentence must tell the reader something about
 **the change**, not about the write-up.
 
-## 8. Calibration — GOOD vs BAD
+## 8. One document, never a change-log
+
+When feedback or new information changes the plan, **rewrite the affected
+sections in place** so the document always reads as one coherent plan written
+fresh — a reader arriving now must never have to reconstruct the current state
+from a base plan plus a trail of patches.
+
+Forbidden, in any form:
+
+- Delta headings: `## Update`, `## Revision 2`, `### Changed after review`,
+  `## Addendum`, `(revised)` suffixes on titles.
+- Sections that describe the edit instead of the plan: "per the feedback above,
+  we now…", "this replaces the earlier approach," "see the updated section
+  below."
+- Keeping a superseded section alongside its replacement "for context."
+
+Superseded content is deleted, not annotated. If the *history* of a decision
+genuinely matters to the reader (a rejected alternative with a real tradeoff),
+it belongs as a plain sentence inside the relevant section — "we chose X over Y
+because…" — not as a record of the document's own evolution.
+
+## 9. Calibration — GOOD vs BAD
 
 **BAD.** A 20-file recap with one paragraph of Outcome, a bare file list, and no
 `diff`/`migration`/`api` fences — the reviewer is forced back into `git diff`.

@@ -10,6 +10,15 @@ served entirely from their machine. The plan is a plain markdown file — the
 bundled server renders it with diagrams, diffs, and styled blocks, live-reloads
 as you edit it, and collects the user's comments for you to read back.
 
+**Before anything else, fix who you're writing for: the CEO of the company — a
+tech-savvy non-developer.** Not a fellow engineer, not the person who wrote the
+code, and not someone who will ever open the repo. This shapes every sentence
+you write. They decide based on business logic — what changes, why it's worth
+it, what could go wrong — so explain behavior in plain language and reach for
+code only when the reader must see it to decide. The linter warns when
+plain-language sections name code symbols, and those findings must be fixed
+like any other.
+
 **Acknowledge first, then work quietly.** Before you do anything else, reply with
 one short sentence that acknowledges the request and says you're gathering what
 you need — e.g. *"Got it — let me dig into the code and put together a visual plan
@@ -75,6 +84,12 @@ document. Use `${CLAUDE_PLUGIN_ROOT}/skills/shared/authoring-guide.md` for fence
 syntax. The plan is where your tokens go: budget you didn't spend narrating
 belongs here.
 
+**Write for the CEO** (document-quality §0): a tech-savvy non-developer who
+needs the business logic — what changes, why, what could go wrong — not the
+implementation. Explain behavior in plain language; reach for diagrams, tables,
+and migration/API cards before code; include a code fence only when it's
+genuinely necessary to make the point.
+
 Author top to bottom against this skeleton; include a section when the inventory
 has items, skip one only when it had nothing there:
 
@@ -86,10 +101,11 @@ has items, skip one only when it had nothing there:
    bold-keyword blockquote) for anything the user must decide.
 3. `## Architecture` — a ` ```mermaid `/` ```nomnoml ` diagram when components or
    flows change (prefer a 2-D shape over a chain).
-4. `## Key changes` — one H3 per meaningful change, each led by a *why-it-matters*
-   sentence: real code in normal fences, proposed edits as ` ```diff ` hunks,
-   trimmed to the load-bearing lines with 2–4 annotation bullets (document-quality
-   §5). 3–8 is healthy.
+4. `## Key changes` — one H3 per meaningful change, each explained in plain
+   language first (*what* changes and *why it matters*). Add a ` ```diff ` hunk
+   only when seeing the code is necessary to evaluate the change — trimmed to
+   the load-bearing lines with 2–4 annotation bullets (document-quality §0, §5).
+   3–8 subsections is healthy; most need no code at all.
 5. `## Database changes` — ` ```migration ` fences with `-- up` / `-- down`.
 6. `## API behavior` / `## API surface` — ` ```api ` examples and/or ` ```openapi `.
 7. `## Rollout` — ordered steps, flags, sequencing.
@@ -104,8 +120,11 @@ Do not write the file and stop.**
    node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-lint.js" "$DIR/<file>.md"
    ```
 2. **Self-review**: re-read the whole plan top to bottom as the user will see it,
-   and check: every inventory item maps to a block or has a one-clause omission
-   reason; every fence is well-formed for its type (a ` ```diff ` has real
+   and check: **the CEO test first** — everything through `## Architecture`
+   reads cleanly to a non-developer, with no function, file, or symbol names,
+   and each `## Key changes` subsection makes its point in plain language
+   before any code appears; every inventory item maps to a block or has a
+   one-clause omission reason; every fence is well-formed for its type (a ` ```diff ` has real
    `+`/`-` lines, a ` ```migration ` has `-- up`/`-- down`, an ` ```api ` has a
    request line, a ` ```mermaid ` is valid); no leftover placeholder or truncated
    block; secrets redacted. Fix what you find, then re-lint.
@@ -148,6 +167,15 @@ text** to comment on that snippet, or hover a section heading or a rendered
 component (diagram, diff, …) and click the margin button to comment there;
 "Copy as prompt" turns their feedback into a pasteable message if they prefer chat.
 
+**End with a plain chat message, never a structured question tool.** If you
+want to ask what's next (review the plan, walk through a section, adjust
+something), write the question as ordinary prose in your message — do not reach
+for an option-picker tool like AskUserQuestion: its canned choices scope the
+user down exactly when their answer should be free-form. And the CEO rule
+governs the *document*, not the conversation — if the user then asks you to
+explain a topic in more depth, answer in chat at whatever technical level they
+ask for.
+
 ### 6. Read feedback before revising — every time
 
 Before any revision (user asks for changes, or you're checking in), read the
@@ -162,6 +190,12 @@ comment is labelled with what it's anchored to (a section, a quoted snippet, or 
 component) and carries an `id`. Address every open comment and edit the markdown
 file in place (the browser reloads automatically).
 
+**Revise in place — one plan, never a change-log** (document-quality §8).
+Rewrite the affected sections so the document always reads as one coherent plan
+written fresh. Never add `## Update`/`## Revision`/"changed after review"
+headings, keep superseded sections "for context," or write prose that describes
+the edit instead of the plan.
+
 If the digest is followed by a `note: this server is running visual-docs vX but
 vY is now installed…` line, tell the user and suggest `--restart` (per the
 `--serve` step above) to pick up the newer version.
@@ -175,9 +209,11 @@ node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-server.js" --status "$DIR" <i
 ```
 
 It prints a plain confirmation (`Updated N comment(s) to "acknowledged".`). The
-viewer shows the three states (`new` → `acknowledged` → `resolved`) and live-
-updates. If the user pastes a "Copy as prompt" block into chat instead, treat it
-identically.
+viewer shows the lifecycle states (`new` → `acknowledged` → `resolved`, plus
+`dismissed` for comments the user retracts — only valid before a comment is
+resolved) and live-updates. Users can dismiss their own comments from the
+viewer; dismissed ones drop out of the digest. If the user pastes a "Copy as
+prompt" block into chat instead, treat it identically.
 
 ### 7. Approval gate
 

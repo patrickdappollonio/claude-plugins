@@ -8,6 +8,14 @@ description: Use when the user wants a visual summary of work that was done — 
 Turn a change — a PR, branch, commit range, or the working tree — into an
 interactive review document served entirely from the user's machine.
 
+**Before anything else, fix who you're writing for: the CEO of the company — a
+tech-savvy non-developer.** Not a fellow engineer, not the person who wrote the
+code, and not someone who will ever open the repo. This shapes every sentence
+you write. They want the business logic — what changed, why it matters, what to
+watch — so explain behavior in plain language and reach for code only when the
+reader must see it to understand. The linter warns when plain-language sections
+name code symbols, and those findings must be fixed like any other.
+
 **Acknowledge first, then work quietly.** Before you do anything else, reply with
 one short sentence that acknowledges the request and says you're gathering what
 you need — e.g. *"On it — let me pull the diff together and build a visual recap
@@ -94,6 +102,12 @@ This document is where your tokens go: any budget you didn't spend narrating
 steps 1–2 belongs here — prefer one more `## Key changes` hunk, one more grounded
 `api`/`migration` example, or a fuller `## Risks` list over a shorter recap.
 
+**Write for the CEO** (document-quality §0): a tech-savvy non-developer who
+needs the business logic — what changed, why, what to watch — not the
+implementation. Explain behavior in plain language; reach for diagrams, tables,
+and migration/API cards before code; include a code fence only when it's
+genuinely necessary to make the point.
+
 Author top to bottom against this skeleton; include a section when the inventory
 has items for it, skip one only when the inventory had nothing there:
 
@@ -110,9 +124,11 @@ has items for it, skip one only when the inventory had nothing there:
 5. `## Data & schema` — ` ```migration ` fences for schema changes.
 6. `## API` — ` ```api ` examples and/or an ` ```openapi ` fence per changed
    endpoint (each distinct message shape its own example).
-7. `## Key changes` — 3–8 H3 subsections, each led by a *why-it-matters*
-   sentence, then a trimmed ` ```diff ` (≤~150 lines) plus 2–4 annotation
-   bullets on the lines that matter (see document-quality.md §5).
+7. `## Key changes` — 3–8 H3 subsections, each explained in plain language
+   first (*what* changed and *why it matters*). Add a trimmed ` ```diff `
+   (≤~150 lines) only when seeing the code is necessary to understand the
+   change, plus 2–4 annotation bullets on the lines that matter (see
+   document-quality.md §0, §5). Most subsections need no code at all.
 8. `## Risks & follow-ups` — what wasn't done, what to watch, next steps.
 
 **Then lint and self-review — both required, before you serve or share anything.
@@ -124,6 +140,10 @@ Do not write the file and stop.**
    ```
 2. **Self-review**: re-read the whole document top to bottom as the reviewer will
    see it, and check:
+   - **the CEO test first**: everything through `## Architecture` reads cleanly
+     to a non-developer — no function, file, or symbol names — and each
+     `## Key changes` subsection makes its point in plain language before any
+     code appears;
    - every inventory item maps to a block, or has a one-clause omission reason;
    - every fence is well-formed for its type — a ` ```diff ` has real `+`/`-`
      lines, a ` ```migration ` has `-- up` (and `-- down` unless deliberately
@@ -155,6 +175,15 @@ they can **select any text** to comment on that exact snippet, or hover a
 heading or a rendered component (diagram, diff, …) and click the margin button
 ("Comment on …") to comment there; "Copy as prompt" gives chat-style feedback.
 
+**End with a plain chat message, never a structured question tool.** If you
+want to ask what's next (review the recap, walk through a section, dig into a
+change), write the question as ordinary prose in your message — do not reach
+for an option-picker tool like AskUserQuestion: its canned choices scope the
+user down exactly when their answer should be free-form. And the CEO rule
+governs the *document*, not the conversation — if the user then asks you to
+explain a topic in more depth, answer in chat at whatever technical level they
+ask for.
+
 ### 5. Respond to review
 
 Before revising the recap (or acting on review feedback), read open comments as
@@ -183,8 +212,14 @@ node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-server.js" --status "$DIR" <i
 ```
 
 It prints a plain confirmation (`Updated N comment(s) to "acknowledged".`); the
-viewer live-updates and shows the three states (`new` → `acknowledged` →
-`resolved`). Treat pasted "Copy as prompt" blocks exactly like stored comments.
+viewer live-updates and shows the lifecycle states (`new` → `acknowledged` →
+`resolved`, plus `dismissed` for comments the user retracts — only valid before
+a comment is resolved; dismissed ones drop out of the digest). Treat pasted
+"Copy as prompt" blocks exactly like stored comments.
+
+When revising the recap, **rewrite the affected sections in place** — one
+coherent document, never `## Update`/addendum sections or prose describing the
+edit (document-quality §8).
 
 If the user wants to share or archive the recap (send it, attach it, keep a
 copy), offer `--export`: it builds one self-contained HTML file — no server

@@ -48,7 +48,9 @@ Two skills your agent picks up automatically:
    reads your comments (each labelled with what it's anchored to) before its
    next revision and marks them resolved as it addresses them. Changed your
    mind before the agent gets to it? Double-click a comment the agent hasn't
-   acknowledged yet to edit its text in place.
+   acknowledged yet to edit its text in place, or hover it and hit **×** to
+   dismiss it entirely — dismissal works until the comment is resolved, and a
+   dismissed comment never reaches the agent's digest.
 6. If you'd rather talk to the agent directly — or the server was stopped —
    hit **"Copy as prompt"** and your feedback is turned into a ready-to-paste
    message for the chat.

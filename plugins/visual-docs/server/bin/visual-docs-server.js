@@ -34,7 +34,9 @@ Options:
   --comments <dir> [<path.md>]
                    Print the open-comments digest for a served dir
   --status <dir> <id[,id2,…]> <state>
-                   Set a comment's lifecycle state (new|acknowledged|resolved)
+                   Set a comment's lifecycle state
+                   (new|acknowledged|resolved|dismissed — dismiss only
+                   while the comment is still new or acknowledged)
   --prefs [<key> <value>]
                    Print the persisted viewer preferences, or set one
                    (viewMode|theme|navOpen|sidebarTab; no server needed)
@@ -232,7 +234,7 @@ if (args[0] === '--export') {
 // so the whole review loop is `node …` (no curl, no shell). They locate the
 // server via its lock file, so you pass the served directory, not a URL.
 //   --comments <dir> [<path.md>]          → print the open-comments digest
-//   --status   <dir> <id[,id2,…]> <state> → set lifecycle state (new|acknowledged|resolved)
+//   --status   <dir> <id[,id2,…]> <state> → set lifecycle state (new|acknowledged|resolved|dismissed)
 if (args[0] === '--comments' || args[0] === '--status') {
   const dir = resolve(args[1] || process.cwd());
   const lock = liveLock(dir);
@@ -253,7 +255,7 @@ if (args[0] === '--comments' || args[0] === '--status') {
     const ids = String(args[2] || '').split(',').map((s) => s.trim()).filter(Boolean);
     const status = args[3];
     if (!ids.length || !status) {
-      console.error('usage: --status <dir> <comment-id[,id2,…]> <new-status>  (new | acknowledged | resolved)');
+      console.error('usage: --status <dir> <comment-id[,id2,…]> <new-status>  (new | acknowledged | resolved | dismissed)');
       process.exit(2);
     }
     const res = await fetch(`${base}/api/comments/status`, {
