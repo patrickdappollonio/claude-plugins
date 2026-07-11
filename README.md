@@ -54,6 +54,60 @@ reverts the change — never the test.
 
 Then just ask: *"Simplify what we just wrote."* [Read more →](plugins/code-simplification)
 
+### read-the-docs-first
+
+Docs-first discipline for anything external or fast-moving. Model memory ages
+— APIs drift, majors ship, defaults change — so this skill makes the agent
+web-search for current official docs and read primary sources before writing
+code or answering from memory. It defines concrete triggers (new packages,
+provider SDKs, auth/billing/webhook flows, API-drift errors, "latest/official"
+requests), ranks what counts as authoritative, and requires naming the sources
+consulted. A work-friendly rewrite of the `read-the-damn-docs` skill.
+
+```
+/plugin install read-the-docs-first@patrickdappollonio
+```
+
+Then just ask: *"Add Stripe webhooks to this app — check the current docs first."* [Read more →](plugins/read-the-docs-first)
+
+### use-claude-limits-efficiently
+
+A budget loop for long-running or parallel agent work under Claude's 5-hour
+and weekly usage limits — a rewrite of [`stay-within-limits` from
+@agent-native/skills](https://www.npmjs.com/package/@agent-native/skills). The
+agent runs work in bounded waves, checks real observed usage between waves
+(via a host usage tool or `ccusage`), pauses new work at 95% of either window,
+and resumes only after confirming the window actually rolled over — comparing
+block timestamps, never trusting elapsed wall-clock time. Wake prompts are
+self-contained, and wakeups chain past runtime clamps so overnight pauses
+work.
+
+```
+/plugin install use-claude-limits-efficiently@patrickdappollonio
+```
+
+Then just ask: *"Migrate all 340 handlers overnight, but don't blow through my usage limits."* [Read more →](plugins/use-claude-limits-efficiently)
+
+### use-premium-models-efficiently
+
+Run a premium model where it is worth paying for judgment — a rewrite of
+[`efficient-fable` from
+@agent-native/skills](https://www.npmjs.com/package/@agent-native/skills),
+generalized beyond Claude Fable: it works for any premium/cheap split, whether
+that's Fable or Opus orchestrating Sonnet/Haiku, or OpenAI's GPT-5.6 Sol
+orchestrating Terra/Luna. The expensive model keeps decomposition,
+architecture, synthesis, and final review; cheaper subagents do the
+token-heavy scans, log reduction, bounded edits, and testing passes. Every
+delegation is a self-contained handoff packet with scope, evidence format, and
+stop conditions, and subagent reports are treated as leads, not facts — the
+premium model re-verifies cited evidence before declaring work done.
+
+```
+/plugin install use-premium-models-efficiently@patrickdappollonio
+```
+
+Then just ask: *"Find and fix the double-charge bug in this monorepo — delegate the heavy lifting."* [Read more →](plugins/use-premium-models-efficiently)
+
 ### visual-docs
 
 Fully local visual plans and recaps — a take on [BuilderIO's `/visual-plan`

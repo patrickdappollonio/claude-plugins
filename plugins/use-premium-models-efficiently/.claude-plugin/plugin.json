@@ -1,0 +1,12 @@
+{
+  "name": "use-premium-models-efficiently",
+  "description": "Run expensive top-tier models (Claude Fable/Opus, GPT-5.6 Sol, or similar) efficiently — the premium model keeps judgment, architecture, synthesis, and final review, while cheaper subagents (Sonnet, Haiku, Terra, Luna) do bounded token-heavy research, coding, and testing with self-contained handoffs and verified results.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Patrick D'appollonio",
+    "email": "patrickdappollonio@gmail.com"
+  },
+  "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/use-premium-models-efficiently",
+  "license": "MIT",
+  "keywords": ["orchestration", "subagents", "delegation", "cost-efficiency", "claude-fable", "gpt-5.6"]
+}

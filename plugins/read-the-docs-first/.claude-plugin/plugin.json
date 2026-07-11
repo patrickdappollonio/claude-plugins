@@ -1,0 +1,12 @@
+{
+  "name": "read-the-docs-first",
+  "description": "Docs-first discipline for anything involving third-party APIs, packages, providers, or fast-moving product behavior — the agent web-searches for current official docs and reads primary sources before assuming from memory, grounding answers in what the docs actually say.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Patrick D'appollonio",
+    "email": "patrickdappollonio@gmail.com"
+  },
+  "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/read-the-docs-first",
+  "license": "MIT",
+  "keywords": ["documentation", "docs-first", "api-drift", "web-search", "grounding", "official-docs"]
+}
