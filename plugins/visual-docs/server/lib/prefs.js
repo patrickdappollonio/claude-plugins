@@ -14,6 +14,7 @@ export const PREF_SCHEMA = {
   theme: (v) => v === 'light' || v === 'dark',
   navOpen: (v) => typeof v === 'boolean',
   sidebarTab: (v) => v === 'outline' || v === 'docs',
+  drawerOpen: (v) => typeof v === 'boolean',
 };
 
 /** Per-user viewer preferences (diff/migration view mode, theme, sidebar

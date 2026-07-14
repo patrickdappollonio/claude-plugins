@@ -168,8 +168,11 @@ node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-server.js" --serve "$DIR"
 
 The server self-manages via a lock file: if one is already serving `$DIR` (e.g.
 from a visual-plan earlier in the session) this just prints its URL and exits —
-new files appear in the sidebar automatically, no need to check first. To bind
-differently later (e.g. add `--host` for Tailscale), re-run with `--restart`.
+new files appear in the sidebar automatically, no need to check first. One
+server shows every doc in its directory (sidebar → Docs), so prefer writing into
+the already-served `$DIR` over serving a second directory — one URL for the
+whole session. To bind differently later (e.g. add `--host` for Tailscale),
+re-run with `--restart`.
 Give the user `http://127.0.0.1:<port>/#/<file>.md` and mention: live reload;
 they can **select any text** to comment on that exact snippet, or hover a
 heading or a rendered component (diagram, diff, …) and click the margin button

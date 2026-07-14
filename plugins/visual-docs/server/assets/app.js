@@ -50,6 +50,10 @@
     arrowLeft: svgIcon('<line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>'),
     arrowUp: svgIcon('<polyline points="18 15 12 9 6 15"/>'),
     arrowDown: svgIcon('<polyline points="6 9 12 15 18 9"/>'),
+    edit: svgIcon('<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/>'),
+    copy: svgIcon('<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>'),
+    send: svgIcon('<line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>'),
+    user: svgIcon('<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>'),
   };
 
   // Preact component for icons in htm markup.
@@ -172,6 +176,7 @@
     theme: 'vd-theme',
     navOpen: 'vd-nav-open',
     sidebarTab: 'vd-sidebar-tab',
+    drawerOpen: 'vd-drawer-open',
   };
 
   /** Read a preference's localStorage mirror, or `undefined` if never set.
@@ -1370,8 +1375,10 @@
   }
 
   /** Fill a question block's "answered" box with the submitted answer and hide
-      the form. Idempotent — safe to call on every comment update. */
-  function showQuestionAnswered(blk, answer) {
+      the form. Idempotent — safe to call on every comment update. `onChange`
+      (optional) wires a "Change answer" affordance; the optimistic call right
+      after submit omits it — the comments refresh adds it moments later. */
+  function showQuestionAnswered(blk, answer, onChange) {
     const form = blk.querySelector('.q-form');
     const box = blk.querySelector('.q-answered');
     if (!form || !box) return;
@@ -1382,6 +1389,25 @@
     ans.className = 'q-ans';
     ans.textContent = answer; // user text — never as HTML
     box.appendChild(ans);
+    if (onChange) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'q-change';
+      btn.textContent = 'Change answer';
+      btn.addEventListener('click', onChange);
+      box.appendChild(btn);
+    }
+  }
+
+  /** The reverse: bring the form back and clear the answered box, so a question
+      whose answer was dismissed becomes answerable again. */
+  function showQuestionUnanswered(blk) {
+    const form = blk.querySelector('.q-form');
+    const box = blk.querySelector('.q-answered');
+    if (!form || !box) return;
+    form.hidden = false;
+    box.hidden = true;
+    box.innerHTML = '';
   }
 
   /** Wire each ` ```question ` form so submitting sends the answer as a comment
@@ -1452,12 +1478,25 @@
     });
   }
 
-  /** Reflect already-answered questions (from stored comments) on load/refresh. */
-  function markAnsweredQuestions(container, comments) {
+  /** Reflect answered questions (from stored comments) on load/refresh — and
+      un-answer them again when every answer was dismissed, so dismissing an
+      answer from the comments panel resets the question in the doc too.
+      Resolved answers still count as answered (the agent acted on them).
+      onDismissAnswer(id) dismisses an answer comment ("Change answer"). */
+  function markAnsweredQuestions(container, comments, onDismissAnswer) {
     container.querySelectorAll('.question-block').forEach((blk) => {
       const id = blk.dataset.blockId || '';
-      const answers = comments.filter((c) => c.anchor && c.anchor.kind === 'component' && c.anchor.type === 'question' && c.anchor.id === id);
-      if (answers.length) showQuestionAnswered(blk, answers[answers.length - 1].text);
+      const answers = comments.filter((c) => c.anchor && c.anchor.kind === 'component' && c.anchor.type === 'question' && c.anchor.id === id
+        && commentStatus(c) !== 'dismissed');
+      if (!answers.length) { showQuestionUnanswered(blk); return; }
+      const last = answers[answers.length - 1];
+      showQuestionAnswered(blk, last.text, () => {
+        // A still-open answer is retracted properly (dismiss → refresh →
+        // the form comes back via this same function). A resolved one can't
+        // be dismissed — just reopen the form; the next submit supersedes it.
+        if (commentOpen(last) && onDismissAnswer) onDismissAnswer(last.id);
+        else showQuestionUnanswered(blk);
+      });
     });
   }
 
@@ -1568,6 +1607,7 @@
         range.setEnd(best.node, best.idx + c.anchor.quote.length);
         const mark = document.createElement('mark');
         mark.className = `comment-highlight st-${commentStatus(c)}`;
+        mark.dataset.commentId = c.id || '';
         mark.title = c.text;
         mark.addEventListener('click', () => onOpen());
         range.surroundContents(mark);
@@ -1633,6 +1673,58 @@
     }
     if (c.title || c.section) return `§ ${c.title || c.section}`;
     return '';
+  }
+
+  /** Compact relative time for the drawer ("2m ago"); the exact timestamp
+      always travels in the element's title attribute. */
+  function timeAgo(iso) {
+    const t = new Date(iso).getTime();
+    if (!Number.isFinite(t)) return '';
+    const s = Math.floor((Date.now() - t) / 1000);
+    if (s < 45) return 'just now';
+    const m = Math.floor(s / 60);
+    if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h ago`;
+    const d = Math.floor(h / 24);
+    if (d === 1) return 'yesterday';
+    if (d < 7) return `${d}d ago`;
+    return new Date(iso).toLocaleDateString();
+  }
+
+  /** When a comment last entered `st`, from the server-kept history array
+      (older comments.json files have none — callers must handle null). */
+  function statusTime(c, st) {
+    if (!Array.isArray(c.history)) return null;
+    for (let i = c.history.length - 1; i >= 0; i--) {
+      const e = c.history[i];
+      if (e && e.status === st && e.at) return e.at;
+    }
+    return null;
+  }
+
+  /** Scroll the rendered document to what a comment is anchored to and flash
+      it. Works for all three anchor kinds; a silent no-op when the target
+      can't be found (raw view, quote no longer present after a revision). */
+  function jumpToComment(c) {
+    const content = document.getElementById('content');
+    if (!content || !c) return;
+    let el = null;
+    if (c.anchor && c.anchor.kind === 'text') {
+      el = content.querySelector(`mark.comment-highlight[data-comment-id="${CSS.escape(c.id || '')}"]`);
+    } else if (c.anchor && c.anchor.kind === 'component' && c.anchor.id) {
+      el = content.querySelector(`[data-block-id="${CSS.escape(c.anchor.id)}"]`);
+    } else if (c.title || c.section) {
+      el = document.getElementById(commentSlug(c));
+    }
+    if (!el) return;
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+    // Restart the flash if the same target is clicked twice in a row.
+    el.classList.remove('jump-flash');
+    void el.offsetWidth;
+    el.classList.add('jump-flash');
+    setTimeout(() => el.classList.remove('jump-flash'), 1800);
   }
 
   /* ---------- feedback helpers ---------- */
@@ -1733,6 +1825,7 @@
       ? 'This page refreshes on its own whenever an agent edits the document file — no reload needed.'
       : conn === 'off' ? 'Lost the live-update connection — retrying.' : 'Connecting to the live-update stream…';
     return html`
+      <div class="sidebar-backdrop" aria-hidden="true" onClick=${onCollapse}></div>
       <aside id="sidebar">
         <header class="side-head">
           <span class="side-mark"><${Icon} name="doc" /></span>
@@ -1797,7 +1890,7 @@
   /** Renders sanitized markdown into a Preact-owned-but-manually-managed
       element. Preact never touches the children (the article is empty in its
       vdom), so imperative hydration is safe. */
-  function DocView({ doc, comments, theme, raw, onOpenSection, onOpenComponent, onOpenText, onViewComments, onAnswer, onOutline }) {
+  function DocView({ doc, comments, theme, raw, onOpenSection, onOpenComponent, onOpenText, onViewComments, onAnswer, onDismissAnswer, onOutline }) {
     const ref = useRef(null);
     const lastPath = useRef(null);
     const commentsRef = useRef(comments);
@@ -1831,7 +1924,7 @@
       hydrateMigrations(el);
       hydrateNomnoml(el);
       hydrateQuestions(el, onAnswer);
-      markAnsweredQuestions(el, comments);
+      markAnsweredQuestions(el, comments, onDismissAnswer);
       // Mark headings/components as commentable (ids + hover class); the gutter
       // button is the affordance. The cancel flag stops a stale async mermaid
       // render from touching a doc/theme that has moved on.
@@ -1849,7 +1942,7 @@
       lastPath.current = doc.path;
       window.scrollTo(0, changedDoc ? 0 : y);
       return () => { cancelled = true; };
-    }, [doc, theme, raw, onAnswer, onViewComments]);
+    }, [doc, theme, raw, onAnswer, onViewComments, onDismissAnswer]);
 
     // Re-apply highlights + answered state when the comment set changes (the doc
     // body is untouched here — the sibling effect above already drew them on
@@ -1858,8 +1951,8 @@
       const el = ref.current;
       if (!el || raw) return; // nothing to mark over raw source
       applyTextHighlights(el, comments, onViewComments);
-      markAnsweredQuestions(el, comments);
-    }, [comments, raw, onViewComments]);
+      markAnsweredQuestions(el, comments, onDismissAnswer);
+    }, [comments, raw, onViewComments, onDismissAnswer]);
 
     // Notion-style gutter comment button: a single button that follows the
     // hovered heading or component into the document's right margin, labelled
@@ -1882,6 +1975,7 @@
       let target = null;
       let action = null;
       let hideTimer = null;
+      let hintApplies = false; // set by showFor; place() may still suppress it
       const clearHide = () => { if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; } };
       const scheduleHide = () => { clearHide(); hideTimer = setTimeout(() => { wrap.hidden = true; target = null; action = null; }, 200); };
 
@@ -1893,11 +1987,30 @@
         // padding), not the padded element edge — otherwise the button floats
         // ~70px off the text with a big empty gap.
         const padRight = parseFloat(getComputedStyle(content).paddingRight) || 0;
-        let x = cr.right - padRight + 14;
-        const maxX = window.innerWidth - wrap.offsetWidth - 10;
-        if (x > maxX) x = maxX;
-        wrap.style.left = `${Math.round(x)}px`;
-        wrap.style.top = `${Math.round(Math.max(12, r.top))}px`;
+        const x = cr.right - padRight + 14;
+        // The free margin ends where the comment drawer (open panel or its
+        // collapsed rail, both at the viewport's right edge) begins.
+        const drawer = document.getElementById('comment-drawer');
+        const limit = drawer ? drawer.getBoundingClientRect().left : window.innerWidth;
+        // Never park the button under the fixed update banner (z-50) when a
+        // hovered block's top is clamped to the viewport edge.
+        const banner = document.querySelector('.update-banner');
+        const minY = Math.max(12, banner ? banner.getBoundingClientRect().bottom + 8 : 0);
+        // Measure at full intended size first (hint shown when it applies).
+        hint.hidden = !hintApplies;
+        wrap.classList.remove('inline');
+        if (x + wrap.offsetWidth + 10 <= limit) {
+          wrap.style.left = `${Math.round(x)}px`;
+          wrap.style.top = `${Math.round(Math.max(minY, r.top))}px`;
+          return;
+        }
+        // Not enough margin — dock the button inside the block's top-right
+        // corner instead of letting it get clipped or sit over the text mid-block.
+        wrap.classList.add('inline');
+        hint.hidden = true;
+        const inX = Math.max(cr.left + 8, Math.min(r.right, limit - 10) - wrap.offsetWidth);
+        wrap.style.left = `${Math.round(inX)}px`;
+        wrap.style.top = `${Math.round(Math.max(minY, r.top + 4))}px`;
       };
 
       // The top-level block child of the document under a node — so every block
@@ -1969,8 +2082,9 @@
         target = el;
         setCommentButtonLabel(btn, label, count);
         // The hint only applies where text selection is possible (components
-        // exclude it); show it for paragraphs, lists, headings, and code.
-        hint.hidden = el.matches(COMPONENT_SELECTOR);
+        // exclude it); place() shows it for paragraphs, lists, headings, and
+        // code — and suppresses it again in docked-inline mode.
+        hintApplies = !el.matches(COMPONENT_SELECTOR);
         wrap.hidden = false;
         place();
       };
@@ -2073,11 +2187,19 @@
       </article>`;
   }
 
-  function CommentDrawer({ open, target, comments, status, onExpand, onCollapse, onClearTarget, onSubmit, onCopy, onEdit, onDismiss }) {
+  function CommentDrawer({ open, target, comments, status, onExpand, onCollapse, onClearTarget, onSubmit, onCopy, onCopyOne, onEdit, onDismiss, onJump }) {
     const textRef = useRef(null);
+    const [tab, setTab] = useState('open'); // 'open' | 'done'
     const [editingId, setEditingId] = useState(null);
     const [editText, setEditText] = useState('');
     const editRef = useRef(null);
+    // Re-render once a minute while open so "2m ago" stays honest.
+    const [, setTick] = useState(0);
+    useEffect(() => {
+      if (!open) return;
+      const t = setInterval(() => setTick((n) => n + 1), 60000);
+      return () => clearInterval(t);
+    }, [open]);
     const t = target || {};
     // What's being commented on. Text anchors show the quote itself; section and
     // component anchors show a short label.
@@ -2091,6 +2213,11 @@
     useEffect(() => {
       if (editingId && editRef.current) editRef.current.focus();
     }, [editingId]);
+    // Picking an anchor is an intent to write a new comment — make sure the
+    // open list (where it will appear) is the one showing.
+    useEffect(() => {
+      if (hasTarget) setTab('open');
+    }, [hasTarget, contextLabel, pendingQuote]);
 
     const startEdit = (c) => {
       if (commentStatus(c) !== 'new' || editingId === c.id) return;
@@ -2128,81 +2255,129 @@
       if (!text) return;
       onSubmit(text);
       textRef.current.value = '';
+      textRef.current.style.height = '';
     };
     const copy = () => onCopy(textRef.current.value.trim());
+    const composerKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') submit(e);
+    };
+    // Auto-grow the composer with its content (capped in CSS via max-height).
+    const composerInput = (e) => {
+      e.target.style.height = 'auto';
+      e.target.style.height = `${e.target.scrollHeight}px`;
+    };
 
-    // Newest first, but keep resolved/dismissed comments sunk to the bottom.
-    const rank = { new: 0, acknowledged: 1, resolved: 2, dismissed: 3 };
-    const ordered = comments
-      .map((c, i) => ({ c, i }))
-      .sort((a, b) => (rank[commentStatus(a.c)] - rank[commentStatus(b.c)]) || (b.i - a.i))
-      .map((x) => x.c);
-    const statusLabel = { new: 'new', acknowledged: 'acknowledged', resolved: 'resolved', dismissed: 'dismissed' };
+    // Newest first within each tab; open (new/acknowledged) and done
+    // (resolved/dismissed) live behind a segmented filter instead of the old
+    // sunk-to-the-bottom single list.
+    const newestFirst = comments.map((c, i) => ({ c, i })).sort((a, b) => b.i - a.i).map((x) => x.c);
+    const openList = newestFirst.filter(commentOpen);
+    const doneList = newestFirst.filter((c) => !commentOpen(c));
+    const shown = tab === 'open' ? openList : doneList;
+    const sendHint = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘⏎ to send' : 'Ctrl+⏎ to send';
+
+    const renderEntry = (c) => {
+      const isText = c.anchor && c.anchor.kind === 'text';
+      const chip = isText ? '' : commentAnchorLabel(c);
+      const st = commentStatus(c);
+      const editable = st === 'new';
+      // Dismissable while the work hasn't been done: new or acknowledged.
+      const dismissable = st === 'new' || st === 'acknowledged';
+      const isEditing = editingId === c.id;
+      const canJump = !!(isText || (c.anchor && c.anchor.kind === 'component' && c.anchor.id) || c.section || c.title);
+      const ackAt = statusTime(c, 'acknowledged');
+      const resAt = statusTime(c, 'resolved');
+      const disAt = statusTime(c, 'dismissed');
+      return html`
+        <div class="comment-entry st-${st}${isEditing ? ' editing' : ''}" onDblClick=${() => startEdit(c)}>
+          <div class="ce-head">
+            <span class="ce-avatar" aria-hidden="true"><${Icon} name="user" /></span>
+            <span class="ce-who">You</span>
+            <span class="ce-when" title=${new Date(c.createdAt).toLocaleString()}>${timeAgo(c.createdAt)}</span>
+            ${c.editedAt ? html`<span class="ce-when" title=${new Date(c.editedAt).toLocaleString()}>· edited</span>` : null}
+            ${!isEditing ? html`
+              <div class="ce-actions">
+                ${editable ? html`
+                  <button type="button" class="ce-btn" title="Edit comment" aria-label="Edit comment"
+                    onClick=${() => startEdit(c)}><${Icon} name="edit" /></button>` : null}
+                <button type="button" class="ce-btn" title="Copy this comment as a prompt for your agent" aria-label="Copy as prompt"
+                  onClick=${() => onCopyOne(c)}><${Icon} name="copy" /></button>
+                ${dismissable ? html`
+                  <button type="button" class="ce-btn" title="Dismiss — the agent won't act on this comment" aria-label="Dismiss comment"
+                    onClick=${() => onDismiss(c.id)}><${Icon} name="close" /></button>` : null}
+              </div>` : null}
+          </div>
+          ${chip ? html`
+            <button type="button" class="ce-anchor" disabled=${!canJump}
+              title=${canJump ? 'Jump to this in the document' : null} onClick=${() => onJump(c)}>${chip}</button>` : null}
+          ${isText ? html`
+            <button type="button" class="ce-quote" title="Jump to this in the document" onClick=${() => onJump(c)}>${c.anchor.quote}</button>` : null}
+          ${isEditing
+            ? html`
+              <div class="c-edit">
+                <textarea class="c-edit-text" ref=${editRef} rows="3"
+                  value=${editText} onInput=${(e) => setEditText(e.target.value)}
+                  onKeyDown=${(e) => editKeyDown(e, c.id)}></textarea>
+                <div class="c-edit-actions">
+                  <button type="button" class="secondary" onClick=${cancelEdit}>Cancel</button>
+                  <button type="button" onClick=${() => saveEdit(c.id)}>Save</button>
+                </div>
+              </div>`
+            : html`<div class="ce-text">${c.text}</div>`}
+          ${st === 'acknowledged' ? html`
+            <div class="ce-state working"><span class="ce-dot" aria-hidden="true"></span>agent is working on this
+              ${ackAt ? html`<span class="ce-when" title=${new Date(ackAt).toLocaleString()}>· ${timeAgo(ackAt)}</span>` : null}</div>` : null}
+          ${st === 'resolved' ? html`
+            <div class="ce-state ok"><${Icon} name="check" />resolved by the agent
+              ${resAt ? html`<span class="ce-when" title=${new Date(resAt).toLocaleString()}>· ${timeAgo(resAt)}</span>` : null}</div>` : null}
+          ${st === 'dismissed' ? html`
+            <div class="ce-state muted"><${Icon} name="close" />dismissed
+              ${disAt ? html`<span class="ce-when" title=${new Date(disAt).toLocaleString()}>· ${timeAgo(disAt)}</span>` : null}</div>` : null}
+        </div>`;
+    };
+
     return html`
+      <div class="drawer-backdrop" aria-hidden="true" onClick=${onCollapse}></div>
       <aside id="comment-drawer">
         <header class="drawer-head">
-          <span class="mono tb-label">comments</span>
+          <span class="drawer-title">Comments</span>
           <button id="drawer-close" class="side-icon-btn" title="Collapse comments panel" aria-label="Collapse comments panel" onClick=${onCollapse}><${Icon} name="chevronRight" /></button>
         </header>
+        <div class="drawer-tabs" role="tablist" aria-label="Filter comments">
+          <button type="button" role="tab" aria-selected=${tab === 'open'} class=${tab === 'open' ? 'active' : ''}
+            onClick=${() => setTab('open')}>Open <span class="n">${openList.length}</span></button>
+          <button type="button" role="tab" aria-selected=${tab === 'done'} class=${tab === 'done' ? 'active' : ''}
+            onClick=${() => setTab('done')}>Resolved <span class="n">${doneList.length}</span></button>
+        </div>
         <div id="comment-list">
-          ${ordered.length === 0
-            ? html`<p class="mono" style="color:var(--ink-soft)">No comments yet. Anything you write here is saved locally and read back by the agent.</p>`
-            : ordered.map((c) => {
-              const isText = c.anchor && c.anchor.kind === 'text';
-              const chip = isText ? '' : commentAnchorLabel(c);
-              const st = commentStatus(c);
-              const editable = st === 'new';
-              // Dismissable while the work hasn't been done: new or acknowledged.
-              const dismissable = st === 'new' || st === 'acknowledged';
-              const isEditing = editingId === c.id;
-              return html`
-                <div class="comment-item st-${st}${isEditing ? ' editing' : ''}"
-                  title=${editable && !isEditing ? 'Double-click to edit' : null}
-                  onDblClick=${() => startEdit(c)}>
-                  <div class="c-meta">
-                    <span class="c-status s-${st}">${statusLabel[st]}</span>
-                    ${chip ? html`<span class="c-section">${chip}</span>` : null}
-                    <span>${new Date(c.createdAt).toLocaleString()}</span>
-                    ${c.editedAt ? html`<span class="c-edited">(edited)</span>` : null}
-                    ${dismissable && !isEditing ? html`
-                      <button type="button" class="c-dismiss" title="Dismiss — the agent won't act on this comment"
-                        aria-label="Dismiss comment" onClick=${(e) => { e.stopPropagation(); onDismiss(c.id); }}>
-                        <${Icon} name="close" />
-                      </button>` : null}
-                  </div>
-                  ${isText ? html`<div class="c-quote">“${c.anchor.quote}”</div>` : null}
-                  ${isEditing
-                    ? html`
-                      <div class="c-edit">
-                        <textarea class="c-edit-text" ref=${editRef} rows="3"
-                          value=${editText} onInput=${(e) => setEditText(e.target.value)}
-                          onKeyDown=${(e) => editKeyDown(e, c.id)}></textarea>
-                        <div class="c-edit-actions">
-                          <button type="button" class="secondary" onClick=${cancelEdit}>Cancel</button>
-                          <button type="button" onClick=${() => saveEdit(c.id)}>Save</button>
-                        </div>
-                      </div>`
-                    : html`<div class="c-text">${c.text}</div>`}
-                </div>`;
-            })}
+          ${shown.length === 0
+            ? html`<p class="list-empty">${tab === 'open'
+                ? (comments.length ? 'No open comments — everything has been resolved or dismissed.' : 'No comments yet. Anything you write here is saved locally and read back by the agent.')
+                : 'Nothing here yet — comments the agent resolves (or you dismiss) move to this tab.'}</p>`
+            : shown.map(renderEntry)}
         </div>
         <form id="comment-form" onSubmit=${submit}>
-          ${hasTarget ? html`
-            <div id="comment-context">
-              <div class="ctx-body mono">
-                <span class="ctx-lead">commenting on</span>
-                ${pendingQuote
-                  ? html`<span class="ctx-quote">“${pendingQuote.length > 90 ? pendingQuote.slice(0, 90) + '…' : pendingQuote}”</span>`
-                  : html`<span class="ctx-label">${contextLabel}</span>`}
-              </div>
-              <button type="button" class="ctx-clear" title="Cancel — comment on the document instead" onClick=${onClearTarget}><${Icon} name="close" /></button>
-            </div>` : null}
-          <textarea id="comment-text" rows="4" ref=${textRef} placeholder="Leave feedback for the agent… It will read this before revising the document." required></textarea>
-          <div class="form-actions">
-            <button type="button" id="copy-prompt-btn" class="secondary" title="Copy this feedback as a prompt you can paste to your agent" onClick=${copy}>Copy as prompt</button>
-            <button type="submit">Add comment</button>
+          <div class="composer-box">
+            ${hasTarget ? html`
+              <div class="composer-ctx">
+                <span class="ctx-chip" title=${pendingQuote || contextLabel}>
+                  ${pendingQuote
+                    ? `“${pendingQuote.length > 70 ? pendingQuote.slice(0, 70) + '…' : pendingQuote}”`
+                    : contextLabel}
+                </span>
+                <button type="button" class="ce-btn" title="Cancel — comment on the whole document instead" aria-label="Comment on the whole document instead" onClick=${onClearTarget}><${Icon} name="close" /></button>
+              </div>` : null}
+            <textarea id="comment-text" rows="2" ref=${textRef}
+              placeholder=${hasTarget ? 'Comment on this…' : 'Leave feedback for the agent…'}
+              required onKeyDown=${composerKeyDown} onInput=${composerInput}></textarea>
+            <div class="composer-bar">
+              <span class="composer-hint">${sendHint}</span>
+              <span class="spacer"></span>
+              <button type="button" id="copy-prompt-btn" class="ce-btn" title="Copy as a prompt you can paste to your agent instead" aria-label="Copy as prompt" onClick=${copy}><${Icon} name="copy" /></button>
+              <button type="submit" class="composer-send" title="Add comment" aria-label="Add comment"><${Icon} name="send" /></button>
+            </div>
           </div>
-          ${status ? html`<div id="comment-status" class="mono" data-tone=${status.tone}>${status.msg}</div>` : null}
+          ${status ? html`<div id="comment-status" data-tone=${status.tone} role="status"><${Icon} name=${status.tone === 'warn' ? 'warning' : 'check'} /><span>${status.msg}</span></div>` : null}
         </form>
       </aside>`;
   }
@@ -2222,11 +2397,20 @@
 
   function initialNavOpen() {
     const stored = readLocalPref('navOpen');
-    return typeof stored === 'boolean' ? stored : true;
+    if (typeof stored === 'boolean') return stored;
+    // First visit on a small screen: the expanded sidebar would overlay the
+    // document (see the 760px media query), so start from the collapsed rail.
+    return !matchMedia('(max-width: 760px)').matches;
   }
 
   function initialSidebarTab() {
     return readLocalPref('sidebarTab') === 'docs' ? 'docs' : 'outline';
+  }
+
+  // Comments drawer open/collapsed, persisted like navOpen. Defaults to
+  // collapsed (the historical behavior) when no preference is stored.
+  function initialDrawerOpen() {
+    return readLocalPref('drawerOpen') === true;
   }
 
   function App() {
@@ -2237,7 +2421,7 @@
     const [theme, setTheme] = useState(initialTheme());
     const [conn, setConn] = useState('connecting');
     // target describes the comment anchor: {section,title} | {anchor} | {} (doc-level)
-    const [drawer, setDrawer] = useState({ open: false, target: {} });
+    const [drawer, setDrawer] = useState({ open: initialDrawerOpen(), target: {} });
     const [status, setStatus] = useState(null);
     const [raw, setRaw] = useState(false);
     const [navOpen, setNavOpenState] = useState(initialNavOpen());
@@ -2306,6 +2490,15 @@
           setSidebarTabState((prev) => {
             if (prefs.sidebarTab !== prev) writeLocalPref('sidebarTab', prefs.sidebarTab);
             return prefs.sidebarTab;
+          });
+        }
+        if (!touchedPrefs.has('drawerOpen') && typeof prefs.drawerOpen === 'boolean') {
+          setDrawer((d) => {
+            if (prefs.drawerOpen === d.open) return d;
+            writeLocalPref('drawerOpen', prefs.drawerOpen);
+            // Keep the pending anchor when the server opens the drawer; clear
+            // it when collapsing, same as an explicit collapse.
+            return prefs.drawerOpen ? { ...d, open: true } : { open: false, target: {} };
           });
         }
       }).catch(() => { /* offline or first run — keep the local/default values */ });
@@ -2424,9 +2617,16 @@
         if (prev !== 'light') setTheme(prev);
       }, 120);
     };
-    const openSection = useCallback((section, title) => setDrawer({ open: true, target: { section, title } }), []);
-    const openComponent = useCallback((anchor) => setDrawer({ open: true, target: { anchor } }), []);
-    const openText = useCallback((anchor) => setDrawer({ open: true, target: { anchor } }), []);
+    // Every path that opens/collapses the drawer goes through these two, so the
+    // persisted preference always matches what's on screen. Persist only on an
+    // actual flip — opening for a new anchor while already open is not a change.
+    const openDrawer = useCallback((target) => setDrawer((d) => {
+      if (!d.open) setPref('drawerOpen', true);
+      return { open: true, target };
+    }), []);
+    const openSection = useCallback((section, title) => openDrawer({ section, title }), [openDrawer]);
+    const openComponent = useCallback((anchor) => openDrawer({ anchor }), [openDrawer]);
+    const openText = useCallback((anchor) => openDrawer({ anchor }), [openDrawer]);
     // Submit an answer to a ```question fence as a comment anchored to it.
     const answerQuestion = useCallback(async (anchor, text) => {
       const cur = currentRef.current;
@@ -2449,9 +2649,9 @@
         setStatus({ msg: ok ? 'Saving failed, but the answer was copied — paste it to your agent.' : 'Saving failed and clipboard is unavailable.', tone: 'warn' });
       }
     }, [loadComments, doc]);
-    const openComments = useCallback(() => setDrawer({ open: true, target: {} }), []);
+    const openComments = useCallback(() => openDrawer({}), [openDrawer]);
     // Collapse resets the target so reopening starts document-level, not on a stale anchor.
-    const collapseDrawer = () => setDrawer({ open: false, target: {} });
+    const collapseDrawer = () => { setPref('drawerOpen', false); setDrawer({ open: false, target: {} }); };
     // Cancel the pending anchor but keep the drawer open (comment on the doc instead).
     const clearTarget = useCallback(() => setDrawer((d) => ({ ...d, target: {} })), []);
 
@@ -2510,7 +2710,10 @@
       }
     };
 
-    const dismissComment = async (id) => {
+    // Memoized: also handed to DocView (question "Change answer"), whose
+    // effects list it as a dependency — a fresh identity per render would
+    // re-run them constantly.
+    const dismissComment = useCallback(async (id) => {
       const cur = currentRef.current;
       try {
         await api('/api/comments/status', {
@@ -2522,7 +2725,7 @@
       } catch (err) {
         setStatus({ msg: (err && err.serverMessage) || 'Dismissing failed.', tone: 'warn' });
       }
-    };
+    }, [loadComments]);
 
     const copyPrompt = async (draftText) => {
       const cur = currentRef.current;
@@ -2539,6 +2742,12 @@
       setStatus({ msg: ok ? 'Prompt copied — paste it to your agent.' : 'Copy failed — select the text manually.', tone: ok ? 'ok' : 'warn' });
     };
 
+    // Copy a single existing comment as a paste-ready prompt (per-entry action).
+    const copyPromptOne = async (c) => {
+      const ok = await copyToClipboard(buildPrompt(currentRef.current, [c]));
+      setStatus({ msg: ok ? 'Comment copied as a prompt — paste it to your agent.' : 'Copy failed — select the text manually.', tone: ok ? 'ok' : 'warn' });
+    };
+
     const openCount = comments.filter(commentOpen).length;
     const versionMismatch = !!(versionInfo.installedVersion && versionInfo.installedVersion !== versionInfo.serverVersion);
 
@@ -2552,7 +2761,8 @@
     } else {
       main = html`<${DocView} doc=${doc} comments=${comments} theme=${theme} raw=${raw}
         onOpenSection=${openSection} onOpenComponent=${openComponent}
-        onOpenText=${openText} onViewComments=${openComments} onAnswer=${answerQuestion} onOutline=${setOutline} />`;
+        onOpenText=${openText} onViewComments=${openComments} onAnswer=${answerQuestion}
+        onDismissAnswer=${dismissComment} onOutline=${setOutline} />`;
     }
 
     return html`
@@ -2573,7 +2783,7 @@
       <${CommentDrawer}
         open=${drawer.open} target=${drawer.target}
         comments=${comments} status=${status}
-        onExpand=${openComments} onCollapse=${collapseDrawer} onClearTarget=${clearTarget} onSubmit=${submitComment} onCopy=${copyPrompt} onEdit=${editComment} onDismiss=${dismissComment} />`;
+        onExpand=${openComments} onCollapse=${collapseDrawer} onClearTarget=${clearTarget} onSubmit=${submitComment} onCopy=${copyPrompt} onCopyOne=${copyPromptOne} onEdit=${editComment} onDismiss=${dismissComment} onJump=${jumpToComment} />`;
   }
 
   /* ================================================================

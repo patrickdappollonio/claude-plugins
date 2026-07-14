@@ -154,6 +154,12 @@ whatever's picked — pure custom text with no option selected, or an optional
 note appended to a selected option (stored as `<option> — <note>`). Put these
 in an `## Open questions` section (or wherever a decision is needed).
 
+Answers are retractable until you resolve them: the reader can dismiss the
+answer comment (from the comments panel, or via **Change answer** on the
+question card), which resets the question to unanswered in the doc. Treat a
+dismissed answer as retracted — don't act on it; if a new answer follows, the
+newest non-dismissed one is the reader's decision.
+
     ```question
     What should the default rate limit be?
     - 100 req/min (conservative)
@@ -320,9 +326,12 @@ dismiss their own comment from the viewer, or you can set it when the user
 retracts one in chat). Dismissing is only allowed while the comment is still
 `new` or `acknowledged` — a `resolved` comment stays resolved (the server
 rejects the transition). Dismissed comments drop out of the open-comments digest
-and counts, like resolved ones. New comments start as `new`. As you work, set
-status with the server's `--status` command — **don't hand-edit
-`comments.json`:**
+and counts, like resolved ones. New comments start as `new`. Status changes are
+timestamped and shown to the reader in the viewer ("agent is working on this ·
+2m ago", "resolved by the agent · just now"), so set `acknowledged` when you
+actually start on a comment and `resolved` right when you've addressed it — the
+timeline is the reader's live progress indicator. As you work, set status with
+the server's `--status` command — **don't hand-edit `comments.json`:**
 
 ```
 node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-server.js" --status "$DIR" <id> acknowledged

@@ -77,6 +77,9 @@ Those wrap the HTTP API, which exists for the browser client / direct use: `GET
 (`{id|ids, status}`), `GET /api/comments` (raw JSON, browser only). Lifecycle
 `status`: **new → acknowledged → resolved** (legacy `resolved:true` still
 honored); hand-editing the JSON still works but the CLI/endpoint is supported.
+Each status change appends `{status, at}` to the comment's `history` array
+(server-side, capped at 20) — the viewer renders it as lifecycle microcopy
+("agent is working on this · 2m ago"); older files without `history` still work.
 Rule of thumb: **don't serve JSON to the agent — format it** (markdown digest,
 `--docdir`/`--serve`/`--status` all print ready-to-read text).
 Anchors: text (quote+prefix/suffix), component (type+stable-id+hint), or section
