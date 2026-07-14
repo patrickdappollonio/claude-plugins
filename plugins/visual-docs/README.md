@@ -12,6 +12,8 @@ hosted service, no account, and no remote page trying to connect to your
 localhost (the thing browsers like Brave block by default). The page you open
 is served *by* the local server itself, so everything just works.
 
+![The visual-docs viewer rendering a plan: TL;DR card, Mermaid diagram, and the comments panel with live agent status](../../assets/visual-docs-viewer.png)
+
 ## Install
 
 ```

@@ -121,6 +121,8 @@ The page live-reloads as the agent edits, and you can pin comments to any
 section — the agent reads them before revising, closing the feedback loop
 without leaving your browser.
 
+![The visual-docs viewer rendering a plan with its comments panel open](assets/visual-docs-viewer.png)
+
 ```
 /plugin install visual-docs@patrickdappollonio
 ```
