@@ -149,6 +149,11 @@ The output contains `VISUAL_DOCS_URL=http://127.0.0.1:<port>/`. The server binds
 to localhost on a random free port, has no dependencies, and serves the renderer
 libraries from vendored local copies — the whole flow works offline.
 
+One server shows every doc in its directory (sidebar → Docs), so write new
+documents into the already-served `$DIR` instead of serving a second directory —
+one URL for the whole session. Only serve a separate directory for content with
+a different lifecycle (e.g. disposable test fixtures whose comments get churned).
+
 If the user asks to review from another device (LAN, Tailscale), add a bare
 `--host` flag (with `--restart` if a localhost-only instance is already up): the
 server binds all interfaces and prints a `Network: http://<ip>:<port>/` line per

@@ -588,6 +588,14 @@ export async function startServer({ dir, port = 0, host = '127.0.0.1', watch: en
               if (payload.status === 'dismissed' && commentStatus(c) === 'resolved') {
                 return { conflict: `comment ${c.id} is already resolved and can no longer be dismissed` };
               }
+              // Record when each transition happened so the viewer can show
+              // "resolved by the agent · 2m ago" instead of a bare badge.
+              // Older comments.json files simply have no history array.
+              if (commentStatus(c) !== payload.status) {
+                if (!Array.isArray(c.history)) c.history = [];
+                c.history.push({ status: payload.status, at: new Date().toISOString() });
+                if (c.history.length > 20) c.history = c.history.slice(-20);
+              }
               c.status = payload.status;
               c.resolved = payload.status === 'resolved'; // keep legacy flag in sync
               updated.push(c);

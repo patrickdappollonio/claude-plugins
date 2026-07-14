@@ -12,6 +12,8 @@ hosted service, no account, and no remote page trying to connect to your
 localhost (the thing browsers like Brave block by default). The page you open
 is served *by* the local server itself, so everything just works.
 
+![The visual-docs viewer rendering a plan: TL;DR card, Mermaid diagram, and the comments panel with live agent status](../../assets/visual-docs-viewer.png)
+
 ## Install
 
 ```
@@ -44,13 +46,17 @@ Two skills your agent picks up automatically:
 5. **You leave feedback without switching windows**: **select any text** to
    comment on that exact snippet (it gets highlighted), hover a section heading
    or a rendered component — a diagram, diff, migration, API card — to pin a
-   comment there, or use the comment drawer for document-level notes. The agent
+   comment there, or use the comments panel for document-level notes. The agent
    reads your comments (each labelled with what it's anchored to) before its
-   next revision and marks them resolved as it addresses them. Changed your
-   mind before the agent gets to it? Double-click a comment the agent hasn't
-   acknowledged yet to edit its text in place, or hover it and hit **×** to
-   dismiss it entirely — dismissal works until the comment is resolved, and a
-   dismissed comment never reaches the agent's digest.
+   next revision and marks them resolved as it addresses them. The panel is
+   Notion-style: an **Open / Resolved** filter instead of one long list, and
+   each comment shows its lifecycle as it happens — *agent is working on
+   this*, *resolved by the agent* — with when it happened. Click a comment's
+   quoted text or anchor chip to **jump to that exact spot** in the document.
+   Changed your mind before the agent gets to it? Hover a comment for its
+   actions: edit its text (until the agent acknowledges it), copy it as a
+   prompt, or dismiss it — dismissal works until the comment is resolved, and
+   a dismissed comment never reaches the agent's digest.
 6. If you'd rather talk to the agent directly — or the server was stopped —
    hit **"Copy as prompt"** and your feedback is turned into a ready-to-paste
    message for the chat.
@@ -70,7 +76,7 @@ but in the viewer these fences get special treatment:
 | ` ```api ` / ` ```http ` | Styled HTTP request/response cards, `curl -v` style — method & status badges, collapsible headers, pretty-printed JSON |
 | ` ```openapi ` / ` ```swagger ` | Read-only OpenAPI explorer — expandable endpoints with parameters, request bodies, and responses |
 | ` ```filetree ` / ` ```files ` | "What changed" file map — coloured A/M/D/R change badges, paths, and per-file notes, grouped by area |
-| ` ```question ` / ` ```ask ` | An interactive question — single/multi-select options plus a custom answer; the reply is saved as a comment for the agent |
+| ` ```question ` / ` ```ask ` | An interactive question — single/multi-select options plus a custom answer; the reply is saved as a comment for the agent, and can be changed or retracted until the agent resolves it |
 | Any other language | Syntax-highlighted code with a language tag |
 
 The unified/side-by-side choice is a single **global** preference: clicking

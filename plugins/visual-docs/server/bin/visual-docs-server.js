@@ -39,7 +39,7 @@ Options:
                    while the comment is still new or acknowledged)
   --prefs [<key> <value>]
                    Print the persisted viewer preferences, or set one
-                   (viewMode|theme|navOpen|sidebarTab; no server needed)
+                   (viewMode|theme|navOpen|sidebarTab|drawerOpen; no server needed)
   --export <dir> <doc.md> [--out <file>]
                    Build one self-contained HTML file for a doc (no server
                    needed) — full rendering fidelity, works offline from
