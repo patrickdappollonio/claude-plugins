@@ -500,8 +500,9 @@ export async function startServer({ dir, port = 0, host = '127.0.0.1', watch: en
         let entry;
         try {
           entry = await withTrash(() => trashDoc(root, p, abs, title));
-        } catch {
-          return sendJSON(res, 404, { error: 'not found' }); // moved/deleted underneath us
+        } catch (err) {
+          if (err && err.code === 'ENOENT') return sendJSON(res, 404, { error: 'not found' }); // moved/deleted underneath us
+          throw err; // real failure → request-level 500 with its message logged
         }
         broadcast({ type: 'change', path: p });
         return sendJSON(res, 200, { entry: { ...entry, daysLeft: daysLeft(entry.trashedAt) } });
@@ -515,8 +516,9 @@ export async function startServer({ dir, port = 0, host = '127.0.0.1', watch: en
         let result;
         try {
           result = await withTrash(() => restoreDoc(root, id));
-        } catch {
-          return sendJSON(res, 404, { error: 'trashed file is missing' });
+        } catch (err) {
+          if (err && err.code === 'ENOENT') return sendJSON(res, 404, { error: 'trashed file is missing' });
+          return sendJSON(res, 409, { error: (err && err.message) || 'restore failed' });
         }
         if (!result) return sendJSON(res, 404, { error: 'unknown trash id' });
         broadcast({ type: 'change', path: result.restoredTo });

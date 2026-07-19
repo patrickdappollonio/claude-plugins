@@ -1,5 +1,5 @@
 import { promises as fs } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { join, dirname, resolve, sep } from 'node:path';
 
 // A trashed document is recoverable for this many days; after that the sweep
 // deletes the file, its manifest entry, and its comments for good.
@@ -9,6 +9,16 @@ const RETENTION_MS = TRASH_RETENTION_DAYS * DAY_MS;
 
 const trashDir = (root) => join(root, '.visual-docs', 'trash');
 const manifestFile = (root) => join(root, '.visual-docs', 'trash.json');
+
+// Manifest ids/paths are untrusted (the file is hand-editable and restore ids
+// arrive over HTTP): never let them address the filesystem outside the root.
+const ID_RE = /^t-\d+-[a-z0-9]+$/;
+function containedDest(root, candidate) {
+  if (!/\.(md|markdown)$/i.test(candidate)) return null;
+  if (candidate.split('/').some((s) => s === '' || s.startsWith('.'))) return null;
+  const abs = resolve(root, candidate);
+  return abs.startsWith(resolve(root) + sep) ? abs : null;
+}
 
 /** Same policy as the comments store: an unreadable manifest is moved aside
     (never silently overwritten) and treated as empty. */
@@ -62,6 +72,7 @@ export async function trashDoc(root, relPath, abs, title) {
 }
 
 export async function restoreDoc(root, id) {
+  if (!ID_RE.test(id)) return null;
   const data = await readTrash(root);
   const entry = data.entries.find((e) => e.id === id);
   if (!entry) return null;
@@ -73,7 +84,8 @@ export async function restoreDoc(root, id) {
     const candidate = n === 0 ? entry.path
       : entry.path.replace(/(\.(md|markdown))$/i, n === 1 ? ' (restored)$1' : ` (restored ${n})$1`);
     if (n > 0 && candidate === entry.path) break; // no extension to suffix — same path forever
-    const dest = join(root, candidate);
+    const dest = containedDest(root, candidate);
+    if (!dest) break; // tampered or unsuffixable path — fail loud below, never escape the root
     try { await fs.access(dest); continue; } catch { /* free */ }
     await fs.mkdir(dirname(dest), { recursive: true });
     await fs.rename(src, dest);
@@ -82,7 +94,7 @@ export async function restoreDoc(root, id) {
   }
   // Never drop the manifest entry unless the file actually moved back — a
   // failed restore must stay restorable, not become an invisible orphan.
-  if (restoredTo === null) throw new Error(`no free path to restore ${entry.path}`);
+  if (restoredTo === null) throw new Error(`cannot restore ${entry.path} — no safe destination`);
   data.entries = data.entries.filter((e) => e.id !== id);
   await writeTrash(root, data);
   return { ...entry, restoredTo };
@@ -100,7 +112,7 @@ export async function sweepExpired(root) {
   });
   if (!expired.length) return [];
   for (const e of expired) {
-    await fs.rm(join(trashDir(root), `${e.id}.md`), { force: true });
+    if (ID_RE.test(e.id)) await fs.rm(join(trashDir(root), `${e.id}.md`), { force: true });
   }
   data.entries = data.entries.filter((e) => !expired.includes(e));
   await writeTrash(root, data);

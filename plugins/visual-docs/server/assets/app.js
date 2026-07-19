@@ -2733,7 +2733,8 @@
         const remaining = await loadDocs();
         // Never leave the reader on a trashed doc.
         if (currentRef.current === path) {
-          const next = (remaining || []).find((d) => d.path !== path);
+          // The fresh list is already post-trash, so it can't contain `path` — just take the first.
+          const next = (remaining || [])[0];
           if (next) {
             location.hash = `#/${next.path}`;
           } else {

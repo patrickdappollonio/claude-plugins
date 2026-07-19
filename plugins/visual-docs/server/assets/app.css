@@ -162,7 +162,7 @@ button { font: inherit; cursor: pointer; }
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
 }
 .side-tabs .seg-btn.active { color: var(--ink); }
-.side-tabs .seg-count {
+.side-tabs .seg-count, .trash-head .seg-count {
   font-size: 0.62rem; font-weight: 600; padding: 0 5px; border-radius: 999px;
   background: color-mix(in srgb, var(--ink-soft) 22%, transparent); color: var(--ink-soft);
 }
@@ -924,8 +924,8 @@ body:has(.update-banner) #app { padding-top: 37px; }
 .row-action:hover { background: rgba(120, 118, 113, 0.16); color: var(--ink); }
 .row-trash:hover { color: var(--danger); }
 .row-action .icon { width: 14px; height: 14px; }
-/* Keep titles clear of the revealed action. */
-.doc-row:hover .dl-title, .doc-row:hover .dl-path { padding-right: 26px; }
+/* Reserve the action gutter permanently so the reveal on hover doesn't reflow text. */
+.doc-row .dl-title, .doc-row .dl-path { padding-right: 26px; }
 
 /* Trash section: collapsed drawer at the bottom of the Docs tab. */
 .trash-section { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 6px; }

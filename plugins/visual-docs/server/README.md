@@ -87,11 +87,13 @@ Try the kitchen-sink example: `visual-docs-server examples/`.
 
 | Endpoint | Description |
 | :------- | :---------- |
-| `GET /api/docs` | List markdown files (path, title, mtime) |
+| `GET /api/docs` | List markdown files (path, title, mtime); also returns `startedAt` and the `trash` list — see below |
 | `GET /api/doc?path=<rel>` | Raw markdown + mtime for one file |
 | `GET /api/comments[?path=<rel>]` | Reader comments (optionally per document) |
 | `POST /api/comments` | Add a comment: `{path, section, text}` |
 | `POST /api/comments/status` | Set lifecycle state: `{id\|ids, status}` (`new`/`acknowledged`/`resolved`) |
+| `POST /api/trash` | Move a document to the trash: `{path}` — see Trash below |
+| `POST /api/trash/restore` | Move a trashed document back: `{id}` — see Trash below |
 | `GET /api/events` | SSE stream: `{type: "change"\|"comment", path}` |
 | `GET /agent/comments.md[?path=<rel>]` | Open comments as a readable markdown digest |
 | `GET /files/<rel>` | Images referenced by documents (content-verified by magic bytes) |
