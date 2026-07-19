@@ -54,6 +54,8 @@
     copy: svgIcon('<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>'),
     send: svgIcon('<line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>'),
     user: svgIcon('<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>'),
+    trash: svgIcon('<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>'),
+    restore: svgIcon('<polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>'),
   };
 
   // Preact component for icons in htm markup.
@@ -1814,6 +1816,7 @@
     // outline — a short-doc set rarely needs a file list, but a table of contents
     // is always useful. Lifted to App (as `sidebarTab`) so it can be persisted.
     const setTab = onTabChange;
+    const [trashOpen, setTrashOpen] = useState(false);
     const scrollToHeading = (id) => {
       const el = id && document.getElementById(id);
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1849,6 +1852,8 @@
           <span class="dl-title">${d.title}</span>
           <span class="dl-path mono" title=${`${d.path} · ${fmtTime(d.mtime)}`}>${d.path} · ${fmtRel(d.mtime)}</span>
         </a>
+        <button class="row-action row-trash" title="Move to Trash (recoverable for 10 days)"
+          aria-label=${`Move ${d.title} to Trash`} onClick=${() => onTrash(d.path)}><${Icon} name="trash" /></button>
       </div>`;
     return html`
       <div class="sidebar-backdrop" aria-hidden="true" onClick=${onCollapse}></div>
@@ -1878,6 +1883,21 @@
               ${recent.map((d) => docRow(d, false))}
               ${earlier.length ? html`<div class="dl-group-label">Earlier</div>` : null}
               ${earlier.map((d) => docRow(d, true))}
+              ${trash.length ? html`
+                <div class="trash-section">
+                  <button class="trash-head" aria-expanded=${trashOpen} onClick=${() => setTrashOpen((o) => !o)}>
+                    <${Icon} name="trash" /> Trash <span class="seg-count">${trash.length}</span>
+                    <${Icon} name=${trashOpen ? 'arrowUp' : 'arrowDown'} />
+                  </button>
+                  ${trashOpen ? html`
+                    <div class="trash-note">Items are permanently deleted after 10 days.</div>
+                    ${trash.map((t) => html`
+                      <div class="trash-row">
+                        <span class="tr-title" title=${t.path}>${t.title}</span>
+                        <span class="tr-meta mono">${t.daysLeft > 0 ? `${t.daysLeft} day${t.daysLeft === 1 ? '' : 's'} left` : 'deleting soon'}</span>
+                        <button class="row-action" title="Restore" aria-label=${`Restore ${t.title}`} onClick=${() => onRestore(t.id)}><${Icon} name="restore" /></button>
+                      </div>`)}` : null}
+                </div>` : null}
             </nav>`}
         <footer class="side-foot mono" title=${connTitle}>
           <span id="conn-dot" class="dot ${conn === 'on' ? 'on' : conn === 'off' ? 'off' : ''}"></span>
@@ -2450,6 +2470,8 @@
     // target describes the comment anchor: {section,title} | {anchor} | {} (doc-level)
     const [drawer, setDrawer] = useState({ open: initialDrawerOpen(), target: {} });
     const [status, setStatus] = useState(null);
+    // Global toast (bottom center): {msg, tone, action?: {label, run}}.
+    const [toast, setToast] = useState(null);
     const [raw, setRaw] = useState(false);
     const [navOpen, setNavOpenState] = useState(initialNavOpen());
     const [sidebarTab, setSidebarTabState] = useState(initialSidebarTab());
@@ -2624,6 +2646,13 @@
       return () => clearTimeout(t);
     }, [status]);
 
+    // Auto-dismiss the toast — long enough to read and hit Undo.
+    useEffect(() => {
+      if (!toast) return;
+      const t = setTimeout(() => setToast(null), 6000);
+      return () => clearTimeout(t);
+    }, [toast]);
+
     // Reset to the rendered view whenever the document changes.
     useEffect(() => setRaw(false), [current]);
 
@@ -2683,6 +2712,41 @@
     const collapseDrawer = () => { setPref('drawerOpen', false); setDrawer({ open: false, target: {} }); };
     // Cancel the pending anchor but keep the drawer open (comment on the doc instead).
     const clearTarget = useCallback(() => setDrawer((d) => ({ ...d, target: {} })), []);
+
+    const restoreFromTrash = useCallback(async (id) => {
+      try {
+        const r = await api('/api/trash/restore', {
+          method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id }),
+        });
+        await loadDocs();
+        setToast({ msg: r.renamed ? `Restored as ${r.path} — the original name was taken.` : 'Restored.', tone: 'ok' });
+      } catch (err) {
+        setToast({ msg: (err && err.serverMessage) || 'Restore failed.', tone: 'warn' });
+      }
+    }, [loadDocs]);
+
+    const moveDocToTrash = useCallback(async (path) => {
+      try {
+        const { entry } = await api('/api/trash', {
+          method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ path }),
+        });
+        const remaining = await loadDocs();
+        // Never leave the reader on a trashed doc.
+        if (currentRef.current === path) {
+          const next = (remaining || []).find((d) => d.path !== path);
+          if (next) {
+            location.hash = `#/${next.path}`;
+          } else {
+            location.hash = '';
+            setCurrent(null);
+            setDoc(null);
+          }
+        }
+        setToast({ msg: 'Moved to Trash — recoverable for 10 days.', tone: 'ok', action: { label: 'Undo', run: () => restoreFromTrash(entry.id) } });
+      } catch (err) {
+        setToast({ msg: (err && err.serverMessage) || 'Moving to Trash failed.', tone: 'warn' });
+      }
+    }, [loadDocs, restoreFromTrash]);
 
     // Build a comment payload/entry from the current drawer target + text,
     // resolving a best-effort source line so the agent gets file:line context.
@@ -2803,12 +2867,20 @@
         </div>` : null}
       <${Sidebar} docs=${docs} trash=${trash} startedAt=${startedAt} current=${current} outline=${outline} conn=${conn} theme=${theme} open=${navOpen}
         tab=${sidebarTab} onTabChange=${setSidebarTab}
-        onToggleTheme=${toggleTheme} onExpand=${() => setNavOpen(true)} onCollapse=${() => setNavOpen(false)} />
+        onToggleTheme=${toggleTheme} onExpand=${() => setNavOpen(true)} onCollapse=${() => setNavOpen(false)}
+        onTrash=${moveDocToTrash} onRestore=${restoreFromTrash} />
       <main id="main">
         ${doc && !doc.error ? html`<${TitleBlock} doc=${doc} openCount=${openCount} raw=${raw} onOpenComments=${openComments} onToggleRaw=${toggleRaw} onPrint=${printDoc} />` : null}
         ${main}
         ${doc && !doc.error ? html`<${DocFooter} />` : null}
       </main>
+      ${toast ? html`
+        <div id="app-toast" data-tone=${toast.tone} role="status" aria-live="polite">
+          <${Icon} name=${toast.tone === 'warn' ? 'warning' : 'check'} />
+          <span>${toast.msg}</span>
+          ${toast.action ? html`<button class="toast-action" onClick=${() => { const a = toast.action; setToast(null); a.run(); }}>${toast.action.label}</button>` : null}
+          <button class="toast-close" aria-label="Dismiss" onClick=${() => setToast(null)}><${Icon} name="close" /></button>
+        </div>` : null}
       <${CommentDrawer}
         open=${drawer.open} target=${drawer.target}
         comments=${comments} status=${status}

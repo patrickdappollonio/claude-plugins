@@ -911,3 +911,63 @@ body:has(.update-banner) #app { padding-top: 37px; }
   .component-block:hover { box-shadow: none; }
   a { color: inherit; text-decoration: none; border: none; }
 }
+
+/* Hover/focus-revealed row action (Notion-style). Toggled via opacity, not
+   [hidden], so it stays focusable for keyboard users. */
+.row-action {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; border: none; border-radius: 6px;
+  background: none; color: var(--ink-soft); cursor: pointer; opacity: 0;
+}
+.doc-row:hover .row-action, .trash-row:hover .row-action, .row-action:focus-visible { opacity: 1; }
+.row-action:hover { background: rgba(120, 118, 113, 0.16); color: var(--ink); }
+.row-trash:hover { color: var(--danger); }
+.row-action .icon { width: 14px; height: 14px; }
+/* Keep titles clear of the revealed action. */
+.doc-row:hover .dl-title, .doc-row:hover .dl-path { padding-right: 26px; }
+
+/* Trash section: collapsed drawer at the bottom of the Docs tab. */
+.trash-section { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 6px; }
+.trash-head {
+  display: flex; align-items: center; gap: 7px; width: 100%;
+  background: none; border: none; cursor: pointer; border-radius: 6px;
+  padding: 6px 9px; font-size: 0.76rem; font-weight: 500; color: var(--ink-soft);
+}
+.trash-head:hover { background: rgba(120, 118, 113, 0.1); }
+.trash-head .icon { width: 13px; height: 13px; }
+.trash-head .icon-wrap:last-child { margin-left: auto; }
+.trash-note { padding: 2px 9px 6px; font-size: 0.7rem; color: var(--ink-soft); }
+.trash-row {
+  position: relative; display: flex; align-items: baseline; gap: 8px;
+  padding: 5px 32px 5px 9px; border-radius: 6px; opacity: 0.72;
+}
+.trash-row:hover { background: rgba(120, 118, 113, 0.1); opacity: 1; }
+.trash-row .tr-title {
+  font-size: 0.82rem; color: var(--ink-soft); min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.trash-row .tr-meta { flex: none; margin-left: auto; font-size: 0.68rem; color: var(--ink-soft); }
+
+/* Global undo toast, styled after #comment-status but fixed bottom-center. */
+#app-toast {
+  position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); z-index: 60;
+  display: flex; align-items: center; gap: 8px; max-width: min(92vw, 480px);
+  padding: 9px 12px; border-radius: 10px; font-size: 0.8rem; line-height: 1.4;
+  color: var(--ink); background: var(--surface);
+  border: 1px solid var(--line); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.14);
+  animation: vd-status-in 160ms ease-out;
+}
+#app-toast .icon-wrap { flex: none; display: inline-flex; color: var(--ok); }
+#app-toast .icon { width: 14px; height: 14px; }
+#app-toast[data-tone="warn"] .icon-wrap { color: var(--warn); }
+#app-toast .toast-action {
+  flex: none; border: none; background: none; cursor: pointer;
+  color: var(--accent); font-weight: 600; font-size: 0.8rem; padding: 2px 4px; border-radius: 5px;
+}
+#app-toast .toast-action:hover { background: rgba(120, 118, 113, 0.12); }
+#app-toast .toast-close {
+  flex: none; border: none; background: none; cursor: pointer; color: var(--ink-soft);
+  display: inline-flex; padding: 2px; border-radius: 5px;
+}
+#app-toast .toast-close .icon-wrap { color: var(--ink-soft); }
