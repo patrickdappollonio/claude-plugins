@@ -84,6 +84,10 @@ kept:
 node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-server.js" --docdir
 ```
 
+`${CLAUDE_PLUGIN_ROOT}` is the directory this plugin is installed in. Claude
+Code sets it automatically; on any other agent platform, substitute the
+plugin's install path in this and every command below.
+
 Name the file after the change, e.g. `$DIR/recap-pr-142.md`.
 
 **Always start fresh.** Write a new recap for this session — do **not** hunt
@@ -94,10 +98,10 @@ you to update that specific one, and before editing it, confirm it describes
 the same, and updating it in place as if it were yours is precisely the mistake
 to avoid.
 
-**Read `${CLAUDE_PLUGIN_ROOT}/skills/shared/document-quality.md` once (silently)
+**Read [document-quality.md](../shared/document-quality.md) once (silently)
 before writing** — it is the standard for making the document comprehensive,
 layered simple→complex, and terse. Use
-`${CLAUDE_PLUGIN_ROOT}/skills/shared/authoring-guide.md` for fence syntax.
+[authoring-guide.md](../shared/authoring-guide.md) for fence syntax.
 This document is where your tokens go: any budget you didn't spend narrating
 steps 1–2 belongs here — prefer one more `## Key changes` hunk, one more grounded
 `api`/`migration` example, or a fuller `## Risks` list over a shorter recap.

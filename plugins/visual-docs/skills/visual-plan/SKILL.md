@@ -55,6 +55,9 @@ write the plan as a single markdown file. Choose the directory:
   ```
   node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-server.js" --docdir
   ```
+  `${CLAUDE_PLUGIN_ROOT}` is the directory this plugin is installed in. Claude
+  Code sets it automatically; on any other agent platform, substitute the
+  plugin's install path in this and every command below.
 - **User wants the plan kept:** write it where they say (e.g. `docs/plans/`)
   and serve that directory instead.
 
@@ -78,9 +81,9 @@ trace is the coverage it drives. It's your list for step 3's audit.
 
 ### 3. Author the document
 
-**Read `${CLAUDE_PLUGIN_ROOT}/skills/shared/document-quality.md` once (silently)
+**Read [document-quality.md](../shared/document-quality.md) once (silently)
 before writing** — the standard for a comprehensive, simple→complex, terse
-document. Use `${CLAUDE_PLUGIN_ROOT}/skills/shared/authoring-guide.md` for fence
+document. Use [authoring-guide.md](../shared/authoring-guide.md) for fence
 syntax. The plan is where your tokens go: budget you didn't spend narrating
 belongs here.
 
