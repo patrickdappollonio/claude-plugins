@@ -6,6 +6,7 @@ import { createHash } from 'node:crypto';
 import { readPluginVersion, makeCachedVersionReader } from './version.js';
 import { PREF_SCHEMA, readPrefs, sanitizePrefs, updatePrefs } from './prefs.js';
 import { buildExportHtml, docStem } from './export.js';
+import { readTrash, trashDoc, restoreDoc, sweepExpired, daysLeft } from './trash.js';
 
 const ASSETS_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'assets');
 
@@ -442,13 +443,84 @@ export async function startServer({ dir, port = 0, host = '127.0.0.1', watch: en
     return run;
   }
 
+  // Basis for the viewer's "this session" grouping.
+  const startedAt = Date.now();
+  // Serialize trash mutations the same way as comments so concurrent POSTs
+  // can't interleave manifest read-modify-writes.
+  let trashChain = Promise.resolve();
+  function withTrash(fn) {
+    const run = trashChain.then(fn, fn);
+    trashChain = run.then(() => {}, () => {});
+    return run;
+  }
+  let lastSweep = 0;
+
   const server = http.createServer(async (req, res) => {
     try {
       const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
       const pathname = url.pathname;
 
       if (pathname === '/api/docs' && req.method === 'GET') {
-        return sendJSON(res, 200, { docs: await listMarkdownFiles(root), serverVersion, installedVersion: getInstalledVersion() });
+        // Lazy purge: entries past retention lose their file, manifest entry,
+        // and comments. Throttled — every viewer poll must not stat the trash.
+        if (Date.now() - lastSweep > 60_000) {
+          lastSweep = Date.now();
+          try {
+            const expired = await withTrash(() => sweepExpired(root));
+            if (expired.length) {
+              const gone = new Set(expired.map((e) => e.path));
+              await withComments(async () => {
+                const { data, hash } = await readCommentsRaw(root);
+                const kept = data.comments.filter((c) => !gone.has(c.path));
+                if (kept.length !== data.comments.length) {
+                  data.comments = kept;
+                  await writeComments(root, data, hash);
+                }
+              });
+            }
+          } catch (err) {
+            console.error('[visual-docs] trash sweep failed:', err);
+          }
+        }
+        const trash = (await readTrash(root)).entries
+          .map((e) => ({ ...e, daysLeft: daysLeft(e.trashedAt) }))
+          .sort((a, b) => Date.parse(b.trashedAt) - Date.parse(a.trashedAt));
+        return sendJSON(res, 200, { docs: await listMarkdownFiles(root), trash, startedAt, serverVersion, installedVersion: getInstalledVersion() });
+      }
+
+      if (pathname === '/api/trash' && req.method === 'POST') {
+        if (crossOrigin(req)) return sendJSON(res, 403, { error: 'cross-origin request refused' });
+        let payload;
+        try { payload = JSON.parse(await readBody(req)); } catch { return sendJSON(res, 400, { error: 'invalid JSON body' }); }
+        const p = payload && typeof payload.path === 'string' ? payload.path : '';
+        if (!/\.(md|markdown)$/i.test(p)) return sendJSON(res, 400, { error: 'invalid path' });
+        const abs = await resolveServable(rootReal, p, null);
+        if (!abs) return sendJSON(res, 404, { error: 'not found' });
+        const title = firstH1(await readHead(abs)) || p.split('/').pop();
+        let entry;
+        try {
+          entry = await withTrash(() => trashDoc(root, p, abs, title));
+        } catch {
+          return sendJSON(res, 404, { error: 'not found' }); // moved/deleted underneath us
+        }
+        broadcast({ type: 'change', path: p });
+        return sendJSON(res, 200, { entry: { ...entry, daysLeft: daysLeft(entry.trashedAt) } });
+      }
+
+      if (pathname === '/api/trash/restore' && req.method === 'POST') {
+        if (crossOrigin(req)) return sendJSON(res, 403, { error: 'cross-origin request refused' });
+        let payload;
+        try { payload = JSON.parse(await readBody(req)); } catch { return sendJSON(res, 400, { error: 'invalid JSON body' }); }
+        const id = payload && typeof payload.id === 'string' ? payload.id : '';
+        let result;
+        try {
+          result = await withTrash(() => restoreDoc(root, id));
+        } catch {
+          return sendJSON(res, 404, { error: 'trashed file is missing' });
+        }
+        if (!result) return sendJSON(res, 404, { error: 'unknown trash id' });
+        broadcast({ type: 'change', path: result.restoredTo });
+        return sendJSON(res, 200, { path: result.restoredTo, renamed: result.restoredTo !== result.path });
       }
 
       if (pathname === '/api/doc' && req.method === 'GET') {
