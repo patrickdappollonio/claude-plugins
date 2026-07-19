@@ -107,7 +107,8 @@ needs the business logic — what changed, why, what to watch — not the
 implementation. Explain behavior in plain language; reach for diagrams, tables,
 and migration/API cards before code; include a code fence only when it's
 genuinely necessary to make the point. Write prose to the ASD-STE100
-(Simplified Technical English) sentence rules in document-quality §0: short
+(Simplified Technical English) sentence rules in
+`${CLAUDE_PLUGIN_ROOT}/skills/shared/document-quality.md` §0: short
 active-voice sentences, one idea each, one name per thing.
 
 Author top to bottom against this skeleton; include a section when the inventory
