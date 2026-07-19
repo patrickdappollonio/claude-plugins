@@ -102,6 +102,27 @@ text, so there's no JSON to parse. Comments live in
 `<dir>/.visual-docs/comments.json` (lifecycle `new → acknowledged → resolved`;
 the legacy `"resolved": true` boolean is still honoured).
 
+## Trash (recoverable delete)
+
+The viewer's doc list lets a reader move a document to a trash that keeps it
+recoverable for **10 days**; after that a lazy sweep (on `/api/docs`, at most
+once a minute) permanently deletes the file, its manifest entry, and its
+comments. Trashed files live in `.visual-docs/trash/`, tracked by
+`.visual-docs/trash.json`. This is a browser affordance — agents don't operate
+it and there is no CLI command for it.
+
+- `GET /api/docs` also returns `startedAt` (server start, epoch ms — the
+  viewer's "this session" boundary) and `trash`
+  (`[{id, path, title, trashedAt, daysLeft}]`, newest first).
+- `POST /api/trash` `{path}` — move a served markdown file to the trash.
+  Returns `{entry}`; `400` invalid path, `404` unknown doc.
+- `POST /api/trash/restore` `{id}` — move it back. If the original path is now
+  occupied it restores as `<name> (restored).md`; the response
+  `{path, renamed}` says which. `404` unknown id.
+
+Comments survive a trash + restore (they're keyed by path); they're only
+deleted when the 10-day sweep permanently removes the document.
+
 ## Security posture
 
 Binds to `127.0.0.1` by default and refuses path traversal outside the served
