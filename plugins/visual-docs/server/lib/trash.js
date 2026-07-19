@@ -68,10 +68,11 @@ export async function restoreDoc(root, id) {
   const src = join(trashDir(root), `${id}.md`);
   // Restore to the original path; if something new occupies it, restore beside
   // it as "<stem> (restored).md" instead of clobbering.
-  let restoredTo = entry.path;
+  let restoredTo = null;
   for (let n = 0; n < 20; n++) {
     const candidate = n === 0 ? entry.path
       : entry.path.replace(/(\.(md|markdown))$/i, n === 1 ? ' (restored)$1' : ` (restored ${n})$1`);
+    if (n > 0 && candidate === entry.path) break; // no extension to suffix — same path forever
     const dest = join(root, candidate);
     try { await fs.access(dest); continue; } catch { /* free */ }
     await fs.mkdir(dirname(dest), { recursive: true });
@@ -79,6 +80,9 @@ export async function restoreDoc(root, id) {
     restoredTo = candidate;
     break;
   }
+  // Never drop the manifest entry unless the file actually moved back — a
+  // failed restore must stay restorable, not become an invisible orphan.
+  if (restoredTo === null) throw new Error(`no free path to restore ${entry.path}`);
   data.entries = data.entries.filter((e) => e.id !== id);
   await writeTrash(root, data);
   return { ...entry, restoredTo };
