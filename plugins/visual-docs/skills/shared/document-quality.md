@@ -44,6 +44,30 @@ user asks you — in chat, or via a comment — to explain a topic in more depth
 answer at whatever technical level they ask for; the CEO framing never means
 withholding detail from someone who requests it.
 
+### Sentence style: ASD-STE100 Simplified Technical English
+
+Write every prose sentence to the rules of **ASD-STE100** (Simplified Technical
+English). STE was designed so that technical text is unambiguous on first read,
+and that is exactly what this document needs. Apply its writing rules:
+
+- **Keep sentences short.** No more than ~20 words for an instruction, ~25 for
+  a descriptive sentence. Split a long sentence rather than chaining clauses.
+- **One idea per sentence; one topic per paragraph** (at most six sentences).
+- **Use the active voice and the present tense.** "The job retries three
+  times" — not "retries will be performed."
+- **One name per thing, always.** Pick one term for each concept and never vary
+  it for elegance; a synonym reads as a second, different thing.
+- **Prefer the simplest common word** — use, start, stop, show — over formal or
+  fancy alternatives (utilize, initiate, terminate, surface).
+- **Break up noun clusters** longer than three words ("the retry queue for
+  failed exports," not "the failed-export retry queue backlog").
+- **Start warnings with the action.** In a `> [!WARNING]`/`> [!CAUTION]`
+  admonition, lead with what the reader must do or must not do, then the reason.
+
+Full STE compliance also restricts vocabulary to an approved dictionary; that
+part doesn't transfer to software docs — keep your domain terms, but apply the
+sentence-level rules above to everything you write.
+
 The goal is a document that is **terse and detailed at the same time**. Those
 aren't in tension when you split them across two kinds of content:
 

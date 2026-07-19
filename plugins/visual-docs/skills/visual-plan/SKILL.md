@@ -88,7 +88,9 @@ belongs here.
 needs the business logic — what changes, why, what could go wrong — not the
 implementation. Explain behavior in plain language; reach for diagrams, tables,
 and migration/API cards before code; include a code fence only when it's
-genuinely necessary to make the point.
+genuinely necessary to make the point. Write prose to the ASD-STE100
+(Simplified Technical English) sentence rules in document-quality §0: short
+active-voice sentences, one idea each, one name per thing.
 
 Author top to bottom against this skeleton; include a section when the inventory
 has items, skip one only when it had nothing there:

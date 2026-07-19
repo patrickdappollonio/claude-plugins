@@ -106,7 +106,9 @@ steps 1–2 belongs here — prefer one more `## Key changes` hunk, one more gro
 needs the business logic — what changed, why, what to watch — not the
 implementation. Explain behavior in plain language; reach for diagrams, tables,
 and migration/API cards before code; include a code fence only when it's
-genuinely necessary to make the point.
+genuinely necessary to make the point. Write prose to the ASD-STE100
+(Simplified Technical English) sentence rules in document-quality §0: short
+active-voice sentences, one idea each, one name per thing.
 
 Author top to bottom against this skeleton; include a section when the inventory
 has items for it, skip one only when the inventory had nothing there:

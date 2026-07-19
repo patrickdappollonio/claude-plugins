@@ -1,7 +1,7 @@
 {
   "name": "visual-docs",
   "description": "Fully local visual plans and recaps — the agent writes markdown, a bundled zero-dependency server renders it in your browser with Mermaid diagrams, rich diffs, styled DB migrations, API call cards, and a read-only OpenAPI view. Live reload plus a comment box that feeds your feedback back to the agent. No remote services, no accounts.",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "author": {
     "name": "Patrick D'appollonio",
     "email": "patrickdappollonio@gmail.com"
