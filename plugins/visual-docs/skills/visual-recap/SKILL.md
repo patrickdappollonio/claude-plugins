@@ -108,7 +108,7 @@ implementation. Explain behavior in plain language; reach for diagrams, tables,
 and migration/API cards before code; include a code fence only when it's
 genuinely necessary to make the point. Write prose to the ASD-STE100
 (Simplified Technical English) sentence rules in
-`${CLAUDE_PLUGIN_ROOT}/skills/shared/document-quality.md` §0: short
+[document-quality.md §0](../shared/document-quality.md): short
 active-voice sentences, one idea each, one name per thing.
 
 Author top to bottom against this skeleton; include a section when the inventory
