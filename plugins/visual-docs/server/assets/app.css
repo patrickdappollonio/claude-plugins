@@ -193,6 +193,16 @@ button { font: inherit; cursor: pointer; }
   display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .doc-link .dl-path { color: var(--ink-soft); font-family: var(--mono); font-size: 0.7rem; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Notion-style tiny section labels splitting the doc list by recency. */
+.dl-group-label {
+  padding: 10px 9px 3px; font-size: 0.66rem; font-weight: 600;
+  letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-soft);
+}
+.doc-row { position: relative; }
+/* Stale (not this session, not recently updated): recede, don't disappear. */
+.doc-row.stale .dl-title { color: var(--ink-soft); font-weight: 400; }
+.doc-row.stale .doc-link { opacity: 0.72; }
+.doc-row.stale .doc-link:hover, .doc-row.stale .doc-link.active { opacity: 1; }
 .side-foot {
   padding: 10px 14px;
   border-top: 1px solid var(--line);

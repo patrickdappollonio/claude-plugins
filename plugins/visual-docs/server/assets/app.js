@@ -94,6 +94,19 @@
     return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   }
 
+  // Compact relative timestamp for the doc list; beyond a month the absolute
+  // date is more useful than "45d ago".
+  function fmtRel(ms) {
+    const diff = Date.now() - ms;
+    if (diff < 60_000) return 'just now';
+    const mins = Math.floor(diff / 60_000);
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return days <= 30 ? `${days}d ago` : fmtTime(ms);
+  }
+
   function slugify(text) {
     return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
   }
@@ -1796,7 +1809,7 @@
      Components
      ================================================================ */
 
-  function Sidebar({ docs, current, outline, conn, theme, open, tab, onTabChange, onToggleTheme, onExpand, onCollapse }) {
+  function Sidebar({ docs, trash, startedAt, current, outline, conn, theme, open, tab, onTabChange, onToggleTheme, onExpand, onCollapse, onTrash, onRestore }) {
     // Outline (this doc's sections) vs Docs (the other files). Default to the
     // outline — a short-doc set rarely needs a file list, but a table of contents
     // is always useful. Lifted to App (as `sidebarTab`) so it can be persisted.
@@ -1824,6 +1837,19 @@
     const connTitle = conn === 'on'
       ? 'This page refreshes on its own whenever an agent edits the document file — no reload needed.'
       : conn === 'off' ? 'Lost the live-update connection — retrying.' : 'Connecting to the live-update stream…';
+    // "Recent" = touched since this server session started, or within 24h;
+    // everything else renders greyed under "Earlier".
+    const DAY = 86_400_000;
+    const isRecent = (d) => (startedAt && d.mtime >= startedAt) || Date.now() - d.mtime < DAY;
+    const recent = docs.filter(isRecent);
+    const earlier = docs.filter((d) => !isRecent(d));
+    const docRow = (d, stale) => html`
+      <div class="doc-row ${stale ? 'stale' : ''}">
+        <a class="doc-link ${d.path === current ? 'active' : ''}" href=${`#/${d.path}`}>
+          <span class="dl-title">${d.title}</span>
+          <span class="dl-path mono" title=${`${d.path} · ${fmtTime(d.mtime)}`}>${d.path} · ${fmtRel(d.mtime)}</span>
+        </a>
+      </div>`;
     return html`
       <div class="sidebar-backdrop" aria-hidden="true" onClick=${onCollapse}></div>
       <aside id="sidebar">
@@ -1848,11 +1874,10 @@
                 : html`<div class="side-empty">No sections in this document.</div>`}
             </nav>`
           : html`<nav id="doc-list" aria-label="Documents">
-              ${docs.map((d) => html`
-                <a class="doc-link ${d.path === current ? 'active' : ''}" href=${`#/${d.path}`}>
-                  <span class="dl-title">${d.title}</span>
-                  <span class="dl-path mono">${d.path} · ${fmtTime(d.mtime)}</span>
-                </a>`)}
+              ${recent.length && earlier.length ? html`<div class="dl-group-label">Recent</div>` : null}
+              ${recent.map((d) => docRow(d, false))}
+              ${earlier.length ? html`<div class="dl-group-label">Earlier</div>` : null}
+              ${earlier.map((d) => docRow(d, true))}
             </nav>`}
         <footer class="side-foot mono" title=${connTitle}>
           <span id="conn-dot" class="dot ${conn === 'on' ? 'on' : conn === 'off' ? 'off' : ''}"></span>
@@ -2415,6 +2440,8 @@
 
   function App() {
     const [docs, setDocs] = useState([]);
+    const [trash, setTrash] = useState([]); // trashed docs, from /api/docs
+    const [startedAt, setStartedAt] = useState(null); // server session start (epoch ms)
     const [current, setCurrent] = useState(null);
     const [doc, setDoc] = useState(null); // {path,content,mtime} | {error:true,path} | null
     const [comments, setComments] = useState([]);
@@ -2437,8 +2464,10 @@
 
     const loadDocs = useCallback(async () => {
       try {
-        const { docs, serverVersion, installedVersion } = await api('/api/docs');
+        const { docs, trash, startedAt, serverVersion, installedVersion } = await api('/api/docs');
         setDocs(docs);
+        setTrash(trash || []);
+        setStartedAt(startedAt ?? null);
         setVersionInfo({ serverVersion: serverVersion ?? null, installedVersion: installedVersion ?? null });
         return docs;
       } catch {
@@ -2772,7 +2801,7 @@
           <span>A new version of visual-docs (v${versionInfo.installedVersion}) is installed — restart the server to pick it up.</span>
           <button class="update-banner-dismiss" onClick=${() => setVersionDismissed(true)} aria-label="Dismiss"><${Icon} name="close" /></button>
         </div>` : null}
-      <${Sidebar} docs=${docs} current=${current} outline=${outline} conn=${conn} theme=${theme} open=${navOpen}
+      <${Sidebar} docs=${docs} trash=${trash} startedAt=${startedAt} current=${current} outline=${outline} conn=${conn} theme=${theme} open=${navOpen}
         tab=${sidebarTab} onTabChange=${setSidebarTab}
         onToggleTheme=${toggleTheme} onExpand=${() => setNavOpen(true)} onCollapse=${() => setNavOpen(false)} />
       <main id="main">
