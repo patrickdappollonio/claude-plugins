@@ -278,6 +278,10 @@ Before serving, you can check a doc against these guidelines:
 node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-lint.js" path/to/doc.md
 ```
 
+`${CLAUDE_PLUGIN_ROOT}` is the directory this plugin is installed in — Claude
+Code sets it automatically; on any other agent platform, substitute the
+plugin's install path.
+
 It flags: missing/duplicate H1, a structured fence with no one-sentence intent
 above it, empty or malformed fences (e.g. an `openapi` with no `paths:`, a
 `migration` with no `-- up`/`-- down`), unknown admonition types, and obvious
