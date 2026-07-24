@@ -1,0 +1,12 @@
+{
+  "name": "effective-communicator",
+  "description": "Plain-language communication for readers who can't see the code — the agent translates findings, answers, status, plans, and recaps out of file/function/variable names into Simplified Technical English (ASD-STE100), leads with the outcome, keeps the important point in the final message of the turn, and matches technical readers only when they ask.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Patrick D'appollonio",
+    "email": "patrickdappollonio@gmail.com"
+  },
+  "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/effective-communicator",
+  "license": "MIT",
+  "keywords": ["communication", "plain-language", "simplified-technical-english", "asd-ste100", "findings", "non-technical", "readability", "user-facing"]
+}

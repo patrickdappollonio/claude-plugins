@@ -7,6 +7,18 @@
   },
   "plugins": [
     {
+      "name": "effective-communicator",
+      "source": "./plugins/effective-communicator",
+      "description": "Plain-language communication for readers who can't see the code — the agent translates findings, answers, status, plans, and recaps out of file/function/variable names into Simplified Technical English (ASD-STE100), leads with the outcome, keeps the important point in the final message of the turn, and matches technical readers only when they ask.",
+      "category": "communication",
+      "keywords": ["communication", "plain-language", "simplified-technical-english", "asd-ste100", "findings", "non-technical"],
+      "author": {
+        "name": "Patrick D'appollonio"
+      },
+      "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/effective-communicator",
+      "license": "MIT"
+    },
+    {
       "name": "adversarial-review",
       "source": "./plugins/adversarial-review",
       "description": "Hostile, bias-free review of a change — dispatches independent adversarial reviewers plus a standalone false-positive filter, and reports only verified findings in plain language.",
