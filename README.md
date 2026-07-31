@@ -17,15 +17,27 @@ That registers this marketplace under the name `patrickdappollonio`. You only do
 A hostile, bias-free review of a change — a PR, the last commit, or your
 uncommitted work. Most reviews are friendly: the reviewer shares your context
 and quietly assumes the code works. This one doesn't. It dispatches a panel of
-16 independent reviewers, each a fresh sub-agent with no knowledge of your
-conversation or your intent, and each told one thing: *assume the change is
-broken and prove it*. Concurrency races, hostile inputs, authorization gaps,
-resource exhaustion, hollow AI-generated code, unverified factual claims — each
-angle gets its own attacker.
+17 independent reviewers, each a fresh sub-agent with no knowledge of your
+conversation or your rationalizations, and each told one thing: *assume the
+change is broken and prove it*. Concurrency races, hostile inputs,
+authorization gaps, resource exhaustion, hollow AI-generated code, unverified
+factual claims — each angle gets its own attacker.
+
+The reviewers get exactly one piece of context: what the change was **agreed**
+to do, and what it was agreed *not* to do. That's the difference between a
+panel that checks whether the right thing was built and one that hunts bugs in
+a faithful implementation of the wrong design — and it stops every deliberate
+omission from being reported as a gap. One reviewer does nothing else: it holds
+the code against the plan or mock you signed off on, element by element, and
+chases where the data from anything dropped ended up instead.
 
 A standalone false-positive filter re-checks every finding against the actual
 code before anything reaches you, so the report contains only verified
-problems, explained in plain language with a validated fix proposed for each.
+problems, each with a validated fix proposed. And the report is written for
+someone who never read the code — plain sentences, effect first, in Simplified
+Technical English. The agents did the grepping; you shouldn't have to open a
+file to understand what they found. Symbol names appear in one place only: the
+clickable `file:line` under each finding.
 
 ```
 /plugin install adversarial-review@patrickdappollonio
@@ -53,6 +65,30 @@ reverts the change — never the test.
 ```
 
 Then just ask: *"Simplify what we just wrote."* [Read more →](plugins/code-simplification)
+
+### effective-communicator
+
+Plain language by default, for the reader who **can't see the code you can
+see.** Agent findings routinely arrive as a wall of file names, function names,
+and variable names — which shifts the work of understanding onto the one person
+who can't open the file. This skill makes the agent translate every identifier
+into what it actually does, lead with the outcome rather than the label, and
+write in Simplified Technical English (ASD-STE100): short sentences, one idea
+each, active voice, no unexplained jargon.
+
+It also writes for how attention actually works — the important point lands in
+the last message of the turn instead of scrolling off behind a pile of tool
+calls — and it never drops a real finding just to be brief. When a reader
+answers in code terms, it matches them for that exchange, then resets. It pairs
+naturally with `adversarial-review` and any audit or debugging pass that
+produces identifier-heavy output.
+
+```
+/plugin install effective-communicator@patrickdappollonio
+```
+
+Then just ask: *"Explain that in plain English."* — or install it and never ask
+again. [Read more →](plugins/effective-communicator)
 
 ### read-the-docs-first
 
