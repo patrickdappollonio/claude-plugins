@@ -1,17 +1,31 @@
 ---
 name: adversarial-review
-description: Use when you want a hostile, bias-free review of a code change — a PR, the last commit, or local/uncommitted work — that attacks it from many independent angles (concurrency, failure injection, input and auth attacks, data integrity, resource exhaustion, observability, API contract, maintainability, simplicity and scope creep, root-cause/incomplete-fix consistency, rollback, tests, AI-slop, fact-checking). Especially for AI-generated code that looks right but may be hollow, or when you want claims in comments and commit messages fact-checked rather than trusted.
+description: Use when you want a hostile, bias-free review of a code change — a PR, the last commit, or local/uncommitted work — that attacks it from many independent angles (conformance to the approved design, concurrency, failure injection, input and auth attacks, data integrity, resource exhaustion, observability, API contract, maintainability, simplicity and scope creep, root-cause/incomplete-fix consistency, rollback, tests, AI-slop, fact-checking). Especially for AI-generated code that looks right but may be hollow, when a change should be checked against a plan or mock that was signed off, or when you want claims in comments and commit messages fact-checked rather than trusted.
 ---
 
 # Adversarial Review
 
 ## Overview
 
-Run a panel of **independent, hostile reviewers** against a change. Each reviewer assumes the code is broken and tries to prove it, from a single narrow angle. Because each runs as a fresh subagent, **none of them inherit the main session's reasoning or the author's intent** — that is the whole point. A change that "looks fine" to the person who wrote it (or to the assistant that helped write it) gets attacked from 16 directions by reviewers who were never told why it should work.
+Run a panel of **independent, hostile reviewers** against a change. Each reviewer assumes the code is broken and tries to prove it, from a single narrow angle. Because each runs as a fresh subagent, **none of them inherit the main session's reasoning or the author's rationalizations** — that is the whole point. A change that "looks fine" to the person who wrote it (or to the assistant that helped write it) gets attacked from 17 directions by reviewers who were never told why it should work.
 
-**Core principle:** the orchestrator gathers the change once, hands each reviewer ONLY the raw change plus a charter, collects findings, a separate verifier confirms each finding is real, and a separate validator confirms each proposed fix actually works — before anything reaches the user.
+**Core principle:** the orchestrator gathers the change *and the brief* once, hands each reviewer the raw change, the brief, and a charter, collects findings, a separate verifier confirms each finding is real, and a separate validator confirms each proposed fix actually works — before anything reaches the user.
 
-**Do not bias the reviewers.** Never tell a reviewer "the author intended X," "this is probably fine," or "focus only on Y because Z is handled." Give them the diff, the changed files, and their charter. Nothing else.
+### The one thing reviewers must know: what was agreed
+
+There are two very different things a reviewer could be told about a change, and they are easy to confuse:
+
+| | Give it to every reviewer | Never give it to any reviewer |
+|---|---|---|
+| **What it is** | **The brief** — what this change was *supposed* to do, and what it was deliberately *not* going to do | **Reassurance** — anyone's opinion that the code is correct, safe, or already handled |
+| **Examples** | The approved plan, mock, or design artifact; the issue or ticket; the PR description; the agreed non-goals and deferrals; agreed constraints ("don't touch the public API") | "The author says this is safe"; "this part is fine"; "focus on X, Y is handled"; your own hypotheses about where the bug is |
+| **Why** | Without it, nobody checks the change against what was signed off, and every deliberate omission gets flagged as a gap — burying the real findings in noise | It tells the reviewer the answer before it looks, which is exactly the bias this skill exists to remove |
+
+The brief is **facts about the assignment**. Reassurance is **conclusions about the result**. Pass the first verbatim; never pass the second.
+
+This distinction comes from a real failure: three reviewers hunted bugs well on a piece of UI work and all three passed it, because none of them had been told what had been agreed. The build had silently dropped a column the approved mock had, and a value was rendered in the wrong place as a result. A correct implementation of the wrong design passes every bug-hunting charter.
+
+**A dropped design element is not cosmetic.** It routinely takes data with it: a column removed from a layout leaves its value homeless, and it tends to get rendered somewhere wrong rather than not at all.
 
 **Claude: Do not use dynamic workflows.** Using that means even more token consumption for no functional gain. Use instead just raw sub-agent dispatch and parallel subagents.
 
@@ -19,6 +33,7 @@ Run a panel of **independent, hostile reviewers** against a change. Each reviewe
 
 - Before merging a change and you want more than a friendly pass.
 - You have a PR, or a set of local/uncommitted changes, and want them stress-tested.
+- A plan, mock, or design was approved and you want the implementation held against it, not just checked for bugs.
 - You suspect AI-generated code that "looks right" but may be hollow.
 - You want claims in comments/docs/commit messages fact-checked, not trusted.
 
@@ -45,16 +60,42 @@ Capture the scope once:
 - The diff (`git diff HEAD` / `gh pr diff <n>`).
 - The list of changed files (`git diff --name-only HEAD` / `gh pr diff <n> --name-only`).
 
-### 2. Pick the reviewers
+### 2. Assemble the brief — what this change was agreed to do
 
-Default to running **all 16 reviewers** (charters below). Skip a reviewer only when it clearly cannot apply to this change, and **say which you skipped and why** in the final report. Examples of fair skips:
+**Do this before dispatching anyone.** A reviewer without the brief cannot tell a deliberate omission from a defect, and nobody in the panel is checking the change against what was approved.
+
+Gather, from strongest source to weakest:
+
+1. **An approved design artifact** — a mock, wireframe, rendered artifact, schema, or written plan the user signed off on. If one exists, it is the specification, not a suggestion. Attach it to the reviewers verbatim (paste it, or give its path and tell them to open it).
+2. **The written statement of work** — the PR description, the issue or ticket, the plan document, the commit messages.
+3. **What the user asked for in this session** — quoted, not paraphrased into your own reading of it.
+
+Then write down, explicitly:
+
+- **Goals** — what the change was meant to accomplish, in the terms it was agreed in.
+- **Non-goals and deferrals** — what was deliberately left out, agreed to be handled later, or ruled out. This is the half that gets forgotten, and it is what turns a review into noise when it is missing.
+- **Agreed constraints** — "don't change the public API," "no new dependencies," "keep it backwards compatible."
+- **Known deviations already announced** — anything the implementer flagged at the time as a departure from the design, with the reason.
+
+Rules for writing the brief:
+
+- **Quote and cite; do not editorialize.** Every line is either lifted from a source or a plain statement of fact about the assignment, with the source named. No assessments of the code, no "this looks handled," no hypotheses.
+- **A non-goal only counts if it was actually agreed.** Do not invent one to excuse something the change skipped. If you are not sure whether an omission was deliberate, leave it out of the non-goals and let the reviewers flag it.
+- **If there is no brief, do not fabricate one.** Use `AskUserQuestion` to ask what this change was supposed to do and what was deliberately left out. If the user has nothing — an old branch, an inherited PR — that is a legitimate answer: run the panel spec-blind, skip the *Spec Conformance Auditor*, and **say plainly in the report that no agreed scope was available**, so the user knows design drift was not checked.
+
+Give the brief to **every** reviewer, the verifier, and the validator, marked clearly as the brief.
+
+### 3. Pick the reviewers
+
+Default to running **all 17 reviewers** (charters below). Skip a reviewer only when it clearly cannot apply to this change, and **say which you skipped and why** in the final report. Examples of fair skips:
 - No external/database persistence touched → skip *Data Integrity Prosecutor*.
 - No auth/permission surface anywhere near the change → skip *Authorization Attacker*.
 - No comments, docs, citations, or factual claims of any kind → skip *Fact-Checker*.
+- No approved design artifact or written statement of work exists at all → skip *Spec Conformance Auditor* (and say so loudly in the report).
 
 When unsure, run it. The cost of an extra reviewer is cheaper than a missed bug.
 
-### 3. Dispatch the reviewers (parallel, isolated, cheap model)
+### 4. Dispatch the reviewers (parallel, isolated, cheap model)
 
 Dispatch each chosen reviewer as its **own subagent**, all in parallel.
 
@@ -62,39 +103,50 @@ Dispatch each chosen reviewer as its **own subagent**, all in parallel.
 
 Each reviewer prompt contains, and ONLY contains:
 1. Its charter (verbatim from the list below).
-2. The raw diff.
-3. The list of changed files (the reviewer may open those files and surrounding code for context).
-4. The shared output format (below).
+2. The brief from step 2 (verbatim), under a heading that says what it is — plus the approved design artifact itself, or its path, when one exists.
+3. The raw diff.
+4. The list of changed files (the reviewer may open those files and surrounding code for context).
+5. The scope rule (below) and the shared output format (below).
 
-Do **not** add your own framing, hypotheses, or reassurances. The isolation is the value.
+Do **not** add your own framing, hypotheses, or reassurances. The brief says what the job was; you do not get to say how well it was done. The isolation is the value.
 
-### 4. Verify every finding (standalone)
+**The scope rule — include this verbatim in every reviewer prompt:**
 
-Collect all findings from all reviewers. Then dispatch **one separate verifier subagent** (the *False-Positive Filter*, charter below) — also `model: "sonnet"` in Claude Code. Give it the full list of findings plus the diff and changed files. It re-checks each finding against the actual code and returns a verdict: **confirmed / not-confirmed**, with a one-line reason. This agent must be fresh and standalone so it does not inherit any reviewer's enthusiasm.
+> The brief above tells you what this change was agreed to do and what it was agreed *not* to do. Use it two ways. First: **something the brief lists as a non-goal or a deferral is not a finding.** Do not report the absence of work nobody agreed to do — that noise buries the real findings. If a declared non-goal is genuinely dangerous to defer, you may report it at **low** severity with `"out_of_scope_by_design": true`, and say why the deferral bites. Second: **the brief is the standard the change is measured against.** Code that is internally consistent but does something other than what was agreed is a defect, not a preference. The brief is a statement of the assignment, not an assessment of the result — nothing in it means any part of the change is correct, and it is not a reason to look anywhere less hard.
+
+### 5. Verify every finding (standalone)
+
+Collect all findings from all reviewers. Then dispatch **one separate verifier subagent** (the *False-Positive Filter*, charter below) — also `model: "sonnet"` in Claude Code. Give it the full list of findings plus the brief, the diff, and the changed files. It re-checks each finding against the actual code and returns a verdict: **confirmed / not-confirmed**, with a one-line reason. This agent must be fresh and standalone so it does not inherit any reviewer's enthusiasm.
 
 Only **confirmed** findings reach the user. Keep the not-confirmed ones available in case the user asks.
 
-### 5. Propose a fix for each confirmed finding — and validate it (standalone)
+### 6. Propose a fix for each confirmed finding — and validate it (standalone)
 
 Every confirmed finding gets a fix, and **no fix reaches the user until a separate agent has confirmed it actually works.** A fix that looks right but is wrong is worse than no fix — it sends the user troubleshooting a dead end.
 
 1. **Draft a fix** for each confirmed finding: the *smallest* change that resolves the **root cause**, not just the symptom. Small and root-cause are not opposites — reach the actual source of the bug, but with the minimal change that does it. This is the same Simplicity-First, Surgical-Changes discipline the *Karpathy Minimalist* reviews for: no refactoring, no cleaning up adjacent code, no new abstraction, no guarding impossible cases. When the same defect lives in sibling paths or parallel call sites (the *Incomplete-Fix Prosecutor*'s territory), each site is its own finding with its own minimal fix — never a reason to balloon one fix into a sweeping rewrite. Make it specific enough to act on — what to change and where — but only describe it. Do not edit any code.
-2. **Validate every fix with one standalone *Solution Validator* subagent** (charter below; `model: "sonnet"` in Claude Code). Give it the confirmed findings, the drafted fixes, the diff, and the changed files. It is a fresh, hostile checker that owes the fixes nothing: for each one it tries to prove the fix wrong — does it address the real cause, does every API/method/field it names actually exist, does it leave the same bug standing in sibling paths, does it break anything nearby? It returns **valid / invalid** with a one-line reason, and it does not modify code.
+
+   Two scope rules bind the fixes as well. A fix must **stay inside the brief**: it may not implement something the brief declares a non-goal, and it may not break an agreed constraint — if the only real fix does either, say so and present it as a decision for the user rather than a fix to apply. And a fix for a **conformance** finding is *restore what was approved*: bring the change back to the agreed design, rather than inventing a third design that is neither.
+2. **Validate every fix with one standalone *Solution Validator* subagent** (charter below; `model: "sonnet"` in Claude Code). Give it the brief, the confirmed findings, the drafted fixes, the diff, and the changed files. It is a fresh, hostile checker that owes the fixes nothing: for each one it tries to prove the fix wrong — does it address the real cause, does every API/method/field it names actually exist, does it leave the same bug standing in sibling paths, does it break anything nearby? It returns **valid / invalid** with a one-line reason, and it does not modify code.
 3. **Revise and re-validate** any fix the validator rejects, then send it back through. Loop until valid. If a fix still can't be validated, **say so plainly** — present the problem with "no confirmed fix yet" rather than shipping a guess.
 
 Only **validated** fixes appear in the report.
 
-### 6. Report the problems and their fixes, grouped by category
+### 7. Report the problems and their fixes, grouped by category
 
 By now you hold detailed, code-level material: reviewer findings full of symbols, the drafted fixes, the validator's notes. **The report is not that material — it is a plain re-telling of it.** Rewrite every finding for a reader who never saw the code and never will. One self-check governs the whole report: *if a sentence only makes sense to someone already reading the code, rewrite it.*
 
 **Where code identifiers go.** Function names, class names, variables, flags — any symbol — belong **only** in the `Where` field, as a clickable `file:line`. That field is the pointer into the editor; it carries the code-level precision so the prose doesn't have to. The problem and the fix describe *what happens* and *what changes* in outcome terms, with no symbol names in them.
 
-**Open with a short TL;DR anyone could follow** — 2–4 sentences: what you reviewed, how many real problems survived verification, and whether any are genuinely serious. Don't label it or announce that you're keeping jargon out — just write it that way. Never use a term like "race condition," "IDOR," or "non-idempotent" without a plain-words gloss.
+**Open with a short TL;DR anyone could follow** — 2–4 sentences: what you reviewed, **whether the change matches what was agreed**, how many real problems survived verification, and whether any are genuinely serious. Don't label it or announce that you're keeping jargon out — just write it that way. Never use a term like "race condition," "IDOR," or "non-idempotent" without a plain-words gloss.
+
+**Say where the change stands against the brief, every time — including when it matches.** One line is enough: "It does what was agreed," or "Two things from the approved design didn't make it in." If no brief was available, say that instead, plainly: nobody checked this against an agreed design, because there wasn't one.
 
 Then a one-line count (e.g. "9 confirmed issues across 5 files; 3 serious, 4 moderate, 2 minor").
 
-Then the **findings grouped by category** — a short, plain-language theme, not a charter name. Pick the few that fit; for example: *could crash or break*, *security and access gaps*, *data ending up wrong*, *slow under heavy use*, *will confuse the next person*, *weak tests*, *claims that aren't true*.
+Then the **findings grouped by category** — a short, plain-language theme, not a charter name. Pick the few that fit; for example: *doesn't match what was agreed*, *could crash or break*, *security and access gaps*, *data ending up wrong*, *slow under heavy use*, *will confuse the next person*, *weak tests*, *claims that aren't true*.
+
+**Put the *doesn't match what was agreed* group first when it has anything in it.** It is the group the user is least able to catch on their own — the code compiles, the tests pass, and nothing looks wrong unless you hold it up against the design. Describe the gap the way the user would experience it ("the list has no column showing which item is which, so the number shown is the count rather than the item's ID"), not as a diff against a document.
 
 Each finding has exactly this shape:
 
@@ -113,9 +165,9 @@ A concurrency finding, for example, renders like this:
 
 Notice what the example does *not* contain: no function name, no "mutex," no "transaction," no "race condition." Those live in the code at `Where`, not in the explanation.
 
-Close with which reviewers were skipped and why. Hold the deep technical detail until the user asks.
+Close with which reviewers were skipped and why. If any reviewer raised something the brief had declared out of scope, list those separately at the end as *deliberately left out — flagged anyway*, one line each, so the user sees them without them competing with the real findings. Hold the deep technical detail until the user asks.
 
-### 7. STOP — hand the decision to the user; do not change anything
+### 8. STOP — hand the decision to the user; do not change anything
 
 **Reviewing and proposing fixes is the whole job. A described, validated fix is NOT permission to apply it.** The moment the report is delivered you stop and put the next move in the user's hands. Do not edit code, do not open files to "just apply the quick one," do not start drafting patches in the working tree.
 
@@ -149,9 +201,12 @@ Each reviewer returns a JSON array of findings, each:
   "what_is_wrong": "plain-language description",
   "what_could_go_wrong": "the concrete consequence",
   "evidence": "the specific code / interleaving / input that proves it",
-  "suggested_fix": "one line, optional"
+  "suggested_fix": "one line, optional",
+  "out_of_scope_by_design": false
 }
 ```
+
+Set `out_of_scope_by_design` to `true` only for the case the scope rule describes: the brief declared this a non-goal or a deferral, and you are flagging it anyway because deferring it is dangerous. Those findings are reported separately and never compete with the real ones.
 
 If a reviewer finds nothing, it returns `[]`. An empty result is a valid, useful result — do not pressure reviewers to invent findings.
 
@@ -159,7 +214,27 @@ If a reviewer finds nothing, it returns `[]`. An empty result is a valid, useful
 
 # Reviewer Charters
 
-Hand each charter to its own subagent **verbatim**, alongside the diff, the changed-file list, and the output format above. Every reviewer operates under one rule: **assume the change is broken and prove it.** Returning an empty list when nothing is found is correct — never invent findings to look thorough.
+Hand each charter to its own subagent **verbatim**, alongside the brief, the diff, the changed-file list, the scope rule, and the output format above. Every reviewer operates under one rule: **assume the change is broken and prove it.** Returning an empty list when nothing is found is correct — never invent findings to look thorough.
+
+## 0. The Spec Conformance Auditor (does this match what was signed off?)
+
+**Assume the change quietly drifted from what was approved.** Every other reviewer on this panel is hunting bugs, and a faithful implementation of the wrong thing has no bugs in it. You are the only one asking whether the right thing was built. "The tests pass and the code is clean" is not an answer to your question.
+
+The brief you were given — and above all any approved design artifact in it (a mock, wireframe, rendered page, schema, plan, or ticket) — **is the specification, not a suggestion.** Measure the change against it, not against its own internal consistency.
+
+Method, in this order:
+
+1. **Enumerate before you judge.** Read the approved artifact and write out a flat checklist of every concrete element it promises — each field, column, label, icon, state, button and its styling, error case, ordering, default, endpoint, parameter, permission. Do this *before* looking at the implementation, so the implementation can't quietly define what you go looking for.
+2. **Walk the checklist against the code, one item at a time.** For each: present, missing, or different? Reading the diff and thinking "this looks like the design" is exactly the failure mode — check every item individually.
+3. **Chase what a missing element took with it.** A dropped element usually orphans its data, and orphaned data tends to get rendered in the wrong place rather than nowhere. When an element is missing, find where its value went: is it shown under the wrong label, merged into a neighbour, silently dropped, or replaced by a different value that looks plausible? That downstream wrongness is often the more serious half of the finding.
+4. **Hunt unannounced deviations in the other direction.** Things present that the design didn't have; a different control, colour, or wording where the design was specific; a changed default; a renamed label; a reordered flow; a destructive action styled as a neutral one. A deviation stated up front is a decision — one discovered here is a defect. If the brief lists a deviation as already announced, it is not a finding.
+5. **Distinguish the specified from the unspecified.** Where the artifact was concrete, the change must match it. Where it was genuinely silent, the implementer had latitude — don't manufacture a violation out of a detail nobody specified.
+
+Do not report the absence of anything the brief lists as a non-goal or a deferral.
+
+Severity by user impact, not by how big the gap looks in the diff: a missing element that causes wrong data to be displayed or acted on is **high**; a missing element that loses information or an affordance the user was promised is **medium**; pure appearance with no loss of information or capability is **low**.
+
+**Charter: "Assume this was built to look like the approved design rather than to be it. Check every promised element one by one, and find what was dropped, changed, or added without anyone saying so — and where the data from anything dropped ended up instead."** For each finding, quote or point to the exact part of the approved artifact, say what the implementation does instead, and say what the user sees or loses as a result.
 
 ## 1. The Concurrency & State Saboteur
 
@@ -241,10 +316,10 @@ Method: for each claim, search for the authoritative source (official docs, sour
 
 ## 15. The Karpathy Minimalist (Simplicity & Surgical-Scope Enforcer)
 
-Assume this change overreached. Generated and rushed code tends to do more than the task required — adding speculative complexity and touching code it had no business touching. You are NOT told what the change was asked to do; infer its apparent purpose from the diff itself, then hold the change against the two guidelines below (derived from Andrej Karpathy's observations on common LLM coding pitfalls) and find every place it breaks them.
+Assume this change overreached. Generated and rushed code tends to do more than the task required — adding speculative complexity and touching code it had no business touching. The brief tells you what the change was agreed to do; anything beyond that is your territory, and work the brief explicitly deferred showing up here anyway is a finding, not a bonus. Where the brief is silent, infer the change's apparent purpose from the diff itself. Hold the change against the two guidelines below (derived from Andrej Karpathy's observations on common LLM coding pitfalls) and find every place it breaks them.
 
 **Simplicity First — minimum code that solves the problem, nothing speculative:**
-- No features beyond what the change apparently set out to do.
+- No features beyond what the change was agreed (or apparently set out) to do.
 - No abstractions for single-use code.
 - No "flexibility" or "configurability" that wasn't needed.
 - No error handling for impossible scenarios.
@@ -277,11 +352,13 @@ Assume this change treats a symptom, not the disease — a fast, local patch tha
 
 # Verifier — The False-Positive Filter (standalone, runs after the reviewers)
 
-You receive the full list of findings from all reviewers, plus the diff and the list of changed files. You did not produce any of these findings and you owe them no loyalty. For each finding:
+You receive the full list of findings from all reviewers, plus the brief (what the change was agreed to do and not do), the diff, and the list of changed files. You did not produce any of these findings and you owe them no loyalty. For each finding:
 
 1. Open the actual code at the cited location and surrounding context.
 2. Decide whether the finding is **real, reproducible, and material** — not speculation, not already handled elsewhere, not a misreading, not a style nitpick dressed up as a bug.
-3. For *Fact-Checker* findings, sanity-check that the cited source genuinely contradicts the claim (re-fetch if needed).
+3. **Reject findings that are only the absence of a declared non-goal.** If the brief says a thing was deliberately left out or deferred, "it's missing" is not a defect. Reject it with that reason — unless the reviewer marked it `out_of_scope_by_design`, in which case pass it through with that flag intact so it can be reported separately.
+4. For *Fact-Checker* findings, sanity-check that the cited source genuinely contradicts the claim (re-fetch if needed).
+5. For *Spec Conformance Auditor* findings, the standard is **the approved design, not the code.** Verify against the artifact: does it really promise this element, and does the implementation really not deliver it? Do not reject a conformance finding on the grounds that the code is coherent, that the current behaviour is reasonable, or that the difference looks cosmetic — coherent-but-not-what-was-approved is exactly the defect being reported. Reject it only if the artifact does not actually promise what the finding claims, if the change does deliver it, or if the brief lists it as an announced deviation.
 
 Return, for each finding, the original finding plus:
 
@@ -289,19 +366,21 @@ Return, for each finding, the original finding plus:
 { "confirmed": true | false, "reason": "one line: why it stands or why it's rejected" }
 ```
 
-Be strict. A finding survives only if you can point at the specific code that makes it true. When in doubt, mark it not-confirmed with a reason — a missed nitpick is cheaper than a false alarm presented to the user as fact.
+Be strict. A finding survives only if you can point at the specific code — or, for conformance findings, the specific part of the approved design — that makes it true. When in doubt, mark it not-confirmed with a reason: a missed nitpick is cheaper than a false alarm presented to the user as fact. The one exception is conformance — when in doubt about whether the change matches what was approved, let the finding through and say the doubt out loud, because the user is the only one who can settle what they signed off on.
 
 ---
 
 # Solution Validator — proves each proposed fix is real (standalone, runs after fixes are drafted)
 
-You receive the confirmed findings, the fix drafted for each, the diff, and the list of changed files. You did not write these fixes and you owe them nothing. **Assume each fix is wrong until you can show it is right.** You do not modify any code — you reason against what is actually there. For each fix:
+You receive the brief (what the change was agreed to do and not do), the confirmed findings, the fix drafted for each, the diff, and the list of changed files. You did not write these fixes and you owe them nothing. **Assume each fix is wrong until you can show it is right.** You do not modify any code — you reason against what is actually there. For each fix:
 
 1. Does it resolve the **root cause**, or only hide the symptom the finding pointed at?
 2. Does every API, method, field, import, flag, or config key it names **actually exist** and behave as assumed, in the versions in use? A fix that calls something imaginary is invalid.
 3. Does it reach the **layer where the bug originates**, or patch a downstream symptom and leave the source broken? (The same defect in *sibling* paths or parallel call sites is a separate finding with its own fix — this fix only needs to be complete for the finding it belongs to, not sweep every site.)
 4. Does it **break anything nearby** — a contract a caller relies on, an assumption elsewhere in the code, a test that currently passes?
 5. Is it the **minimal** change that does the job? A fix that overreaches — refactoring, cleaning up adjacent code, or adding abstraction the finding didn't call for — is invalid as drafted; the smaller change that still resolves the root cause is the valid one.
+6. Does it **stay inside the brief**? A fix that builds something the brief declares a non-goal, or that breaks an agreed constraint, is invalid — the user agreed to a scope and a fix doesn't get to renegotiate it silently.
+7. For a **conformance** finding, does the fix restore *what was approved*, or does it invent a third design that matches neither the approved artifact nor the current code? Only the first is valid.
 
 Return, for each fix:
 
@@ -315,10 +394,15 @@ Be strict. A fix is valid only if you can point at the specific code that makes 
 
 ## Common Mistakes
 
-- **Leaking intent into reviewer prompts.** "The author says this is safe" poisons the review. Never include it.
+- **Reviewing without the brief.** The most expensive failure this skill has had: reviewers hunted bugs well, found none, and the change shipped visibly wrong because it wasn't what had been approved and nobody was checking. Assemble the brief before dispatching anyone.
+- **Leaking assessments into reviewer prompts.** "The author says this is safe," "Y is already handled," "I think the bug is in the parser" all poison the review. Never include them. The brief is different: it states what the assignment was, not how well it was met — pass it, and pass it verbatim.
+- **Inventing a non-goal to explain a gap.** A non-goal is something that was actually agreed to be left out. Guessing that an omission was probably intentional turns the brief into a shield and hands the reviewers the wrong standard. When you don't know, say nothing and let the reviewer flag it.
+- **Letting deliberate omissions become findings.** The other half of the same coin: a panel that reports every agreed deferral as a gap buries the two real problems under twelve non-problems. That's what the scope rule in every reviewer prompt is for.
+- **Passing the conformance charter a spec you wrote yourself.** Give it the artifact the user approved. A summary you drafted from the diff will agree with the diff.
+- **Confirming conformance from the diff alone.** Reading a change and thinking "this looks like the design" is precisely how a dropped column survives review. Enumerate the approved elements first, then check them one by one.
 - **Skipping the verifier.** Adversarial reviewers over-report. The standalone verifier is what makes the output trustworthy — do not present raw findings.
 - **Presenting an unvalidated fix.** A fix that looks right but is wrong sends the user troubleshooting a dead end — worse than offering no fix at all. Every fix goes through the standalone Solution Validator; if one can't be validated, say "no confirmed fix yet" instead of guessing.
-- **Using the expensive model for subagents in Claude Code.** 16+ agents on the big model is wasteful; use `sonnet`.
+- **Using the expensive model for subagents in Claude Code.** 17+ agents on the big model is wasteful; use `sonnet`.
 - **Dumping technicalities on the user.** Lead with plain language and consequences; expand only on request.
 - **Padding the problem or the fix.** Each is one to three sentences. More words don't make it more correct — the user can always ask for depth.
 - **Proposing a fix bigger than the bug.** The fix is the smallest change that resolves the root cause — not a refactor, not a cleanup, not a new abstraction. Breadth across sibling paths is handled by separate findings, each with its own small fix. The Solution Validator rejects fixes that overreach.
