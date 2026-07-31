@@ -138,11 +138,12 @@ const args = process.argv.slice(2);
 
 // `--docdir`: print a fresh, session-scoped documents directory and exit. Cross-
 // platform (os.tmpdir() → %TEMP% on Windows, /tmp or $TMPDIR on Unix), scoped by
-// CLAUDE_CODE_SESSION_ID so it's unique per session (fresh each run, no overlap
-// with other projects). Skills call this instead of hand-building /tmp paths.
+// VISUAL_DOCS_SESSION_ID (agent-agnostic — any platform can export one) so it's
+// unique per session, else by pid (fresh each run, no overlap with other
+// projects). Skills call this instead of hand-building /tmp paths.
 if (args.includes('--docdir')) {
-  const safe = (s) => String(s).replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '');
-  const sess = safe(process.env.CLAUDE_CODE_SESSION_ID) || String(process.pid);
+  const safe = (s) => String(s || '').replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '');
+  const sess = safe(process.env.VISUAL_DOCS_SESSION_ID) || String(process.pid);
   const name = `${safe(basename(process.cwd())) || 'docs'}-${sess}`;
   const dir = join(tmpdir(), 'visual-docs', name);
   mkdirSync(dir, { recursive: true });
