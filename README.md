@@ -33,7 +33,11 @@ chases where the data from anything dropped ended up instead.
 
 A standalone false-positive filter re-checks every finding against the actual
 code before anything reaches you, so the report contains only verified
-problems, explained in plain language with a validated fix proposed for each.
+problems, each with a validated fix proposed. And the report is written for
+someone who never read the code — plain sentences, effect first, in Simplified
+Technical English. The agents did the grepping; you shouldn't have to open a
+file to understand what they found. Symbol names appear in one place only: the
+clickable `file:line` under each finding.
 
 ```
 /plugin install adversarial-review@patrickdappollonio

@@ -136,6 +136,20 @@ Only **validated** fixes appear in the report.
 
 By now you hold detailed, code-level material: reviewer findings full of symbols, the drafted fixes, the validator's notes. **The report is not that material — it is a plain re-telling of it.** Rewrite every finding for a reader who never saw the code and never will. One self-check governs the whole report: *if a sentence only makes sense to someone already reading the code, rewrite it.*
 
+**Why this rule is absolute here.** Seventeen agents just grepped, opened, and read their way across the codebase. The user did none of that, and on most surfaces could not have. A change big enough to deserve this review is a change nobody is holding in their head, so a sentence like *"the change to `fooBar()` at `example.js:24` conflicts with `barbaz()` and `dafoo()`"* transfers nothing: the reader doesn't know what any of those do, whether the names mean what they claim, or what breaks. It reads as information while being none. Every identifier you leave in the prose moves the work of understanding onto the one person who cannot do it.
+
+**Write the report in Simplified Technical English (ASD-STE100)**, or any equally plain register:
+
+- Short sentences, one idea each. Active voice, present tense.
+- Common words over precise-but-obscure ones. No unexplained jargon, ever — and no jargon at all where a plain phrase carries the same meaning.
+- Name the **effect first**, the label last (if the label appears at all).
+- Describe **what a person would observe** — what breaks, what they'd see, what they'd lose — not what the code does internally.
+- Never sacrifice a real finding to be brief. Plain is the goal; short is not. Balance, not brevity.
+
+If the reader replies in code terms — they wrote it, they're quoting symbols back at you — match them for that exchange, then reset to plain for the next one. If the `effective-communicator` skill is installed, it governs the wording of the report and this section defers to it.
+
+This applies to **Explain** in step 8 as well. "Go deeper" means more of the reasoning, the sequence of events, the consequence — not a switch into code-speak. Reach for identifiers only once the user has shown they're reading the code alongside you.
+
 **Where code identifiers go.** Function names, class names, variables, flags — any symbol — belong **only** in the `Where` field, as a clickable `file:line`. That field is the pointer into the editor; it carries the code-level precision so the prose doesn't have to. The problem and the fix describe *what happens* and *what changes* in outcome terms, with no symbol names in them.
 
 **Open with a short TL;DR anyone could follow** — 2–4 sentences: what you reviewed, **whether the change matches what was agreed**, how many real problems survived verification, and whether any are genuinely serious. Don't label it or announce that you're keeping jargon out — just write it that way. Never use a term like "race condition," "IDOR," or "non-idempotent" without a plain-words gloss.
@@ -406,7 +420,8 @@ Be strict. A fix is valid only if you can point at the specific code that makes 
 - **Dumping technicalities on the user.** Lead with plain language and consequences; expand only on request.
 - **Padding the problem or the fix.** Each is one to three sentences. More words don't make it more correct — the user can always ask for depth.
 - **Proposing a fix bigger than the bug.** The fix is the smallest change that resolves the root cause — not a refactor, not a cleanup, not a new abstraction. Breadth across sibling paths is handled by separate findings, each with its own small fix. The Solution Validator rejects fixes that overreach.
-- **Letting code identifiers leak into the prose.** Function and symbol names belong in the `Where` (`file:line`) field, not in the problem or the fix. If the explanation only makes sense to someone reading the code, rewrite it.
+- **Letting code identifiers leak into the prose.** Function and symbol names belong in the `Where` (`file:line`) field, not in the problem or the fix. The panel read the code; the user didn't and won't. "The change to `fooBar()` conflicts with `barbaz()`" names three things the reader has never seen and tells them nothing about what breaks. If the explanation only makes sense to someone reading the code, rewrite it.
+- **Treating "explain further" as permission to go technical.** Depth means more of the story — the sequence, the trigger, the consequence — in the same plain register. Switch to symbols only when the user is clearly reading the code with you.
 - **Announcing that you're simplifying.** Just write plainly; don't label the summary "simple terms" or tell the user you're keeping the jargon out. That guidance is for you, not for them.
 - **Skipping the opening TL;DR.** The plain summary up top is the most important part of the report, not an optional nicety — write it for someone who never saw the code.
 - **Applying fixes before the user chooses.** This skill produces a *review with proposed fixes*, not changes to the code. A confirmed finding with a validated fix — even an obvious one-liner — does not authorize editing. Stop at the report and let the user pick Explain / Apply the fixes / Triage.

@@ -36,6 +36,23 @@ Each reviewer attacks from one narrow angle:
 
 A standalone **False-Positive Filter** runs last and gates everything before it reaches you.
 
+## The report is written for you, not for the panel
+
+Seventeen agents just grepped and read their way across the codebase. You
+didn't. So the report is a plain re-telling, not a dump of what they found:
+short sentences, one idea each, active voice, effect first — Simplified
+Technical English (ASD-STE100). Every finding says what breaks and what you'd
+lose, in words that still mean something to someone who never opened the file.
+
+Symbol names appear in exactly one place: a clickable `file:line` pointer under
+each finding. Never in the explanation. *"The change to `fooBar()` conflicts
+with `barbaz()`"* names three things you've never seen and tells you nothing —
+so instead you get *"two requests arriving at the same instant can both claim
+the same name, and the second silently overwrites the first."* Asking for more
+depth gets you more of the story, not a switch into code-speak. If you have
+[`effective-communicator`](../effective-communicator) installed, it governs the
+wording.
+
 ## Installing
 
 Add the marketplace, then install the plugin:
