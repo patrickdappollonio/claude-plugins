@@ -2,7 +2,7 @@
 
 A token-conscious skill that runs a **hostile, bias-free review** of a code change — a PR, the last commit, or your uncommitted work — and reports only the findings that survive verification.
 
-Most reviews are friendly: the reviewer shares your context and quietly assumes the code works. This one doesn't. It dispatches a panel of **17 independent reviewers, each a fresh sub-agent with no knowledge of your conversation or your rationalizations.** Every reviewer is told one thing: *assume the change is broken and prove it.* A change that "looks fine" to the person who wrote it (or to the assistant that helped write it) gets attacked from 17 directions at once.
+Most reviews are friendly: the reviewer shares your context and quietly assumes the code works. This one doesn't. It dispatches a panel of **18 independent reviewers, each a fresh sub-agent with no knowledge of your conversation or your rationalizations.** Every reviewer is told one thing: *assume the change is broken and prove it.* A change that "looks fine" to the person who wrote it (or to the assistant that helped write it) gets attacked from 18 directions at once.
 
 ## What the reviewers are — and aren't — told
 
@@ -12,11 +12,18 @@ That line matters in both directions. Without the brief, nobody on the panel is 
 
 This comes from a real miss: three reviewers hunted bugs well on a piece of UI work and all three passed it. The build had silently dropped a column the approved mock had, and a value ended up rendered in the wrong place. **A correct implementation of the wrong design has no bugs in it** — so a bug-hunting charter will pass it every time.
 
+## The brief bounds scope. It never establishes correctness.
+
+There's a mirror image of that miss, and the panel is built to catch it too. Once a plan is written down and handed to reviewers, it starts to read as settled: a reviewer sees something wrong, checks the brief, finds the behaviour was agreed, and quietly files it under *out of scope* rather than *bug*. That's how a defect survives round after round while everybody works honestly — and it happens the same way every time, so re-running the review doesn't help.
+
+So the brief is allowed to tell reviewers what's in bounds, and never allowed to tell them what's correct. **"It was in the plan" is never a reason to withhold a defect.** Agreement moves the fault from the implementer to the design; it doesn't make the fault disappear. Two questions get answered separately, every run: *does this match what was agreed*, and *was what was agreed right*.
+
 ## The reviewer panel
 
 Each reviewer attacks from one narrow angle:
 
 - **Spec Conformance Auditor** — was the *approved* thing actually built? Dropped elements, silent deviations, and where the missing element's data ended up instead
+- **Premise Auditor** — was the approved thing *worth* building? A perfect implementation of this design — what still goes wrong?
 - **Concurrency & State Saboteur** — races, deadlocks, lost updates, ordering bugs
 - **Failure Injection Adversary** — every dependency times out or returns garbage
 - **Input Attacker** — malformed, oversized, injection, and boundary inputs
@@ -38,7 +45,7 @@ A standalone **False-Positive Filter** runs last and gates everything before it 
 
 ## The report is written for you, not for the panel
 
-Seventeen agents just grepped and read their way across the codebase. You
+Eighteen agents just grepped and read their way across the codebase. You
 didn't. So the report is a plain re-telling, not a dump of what they found:
 short sentences, one idea each, active voice, effect first — Simplified
 Technical English (ASD-STE100). Every finding says what breaks and what you'd
@@ -83,6 +90,7 @@ If you approved a plan or a mock, point at it — *"review this against the plan
 ## Notes
 
 - **It reports, it doesn't rewrite.** Every finding is verified and every proposed fix is validated by a separate agent, and then it stops and hands you the choice: explain, apply, or triage.
+- **A problem with the plan is never fixed silently.** When the finding is that the agreed design was wrong, the fix necessarily changes what you approved — so it comes to you as a decision with its cost attached, and a fourth choice appears: revise the design. Deciding to live with it is a valid answer too.
 - **Token-heavy by design.** It runs many agents in parallel. In Claude Code each reviewer uses the cheaper `sonnet` model to keep cost sane — the value is in the panel's breadth, not any single agent's horsepower.
 - **The Fact-Checker needs web access** (web search / fetch) to ground claims against real documentation.
 - **`gh` CLI is optional** — it's only needed to review GitHub PRs directly; local diffs work without it.
