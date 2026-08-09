@@ -101,7 +101,12 @@ has items, skip one only when it had nothing there:
 
 1. `# Title` — one line, imperative. Directly under it, add a ` ```tldr `
    summary card (recommended for anything non-trivial): 2–4 sentences a reader
-   absorbs in one glance before scrolling.
+   absorbs in one glance before scrolling. **Directly below the tldr** (or first
+   if you skipped it), add a ` ```decisions ` card — this is **mandatory
+   whenever any decision, risk, or assumption needs the user's attention**: one
+   bullet per item with the options, your recommendation, and where to act
+   (usually a ` ```question ` fence under *Open questions*). Omit the card
+   entirely when nothing needs their attention — never render an empty one.
 2. `## Summary` — birds-eye first: a plain-terms paragraph on what you'll do and
    *why*, **no code/symbol names**, then a `> [!IMPORTANT]` admonition (never a
    bold-keyword blockquote) for anything the user must decide.

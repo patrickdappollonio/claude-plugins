@@ -77,6 +77,7 @@ but in the viewer these fences get special treatment:
 | Fence | Renders as |
 | :---- | :--------- |
 | ` ```tldr ` / ` ```summary ` | A prominent **TL;DR** summary card for the top of the document — markdown body (bold, code, links, lists) |
+| ` ```decisions ` / ` ```attention ` | An amber **"Needs your decision"** card right below the TL;DR — one bullet per open decision, risk, or assumption the reader must weigh in on; agents include it whenever something needs your attention and omit it when everything is green |
 | ` ```mermaid ` | Mermaid diagram (flowchart, sequence, ER, state, …) |
 | ` ```nomnoml ` | Sketchy, hand-drawn-style diagram from a tiny UML text DSL |
 | ` ```diff ` / ` ```patch ` | Rich diff viewer with a **unified / side-by-side** toggle |

@@ -120,7 +120,13 @@ has items for it, skip one only when the inventory had nothing there:
 
 1. `# Title` — what the change accomplished, past tense. Directly under it, add
    a ` ```tldr ` summary card (recommended for anything non-trivial): 2–4
-   sentences a reader absorbs in one glance before scrolling.
+   sentences a reader absorbs in one glance before scrolling. **Directly below
+   the tldr** (or first if you skipped it), add a ` ```decisions ` card — this
+   is **mandatory whenever anything needs the user's attention**: a follow-up
+   they must choose, a risk to acknowledge, an assumption you made while
+   implementing, a review focus you want them on. One bullet per item with your
+   recommendation and where to act. Omit the card entirely when everything is
+   green — never render an empty one.
 2. `## Outcome` — birds-eye first: 1–3 plain-terms paragraphs a non-author
    follows, **no code/symbol names**, then what to scrutinize; flag it with a
    `> [!WARNING]` or `> [!CAUTION]` admonition, never a bold-keyword blockquote.

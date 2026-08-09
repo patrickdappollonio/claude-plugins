@@ -594,6 +594,29 @@ button { font: inherit; cursor: pointer; }
 .tldr-body > :last-child { margin-bottom: 0; }
 .tldr-body p { line-height: 1.65; }
 
+/* "Needs your decision" card: the TL;DR card's amber sibling — identical
+   anatomy (icon-chip + eyebrow over a markdown body), warn palette instead of
+   accent, so open decisions read as THE thing to look at after the summary. */
+.decisions-block {
+  margin: 0.2em 0 1.9em; padding: 18px 22px 20px;
+  border: 1px solid color-mix(in srgb, var(--warn) 38%, var(--line));
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--warn-soft) 70%, var(--surface));
+}
+.decisions-head { display: flex; align-items: center; gap: 10px; margin-bottom: 11px; }
+.decisions-ichip {
+  width: 27px; height: 27px; border-radius: 8px; display: grid; place-items: center; flex: 0 0 auto;
+  background: color-mix(in srgb, var(--warn) 22%, var(--surface)); color: var(--warn);
+}
+.decisions-ichip .icon { width: 15px; height: 15px; }
+.decisions-label {
+  font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.11em; color: var(--warn);
+}
+.decisions-body { font-size: 1.02rem; line-height: 1.65; color: var(--ink); }
+.decisions-body > :first-child { margin-top: 0; }
+.decisions-body > :last-child { margin-bottom: 0; }
+.decisions-body p { line-height: 1.65; }
+
 /* ---------- Admonitions (icon-chip, no accent rail) ---------- */
 .admonition {
   display: grid; grid-template-columns: auto 1fr; gap: 13px; align-items: start;

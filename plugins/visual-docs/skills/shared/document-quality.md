@@ -123,6 +123,13 @@ Thin is the common failure. Beat it with a coverage discipline:
 Recap the **whole** unit of work (all the thread's commits/changes), not just
 the latest fix.
 
+**Decisions are inventory too.** Every unresolved choice, risk you want
+acknowledged, and assumption you silently made belongs in the ` ```decisions `
+card at the top of the document (see the authoring guide) — the card is
+mandatory when any such item exists and omitted entirely when none do. An open
+decision buried mid-document is a missing item: surface it in the card and
+point at where the reader acts on it.
+
 ## 3. Prefer the purpose-built block over a raw diff
 
 Every fence type earns its keep — reach for the one that shows the *thing*, not

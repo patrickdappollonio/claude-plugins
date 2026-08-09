@@ -306,6 +306,13 @@
       return `<div class="tldr-block" ${blockAttrs(code)} data-tldr-source="${encodeSrc(code)}"></div>`;
     }
 
+    if (language === 'decisions' || language === 'attention') {
+      // "Needs your decision" card — the top-of-doc list of open decisions the
+      // reader must weigh in on. Hydrated like tldr (markdown body rendered at
+      // hydrate time to avoid re-entering marked.parse from its own renderer).
+      return `<div class="decisions-block" ${blockAttrs(code)} data-decisions-source="${encodeSrc(code)}"></div>`;
+    }
+
     let inner;
     if (window.hljs && language && window.hljs.getLanguage(language)) {
       try {
@@ -1357,6 +1364,32 @@
     });
   }
 
+  /** Render a ```decisions fence's markdown body into the amber "Needs your
+      decision" card — same anatomy as the TL;DR card (icon-chip + eyebrow over
+      a markdown body), keyed to the warn palette so it reads as a sibling. */
+  function hydrateDecisions(container) {
+    container.querySelectorAll('.decisions-block').forEach((block) => {
+      if (block.dataset.hydrated) return;
+      const src = decodeSrc(block.dataset.decisionsSource || '');
+      const head = document.createElement('div');
+      head.className = 'decisions-head';
+      const chip = document.createElement('span');
+      chip.className = 'decisions-ichip';
+      chip.innerHTML = ICON.branch;
+      const label = document.createElement('span');
+      label.className = 'decisions-label';
+      label.textContent = 'Needs your decision';
+      head.appendChild(chip);
+      head.appendChild(label);
+      const body = document.createElement('div');
+      body.className = 'decisions-body';
+      body.innerHTML = sanitizeHTML(renderMarkdown(src));
+      block.appendChild(head);
+      block.appendChild(body);
+      block.dataset.hydrated = '1';
+    });
+  }
+
   const CALLOUTS = {
     'decision needed': { cls: 'decision', icon: 'branch' },
     'decision': { cls: 'decision', icon: 'branch' },
@@ -1546,6 +1579,7 @@
 
   const COMPONENTS = [
     ['.tldr-block', 'summary'],
+    ['.decisions-block', 'decisions card'],
     ['.mermaid-block', 'mermaid diagram'],
     ['.nomnoml-block', 'nomnoml diagram'],
     ['.diff-block', 'diff'],
@@ -1563,7 +1597,7 @@
   // content (a diagram, an interactive explorer, a table) and is whole-block-only
   // — deriving OPAQUE_SELECTOR from COMPONENTS means a NEW component type defaults
   // to opaque (the safe choice) until it's explicitly listed as text-preserving.
-  const TEXT_PRESERVING = new Set(['.tldr-block', '.diff-block', '.migration-block', '.api-block']);
+  const TEXT_PRESERVING = new Set(['.tldr-block', '.decisions-block', '.diff-block', '.migration-block', '.api-block']);
   const OPAQUE_SELECTOR = [
     ...COMPONENTS.map(([sel]) => sel).filter((sel) => !TEXT_PRESERVING.has(sel)),
     '.question-block', // interactive answer form, not a COMPONENTS entry
@@ -2134,6 +2168,7 @@
       hydrateAdmonitions(el);
       hydrateCallouts(el);
       hydrateTldr(el);
+      hydrateDecisions(el);
       hydrateDiffs(el);
       hydrateMigrations(el);
       hydrateNomnoml(el);
