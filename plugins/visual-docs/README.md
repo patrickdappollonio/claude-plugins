@@ -42,11 +42,19 @@ Two skills your agent picks up automatically:
    and review the document in your browser.
 4. **The page live-reloads** whenever the agent edits the file — you watch
    revisions land in real time. Multiple documents from the same session show
-   up together in the sidebar.
+   up together in the sidebar. **Colored bars in the margin show what changed
+   since you last reviewed** — green for new blocks, purple for edited ones, a
+   red tick where something was removed. Hover a bar to see the underlying
+   markdown diff for that block; hit **Mark reviewed** when you're caught up
+   and the bars reset. The baseline survives server restarts, so you can close
+   the tab, let the agent work, and still see exactly what's new tomorrow.
 5. **You leave feedback without switching windows**: **select any text** to
-   comment on that exact snippet (it gets highlighted), hover a section heading
-   or a rendered component — a diagram, diff, migration, API card — to pin a
-   comment there, or use the comments panel for document-level notes. The agent
+   comment on that exact snippet (it gets highlighted, even across bold/code/
+   link boundaries), hover any block — a paragraph, a list item, an individual
+   table row, a section heading, or a rendered component like a diagram, diff,
+   migration, or API card — to pin a comment there. Everything with an open
+   comment stays visibly highlighted, Notion-style. Use the comments panel for
+   document-level notes. The agent
    reads your comments (each labelled with what it's anchored to) before its
    next revision and marks them resolved as it addresses them. The panel is
    Notion-style: an **Open / Resolved** filter instead of one long list, and
@@ -103,7 +111,9 @@ title block showing the document, file, last update, and open comment count.
   plugin, pinned and hash-verified in an SBOM-style manifest
   ([server/assets/vendor/manifest.json](server/assets/vendor/manifest.json)).
 - Your comments are stored next to your documents in
-  `.visual-docs/comments.json`, as plain JSON you can read or delete.
+  `.visual-docs/comments.json`, as plain JSON you can read or delete. The
+  change-marker baselines ("what did I last review") live beside them in
+  `.visual-docs/baselines.json` — delete it to reset all markers.
 - It's a single `node` process with no dependencies; stop it any time with
   `pkill -f visual-docs-server`.
 

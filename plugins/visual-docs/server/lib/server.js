@@ -299,6 +299,127 @@ async function writeComments(root, data, expectedHash) {
   return true;
 }
 
+/* ---------- change tracking (per-doc baselines) ----------
+   The server remembers each document's content as of the reader's last review
+   in .visual-docs/baselines.json. /api/changes diffs the file on disk against
+   that baseline at markdown-block granularity, so the viewer can draw margin
+   change bars after an agent edits a doc; "mark reviewed" advances the
+   baseline. A baseline is created the first time a doc's changes are asked
+   for, so a freshly opened doc starts clean. */
+
+const MAX_BASELINES = 200; // per-served-dir cap; oldest entries evicted
+
+function baselinesFile(root) {
+  return join(root, '.visual-docs', 'baselines.json');
+}
+
+async function readBaselines(root) {
+  try {
+    const parsed = JSON.parse(await fs.readFile(baselinesFile(root), 'utf8'));
+    if (parsed && typeof parsed.docs === 'object' && parsed.docs !== null) return parsed;
+  } catch { /* absent or unreadable — start clean; baselines are recreatable */ }
+  return { docs: {} };
+}
+
+async function writeBaselines(root, data) {
+  const entries = Object.entries(data.docs);
+  if (entries.length > MAX_BASELINES) {
+    entries.sort((a, b) => String(a[1].updatedAt).localeCompare(String(b[1].updatedAt)));
+    data.docs = Object.fromEntries(entries.slice(entries.length - MAX_BASELINES));
+  }
+  const file = baselinesFile(root);
+  await fs.mkdir(dirname(file), { recursive: true });
+  const tmp = `${file}.tmp-${process.pid}`;
+  await fs.writeFile(tmp, JSON.stringify(data, null, 2) + '\n');
+  await fs.rename(tmp, file);
+}
+
+/** Split markdown into source blocks — fence-aware, blank-line separated —
+    each with its 1-based starting line. This is the unit the change markers
+    diff at: one block ≈ one rendered element. */
+export function splitBlocks(content) {
+  const lines = String(content).split('\n');
+  const blocks = [];
+  let cur = null;
+  let fence = null; // inside a code fence: the marker that must close it
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const marker = line.match(/^\s*(`{3,}|~{3,})/);
+    if (!fence && !line.trim()) { cur = null; continue; }
+    if (!cur) { cur = { start: i + 1, text: line }; blocks.push(cur); } else cur.text += '\n' + line;
+    if (fence) {
+      if (marker && marker[1][0] === fence[0] && marker[1].length >= fence.length) { fence = null; cur = null; }
+    } else if (marker) {
+      fence = marker[1];
+    }
+  }
+  return blocks;
+}
+
+/** Longest-common-subsequence table over two arrays of strings. */
+function lcsTable(a, b) {
+  const dp = Array.from({ length: a.length + 1 }, () => new Array(b.length + 1).fill(0));
+  for (let i = a.length - 1; i >= 0; i--) {
+    for (let j = b.length - 1; j >= 0; j--) {
+      dp[i][j] = a[i] === b[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+    }
+  }
+  return dp;
+}
+
+/** Line-level diff of one changed block, as rows the viewer can render
+    directly in the hover popover: {t: 'ctx'|'del'|'add', s: line}. Capped so a
+    pathological block can't balloon the payload. */
+function lineDiff(oldText, newText, cap = 240) {
+  const a = oldText ? oldText.split('\n') : [];
+  const b = newText ? newText.split('\n') : [];
+  const dp = lcsTable(a, b);
+  const rows = [];
+  let i = 0, j = 0;
+  while ((i < a.length || j < b.length) && rows.length < cap) {
+    if (i < a.length && j < b.length && a[i] === b[j]) { rows.push({ t: 'ctx', s: a[i] }); i++; j++; }
+    else if (j >= b.length || (i < a.length && dp[i + 1][j] >= dp[i][j + 1])) rows.push({ t: 'del', s: a[i++] });
+    else rows.push({ t: 'add', s: b[j++] });
+  }
+  if (i < a.length || j < b.length) rows.push({ t: 'ctx', s: '…' });
+  return rows;
+}
+
+/** Diff two markdown documents at block granularity. Returns one region per
+    changed new-side block ({type: 'added'|'modified', line, text, diff}) plus
+    deletion regions ({type: 'deleted', prevText, diff}) anchored to the
+    new-side block just above where the old block used to sit. */
+export function diffRegions(oldContent, newContent) {
+  const oldBlocks = splitBlocks(oldContent);
+  const newBlocks = splitBlocks(newContent);
+  const dp = lcsTable(oldBlocks.map((x) => x.text), newBlocks.map((x) => x.text));
+  const regions = [];
+  let i = 0, j = 0;
+  while (i < oldBlocks.length || j < newBlocks.length) {
+    if (i < oldBlocks.length && j < newBlocks.length && oldBlocks[i].text === newBlocks[j].text) { i++; j++; continue; }
+    // One contiguous run of non-matching blocks on both sides; pair them up
+    // index-for-index (a replace shows as 'modified'), leftovers become pure
+    // additions or deletions.
+    const runStartJ = j;
+    const oldRun = [], newRun = [];
+    while (i < oldBlocks.length || j < newBlocks.length) {
+      if (i < oldBlocks.length && j < newBlocks.length && oldBlocks[i].text === newBlocks[j].text) break;
+      if (j >= newBlocks.length || (i < oldBlocks.length && dp[i + 1][j] >= dp[i][j + 1])) oldRun.push(oldBlocks[i++]);
+      else newRun.push(newBlocks[j++]);
+    }
+    for (let k = 0; k < Math.max(oldRun.length, newRun.length); k++) {
+      const o = oldRun[k], nw = newRun[k];
+      if (o && nw) regions.push({ type: 'modified', line: nw.start, text: nw.text, diff: lineDiff(o.text, nw.text) });
+      else if (nw) regions.push({ type: 'added', line: nw.start, text: nw.text, diff: lineDiff('', nw.text) });
+      else {
+        const prev = newRun.length ? newRun[newRun.length - 1] : (runStartJ > 0 ? newBlocks[runStartJ - 1] : null);
+        regions.push({ type: 'deleted', line: prev ? prev.start : 0, prevText: prev ? prev.text : '', diff: lineDiff(o.text, '') });
+      }
+    }
+  }
+  return regions;
+}
+
 // Persisted viewer preferences live in lib/prefs.js (shared with the CLI's
 // --prefs command); the endpoints below are the browser-facing wrapper.
 
@@ -337,7 +458,10 @@ function sanitizeAnchor(a) {
   if (a.kind === 'text') {
     const quote = str(a.quote, 2000);
     if (!quote) return null;
-    return { kind: 'text', quote, prefix: str(a.prefix, 200), suffix: str(a.suffix, 200) };
+    // `block: true` marks a whole-block comment (gutter button on a paragraph,
+    // list item, table row…) — the viewer highlights the element itself instead
+    // of wrapping the quoted text.
+    return { kind: 'text', quote, prefix: str(a.prefix, 200), suffix: str(a.suffix, 200), ...(a.block === true ? { block: true } : {}) };
   }
   if (a.kind === 'component') {
     const type = str(a.type, 60);
@@ -443,6 +567,14 @@ export async function startServer({ dir, port = 0, host = '127.0.0.1', watch: en
     return run;
   }
 
+  // Same serialization for the change-tracking baseline store.
+  let baselinesChain = Promise.resolve();
+  function withBaselines(fn) {
+    const run = baselinesChain.then(fn, fn);
+    baselinesChain = run.then(() => {}, () => {});
+    return run;
+  }
+
   // Basis for the viewer's "this session" grouping.
   const startedAt = Date.now();
   // Serialize trash mutations the same way as comments so concurrent POSTs
@@ -538,6 +670,66 @@ export async function startServer({ dir, port = 0, host = '127.0.0.1', watch: en
         } catch {
           return sendJSON(res, 404, { error: 'not found' });
         }
+      }
+
+      // What changed in a doc since the reader last marked it reviewed, at
+      // markdown-block granularity. First request for a doc records the
+      // baseline (so it reports clean); after that, edits on disk show up as
+      // regions until POST /api/changes/seen advances the baseline.
+      if (pathname === '/api/changes' && req.method === 'GET') {
+        const p = url.searchParams.get('path') || '';
+        if (!/\.(md|markdown)$/i.test(p)) return sendJSON(res, 400, { error: 'invalid path' });
+        const abs = await resolveServable(rootReal, p, null);
+        if (!abs) return sendJSON(res, 404, { error: 'not found' });
+        let content;
+        try {
+          const stat = await fs.stat(abs);
+          if (stat.size > MAX_DOC_BYTES) return sendJSON(res, 200, { baselineAt: null, regions: [] });
+          content = await fs.readFile(abs, 'utf8');
+        } catch {
+          return sendJSON(res, 404, { error: 'not found' });
+        }
+        const result = await withBaselines(async () => {
+          const data = await readBaselines(root);
+          const entry = data.docs[p];
+          if (!entry || typeof entry.content !== 'string') {
+            data.docs[p] = { content, updatedAt: new Date().toISOString() };
+            await writeBaselines(root, data);
+            return { baselineAt: data.docs[p].updatedAt, regions: [] };
+          }
+          return {
+            baselineAt: entry.updatedAt,
+            regions: entry.content === content ? [] : diffRegions(entry.content, content),
+          };
+        });
+        return sendJSON(res, 200, result);
+      }
+
+      // "Mark reviewed": snapshot the doc's current content as the new baseline.
+      if (pathname === '/api/changes/seen' && req.method === 'POST') {
+        if (crossOrigin(req)) return sendJSON(res, 403, { error: 'cross-origin request refused' });
+        let payload;
+        try {
+          payload = JSON.parse(await readBody(req));
+        } catch {
+          return sendJSON(res, 400, { error: 'invalid JSON body' });
+        }
+        const p = payload && typeof payload.path === 'string' ? payload.path : '';
+        if (!/\.(md|markdown)$/i.test(p)) return sendJSON(res, 400, { error: 'invalid path' });
+        const abs = await resolveServable(rootReal, p, null);
+        if (!abs) return sendJSON(res, 404, { error: 'not found' });
+        let content;
+        try {
+          content = await fs.readFile(abs, 'utf8');
+        } catch {
+          return sendJSON(res, 404, { error: 'not found' });
+        }
+        await withBaselines(async () => {
+          const data = await readBaselines(root);
+          data.docs[p] = { content, updatedAt: new Date().toISOString() };
+          await writeBaselines(root, data);
+        });
+        return sendJSON(res, 200, { ok: true });
       }
 
       // Self-contained HTML export of a single document — same access gate as

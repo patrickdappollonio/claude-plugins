@@ -692,6 +692,68 @@ mark.comment-highlight.st-resolved { border-bottom-color: transparent; opacity: 
 /* Dismissed: the comment won't be acted on — fade the highlight almost out. */
 mark.comment-highlight.st-dismissed { background: transparent; border-bottom-color: transparent; opacity: 0.55; }
 
+/* Whole-block comment highlight (gutter comments, table rows, components):
+   the element itself is tinted — a quote spanning many text nodes can't be
+   wrapped in a <mark>. Component cards keep their surface and get a ring
+   instead of a wash. */
+.markdown-body .comment-highlight-block {
+  background: var(--t-yellow);
+  border-radius: 6px;
+  box-shadow: -3px 0 0 0 var(--warn);
+  cursor: pointer;
+}
+.markdown-body .component-block.comment-highlight-block {
+  background: none;
+  border-radius: 12px;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--warn) 55%, transparent);
+}
+.markdown-body .comment-highlight-block.st-resolved { box-shadow: none; opacity: 0.85; }
+.markdown-body .comment-highlight-block.st-dismissed { background: transparent; box-shadow: none; cursor: default; }
+.markdown-body .component-block.comment-highlight-block.st-dismissed { box-shadow: none; }
+
+/* ---------- "Changed since last review" markers ---------- */
+/* Margin bars on blocks that changed since the reader last hit "Mark
+   reviewed": green = new, accent = edited, a short red tick = a block was
+   removed just below. Hovering a bar pops the raw markdown diff. */
+.markdown-body .changed-add, .markdown-body .changed-mod, .markdown-body .changed-del-below { position: relative; }
+.markdown-body .changed-add::before, .markdown-body .changed-mod::before {
+  content: ''; position: absolute; left: -16px; top: 2px; bottom: 2px; width: 4px; border-radius: 2px;
+}
+.markdown-body .changed-add::before { background: var(--ok); }
+.markdown-body .changed-mod::before { background: var(--accent); }
+.markdown-body .changed-del-below::after {
+  content: ''; position: absolute; left: -16px; bottom: -3px; width: 4px; height: 9px;
+  border-radius: 2px; background: var(--danger);
+}
+
+.change-pop {
+  position: fixed; z-index: 70; max-width: 440px; max-height: 55vh; overflow: auto;
+  background: var(--panel); border: 1px solid var(--line-strong); border-radius: 10px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.2); padding: 8px 10px; font-size: 0.76rem;
+}
+.change-pop .cp-head { font-weight: 600; margin: 6px 0 4px; }
+.change-pop .cp-head:first-child { margin-top: 0; }
+.change-pop .cp-head.cp-added { color: var(--ok); }
+.change-pop .cp-head.cp-modified { color: var(--accent); }
+.change-pop .cp-head.cp-deleted { color: var(--danger); }
+.change-pop pre { margin: 0; padding: 0; background: none; border: none; white-space: pre-wrap; word-break: break-word; }
+.change-pop .ln { display: block; padding: 0 6px; border-radius: 4px; }
+.change-pop .ln.add { background: var(--ok-soft); }
+.change-pop .ln.del { background: var(--danger-soft); }
+.change-pop .ln.ctx { opacity: 0.6; }
+
+.changes-pill {
+  position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); z-index: 60;
+  display: flex; align-items: center; gap: 10px;
+  background: var(--panel); border: 1px solid var(--line-strong); border-radius: 999px;
+  padding: 6px 8px 6px 14px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.16); font-size: 0.8rem;
+}
+.changes-pill button {
+  border: none; background: var(--accent); color: #fff; border-radius: 999px;
+  padding: 5px 12px; cursor: pointer; font-weight: 600; font-size: 0.76rem;
+}
+.changes-pill button:hover { background: var(--accent-press); }
+
 /* Click-to-jump lands here: flash the anchored element (mark, block, heading). */
 .jump-flash { animation: vd-jump-flash 1.6s ease-out; }
 @keyframes vd-jump-flash {
