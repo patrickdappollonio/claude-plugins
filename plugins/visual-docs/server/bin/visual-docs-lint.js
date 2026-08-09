@@ -26,6 +26,7 @@ const STRUCTURED = new Set([
   'diff', 'patch', 'migration', 'sql-migration', 'db-migration',
   'api', 'http', 'openapi', 'swagger', 'filetree', 'files', 'file-tree',
   'mermaid', 'nomnoml', 'question', 'ask', 'tldr', 'tl;dr', 'summary',
+  'decisions', 'attention',
 ]);
 const ADMONITIONS = new Set(['NOTE', 'TIP', 'IMPORTANT', 'WARNING', 'CAUTION']);
 const SECRET_RE = /\b(sk-[A-Za-z0-9]{16,}|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{20,})\b/;
@@ -94,6 +95,9 @@ function lintText(text, file) {
   let i = 0;
   // Preamble (before any H2) is part of the plain-language zone.
   let plainZone = true;
+  // The decisions card must lead the document (right below the tldr, or
+  // first) — one that appears after body sections has lost its purpose.
+  let sawH2 = false;
   while (i < lines.length) {
     const open = lines[i].match(/^```(\S*)/);
     if (open) {
@@ -121,6 +125,9 @@ function lintText(text, file) {
           if (!prev.trim() || /^#{1,6}\s/.test(prev) || /^```/.test(prev) || /^>/.test(prev)) {
             add(start + 1, 'warn', `\`${lang}\` fence has no one-sentence intent line directly above it (document-quality §4).`);
           }
+        }
+        if ((lang === 'decisions' || lang === 'attention') && sawH2) {
+          add(start + 1, 'warn', '`decisions` card appears after body sections — put it at the top of the document, right below the tldr card (or first if there is none), so open decisions are the first thing the reader sees.');
         }
         if (!body.join('').trim()) add(start + 1, 'error', `Empty \`${lang}\` fence.`);
         else lintFence(lang, body, start, add);
@@ -156,7 +163,7 @@ function lintText(text, file) {
 
     // audience: prose in the plain-language zone must not name code symbols
     const h2 = lines[i].match(/^##\s+(.+)/);
-    if (h2) plainZone = PLAIN_H2_RE.test(h2[1].trim());
+    if (h2) { sawH2 = true; plainZone = PLAIN_H2_RE.test(h2[1].trim()); }
     else if (plainZone && !/^#/.test(lines[i])) {
       const syms = audienceSymbols(lines[i]);
       if (syms.length) {
@@ -196,6 +203,10 @@ function lintFence(lang, body, start, add) {
         add(start + 2 + k, 'warn', `malformed hunk header \`${line.trim().slice(0, 30)}\` — use \`@@ -old,count +new,count @@\`, or drop the \`@@\` line and the renderer will synthesize one.`);
       }
     });
+  } else if (lang === 'decisions' || lang === 'attention') {
+    if (!body.some((l) => /^\s*([-*+]|\d+\.)\s+/.test(l))) {
+      add(at, 'warn', '`decisions` fence has no list items — write one bullet per open decision, each stating the choice, the options, and your recommendation.');
+    }
   } else if (lang === 'api' || lang === 'http') {
     if (!/\b(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\b/i.test(text)) add(at, 'warn', 'api fence has no request line (e.g. `POST /path`).');
   } else if (lang === 'filetree' || lang === 'files' || lang === 'file-tree') {

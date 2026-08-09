@@ -52,6 +52,31 @@ those).
     an in-memory fallback. Default is 100 req/min, behind a rollout flag.
     ```
 
+### Needs your decision — ` ```decisions ` (alias: ` ```attention `)
+
+An amber card listing the **open decisions the reader must weigh in on** — the
+TL;DR card's sibling, rendered with a "Needs your decision" eyebrow. This card
+is **mandatory whenever anything genuinely needs the reader's attention**: an
+unresolved choice, a risk you want acknowledged, an assumption you made that
+they should confirm, a tradeoff you picked that they might reverse. When
+nothing needs attention and everything is green, **omit the card entirely** —
+never render an empty or "all good ✓" one; its absence is the all-clear signal.
+
+Placement is fixed: **directly below the tldr card**, or the very first block
+when the document has no tldr. One bullet per decision. Each bullet states the
+choice in plain language, the options with their consequence, and your
+recommendation — then points at where in the document the reader acts on it (a
+` ```question ` fence for enumerable choices, or "comment on X" for open-ended
+ones).
+
+    ```decisions
+    - **Retention window for rate-limit counters.** Redis keys currently expire
+      after 24h; keeping 7 days doubles memory. I recommend 24h — answer the
+      question in *Open questions* below.
+    - **I assumed the legacy `/v1` API is out of scope.** If it also needs
+      limiting, say so in a comment and I'll extend the plan.
+    ```
+
 ### Mermaid diagrams — ` ```mermaid `
 
 Any Mermaid diagram type (flowchart, sequence, state, ER, gantt):

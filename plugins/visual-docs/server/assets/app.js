@@ -306,6 +306,13 @@
       return `<div class="tldr-block" ${blockAttrs(code)} data-tldr-source="${encodeSrc(code)}"></div>`;
     }
 
+    if (language === 'decisions' || language === 'attention') {
+      // "Needs your decision" card — the top-of-doc list of open decisions the
+      // reader must weigh in on. Hydrated like tldr (markdown body rendered at
+      // hydrate time to avoid re-entering marked.parse from its own renderer).
+      return `<div class="decisions-block" ${blockAttrs(code)} data-decisions-source="${encodeSrc(code)}"></div>`;
+    }
+
     let inner;
     if (window.hljs && language && window.hljs.getLanguage(language)) {
       try {
@@ -1357,6 +1364,32 @@
     });
   }
 
+  /** Render a ```decisions fence's markdown body into the amber "Needs your
+      decision" card — same anatomy as the TL;DR card (icon-chip + eyebrow over
+      a markdown body), keyed to the warn palette so it reads as a sibling. */
+  function hydrateDecisions(container) {
+    container.querySelectorAll('.decisions-block').forEach((block) => {
+      if (block.dataset.hydrated) return;
+      const src = decodeSrc(block.dataset.decisionsSource || '');
+      const head = document.createElement('div');
+      head.className = 'decisions-head';
+      const chip = document.createElement('span');
+      chip.className = 'decisions-ichip';
+      chip.innerHTML = ICON.branch;
+      const label = document.createElement('span');
+      label.className = 'decisions-label';
+      label.textContent = 'Needs your decision';
+      head.appendChild(chip);
+      head.appendChild(label);
+      const body = document.createElement('div');
+      body.className = 'decisions-body';
+      body.innerHTML = sanitizeHTML(renderMarkdown(src));
+      block.appendChild(head);
+      block.appendChild(body);
+      block.dataset.hydrated = '1';
+    });
+  }
+
   const CALLOUTS = {
     'decision needed': { cls: 'decision', icon: 'branch' },
     'decision': { cls: 'decision', icon: 'branch' },
@@ -1518,8 +1551,35 @@
   // Friendly names for generic blocks, used in the gutter button's label.
   const BLOCK_NAMES = { P: 'paragraph', UL: 'list', OL: 'list', DL: 'list', TABLE: 'table', BLOCKQUOTE: 'note', PRE: 'code', FIGURE: 'figure', HR: 'divider' };
 
+  /** A list item's own text, excluding any nested sub-list's text — so a
+      two-level list's outer item quote doesn't swallow its children's text
+      (each nested item gets its own quote via its own liOwnText() call). */
+  function liOwnText(li) {
+    let out = '';
+    for (const child of li.childNodes) {
+      if (child.nodeType === 3) out += child.nodeValue;
+      else if (child.nodeType === 1 && !/^(UL|OL)$/.test(child.tagName)) out += child.textContent;
+    }
+    return out;
+  }
+
+  /** A table row's cells joined with a visible separator — textContent alone
+      would fuse adjacent cells into "Alice25". Used for the row's stable id,
+      its agent-facing hint, and block-highlight matching. */
+  function trOwnText(tr) {
+    return [...tr.cells].map((c) => c.textContent.replace(/\s+/g, ' ').trim()).join(' | ');
+  }
+
+  /** The text a whole-block comment quotes for a given element — the same
+      derivation the gutter button uses, so block anchors round-trip. */
+  function blockOwnText(el) {
+    const raw = el.tagName === 'LI' ? liOwnText(el) : el.tagName === 'TR' ? trOwnText(el) : el.textContent;
+    return raw.replace(/\s+/g, ' ').trim();
+  }
+
   const COMPONENTS = [
     ['.tldr-block', 'summary'],
+    ['.decisions-block', 'decisions card'],
     ['.mermaid-block', 'mermaid diagram'],
     ['.nomnoml-block', 'nomnoml diagram'],
     ['.diff-block', 'diff'],
@@ -1537,7 +1597,7 @@
   // content (a diagram, an interactive explorer, a table) and is whole-block-only
   // — deriving OPAQUE_SELECTOR from COMPONENTS means a NEW component type defaults
   // to opaque (the safe choice) until it's explicitly listed as text-preserving.
-  const TEXT_PRESERVING = new Set(['.tldr-block', '.diff-block', '.migration-block', '.api-block']);
+  const TEXT_PRESERVING = new Set(['.tldr-block', '.decisions-block', '.diff-block', '.migration-block', '.api-block']);
   const OPAQUE_SELECTOR = [
     ...COMPONENTS.map(([sel]) => sel).filter((sel) => !TEXT_PRESERVING.has(sel)),
     '.question-block', // interactive answer form, not a COMPONENTS entry
@@ -1557,6 +1617,27 @@
     }
     for (const sel of [...COMPONENTS.map(([s]) => s), '.codewrap']) {
       container.querySelectorAll(sel).forEach((blk) => blk.classList.add('component-block'));
+    }
+    // Top-level table rows are commentable like list items. Each row's id is
+    // derived from its cell text (so the anchor survives row reordering) with
+    // a positional fallback for empty or duplicate rows. diff2html's internal
+    // tables live inside .component-block wrappers and are never direct
+    // children here, so only real markdown tables are tagged.
+    const usedRowIds = new Set();
+    let tableIdx = 0;
+    for (const table of container.querySelectorAll(':scope > table')) {
+      tableIdx++;
+      let rowIdx = 0;
+      for (const tr of table.querySelectorAll('tr')) {
+        rowIdx++;
+        const text = trOwnText(tr);
+        let id = text ? `tr-${blockHash(text)}` : '';
+        if (!id || usedRowIds.has(id)) id = `tr-${tableIdx}-${rowIdx}`;
+        usedRowIds.add(id);
+        tr.dataset.blockId = id;
+        const hint = text.replace(/[<>]/g, '');
+        tr.dataset.blockHint = hint.length > 118 ? hint.slice(0, 118) + '…' : hint;
+      }
     }
   }
 
@@ -1597,67 +1678,185 @@
     return null;
   }
 
-  /** Highlight the quoted span of every text-anchored comment, so the reader can
-      always see what's been commented on — the highlight persists for the life of
-      the comment (new → acknowledged → resolved, or dismissed), resolved and
-      dismissed ones rendered softer. Idempotent: unwraps prior marks first. Quotes that span multiple
-      nodes are left unhighlighted (the comment still shows in the drawer). */
+  const STATUS_RANK = { new: 0, acknowledged: 1, resolved: 2, dismissed: 3 };
+  const STATUS_CLASSES = ['st-new', 'st-acknowledged', 'st-resolved', 'st-dismissed'];
+
+  /** Elements a whole-block comment can target: every direct child of the
+      document that isn't a component, plus list items and top-level table
+      rows — the same set the gutter button offers. */
+  function blockHighlightTargets(container) {
+    const els = [];
+    for (const el of container.children) {
+      if (el.classList.contains('component-block') || el.classList.contains('question-block')) continue;
+      els.push(el);
+    }
+    for (const li of container.querySelectorAll('li')) {
+      if (!li.closest('.component-block')) els.push(li);
+    }
+    els.push(...container.querySelectorAll(':scope > table tr'));
+    return els;
+  }
+
+  /** Attach a click-to-open handler to a highlighted block. Assigned via the
+      onclick property (not addEventListener) so re-applying highlights stays
+      idempotent — the reset pass just nulls it. Ignores clicks on links and
+      interactive controls, and clicks that end a text selection. */
+  function setBlockOpenHandler(el, onOpen) {
+    el.onclick = (e) => {
+      if (e.target.closest('a, button, input, textarea, select, summary, label')) return;
+      const sel = window.getSelection();
+      if (sel && !sel.isCollapsed) return;
+      onOpen();
+    };
+  }
+
+  /** Highlight everything that has comments, so the reader can always see what's
+      been commented on — highlights persist for the life of the comment
+      (new → acknowledged → resolved, or dismissed), later states rendered
+      softer. Three shapes, all idempotent (prior marks/classes reset first):
+      - selection quotes → <mark> wraps, one per spanned text node, so a quote
+        crossing bold/code/link boundaries still highlights;
+      - whole-block comments (anchor.block, plus legacy gutter comments with an
+        empty prefix+suffix) → a class on the block element itself;
+      - component/row comments (component anchors) → the same block class on
+        the [data-block-id] element. */
   function applyTextHighlights(container, comments, onOpen) {
-    const existing = container.querySelectorAll('mark.comment-highlight');
-    const active = comments.filter((c) => c.anchor && c.anchor.kind === 'text');
-    // Nothing to draw and nothing drawn before — skip the whole-document tree walk.
-    if (!active.length && !existing.length) return;
-    existing.forEach((m) => {
+    const existingMarks = container.querySelectorAll('mark.comment-highlight');
+    const existingBlocks = container.querySelectorAll('.comment-highlight-block');
+    const texts = comments.filter((c) => c.anchor && c.anchor.kind === 'text');
+    const compos = comments.filter((c) => c.anchor && c.anchor.kind === 'component' && c.anchor.id && c.anchor.type !== 'question');
+    // Nothing to draw and nothing drawn before — skip the whole-document walk.
+    if (!texts.length && !compos.length && !existingMarks.length && !existingBlocks.length) return;
+    existingMarks.forEach((m) => {
       const parent = m.parentNode;
       while (m.firstChild) parent.insertBefore(m.firstChild, m);
       parent.removeChild(m);
       parent.normalize();
     });
-    for (const c of active) {
-      const best = bestQuoteMatch(container, c.anchor);
-      if (!best) continue;
-      try {
-        const range = document.createRange();
-        range.setStart(best.node, best.idx);
-        range.setEnd(best.node, best.idx + c.anchor.quote.length);
-        const mark = document.createElement('mark');
-        mark.className = `comment-highlight st-${commentStatus(c)}`;
-        mark.dataset.commentId = c.id || '';
-        mark.title = c.text;
-        mark.addEventListener('click', () => onOpen());
-        range.surroundContents(mark);
-      } catch { /* range not wrappable — skip */ }
+    existingBlocks.forEach((el) => {
+      el.classList.remove('comment-highlight-block', ...STATUS_CLASSES);
+      el.onclick = null;
+      delete el.dataset.commentIds;
+    });
+
+    // A block target can carry several comments — collect them per element,
+    // then paint once with the most-open status.
+    const perBlock = new Map(); // element -> {rank, ids}
+    const noteBlock = (el, c) => {
+      const rank = STATUS_RANK[commentStatus(c)] ?? 0;
+      const cur = perBlock.get(el) || { rank: Infinity, ids: [] };
+      cur.rank = Math.min(cur.rank, rank);
+      if (c.id) cur.ids.push(c.id);
+      perBlock.set(el, cur);
+    };
+
+    let blockTargets = null; // built lazily — most docs have no block comments
+    for (const c of texts) {
+      const a = c.anchor;
+      const isBlock = a.block === true || (!a.prefix && !a.suffix);
+      if (isBlock) {
+        blockTargets = blockTargets || blockHighlightTargets(container);
+        const quote = a.quote.replace(/\s+/g, ' ').trim();
+        const el = blockTargets.find((cand) => {
+          const t = blockOwnText(cand);
+          return t === quote || (quote.length >= 400 && t.startsWith(quote));
+        });
+        if (el) { noteBlock(el, c); continue; }
+        // No block matches (doc edited since) — fall through to a span match
+        // so the comment still has a chance to show.
+      }
+      const segs = bestQuoteMatch(container, a);
+      if (!segs) continue;
+      for (const seg of segs) {
+        try {
+          const range = document.createRange();
+          range.setStart(seg.node, seg.start);
+          range.setEnd(seg.node, seg.end);
+          const mark = document.createElement('mark');
+          mark.className = `comment-highlight st-${commentStatus(c)}`;
+          mark.dataset.commentId = c.id || '';
+          mark.title = c.text;
+          mark.addEventListener('click', () => onOpen());
+          range.surroundContents(mark);
+        } catch { /* this segment not wrappable — keep the others */ }
+      }
     }
+    for (const c of compos) {
+      const el = container.querySelector(`[data-block-id="${CSS.escape(c.anchor.id)}"]`);
+      if (el && !el.classList.contains('question-block')) noteBlock(el, c);
+    }
+    for (const [el, info] of perBlock) {
+      el.classList.add('comment-highlight-block', STATUS_CLASSES[info.rank === Infinity ? 0 : info.rank]);
+      if (info.ids.length) el.dataset.commentIds = info.ids.join(' ');
+      setBlockOpenHandler(el, onOpen);
+    }
+  }
+
+  /** Whitespace-collapsed view of the container's visible text plus a map from
+      each collapsed character back to its (text node, offset), so a quote can
+      be matched across inline-markup boundaries — bold/`code`/links split a
+      paragraph into several text nodes. Spaces synthesized at node joins or
+      collapsed from whitespace runs map to null. */
+  function collapsedTextIndex(container) {
+    const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, {
+      acceptNode(n) {
+        return isInComponent(n.parentElement) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
+      },
+    });
+    let flat = '';
+    const map = [];
+    let pendingSpace = false;
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      const v = node.nodeValue;
+      for (let o = 0; o < v.length; o++) {
+        if (/\s/.test(v[o])) { pendingSpace = flat.length > 0; continue; }
+        if (pendingSpace) { flat += ' '; map.push(null); pendingSpace = false; }
+        flat += v[o];
+        map.push({ node, off: o });
+      }
+    }
+    return { flat, map };
   }
 
   /** Find the occurrence of anchor.quote whose surrounding text best matches the
       stored prefix/suffix, so a phrase that appears more than once highlights
-      the one the reader actually selected. Returns {node, idx} or null. */
+      the one the reader actually selected. Matching is whitespace-collapsed and
+      spans text-node boundaries. Returns an array of per-text-node segments
+      ({node, start, end}) covering the match, or null. */
   function bestQuoteMatch(container, anchor) {
-    const { quote, prefix = '', suffix = '' } = anchor;
-    const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, {
-      acceptNode(n) {
-        if (isInComponent(n.parentElement)) return NodeFilter.FILTER_REJECT;
-        return n.nodeValue.includes(quote) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
-      },
-    });
+    const collapse = (s) => (s || '').replace(/\s+/g, ' ');
+    const quote = collapse(anchor.quote).trim();
+    if (!quote) return null;
+    const prefix = collapse(anchor.prefix || '');
+    const suffix = collapse(anchor.suffix || '');
+    const { flat, map } = collapsedTextIndex(container);
     let best = null;
-    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-      const v = node.nodeValue;
-      for (let idx = v.indexOf(quote); idx !== -1; idx = v.indexOf(quote, idx + 1)) {
-        // Score by how many trailing chars of prefix / leading chars of suffix
-        // match the text immediately around this occurrence.
-        const before = v.slice(0, idx);
-        const after = v.slice(idx + quote.length);
-        let score = 0;
-        for (let k = 1; k <= prefix.length && before.endsWith(prefix.slice(prefix.length - k)); k++) score = k;
-        let s2 = 0;
-        for (let k = 1; k <= suffix.length && after.startsWith(suffix.slice(0, k)); k++) s2 = k;
-        score += s2;
-        if (!best || score > best.score) best = { node, idx, score };
-      }
+    for (let idx = flat.indexOf(quote); idx !== -1; idx = flat.indexOf(quote, idx + 1)) {
+      // Score by how many trailing chars of prefix / leading chars of suffix
+      // match the text immediately around this occurrence.
+      const before = flat.slice(Math.max(0, idx - prefix.length), idx);
+      const after = flat.slice(idx + quote.length, idx + quote.length + suffix.length);
+      let score = 0;
+      for (let k = 1; k <= prefix.length && before.endsWith(prefix.slice(prefix.length - k)); k++) score = k;
+      let s2 = 0;
+      for (let k = 1; k <= suffix.length && after.startsWith(suffix.slice(0, k)); k++) s2 = k;
+      score += s2;
+      if (!best || score > best.score) best = { idx, score };
     }
-    return best;
+    if (!best) return null;
+    const segs = [];
+    for (let k = best.idx; k < best.idx + quote.length; k++) {
+      const m = map[k];
+      if (!m) continue; // collapsed whitespace — no raw position of its own
+      const last = segs[segs.length - 1];
+      // Extend across any gap within the same node (the gap is that node's own
+      // collapsed whitespace, safe to include) — this guarantees at most ONE
+      // segment per text node, so wrapping one segment can never invalidate
+      // another's offsets in the same node.
+      if (last && last.node === m.node && m.off >= last.end) last.end = m.off + 1;
+      else segs.push({ node: m.node, start: m.off, end: m.off + 1 });
+    }
+    return segs.length ? segs : null;
   }
 
   /** Human label for what a comment (or a pending drawer target) is anchored to.
@@ -1726,7 +1925,11 @@
     if (!content || !c) return;
     let el = null;
     if (c.anchor && c.anchor.kind === 'text') {
-      el = content.querySelector(`mark.comment-highlight[data-comment-id="${CSS.escape(c.id || '')}"]`);
+      // A selection quote lands on its <mark>; a whole-block comment lands on
+      // the block element carrying the comment's id (data-comment-ids is a
+      // space-separated list, so ~= matches one id among several).
+      el = content.querySelector(`mark.comment-highlight[data-comment-id="${CSS.escape(c.id || '')}"]`)
+        || content.querySelector(`[data-comment-ids~="${CSS.escape(c.id || '')}"]`);
     } else if (c.anchor && c.anchor.kind === 'component' && c.anchor.id) {
       el = content.querySelector(`[data-block-id="${CSS.escape(c.anchor.id)}"]`);
     } else if (c.title || c.section) {
@@ -1965,6 +2168,7 @@
       hydrateAdmonitions(el);
       hydrateCallouts(el);
       hydrateTldr(el);
+      hydrateDecisions(el);
       hydrateDiffs(el);
       hydrateMigrations(el);
       hydrateNomnoml(el);
@@ -1998,6 +2202,137 @@
       applyTextHighlights(el, comments, onViewComments);
       markAnsweredQuestions(el, comments, onDismissAnswer);
     }, [comments, raw, onViewComments, onDismissAnswer]);
+
+    // What changed since the reader last marked this doc reviewed. Fetched on
+    // every doc (re)load — the watcher's SSE refetch means an agent's edit
+    // shows up here live. The server records the baseline on first ask, so a
+    // never-reviewed doc starts clean.
+    const [changes, setChanges] = useState(null);
+    useEffect(() => {
+      setChanges(null); // never let a previous doc's regions tag this one
+      if (raw || !doc || !doc.path) return;
+      let cancelled = false;
+      api(`/api/changes?path=${encodeURIComponent(doc.path)}`)
+        .then((r) => { if (!cancelled) setChanges(r); })
+        .catch(() => { if (!cancelled) setChanges(null); });
+      return () => { cancelled = true; };
+    }, [doc, raw]);
+
+    // Margin change bars: match each changed source block to its rendered
+    // element (fences by their data-block-id hash, prose by normalized text)
+    // and tag it; hovering the bar pops the raw markdown diff for that block.
+    // Declared after the body-render effect so it always runs against the
+    // freshly rendered document.
+    useEffect(() => {
+      const el = ref.current;
+      if (!el || raw) return;
+      el.querySelectorAll('[data-change-idx]').forEach((b) => {
+        b.classList.remove('changed-add', 'changed-mod', 'changed-del-below');
+        b.removeAttribute('data-change-idx');
+      });
+      const regions = (changes && changes.regions) || [];
+      if (!regions.length) return;
+
+      // The inner source of a fenced block, matching what the fence renderers
+      // hashed into data-block-id — the most reliable way to find a fence's
+      // rendered element.
+      const fenceInner = (text) => {
+        const lines = text.split('\n');
+        const m = lines[0].match(/^\s*(`{3,}|~{3,})/);
+        if (!m) return null;
+        const ch = m[1][0];
+        const lastLine = lines[lines.length - 1].trim();
+        const closes = lines.length > 1 && lastLine.length >= m[1].length && [...lastLine].every((c) => c === ch);
+        return lines.slice(1, closes ? -1 : undefined).join('\n');
+      };
+      const used = new Set();
+      const findFor = (text) => {
+        if (!text) return null;
+        const inner = fenceInner(text);
+        if (inner !== null) {
+          const target = el.querySelector(`[data-block-id="${CSS.escape(blockHash(inner))}"]`);
+          if (target && !used.has(target)) return target;
+        }
+        const needle = normalizeForLineMatch(text);
+        if (!needle) return null;
+        let loose = null;
+        for (const cand of el.children) {
+          if (used.has(cand)) continue;
+          const t = normalizeForLineMatch(cand.textContent);
+          if (!t) continue;
+          if (t === needle) return cand;
+          if (!loose && needle.length >= 12 && t.slice(0, 80) === needle.slice(0, 80)) loose = cand;
+        }
+        return loose;
+      };
+      regions.forEach((rg, k) => {
+        const target = findFor(rg.type === 'deleted' ? rg.prevText : rg.text);
+        if (!target) return; // unmatched (e.g. the h1, or a raced edit) — no bar
+        if (rg.type !== 'deleted') used.add(target);
+        target.classList.add(rg.type === 'added' ? 'changed-add' : rg.type === 'modified' ? 'changed-mod' : 'changed-del-below');
+        const prev = target.getAttribute('data-change-idx');
+        target.setAttribute('data-change-idx', prev ? `${prev} ${k}` : String(k));
+      });
+
+      // Hover popover with the raw markdown diff, shared by all bars.
+      const pop = document.createElement('div');
+      pop.className = 'change-pop';
+      pop.hidden = true;
+      document.body.appendChild(pop);
+      const TYPE_LABEL = { added: 'New block', modified: 'Edited block', deleted: 'Removed block (sat below here)' };
+      const renderPop = (target) => {
+        pop.textContent = '';
+        for (const k of (target.getAttribute('data-change-idx') || '').split(' ').filter(Boolean)) {
+          const rg = regions[Number(k)];
+          if (!rg) continue;
+          const head = document.createElement('div');
+          head.className = `cp-head cp-${rg.type}`;
+          head.textContent = TYPE_LABEL[rg.type] || 'Change';
+          pop.appendChild(head);
+          const pre = document.createElement('pre');
+          for (const row of rg.diff || []) {
+            const ln = document.createElement('span');
+            ln.className = `ln ${row.t}`;
+            ln.textContent = (row.t === 'add' ? '+ ' : row.t === 'del' ? '− ' : '  ') + row.s;
+            pre.appendChild(ln);
+          }
+          pop.appendChild(pre);
+        }
+      };
+      let popFor = null;
+      const showPop = (target) => {
+        renderPop(target);
+        pop.hidden = false;
+        const r = target.getBoundingClientRect();
+        // Prefer the free margin left of the content column; on a narrow
+        // window overlap the block's top-left corner instead.
+        const wide = r.left > 300;
+        const pw = Math.min(440, Math.max(260, r.left - 28));
+        pop.style.width = wide ? `${pw}px` : '';
+        pop.style.left = `${Math.round(Math.max(8, wide ? r.left - pw - 18 : r.left))}px`;
+        pop.style.top = `${Math.round(Math.max(8, Math.min(r.top, window.innerHeight - 80)))}px`;
+      };
+      const hidePop = () => { pop.hidden = true; popFor = null; };
+      const onMove = (e) => {
+        if (pop.contains(e.target)) return; // scrolling inside the popover
+        const t = e.target.closest && e.target.closest('[data-change-idx]');
+        if (t && el.contains(t)) {
+          const r = t.getBoundingClientRect();
+          // Only at/near the bar itself — a diff popping up over every changed
+          // paragraph the pointer crosses would be intrusive.
+          if (e.clientX <= r.left + 4 && e.clientX >= r.left - 26) {
+            if (popFor !== t || pop.hidden) { popFor = t; showPop(t); }
+            return;
+          }
+        }
+        if (!pop.hidden) hidePop();
+      };
+      document.addEventListener('mousemove', onMove);
+      return () => {
+        document.removeEventListener('mousemove', onMove);
+        pop.remove();
+      };
+    }, [changes, doc, theme, raw]);
 
     // Notion-style gutter comment button: a single button that follows the
     // hovered heading or component into the document's right margin, labelled
@@ -2060,17 +2395,6 @@
 
       // The top-level block child of the document under a node — so every block
       // (paragraph, list, table, heading, component, code…) is a comment target.
-      // A list item's own text, excluding any nested sub-list's text — so a
-      // two-level list's outer item quote doesn't swallow its children's text
-      // (each nested item gets its own quote via its own liOwnText() call).
-      const liOwnText = (li) => {
-        let out = '';
-        for (const child of li.childNodes) {
-          if (child.nodeType === 3) out += child.nodeValue;
-          else if (child.nodeType === 1 && !/^(UL|OL)$/.test(child.tagName)) out += child.textContent;
-        }
-        return out;
-      };
       const closestBlock = (node) => {
         let el = node && node.nodeType === 3 ? node.parentElement : node;
         if (!el || !content.contains(el)) return null;
@@ -2082,6 +2406,12 @@
         // body) so their existing whole-block affordance is untouched.
         const li = el.closest && el.closest('li');
         if (li && content.contains(li) && !li.closest('.component-block')) return li;
+        // Table rows the same way — but only in real markdown tables; rows
+        // inside components (diff2html's internal tables) keep the whole-block
+        // affordance. The table itself stays reachable via its padding/margins
+        // and cell borders, where no row is hit.
+        const tr = el.closest && el.closest('tr');
+        if (tr && content.contains(tr) && !tr.closest('.component-block')) return tr;
         while (el && el.parentElement !== content) el = el.parentElement;
         return el && el.parentElement === content ? el : null;
       };
@@ -2107,6 +2437,18 @@
           count = countComponent(comments, anchor.id);
           label = `Comment on ${lbl}`;
           action = () => onOpenComponent(anchor);
+        } else if (el.tagName === 'TR') {
+          // Rows anchor component-style (stable data-block-id from
+          // markCommentables) — a row's text spans several cells/text nodes,
+          // which a text-quote anchor can neither highlight nor jump to.
+          const rows = [...el.closest('table').querySelectorAll('tr')];
+          const i = rows.indexOf(el);
+          const isHead = i === 0 && !!el.querySelector('th');
+          const lbl = isHead ? 'header row' : `table row ${i}`;
+          const anchor = makeComponentAnchor('table row', lbl, el);
+          count = countComponent(comments, anchor.id);
+          label = `Comment on this ${isHead ? 'header row' : 'row'}`;
+          action = () => onOpenComponent(anchor);
         } else if (/^H[2-6]$/.test(el.tagName)) {
           const title = el.textContent.trim();
           const slug = slugify(title);
@@ -2122,7 +2464,9 @@
           const name = isLi ? 'list item' : (BLOCK_NAMES[el.tagName] || (el.classList.contains('admonition') ? 'callout' : 'block'));
           count = comments.filter((c) => c.anchor && c.anchor.kind === 'text' && c.anchor.quote === quote && commentOpen(c)).length;
           label = `Comment on this ${name}`;
-          action = () => onOpenText({ kind: 'text', quote, prefix: '', suffix: '' });
+          // block: true → the viewer highlights the whole element rather than
+          // trying to wrap the (multi-text-node) quote in a <mark>.
+          action = () => onOpenText({ kind: 'text', quote, prefix: '', suffix: '', block: true });
         }
         target = el;
         setCommentButtonLabel(btn, label, count);
@@ -2210,7 +2554,24 @@
       };
     }, [doc, onOpenText]);
 
-    return html`<article id="content" class="markdown-body" ref=${ref}></article>`;
+    const changeCount = !raw && changes && changes.regions ? changes.regions.length : 0;
+    const markReviewed = async () => {
+      try {
+        await api('/api/changes/seen', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ path: doc.path }),
+        });
+        setChanges(changes ? { ...changes, regions: [] } : null);
+      } catch { /* pill stays — clicking again retries */ }
+    };
+    return html`
+      <article id="content" class="markdown-body" ref=${ref}></article>
+      ${changeCount ? html`
+        <div class="changes-pill" role="status">
+          <span>${changeCount} change${changeCount === 1 ? '' : 's'} since last review</span>
+          <button type="button" onClick=${markReviewed}>Mark reviewed</button>
+        </div>` : null}`;
   }
 
   function DocFooter() {
