@@ -16,13 +16,26 @@ is served *by* the local server itself, so everything just works.
 
 ## Install
 
+**Claude Code:**
+
 ```
 /plugin marketplace add patrickdappollonio/claude-plugins
 /plugin install visual-docs@patrickdappollonio
 ```
 
-That's it. The renderer ships inside the plugin — there is nothing else to
-install, and the server has zero npm dependencies (any Node.js ≥ 18 runs it).
+**Any other agent** — Cursor, Codex, Copilot, opencode, Gemini, and 70+ more — via
+[`npx skills`](https://github.com/vercel-labs/skills):
+
+```bash
+npx skills add patrickdappollonio/claude-plugins --skill visual-plan --skill visual-recap
+```
+
+Add `-g` to install for your user instead of just this project, and `-a <agent>` to
+target one agent. Update later with `npx skills update`.
+
+That's it, either way. The renderer travels inside each skill, so there is
+nothing else to install and no difference between the two routes at runtime. The
+server has zero npm dependencies (any Node.js ≥ 18 runs it).
 
 ## What you get
 
@@ -110,7 +123,7 @@ title block showing the document, file, last update, and open comment count.
   from your network, and nothing is uploaded anywhere. The browser page makes
   zero external requests: all renderer libraries ship vendored with the
   plugin, pinned and hash-verified in an SBOM-style manifest
-  ([server/assets/vendor/manifest.json](server/assets/vendor/manifest.json)).
+  ([manifest.json](../../extras/visual-docs/server/assets/vendor/manifest.json)).
 - Your comments are stored next to your documents in
   `.visual-docs/comments.json`, as plain JSON you can read or delete. The
   change-marker baselines ("what did I last review") live beside them in
@@ -146,11 +159,15 @@ any key in it) just resets that preference to its default the next time it's
 read — nothing else depends on it existing.
 
 You (or an agent) can also read and change preferences from the command line —
-no running server needed, and no JSON to parse:
+no running server needed, and no JSON to parse. `<skill-dir>` below is wherever
+the skill was installed: `<plugin-dir>/skills/visual-plan` for a Claude Code
+plugin install, or `.claude/skills/visual-plan` (add `-g` and it's under your
+home directory) for an `npx skills` install — the renderer sits inside it either
+way:
 
 ```bash
-node <plugin-dir>/server/bin/visual-docs-server.js --prefs              # print all
-node <plugin-dir>/server/bin/visual-docs-server.js --prefs theme dark   # set one
+node <skill-dir>/server/bin/visual-docs-server.js --prefs              # print all
+node <skill-dir>/server/bin/visual-docs-server.js --prefs theme dark   # set one
 ```
 
 ## Export
@@ -165,7 +182,7 @@ In the viewer, click **export** in the document toolbar (downloads with
 `?download=1`). From the command line, no running server needed:
 
 ```bash
-node <plugin-dir>/server/bin/visual-docs-server.js --export ./my-notes plan.md
+node <skill-dir>/server/bin/visual-docs-server.js --export ./my-notes plan.md
 # /abs/path/plan.html
 # 3.8 MB (3,936,673 bytes)
 # self-contained — open in any browser or attach anywhere.
@@ -182,7 +199,7 @@ The renderer is also a standalone npm package you can point at any folder of
 markdown files:
 
 ```bash
-node <plugin-dir>/server/bin/visual-docs-server.js ./my-notes
+node <skill-dir>/server/bin/visual-docs-server.js ./my-notes
 # Serving ./my-notes
 # VISUAL_DOCS_URL=http://127.0.0.1:39257/
 ```
@@ -195,8 +212,8 @@ skills and work cross-platform (Windows included): `--serve` backgrounds the
 server and prints the URL, then returns (no `nohup`/`&`), and `--docdir` prints a
 fresh, session-scoped temp directory to drop docs in. Want it reachable on your
 tailnet? Just tell the agent to start the server with `--host`.
-See [server/README.md](server/README.md) for the package details, and
-[server/examples/demo-plan.md](server/examples/demo-plan.md) for a document
+See [the server README](../../extras/visual-docs/server/README.md) for the package details, and
+[demo-plan.md](../../extras/visual-docs/server/examples/demo-plan.md) for a document
 that exercises every feature.
 
 ## Design decisions
@@ -215,10 +232,10 @@ A few choices worth explaining:
 - **Renderer libraries are vendored, not fetched from a CDN.** A pinned CDN
   URL is a promise, not a guarantee — supply-chain attacks on published
   packages are exactly the failure mode lockfiles exist for. The vendored
-  copies live in the plugin, are served from localhost, and every file's
+  copies ship inside each skill, are served from localhost, and every file's
   version, source URL, license, and SHA-384 are recorded in an SBOM-style
-  manifest ([server/assets/vendor/manifest.json](server/assets/vendor/manifest.json)).
-  `node server/scripts/update-vendor.mjs --verify` checks the files against
+  manifest ([manifest.json](../../extras/visual-docs/server/assets/vendor/manifest.json)).
+  `node extras/visual-docs/server/scripts/update-vendor.mjs --verify` checks the files against
   the manifest; running it without the flag re-fetches and re-pins.
 - **The server itself has zero npm dependencies.** Nothing to install, no
   install-time scripts to trust, and the plugin works the moment it's cloned.
@@ -250,4 +267,4 @@ This plugin is an independent, fully local reimplementation of that idea;
 if you want their hosted experience with wireframes and prototypes, use the
 original. Rendering is powered by the open-source libraries listed (with
 versions and licenses) in
-[server/assets/vendor/manifest.json](server/assets/vendor/manifest.json).
+[manifest.json](../../extras/visual-docs/server/assets/vendor/manifest.json).

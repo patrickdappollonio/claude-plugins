@@ -1,14 +1,52 @@
 # patrickdappollonio's Claude plugins
 
-My collection of Claude (and other AI's) skills, plugins, MCP servers, and more — packaged as a [Claude Code plugin marketplace](https://code.claude.com/docs/en/plugin-marketplaces) so you can install any of them with one command.
+My collection of Claude (and other AI's) skills, plugins, MCP servers, and more — packaged as a [Claude Code plugin marketplace](https://code.claude.com/docs/en/plugin-marketplaces) so you can install any of them with one command. Not on Claude Code? The same collection installs into 75+ other agents with [`npx skills`](https://github.com/vercel-labs/skills) — see [Installing](#installing).
 
-## Add the marketplace
+## Installing
+
+There are two ways in, and they install the same skills from the same repository. Pick the one that matches your agent.
+
+### Claude Code
 
 ```
 /plugin marketplace add patrickdappollonio/claude-plugins
 ```
 
-That registers this marketplace under the name `patrickdappollonio`. You only do this once; afterwards every plugin below is available to install.
+That registers this marketplace under the name `patrickdappollonio`. You only do this once; afterwards every plugin below is available to install with the command shown in its section.
+
+### Any other AI agent — Cursor, Codex, Copilot, opencode, Gemini, Windsurf…
+
+Use [`npx skills`](https://github.com/vercel-labs/skills), Vercel's open skills installer, which supports 75+ agents. It reads this repository's marketplace file directly, so nothing extra is needed on your side:
+
+```bash
+# pick interactively from the whole collection
+npx skills add patrickdappollonio/claude-plugins
+
+# or install specific skills without prompting
+npx skills add patrickdappollonio/claude-plugins --skill adversarial-review
+
+# everything, into every agent it detects
+npx skills add patrickdappollonio/claude-plugins --all
+```
+
+Add `-g` to install for your user instead of the current project, and `-a <agent>` to target one agent (`npx skills add … -a cursor`). Update later with `npx skills update`.
+
+To install several, repeat the flag — `--skill a --skill b`. A comma-separated list matches nothing and silently installs nothing, so don't use one.
+
+Each plugin below maps to one skill of the same name, except `visual-docs`, which provides two:
+
+| Plugin | `--skill` name(s) |
+|---|---|
+| adversarial-review | `adversarial-review` |
+| appropriate-comments-code | `appropriate-comments-code` |
+| code-simplification | `code-simplification` |
+| effective-communicator | `effective-communicator` |
+| read-the-docs-first | `read-the-docs-first` |
+| use-claude-limits-efficiently | `use-claude-limits-efficiently` |
+| use-premium-models-efficiently | `use-premium-models-efficiently` |
+| visual-docs | `visual-plan`, `visual-recap` |
+
+> Skills installed this way run with your agent's full permissions, the same as any other skill. They are plain markdown — read them before you install them.
 
 ## Plugins
 
@@ -198,10 +236,18 @@ Then just ask: *"Give me a visual plan for adding rate limiting to the API"* or 
 
 ## Updating
 
-When I push new plugins or new versions, refresh your local copy:
+When I push new plugins or new versions, refresh your local copy.
+
+Claude Code:
 
 ```
 /plugin marketplace update patrickdappollonio
+```
+
+Everywhere else:
+
+```bash
+npx skills update
 ```
 
 ## Contributing / issues

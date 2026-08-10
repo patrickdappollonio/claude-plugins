@@ -6,7 +6,7 @@
  *   node visual-docs-lint.js <file.md | dir> [more...]
  *
  * Reports errors (exit 1) and warnings (exit 0 unless --strict). Zero deps.
- * Rules mirror skills/shared/authoring-guide.md and document-quality.md:
+ * Rules mirror extras/visual-docs/shared/authoring-guide.md and document-quality.md:
  *   - exactly one H1, at the top
  *   - every structured fence has a one-sentence intent line directly above it
  *   - structured fences are non-empty and parse for their type

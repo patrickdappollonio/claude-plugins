@@ -47,14 +47,24 @@ It composes with other skills: when a review, scan, audit, or debug pass (e.g.
 `adversarial-review`, `improve`) hands over findings full of identifiers, this
 skill governs the message the agent actually sends — translate first, then send.
 
-## Installation
+## Install
 
-Add the marketplace and install the plugin:
+**Claude Code:**
 
 ```
 /plugin marketplace add patrickdappollonio/claude-plugins
-/plugin install effective-communicator
+/plugin install effective-communicator@patrickdappollonio
 ```
+
+**Any other agent** — Cursor, Codex, Copilot, opencode, Gemini, and 70+ more — via
+[`npx skills`](https://github.com/vercel-labs/skills):
+
+```bash
+npx skills add patrickdappollonio/claude-plugins --skill effective-communicator
+```
+
+Add `-g` to install for your user instead of just this project, and `-a <agent>` to
+target one agent. Update later with `npx skills update`.
 
 ## License
 

@@ -46,14 +46,24 @@ or validation work that can run in parallel.
 Skip it for tiny fixes, highly coupled edits, or judgment-sensitive debugging
 where delegating would create more coordination cost than it saves.
 
-## Installing
+## Install
 
-Add the marketplace, then install the plugin:
+**Claude Code:**
 
 ```
 /plugin marketplace add patrickdappollonio/claude-plugins
 /plugin install use-premium-models-efficiently@patrickdappollonio
 ```
+
+**Any other agent** — Cursor, Codex, Copilot, opencode, Gemini, and 70+ more — via
+[`npx skills`](https://github.com/vercel-labs/skills):
+
+```bash
+npx skills add patrickdappollonio/claude-plugins --skill use-premium-models-efficiently
+```
+
+Add `-g` to install for your user instead of just this project, and `-a <agent>` to
+target one agent. Update later with `npx skills update`.
 
 ## Running it
 

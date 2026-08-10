@@ -37,6 +37,21 @@ plugins under `plugins/`.
 
 A zero-dependency reader you serve locally. Nothing is remote.
 
+**Where the code lives — read this before editing anything under
+`plugins/visual-docs/`.** The canonical renderer is `extras/visual-docs/`
+(`server/` + `shared/`), which sits outside every plugin so it is never itself
+installed and never has to be chosen between. Each skill that needs it carries a
+**real, committed copy** at `plugins/visual-docs/skills/<skill>/{server,shared}`.
+That duplication is deliberate: `npx skills` installs a skill directory and
+nothing above it, and a symlink out of that directory arrives as a plain text
+file on a Windows checkout (`core.symlinks=false`) — a silent, broken install.
+
+- **Always edit `extras/visual-docs/`, never a copy**, then run
+  `node scripts/sync-visual-docs.mjs --write`. Verify with
+  `node scripts/sync-visual-docs.mjs` (no flag) — CI runs it and fails on drift.
+- The copies are marked `linguist-generated` in `.gitattributes`; they still must
+  be committed.
+
 - **Server** (`server/`): plain `node:http`, no framework. `bin/…-server.js`
   self-manages via a lock file (`.visual-docs/server.json`) — supports
   `--restart`, `--stop`, bare `--host`. `lib/server.js` holds routing, SSE live
@@ -59,12 +74,13 @@ A zero-dependency reader you serve locally. Nothing is remote.
 toggle), `api`/`http`, `openapi`/`swagger`, `filetree`/`files` (tree-table with
 A/M/D/R + notes), `question`/`ask` (interactive; answers post as comments),
 GitHub admonitions (`> [!NOTE]` …). Authoring reference:
-`skills/shared/authoring-guide.md`; quality bar: `skills/shared/document-quality.md`.
+`extras/visual-docs/shared/authoring-guide.md`; quality bar:
+`extras/visual-docs/shared/document-quality.md`.
 
 **When you add a new fence/component, also:** register it in the gutter
 `COMPONENTS` list (if commentable), document it in `authoring-guide.md` + the
 README fence table, and **add a rule for it to the linter**
-(`server/bin/visual-docs-lint.js`) — at minimum recognize its language(s) and
+(`extras/visual-docs/server/bin/visual-docs-lint.js`) — at minimum recognize its language(s) and
 validate its shape, so `visual-docs-lint` covers every component.
 
 ### Comments
@@ -110,8 +126,8 @@ type (headings, paragraphs, lists, code, components).
 
 ```bash
 # serve a directory of markdown docs
-node plugins/visual-docs/server/bin/visual-docs-server.js <dir>
-node plugins/visual-docs/server/scripts/update-vendor.mjs --verify   # deps intact?
+node extras/visual-docs/server/bin/visual-docs-server.js <dir>
+node extras/visual-docs/server/scripts/update-vendor.mjs --verify   # deps intact?
 ```
 
 Headless verification uses `playwright-core` + a system Chromium (see prior test
