@@ -37,14 +37,24 @@ process:
 - [Addy Osmani's code-simplification skill](https://github.com/addyosmani/agent-skills/blob/main/skills/code-simplification/SKILL.md)
 - [Happycapy's code-simplification skill](https://happycapy.ai/skills/code-simplification)
 
-## Installing
+## Install
 
-Add the marketplace, then install the plugin:
+**Claude Code:**
 
 ```
 /plugin marketplace add patrickdappollonio/claude-plugins
 /plugin install code-simplification@patrickdappollonio
 ```
+
+**Any other agent** — Cursor, Codex, Copilot, opencode, Gemini, and 70+ more — via
+[`npx skills`](https://github.com/vercel-labs/skills):
+
+```bash
+npx skills add patrickdappollonio/claude-plugins --skill code-simplification
+```
+
+Add `-g` to install for your user instead of just this project, and `-a <agent>` to
+target one agent. Update later with `npx skills update`.
 
 ## Running it
 

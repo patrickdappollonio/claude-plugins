@@ -5,10 +5,14 @@ on:
     branches: [main]
     paths:
       - "plugins/visual-docs/**"
+      - "extras/visual-docs/**"
+      - "scripts/sync-visual-docs.mjs"
       - ".github/workflows/visual-docs.yml"
   pull_request:
     paths:
       - "plugins/visual-docs/**"
+      - "extras/visual-docs/**"
+      - "scripts/sync-visual-docs.mjs"
       - ".github/workflows/visual-docs.yml"
 
 jobs:
@@ -17,13 +21,17 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: plugins/visual-docs/server
+        working-directory: extras/visual-docs/server
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+
+      - name: Per-skill copies match the canonical renderer
+        working-directory: .
+        run: node scripts/sync-visual-docs.mjs
 
       - name: Vendored assets match the SBOM manifest
         run: node scripts/update-vendor.mjs --verify

@@ -1,0 +1,309 @@
+#!/usr/bin/env node
+
+/*
+ * visual-docs-lint — check a visual doc against the authoring guidelines.
+ *
+ *   node visual-docs-lint.js <file.md | dir> [more...]
+ *
+ * Reports errors (exit 1) and warnings (exit 0 unless --strict). Zero deps.
+ * Rules mirror extras/visual-docs/shared/authoring-guide.md and document-quality.md:
+ *   - exactly one H1, at the top
+ *   - every structured fence has a one-sentence intent line directly above it
+ *   - structured fences are non-empty and parse for their type
+ *   - admonition markers are a known type
+ *   - fences are balanced; obvious secrets are redacted
+ *   - plain-language sections (preamble, Summary/Outcome, What changed,
+ *     Architecture) name no code symbols — the reader is a non-developer
+ */
+
+import fs from 'node:fs';
+import path from 'node:path';
+
+// Keep in sync with the fence dispatch in assets/app.js (renderCodeFence): a new
+// structured fence there needs adding here (and to NEEDS_INTENT if it wants an
+// intent line) or the linter won't validate it.
+const STRUCTURED = new Set([
+  'diff', 'patch', 'migration', 'sql-migration', 'db-migration',
+  'api', 'http', 'openapi', 'swagger', 'filetree', 'files', 'file-tree',
+  'mermaid', 'nomnoml', 'question', 'ask', 'tldr', 'tl;dr', 'summary',
+  'decisions', 'attention',
+]);
+const ADMONITIONS = new Set(['NOTE', 'TIP', 'IMPORTANT', 'WARNING', 'CAUTION']);
+const SECRET_RE = /\b(sk-[A-Za-z0-9]{16,}|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{20,})\b/;
+// Fences that should be introduced by a one-sentence intent line. Questions are
+// self-describing (the prompt is the intent), so they're excluded.
+const NEEDS_INTENT = new Set([
+  'diff', 'patch', 'migration', 'sql-migration', 'db-migration',
+  'api', 'http', 'openapi', 'swagger', 'filetree', 'files', 'file-tree',
+  'mermaid', 'nomnoml',
+]);
+
+// Sections whose prose must read plainly for a non-developer (document-quality
+// §0–1): the preamble before the first H2, and these H2s. Everything under any
+// other H2 (Key changes, API, Database changes, …) may name symbols.
+const PLAIN_H2_RE = /^(summary|outcome|overview|goals?|context|background|what changed)\b|^architecture\b/i;
+
+/** Code-symbol tokens that give away implementation detail in prose meant for a
+    non-developer: identifiers (camelCase, snake_case, calls), paths with file
+    extensions, CLI flags. Plain-word inline code (`dismissed`, `main`) is fine. */
+function audienceSymbols(line) {
+  const hits = [];
+  const symbolish = (t) =>
+    /[a-z][a-z0-9]*[A-Z]/.test(t) ||          // camelCase
+    /[A-Za-z0-9]_[A-Za-z0-9]/.test(t) ||      // snake_case
+    /\(\)/.test(t) ||                          // someCall()
+    /::|->/.test(t) ||                         // C++/Rust-style paths
+    /^--?[a-z]/.test(t) ||                     // CLI flags
+    /[\w-]\/[\w-]/.test(t) ||                  // paths
+    /\.[a-z]{1,4}$/i.test(t);                  // file extensions
+  // inline code spans: symbol-looking content only
+  const rest = line.replace(/`([^`]+)`/g, (_, span) => {
+    if (symbolish(span.trim())) hits.push(span.trim());
+    return ' ';
+  });
+  // bare identifiers outside backticks: calls, snake_case, paths-with-extension
+  for (const m of rest.matchAll(/\b[A-Za-z_][A-Za-z0-9_]*\(\)|\b[a-z0-9]+(?:_[a-z0-9]+)+\b|\b[\w.-]+\/[\w./-]*\.[A-Za-z0-9]{1,4}\b/g)) {
+    hits.push(m[0]);
+  }
+  return hits;
+}
+
+function lintText(text, file) {
+  const findings = [];
+  const add = (line, sev, msg) => findings.push({ file, line, sev, msg });
+  const lines = text.split('\n');
+
+  // --- one H1, at the top ---
+  const h1s = [];
+  let inFence = false;
+  lines.forEach((l, i) => {
+    if (/^```/.test(l)) inFence = !inFence;
+    if (!inFence && /^#\s+\S/.test(l)) h1s.push(i + 1);
+  });
+  if (h1s.length === 0) {
+    add(1, 'error', 'No H1 title — start the doc with a single "# Title".');
+  } else if (h1s.length > 1) {
+    add(h1s[1], 'error', `Multiple H1 headings (lines ${h1s.join(', ')}) — use one H1 as the title, H2/H3 for sections.`);
+  } else {
+    const firstContent = lines.findIndex((l) => l.trim());
+    if (firstContent !== -1 && !/^#\s+/.test(lines[firstContent])) {
+      add(firstContent + 1, 'warn', 'Content appears before the H1 title — the H1 should come first.');
+    }
+  }
+
+  // --- walk the document, fence by fence ---
+  let i = 0;
+  // Preamble (before any H2) is part of the plain-language zone.
+  let plainZone = true;
+  // The decisions card must lead the document (right below the tldr, or
+  // first) — one that appears after body sections has lost its purpose.
+  let sawH2 = false;
+  while (i < lines.length) {
+    const open = lines[i].match(/^```(\S*)/);
+    if (open) {
+      const lang = (open[1] || '').toLowerCase();
+      const start = i;
+      const body = [];
+      i++;
+      while (i < lines.length && !/^```\s*$/.test(lines[i])) {
+        // Secrets pasted inside a fence (curl examples, env vars) are the most
+        // likely place — scan body lines too, not just prose.
+        const s = lines[i].match(SECRET_RE);
+        if (s) add(i + 1, 'warn', `Possible unredacted secret ("${s[0].slice(0, 10)}…") — redact as <redacted> or sk-•••.`);
+        body.push(lines[i]);
+        i++;
+      }
+      if (i >= lines.length) { add(start + 1, 'error', 'Unclosed code fence.'); break; }
+
+      if (STRUCTURED.has(lang)) {
+        // one-sentence intent directly above (not required for self-describing
+        // question fences)
+        if (NEEDS_INTENT.has(lang)) {
+          let p = start - 1;
+          while (p >= 0 && !lines[p].trim()) p--;
+          const prev = p >= 0 ? lines[p] : '';
+          if (!prev.trim() || /^#{1,6}\s/.test(prev) || /^```/.test(prev) || /^>/.test(prev)) {
+            add(start + 1, 'warn', `\`${lang}\` fence has no one-sentence intent line directly above it (document-quality §4).`);
+          }
+        }
+        if ((lang === 'decisions' || lang === 'attention') && sawH2) {
+          add(start + 1, 'warn', '`decisions` card appears after body sections — put it at the top of the document, right below the tldr card (or first if there is none), so open decisions are the first thing the reader sees.');
+        }
+        if (!body.join('').trim()) add(start + 1, 'error', `Empty \`${lang}\` fence.`);
+        else lintFence(lang, body, start, add);
+      }
+      i++; // move past closing ```
+      continue;
+    }
+
+    // admonition marker
+    const am = lines[i].match(/^>\s*\[!(\w+)\]/);
+    if (am && !ADMONITIONS.has(am[1].toUpperCase())) {
+      add(i + 1, 'warn', `Unknown admonition [!${am[1]}] — use NOTE, TIP, IMPORTANT, WARNING, or CAUTION.`);
+    }
+    // bold-keyword blockquote idiom (`> **Risk:** …`) instead of a real
+    // admonition — only flag the first line of a blockquote run, not
+    // continuation lines mid-quote.
+    const bk = lines[i].match(/^>\s*\*\*([^*]+)\*\*/);
+    const prevLine = i > 0 ? lines[i - 1] : '';
+    if (bk && !am && !/^>/.test(prevLine)) {
+      const label = bk[1].replace(/:\s*$/, '');
+      const keyword = label.toLowerCase();
+      let suggestion;
+      if (/risk|warning|caution|danger/.test(keyword)) suggestion = '`[!WARNING]` or `[!CAUTION]`';
+      else if (/decision|important/.test(keyword)) suggestion = '`[!IMPORTANT]`';
+      else if (/tip/.test(keyword)) suggestion = '`[!TIP]`';
+      else if (/note|info/.test(keyword)) suggestion = '`[!NOTE]`';
+      else suggestion = 'a GitHub admonition (`[!NOTE]`/`[!TIP]`/`[!IMPORTANT]`/`[!WARNING]`/`[!CAUTION]`)';
+      add(i + 1, 'warn', `Bold-keyword blockquote ("**${label}:**") instead of a real admonition — use ${suggestion} on its own \`>\` line (authoring-guide.md).`);
+    }
+    // obvious unredacted secrets
+    const sec = lines[i].match(SECRET_RE);
+    if (sec) add(i + 1, 'warn', `Possible unredacted secret ("${sec[0].slice(0, 10)}…") — redact as <redacted> or sk-•••.`);
+
+    // audience: prose in the plain-language zone must not name code symbols
+    const h2 = lines[i].match(/^##\s+(.+)/);
+    if (h2) { sawH2 = true; plainZone = PLAIN_H2_RE.test(h2[1].trim()); }
+    else if (plainZone && !/^#/.test(lines[i])) {
+      const syms = audienceSymbols(lines[i]);
+      if (syms.length) {
+        add(i + 1, 'warn', `Plain-language section names code symbols (${syms.slice(0, 3).map((s) => `\`${s}\``).join(', ')}${syms.length > 3 ? ', …' : ''}) — the reader is a non-developer; describe the behavior instead, and keep symbols to Key changes and fences (document-quality §0–1).`);
+      }
+    }
+
+    i++;
+  }
+  return findings;
+}
+
+function lintFence(lang, body, start, add) {
+  const text = body.join('\n');
+  const at = start + 1;
+  if (lang === 'question' || lang === 'ask') {
+    const ls = body.map((l) => l.trim()).filter(Boolean);
+    let idx = 0;
+    if (ls[0] && /^(multiple|multi|select all( that apply)?)$/i.test(ls[0])) idx = 1;
+    if (!ls[idx]) add(at, 'error', 'question fence has no question text (the first non-directive line is the prompt).');
+  } else if (lang === 'openapi' || lang === 'swagger') {
+    if (!/(^|\n)\s*paths\s*:/.test(text) && !/"paths"\s*:/.test(text)) {
+      add(at, 'warn', 'openapi fence has no `paths:` — include at least one path, or it falls back to a raw code block.');
+    }
+  } else if (lang === 'migration' || lang === 'sql-migration' || lang === 'db-migration') {
+    const hasUp = /--\s*(\+migrate\s+up|migrate:up|up)\b/i.test(text);
+    const hasDown = /--\s*(\+migrate\s+down|migrate:down|down)\b/i.test(text);
+    if (!hasUp && !hasDown) add(at, 'warn', 'migration fence has no -- up / -- down markers; add them for apply/rollback panes.');
+    else if (hasUp && !hasDown) add(at, 'warn', 'migration has -- up but no -- down — it will be badged irreversible (fine if intended).');
+  } else if (lang === 'diff' || lang === 'patch') {
+    if (!/^[+-]/m.test(text)) add(at, 'warn', 'diff fence has no +/- lines — is it really a diff?');
+    // A `@@` line must be a real hunk header (`@@ -a,b +c,d @@`); a bare label
+    // like `@@ someFunction` is passed to diff2html verbatim and renders wrong.
+    // Omitting the `@@` line entirely is fine — the renderer synthesizes one.
+    body.forEach((line, k) => {
+      if (/^@@/.test(line) && !/^@@ -\d+(,\d+)? \+\d+(,\d+)? @@/.test(line)) {
+        add(start + 2 + k, 'warn', `malformed hunk header \`${line.trim().slice(0, 30)}\` — use \`@@ -old,count +new,count @@\`, or drop the \`@@\` line and the renderer will synthesize one.`);
+      }
+    });
+  } else if (lang === 'decisions' || lang === 'attention') {
+    if (!body.some((l) => /^\s*([-*+]|\d+\.)\s+/.test(l))) {
+      add(at, 'warn', '`decisions` fence has no list items — write one bullet per open decision, each stating the choice, the options, and your recommendation.');
+    }
+  } else if (lang === 'api' || lang === 'http') {
+    if (!/\b(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\b/i.test(text)) add(at, 'warn', 'api fence has no request line (e.g. `POST /path`).');
+  } else if (lang === 'filetree' || lang === 'files' || lang === 'file-tree') {
+    const entryLines = [];
+    body.forEach((l, k) => { if (l.trim() && !l.trim().startsWith('#')) entryLines.push(k); });
+    if (!entryLines.length) add(at, 'warn', 'filetree fence has no file entries.');
+    for (const k of entryLines) lintFiletreeEntry(body[k], start + 2 + k, add);
+  }
+  // tldr/tl;dr/summary need no extra shape check — the generic empty-fence guard
+  // above already requires prose content.
+}
+
+// Keep in sync with FILE_FLAGS in assets/app.js.
+const FILETREE_FLAGS = new Set([
+  'a', 'm', 'd', 'r', 'added', 'modified', 'changed', 'deleted', 'removed', 'renamed', 'moved',
+]);
+
+// Mirrors renderFileTreeFence's split rules in assets/app.js: resolve
+// flag/path/note the same way the renderer will, then warn about shapes that
+// only resolved thanks to the forgiving single-space fallback, or a
+// non-rename path that still contains whitespace after that fallback — both
+// are signs the separator was ambiguous.
+function lintFiletreeEntry(line, lineNo, add) {
+  let rest = line.trim();
+  const fm = rest.match(/^([A-Za-z]+)\s+(\S.*)$/);
+  if (fm && FILETREE_FLAGS.has(fm[1].toLowerCase())) rest = fm[2];
+
+  const isRenameShape = /\s(?:->|→)\s/.test(rest);
+  // A deliberate 2+-space/tab separator is unambiguous — trust it, as the
+  // renderer does, even when the path itself contains single spaces.
+  if (/^(.*?)(?:\s{2,}|\t)(.+)$/.test(rest)) return;
+  // " — " is also trusted unless it appears to sit *inside the note* of a
+  // single-space-separated entry (path capture has internal spaces and the
+  // line starts with a path-looking token containing '.' or '/').
+  const dash = rest.match(/^(.*?)\s+—\s+(.+)$/);
+  if (dash && (isRenameShape || !/\s/.test(dash[1].trim()) || !/^\S*[./]/.test(rest))) return;
+
+  // From here the renderer either takes the forgiving single-space fallback
+  // (warn: the author almost certainly meant a real separator) or leaves the
+  // whole line as the path (fine when it's a bare no-note entry; warn when
+  // whitespace remains in a non-rename path).
+  const renameNote = rest.match(/^(\S+\s*(?:->|→)\s*\S+)\s+(\S.*)$/);
+  const one = !isRenameShape && rest.match(/^(\S+)\s+(\S.*)$/);
+  if (renameNote || (one && /[./]/.test(one[1]))) {
+    add(lineNo, 'warn', `filetree entry's path/note split relied on the single-space fallback ("${line.trim().slice(0, 60)}") — separate the note with 2+ spaces, a tab, or " — " (canonical shape: \`<flag> <path>  <note>\`).`);
+  } else if (!isRenameShape && /\s/.test(rest)) {
+    add(lineNo, 'warn', `filetree entry's resolved path still contains whitespace ("${rest.slice(0, 60)}") — separate the note with 2+ spaces, a tab, or " — " (canonical shape: \`<flag> <path>  <note>\`).`);
+  }
+}
+
+// ---- CLI ----
+
+function collectFiles(target) {
+  const st = fs.statSync(target);
+  if (st.isDirectory()) {
+    return fs.readdirSync(target)
+      .filter((n) => /\.(md|markdown)$/i.test(n))
+      .map((n) => path.join(target, n));
+  }
+  return [target];
+}
+
+function main() {
+  const args = process.argv.slice(2);
+  const strict = args.includes('--strict');
+  const targets = args.filter((a) => !a.startsWith('--'));
+  if (!targets.length) {
+    console.error('usage: visual-docs-lint <file.md | dir> [more...] [--strict]');
+    process.exit(2);
+  }
+
+  let files = [];
+  for (const t of targets) {
+    try { files = files.concat(collectFiles(t)); }
+    catch { console.error(`cannot read ${t}`); process.exitCode = 2; }
+  }
+
+  let errors = 0;
+  let warnings = 0;
+  for (const f of files) {
+    let findings;
+    try { findings = lintText(fs.readFileSync(f, 'utf8'), f); }
+    catch (e) { console.error(`${f}: cannot read (${e.message})`); process.exitCode = 2; continue; }
+    findings.sort((a, b) => a.line - b.line);
+    for (const x of findings) {
+      if (x.sev === 'error') errors++; else warnings++;
+      console.log(`${x.file}:${x.line}: ${x.sev === 'error' ? 'error' : 'warn '} ${x.msg}`);
+    }
+  }
+
+  const total = errors + warnings;
+  if (!total) {
+    console.log(`✓ ${files.length} doc(s) clean.`);
+  } else {
+    console.log(`\n${total} problem(s): ${errors} error(s), ${warnings} warning(s).`);
+  }
+  if (errors > 0 || (strict && warnings > 0)) process.exit(1);
+}
+
+main();

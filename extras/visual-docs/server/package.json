@@ -35,6 +35,6 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/patrickdappollonio/claude-plugins.git",
-    "directory": "plugins/visual-docs/server"
+    "directory": "extras/visual-docs/server"
   }
 }

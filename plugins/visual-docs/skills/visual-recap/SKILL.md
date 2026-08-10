@@ -81,12 +81,17 @@ build paths; run this, and it **prints the directory** — reuse that path
 kept:
 
 ```
-node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-server.js" --docdir
+node "${CLAUDE_PLUGIN_ROOT}/skills/visual-recap/server/bin/visual-docs-server.js" --docdir
 ```
 
-`${CLAUDE_PLUGIN_ROOT}` is the directory this plugin is installed in. Claude
-Code sets it automatically; on any other agent platform, substitute the
-plugin's install path in this and every command below.
+**The renderer ships inside this skill's own directory**, so `server/` is always
+a sibling of this `SKILL.md`. `${CLAUDE_PLUGIN_ROOT}` is where the plugin is
+installed, and Claude Code sets it automatically for plugin installs. **If it is
+not set** — a skill-only install such as `npx skills`, or any other agent
+platform — replace `${CLAUDE_PLUGIN_ROOT}/skills/visual-recap` with the
+directory this skill was loaded from (agents are told it at load time; Claude
+Code prints it as *"Base directory for this skill"*) in this and every command
+below.
 
 Name the file after the change, e.g. `$DIR/recap-pr-142.md`.
 
@@ -98,10 +103,10 @@ you to update that specific one, and before editing it, confirm it describes
 the same, and updating it in place as if it were yours is precisely the mistake
 to avoid.
 
-**Read [document-quality.md](../shared/document-quality.md) once (silently)
+**Read [document-quality.md](shared/document-quality.md) once (silently)
 before writing** — it is the standard for making the document comprehensive,
 layered simple→complex, and terse. Use
-[authoring-guide.md](../shared/authoring-guide.md) for fence syntax.
+[authoring-guide.md](shared/authoring-guide.md) for fence syntax.
 This document is where your tokens go: any budget you didn't spend narrating
 steps 1–2 belongs here — prefer one more `## Key changes` hunk, one more grounded
 `api`/`migration` example, or a fuller `## Risks` list over a shorter recap.
@@ -112,7 +117,7 @@ implementation. Explain behavior in plain language; reach for diagrams, tables,
 and migration/API cards before code; include a code fence only when it's
 genuinely necessary to make the point. Write prose to the ASD-STE100
 (Simplified Technical English) sentence rules in
-[document-quality.md §0](../shared/document-quality.md): short
+[document-quality.md §0](shared/document-quality.md): short
 active-voice sentences, one idea each, one name per thing.
 
 Author top to bottom against this skeleton; include a section when the inventory
@@ -149,7 +154,7 @@ Do not write the file and stop.**
 
 1. **Lint** and fix every finding — not optional:
    ```
-   node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-lint.js" "$DIR/<file>.md"
+   node "${CLAUDE_PLUGIN_ROOT}/skills/visual-recap/server/bin/visual-docs-lint.js" "$DIR/<file>.md"
    ```
 2. **Self-review**: re-read the whole document top to bottom as the reviewer will
    see it, and check:
@@ -176,7 +181,7 @@ secrets as `<redacted>` / `sk-•••`.
 platform, no `nohup`/`&`:
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-server.js" --serve "$DIR"
+node "${CLAUDE_PLUGIN_ROOT}/skills/visual-recap/server/bin/visual-docs-server.js" --serve "$DIR"
 ```
 
 The server self-manages via a lock file: if one is already serving `$DIR` (e.g.
@@ -206,7 +211,7 @@ Before revising the recap (or acting on review feedback), read open comments as
 a ready-formatted digest — plain text, nothing to parse:
 
 ```
-node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-server.js" --comments "$DIR"
+node "${CLAUDE_PLUGIN_ROOT}/skills/visual-recap/server/bin/visual-docs-server.js" --comments "$DIR"
 ```
 
 (Append a file — `--comments "$DIR" <file>.md` — to scope to one document.) Each
@@ -223,7 +228,7 @@ Drive each comment's `status` with the same tool — no JSON, no hand-editing
 `comments.json`:
 
 ```
-node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-server.js" --status "$DIR" <id> acknowledged
+node "${CLAUDE_PLUGIN_ROOT}/skills/visual-recap/server/bin/visual-docs-server.js" --status "$DIR" <id> acknowledged
 # …then `resolved` when done. Pass comma-separated ids (id1,id2) to update several.
 ```
 
@@ -242,7 +247,7 @@ copy), offer `--export`: it builds one self-contained HTML file — no server
 needed to view it later — with the same rendering fidelity as the live page.
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-server.js" --export "$DIR" recap.md
+node "${CLAUDE_PLUGIN_ROOT}/skills/visual-recap/server/bin/visual-docs-server.js" --export "$DIR" recap.md
 ```
 
 ## Cleanup
@@ -250,7 +255,7 @@ node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-server.js" --export "$DIR" re
 When the session is done, stop the server for this directory:
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-server.js" "$DIR" --stop
+node "${CLAUDE_PLUGIN_ROOT}/skills/visual-recap/server/bin/visual-docs-server.js" "$DIR" --stop
 ```
 
 It finds the instance from the lock file and stops just that one. Avoid

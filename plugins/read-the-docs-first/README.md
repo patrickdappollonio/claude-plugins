@@ -37,14 +37,24 @@ model/provider SDKs — and any time the answer would otherwise start with
 Skip it for trivial language syntax, typos, formatting, or self-contained code
 with no external contract.
 
-## Installing
+## Install
 
-Add the marketplace, then install the plugin:
+**Claude Code:**
 
 ```
 /plugin marketplace add patrickdappollonio/claude-plugins
 /plugin install read-the-docs-first@patrickdappollonio
 ```
+
+**Any other agent** — Cursor, Codex, Copilot, opencode, Gemini, and 70+ more — via
+[`npx skills`](https://github.com/vercel-labs/skills):
+
+```bash
+npx skills add patrickdappollonio/claude-plugins --skill read-the-docs-first
+```
+
+Add `-g` to install for your user instead of just this project, and `-a <agent>` to
+target one agent. Update later with `npx skills update`.
 
 ## Running it
 

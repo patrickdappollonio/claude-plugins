@@ -60,14 +60,24 @@ depth gets you more of the story, not a switch into code-speak. If you have
 [`effective-communicator`](../effective-communicator) installed, it governs the
 wording.
 
-## Installing
+## Install
 
-Add the marketplace, then install the plugin:
+**Claude Code:**
 
 ```
 /plugin marketplace add patrickdappollonio/claude-plugins
 /plugin install adversarial-review@patrickdappollonio
 ```
+
+**Any other agent** — Cursor, Codex, Copilot, opencode, Gemini, and 70+ more — via
+[`npx skills`](https://github.com/vercel-labs/skills):
+
+```bash
+npx skills add patrickdappollonio/claude-plugins --skill adversarial-review
+```
+
+Add `-g` to install for your user instead of just this project, and `-a <agent>` to
+target one agent. Update later with `npx skills update`.
 
 ## Running it
 

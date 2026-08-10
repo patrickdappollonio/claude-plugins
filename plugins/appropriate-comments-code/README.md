@@ -42,14 +42,24 @@ routes context to where it stays true rather than deleting it:
 | Alternatives considered and rejected | A design doc or ADR |
 | A standing constraint the code must respect | A comment — this is what comments are for |
 
-## Installing
+## Install
 
-Add the marketplace, then install the plugin:
+**Claude Code:**
 
 ```
 /plugin marketplace add patrickdappollonio/claude-plugins
 /plugin install appropriate-comments-code@patrickdappollonio
 ```
+
+**Any other agent** — Cursor, Codex, Copilot, opencode, Gemini, and 70+ more — via
+[`npx skills`](https://github.com/vercel-labs/skills):
+
+```bash
+npx skills add patrickdappollonio/claude-plugins --skill appropriate-comments-code
+```
+
+Add `-g` to install for your user instead of just this project, and `-a <agent>` to
+target one agent. Update later with `npx skills update`.
 
 ## Running it
 

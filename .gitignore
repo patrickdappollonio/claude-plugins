@@ -1,0 +1,6 @@
+# visual-docs runtime state: server lock files, comments, and review baselines.
+# Created wherever the server is pointed at a directory — including
+# extras/visual-docs/server/examples/ when you serve the demo locally.
+.visual-docs/
+
+node_modules/
