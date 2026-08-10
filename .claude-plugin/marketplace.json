@@ -7,6 +7,18 @@
   },
   "plugins": [
     {
+      "name": "appropriate-comments-code",
+      "source": "./plugins/appropriate-comments-code",
+      "description": "Comment discipline for code the agent writes — every comment carries information the code does not and describes the current state only, with no iteration labels, finding numbers, wave or task IDs, or narration of how the code got here; regressions are pinned by tests instead.",
+      "category": "code-quality",
+      "keywords": ["comments", "code-quality", "documentation", "readability", "maintainability", "ai-slop"],
+      "author": {
+        "name": "Patrick D'appollonio"
+      },
+      "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/appropriate-comments-code",
+      "license": "MIT"
+    },
+    {
       "name": "effective-communicator",
       "source": "./plugins/effective-communicator",
       "description": "Plain-language communication for readers who can't see the code — the agent translates findings, answers, status, plans, and recaps out of file/function/variable names into Simplified Technical English (ASD-STE100), leads with the outcome, keeps the important point in the final message of the turn, and matches technical readers only when they ask.",
