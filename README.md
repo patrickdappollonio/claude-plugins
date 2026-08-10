@@ -45,6 +45,37 @@ clickable `file:line` under each finding.
 
 Then just ask: *"Give this change an adversarial review."* [Read more →](plugins/adversarial-review)
 
+### appropriate-comments-code
+
+Comment discipline for the code your agent writes, on one rule: **every comment
+carries information the code does not, and describes the current state only.**
+The audience is a developer months from now who was not in the session, did not
+read the PR, does not know what was tried first, and cannot ask. If a sentence
+only makes sense to someone who watched the code being written, it doesn't
+belong in the code.
+
+That rules out three things agents do constantly. Narrating the journey — *"we
+used to buffer the whole response but it blew up memory, so now we stream it"* —
+describes an edit, not the code, and rots on the next change; the standing
+constraint gets stated instead. Restating the line below — *"// Opens the DB
+connection"* above `connection.open()` — costs the reader time for nothing.
+And committing identifiers that outlive nothing: finding numbers like `F7`,
+iteration labels, wave and task IDs, agent run labels. Those mean something to
+exactly one person for about a day, and then sit in the file forever.
+
+Nothing gets thrown away, it gets routed: a regression is pinned by a test named
+after the invariant (a comment saying *"don't remove this check"* fails nobody's
+build), the reasoning goes in the commit message, review findings stay in the
+review thread. And it's explicit about what *does* earn a comment — external
+constraints, invariants callers must uphold, units and ownership, upstream-bug
+workarounds with their exit condition, public API docs.
+
+```
+/plugin install appropriate-comments-code@patrickdappollonio
+```
+
+Then just write code — it loads itself. [Read more →](plugins/appropriate-comments-code)
+
 ### code-simplification
 
 Language-agnostic code simplification that reduces complexity — deep nesting,
