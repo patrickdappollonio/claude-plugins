@@ -33,11 +33,11 @@ Add `-g` to install for your user instead of the current project, and `-a <agent
 
 To install several, repeat the flag — `--skill a --skill b`. A comma-separated list matches nothing and silently installs nothing, so don't use one.
 
-Each plugin below maps to one skill of the same name, except `visual-docs`, which provides two:
+Each plugin below maps to one skill of the same name, except `adversarial-review` and `visual-docs`, which provide two each. Every skill is self-contained, so installing one without its sibling works fine:
 
 | Plugin | `--skill` name(s) |
 |---|---|
-| adversarial-review | `adversarial-review` |
+| adversarial-review | `adversarial-review`, `adversarial-review-quick` |
 | appropriate-comments-code | `appropriate-comments-code` |
 | code-simplification | `code-simplification` |
 | effective-communicator | `effective-communicator` |
@@ -55,7 +55,7 @@ Each plugin below maps to one skill of the same name, except `visual-docs`, whic
 A hostile, bias-free review of a change — a PR, the last commit, or your
 uncommitted work. Most reviews are friendly: the reviewer shares your context
 and quietly assumes the code works. This one doesn't. It dispatches a panel of
-17 independent reviewers, each a fresh sub-agent with no knowledge of your
+18 independent reviewers, each a fresh sub-agent with no knowledge of your
 conversation or your rationalizations, and each told one thing: *assume the
 change is broken and prove it*. Concurrency races, hostile inputs,
 authorization gaps, resource exhaustion, hollow AI-generated code, unverified
@@ -77,11 +77,20 @@ Technical English. The agents did the grepping; you shouldn't have to open a
 file to understand what they found. Symbol names appear in one place only: the
 clickable `file:line` under each finding.
 
+Eighteen reviewers plus two gate agents is a lot of tokens, and most changes
+don't need all of it — so the plugin also ships a **quick panel**
+(`adversarial-review-quick`): the nine highest-yield angles, including both
+design charters, with the same verifier and the same fix validator. Ask for *"a
+smaller adversarial review"* and your agent runs that one instead. It says up
+front which angles it isn't covering, so a clean report never reads as a clean
+bill of health.
+
 ```
 /plugin install adversarial-review@patrickdappollonio
 ```
 
-Then just ask: *"Give this change an adversarial review."* [Read more →](plugins/adversarial-review)
+Then just ask: *"Give this change an adversarial review."* — or *"a smaller
+adversarial review"* for the quick panel. [Read more →](plugins/adversarial-review)
 
 ### appropriate-comments-code
 
