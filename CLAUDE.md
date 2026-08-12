@@ -18,6 +18,20 @@ plugins under `plugins/`.
   touch a plugin (root README, CI) don't need a bump. Check the version isn't
   already taken by a published release before reusing it — pick the next free
   one.
+- **Both install paths must stay equivalent: Claude Code marketplace *and*
+  `npx skills`.** A Claude Code install brings a whole plugin (every skill under
+  `plugins/<name>/skills/`); `npx skills add … --skill <name>` installs **one
+  skill directory and nothing above it**. So a skill must be **self-contained**:
+  everything it needs lives inside its own `skills/<skill>/` directory, and
+  nothing in `SKILL.md` may reach outside it — no `../` paths, no "see the other
+  skill's file", no reliance on a sibling skill being present, and no symlinks
+  (a symlink out of the directory arrives as a plain text file on a Windows
+  checkout with `core.symlinks=false` — a silent, broken install). Duplicating
+  shared prose or code into each skill is the correct trade-off, as visual-docs
+  does with the renderer. A plugin may hold several skills; each must work alone.
+  When you add a skill, also add it to the root README's `--skill` name table,
+  and phrase cross-skill references so they degrade to a name a reader can
+  install ("the full `adversarial-review` skill"), never a relative path.
 - The visual-docs server has **no authentication**. `--host` / `0.0.0.0` binding
   must stay opt-in and documented as trusted-network-only.
 - **Agents must never have to write code — not even a small script — to operate
