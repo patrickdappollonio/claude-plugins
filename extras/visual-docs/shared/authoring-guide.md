@@ -88,15 +88,24 @@ Any Mermaid diagram type (flowchart, sequence, state, ER, gantt):
         B -- rejected --> D[429]
     ```
 
-**Never hardcode colors.** The reader views the document in **light or dark
-mode** (their choice, toggleable live), and the viewer re-themes every diagram
-automatically — a color you pick overrides both themes and is guaranteed to be
-unreadable in one of them. Concretely: no `style`/`classDef`/`linkStyle` lines
-that set `fill:`/`stroke:`/`color:`, no `%%{init}%%` theme or `themeVariables`
-overrides, no `rect rgb(…)` backgrounds in sequence diagrams. The built-in
-theme already gives every node a legible fill in both modes; express emphasis
-with structure instead — node shapes (`{decision}`, `([rounded])`), edge
-labels, or subgraphs.
+**Avoid hardcoded colors by default.** The reader views the document in
+**light or dark mode** (their choice, toggleable live), and the viewer
+re-themes every diagram automatically — a color you pick overrides both
+themes, and one tuned for a white background is unreadable on dark (and vice
+versa). The built-in theme already gives every node a legible fill in both
+modes, so most diagrams need no color at all: skip `style`/`classDef`/
+`linkStyle` fills and strokes, `%%{init}%%` theme or `themeVariables`
+overrides, and `rect rgb(…)` backgrounds, and express emphasis with structure
+— node shapes (`{decision}`, `([rounded])`), edge labels, or subgraphs.
+
+When color genuinely carries meaning — a red failure path, an amber
+deprecated component, a subject that is inherently that color (a stop sign
+*is* red) — use it, deliberately: pick **mid-tone colors that stay
+legible on both white and near-black backgrounds** (e.g. `#dc2626`, `#d97706`,
+`#2563eb`; avoid pastels, light grays, and pure white/black fills), and pair
+any `fill:` with an explicit contrasting `color:` for the label. The linter
+flags every hardcoded color so you double-check it against both themes; a
+deliberate, both-themes-legible color may stay.
 
 ### Sketch diagrams — ` ```nomnoml `
 
@@ -128,10 +137,12 @@ Nomnoml syntax primer (it is NOT Mermaid — do not mix syntaxes):
   `[billing|[invoice] -> [payment gateway]]`.
 - **Directives** (optional, first lines, one per line):
   `#direction: right` (or `down`), `#fontSize: 12`, `#lineWidth: 2`.
-  **Never set colors** — no `#fill:`, `#stroke:`, `#background:`, and no
-  `fill=`/`stroke=` in custom `#.classifier` styles. The reader views the doc
-  in light **or** dark mode and the viewer themes the sketch for both; a
-  hardcoded color is guaranteed to be wrong in one of them.
+  **Avoid colors by default** — skip `#fill:`, `#stroke:`, `#background:`,
+  and `fill=`/`stroke=` in custom `#.classifier` styles. The reader views the
+  doc in light **or** dark mode and the viewer themes the sketch for both; a
+  color tuned for one background breaks the other. If a color genuinely
+  carries meaning, pick a mid-tone that stays legible on both white and
+  near-black backgrounds — the linter flags it so you double-check.
 - One edge per line. There are no sequence/gantt/ER modes — for those,
   use Mermaid.
 - Known quirk: when a `[<choice>]` node has several labelled outgoing edges

@@ -12,8 +12,9 @@
  *   - structured fences are non-empty and parse for their type
  *   - admonition markers are a known type
  *   - fences are balanced; obvious secrets are redacted
- *   - diagrams carry no hardcoded colors (the viewer themes them for
- *     light AND dark mode; a fixed color breaks one of the two)
+ *   - hardcoded diagram colors are flagged for a both-themes check (the
+ *     viewer themes diagrams for light AND dark mode; a color tuned for
+ *     one background breaks the other — deliberate mid-tones may stay)
  *   - plain-language sections (preamble, Summary/Outcome, What changed,
  *     Architecture) name no code symbols — the reader is a non-developer
  */
@@ -243,10 +244,11 @@ function lintFence(lang, body, start, add) {
 }
 
 /** The viewer renders diagrams in the reader's light OR dark theme and
-    re-themes them on toggle; a hardcoded color overrides both and is
-    guaranteed to be wrong in one of them (authoring-guide.md). */
+    re-themes them on toggle; a hardcoded color overrides both, and one tuned
+    for a single background breaks the other. Advisory, not a ban: a
+    deliberate, both-themes-legible color may stay (authoring-guide.md). */
 function lintDiagramColors(lang, body, start, add) {
-  const suffix = 'the viewer themes diagrams for both light and dark mode, and a hardcoded color breaks one of them — remove it and let the theme style the diagram (authoring-guide.md).';
+  const suffix = 'the viewer themes diagrams for both light and dark mode, and a color tuned for one background breaks the other — remove it, or if the color is deliberate, make it a mid-tone that reads on both themes (authoring-guide.md).';
   body.forEach((line, k) => {
     const at = start + 2 + k;
     if (lang === 'mermaid') {
