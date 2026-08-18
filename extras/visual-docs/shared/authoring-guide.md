@@ -88,6 +88,16 @@ Any Mermaid diagram type (flowchart, sequence, state, ER, gantt):
         B -- rejected --> D[429]
     ```
 
+**Never hardcode colors.** The reader views the document in **light or dark
+mode** (their choice, toggleable live), and the viewer re-themes every diagram
+automatically — a color you pick overrides both themes and is guaranteed to be
+unreadable in one of them. Concretely: no `style`/`classDef`/`linkStyle` lines
+that set `fill:`/`stroke:`/`color:`, no `%%{init}%%` theme or `themeVariables`
+overrides, no `rect rgb(…)` backgrounds in sequence diagrams. The built-in
+theme already gives every node a legible fill in both modes; express emphasis
+with structure instead — node shapes (`{decision}`, `([rounded])`), edge
+labels, or subgraphs.
+
 ### Sketch diagrams — ` ```nomnoml `
 
 For a hand-drawn look, use nomnoml — a compact UML-ish text DSL rendered as a
@@ -118,7 +128,10 @@ Nomnoml syntax primer (it is NOT Mermaid — do not mix syntaxes):
   `[billing|[invoice] -> [payment gateway]]`.
 - **Directives** (optional, first lines, one per line):
   `#direction: right` (or `down`), `#fontSize: 12`, `#lineWidth: 2`.
-  Skip colors — the viewer's theme handles that.
+  **Never set colors** — no `#fill:`, `#stroke:`, `#background:`, and no
+  `fill=`/`stroke=` in custom `#.classifier` styles. The reader views the doc
+  in light **or** dark mode and the viewer themes the sketch for both; a
+  hardcoded color is guaranteed to be wrong in one of them.
 - One edge per line. There are no sequence/gantt/ER modes — for those,
   use Mermaid.
 - Known quirk: when a `[<choice>]` node has several labelled outgoing edges
@@ -170,6 +183,24 @@ Options are optional — omit them for a pure free-text question. Any other
 non-option line after the prompt becomes an optional **description** shown under
 the title. The question, description, and option labels all support inline
 markdown (`` `code` ``, **bold**, *italic*) for emphasis.
+
+**Keep the title short, and never put a heading in it.** The first line
+renders as the card's title — the card supplies its own title styling, so a
+`#`/`##` heading inside the fence just shows up as literal `#` characters.
+Write the title as **one short question sentence** and nothing more. All the
+background — context, constraints, what each choice costs — belongs in the
+**description** (the non-option lines after the prompt), not packed into the
+title. Title = the question; description = why you're asking and what the
+reader needs to know to answer.
+
+    ```question
+    What should the default rate limit be?
+    Applies to unauthenticated traffic only; authenticated clients are
+    exempt. Higher limits raise Redis memory roughly linearly.
+    - 100 req/min (conservative)
+    - 500 req/min
+    - 1000 req/min (enterprise)
+    ```
 
 When the reader answers, the answer is saved as a **comment anchored to the
 question** (it shows up in `/agent/comments.md` as `question … — <answer>`), so

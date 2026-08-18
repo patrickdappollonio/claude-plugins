@@ -12,6 +12,8 @@
  *   - structured fences are non-empty and parse for their type
  *   - admonition markers are a known type
  *   - fences are balanced; obvious secrets are redacted
+ *   - diagrams carry no hardcoded colors (the viewer themes them for
+ *     light AND dark mode; a fixed color breaks one of the two)
  *   - plain-language sections (preamble, Summary/Outcome, What changed,
  *     Architecture) name no code symbols — the reader is a non-developer
  */
@@ -180,10 +182,29 @@ function lintFence(lang, body, start, add) {
   const text = body.join('\n');
   const at = start + 1;
   if (lang === 'question' || lang === 'ask') {
-    const ls = body.map((l) => l.trim()).filter(Boolean);
-    let idx = 0;
-    if (ls[0] && /^(multiple|multi|select all( that apply)?)$/i.test(ls[0])) idx = 1;
-    if (!ls[idx]) add(at, 'error', 'question fence has no question text (the first non-directive line is the prompt).');
+    // Resolve the prompt line (skipping a leading `multiple` directive) with
+    // its real line number, so title findings point at the right line.
+    const idxs = [];
+    body.forEach((l, k) => { if (l.trim()) idxs.push(k); });
+    let p = 0;
+    if (idxs.length && /^(multiple|multi|select all( that apply)?)$/i.test(body[idxs[0]].trim())) p = 1;
+    if (p >= idxs.length) {
+      add(at, 'error', 'question fence has no question text (the first non-directive line is the prompt).');
+    } else {
+      const tk = idxs[p];
+      const title = body[tk].trim();
+      if (/^#{1,6}\s/.test(title)) {
+        add(start + 2 + tk, 'warn', 'question title is a markdown heading — headings do not render inside the card (the `#` shows as literal text); write the prompt as one plain question sentence.');
+      } else if (title.length > 120) {
+        add(start + 2 + tk, 'warn', `question title is ${title.length} chars — keep it to one short question sentence; move the background into description lines below the prompt (non-option lines render as the card's description).`);
+      }
+      // Headings anywhere else in the fence render as literal text too.
+      body.forEach((l, k) => {
+        if (k !== tk && /^#{1,6}\s/.test(l.trim())) {
+          add(start + 2 + k, 'warn', 'heading inside a question fence — it renders as literal text; use plain description lines and `- ` options instead.');
+        }
+      });
+    }
   } else if (lang === 'openapi' || lang === 'swagger') {
     if (!/(^|\n)\s*paths\s*:/.test(text) && !/"paths"\s*:/.test(text)) {
       add(at, 'warn', 'openapi fence has no `paths:` — include at least one path, or it falls back to a raw code block.');
@@ -209,6 +230,8 @@ function lintFence(lang, body, start, add) {
     }
   } else if (lang === 'api' || lang === 'http') {
     if (!/\b(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\b/i.test(text)) add(at, 'warn', 'api fence has no request line (e.g. `POST /path`).');
+  } else if (lang === 'mermaid' || lang === 'nomnoml') {
+    lintDiagramColors(lang, body, start, add);
   } else if (lang === 'filetree' || lang === 'files' || lang === 'file-tree') {
     const entryLines = [];
     body.forEach((l, k) => { if (l.trim() && !l.trim().startsWith('#')) entryLines.push(k); });
@@ -217,6 +240,31 @@ function lintFence(lang, body, start, add) {
   }
   // tldr/tl;dr/summary need no extra shape check — the generic empty-fence guard
   // above already requires prose content.
+}
+
+/** The viewer renders diagrams in the reader's light OR dark theme and
+    re-themes them on toggle; a hardcoded color overrides both and is
+    guaranteed to be wrong in one of them (authoring-guide.md). */
+function lintDiagramColors(lang, body, start, add) {
+  const suffix = 'the viewer themes diagrams for both light and dark mode, and a hardcoded color breaks one of them — remove it and let the theme style the diagram (authoring-guide.md).';
+  body.forEach((line, k) => {
+    const at = start + 2 + k;
+    if (lang === 'mermaid') {
+      if (/%%\{\s*init/i.test(line) && /theme/i.test(line)) {
+        add(at, 'warn', `mermaid \`%%{init}%%\` theme override — ${suffix}`);
+      } else if (/^\s*(style|classDef|linkStyle)\b/.test(line) && /\b(fill|stroke|color|background-color)\s*:\s*(#|rgba?\(|hsla?\(|[a-z]{3,})/i.test(line)) {
+        add(at, 'warn', `mermaid \`${line.trim().split(/\s+/, 1)[0]}\` sets hardcoded colors — ${suffix}`);
+      } else if (/^\s*rect\s+rgba?\(/i.test(line)) {
+        add(at, 'warn', `mermaid \`rect rgb(…)\` background — ${suffix}`);
+      }
+    } else {
+      if (/^\s*#(fill|stroke|background|lineColor|arrowColor):/i.test(line)) {
+        add(at, 'warn', `nomnoml \`${line.trim().split(':', 1)[0]}\` color directive — ${suffix}`);
+      } else if (/^\s*#\.\w+\s*:.*\b(fill|stroke)\s*=/i.test(line)) {
+        add(at, 'warn', `nomnoml custom classifier sets \`fill=\`/\`stroke=\` — ${suffix}`);
+      }
+    }
+  });
 }
 
 // Keep in sync with FILE_FLAGS in assets/app.js.
