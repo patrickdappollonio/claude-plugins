@@ -88,6 +88,25 @@ Any Mermaid diagram type (flowchart, sequence, state, ER, gantt):
         B -- rejected --> D[429]
     ```
 
+**Avoid hardcoded colors by default.** The reader views the document in
+**light or dark mode** (their choice, toggleable live), and the viewer
+re-themes every diagram automatically — a color you pick overrides both
+themes, and one tuned for a white background is unreadable on dark (and vice
+versa). The built-in theme already gives every node a legible fill in both
+modes, so most diagrams need no color at all: skip `style`/`classDef`/
+`linkStyle` fills and strokes, `%%{init}%%` theme or `themeVariables`
+overrides, and `rect rgb(…)` backgrounds, and express emphasis with structure
+— node shapes (`{decision}`, `([rounded])`), edge labels, or subgraphs.
+
+When color genuinely carries meaning — a red failure path, an amber
+deprecated component, a subject that is inherently that color (a stop sign
+*is* red) — use it, deliberately: pick **mid-tone colors that stay
+legible on both white and near-black backgrounds** (e.g. `#dc2626`, `#d97706`,
+`#2563eb`; avoid pastels, light grays, and pure white/black fills), and pair
+any `fill:` with an explicit contrasting `color:` for the label. The linter
+flags every hardcoded color so you double-check it against both themes; a
+deliberate, both-themes-legible color may stay.
+
 ### Sketch diagrams — ` ```nomnoml `
 
 For a hand-drawn look, use nomnoml — a compact UML-ish text DSL rendered as a
@@ -118,7 +137,12 @@ Nomnoml syntax primer (it is NOT Mermaid — do not mix syntaxes):
   `[billing|[invoice] -> [payment gateway]]`.
 - **Directives** (optional, first lines, one per line):
   `#direction: right` (or `down`), `#fontSize: 12`, `#lineWidth: 2`.
-  Skip colors — the viewer's theme handles that.
+  **Avoid colors by default** — skip `#fill:`, `#stroke:`, `#background:`,
+  and `fill=`/`stroke=` in custom `#.classifier` styles. The reader views the
+  doc in light **or** dark mode and the viewer themes the sketch for both; a
+  color tuned for one background breaks the other. If a color genuinely
+  carries meaning, pick a mid-tone that stays legible on both white and
+  near-black backgrounds — the linter flags it so you double-check.
 - One edge per line. There are no sequence/gantt/ER modes — for those,
   use Mermaid.
 - Known quirk: when a `[<choice>]` node has several labelled outgoing edges
@@ -170,6 +194,24 @@ Options are optional — omit them for a pure free-text question. Any other
 non-option line after the prompt becomes an optional **description** shown under
 the title. The question, description, and option labels all support inline
 markdown (`` `code` ``, **bold**, *italic*) for emphasis.
+
+**Keep the title short, and never put a heading in it.** The first line
+renders as the card's title — the card supplies its own title styling, so a
+`#`/`##` heading inside the fence just shows up as literal `#` characters.
+Write the title as **one short question sentence** and nothing more. All the
+background — context, constraints, what each choice costs — belongs in the
+**description** (the non-option lines after the prompt), not packed into the
+title. Title = the question; description = why you're asking and what the
+reader needs to know to answer.
+
+    ```question
+    What should the default rate limit be?
+    Applies to unauthenticated traffic only; authenticated clients are
+    exempt. Higher limits raise Redis memory roughly linearly.
+    - 100 req/min (conservative)
+    - 500 req/min
+    - 1000 req/min (enterprise)
+    ```
 
 When the reader answers, the answer is saved as a **comment anchored to the
 question** (it shows up in `/agent/comments.md` as `question … — <answer>`), so
