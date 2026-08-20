@@ -9,7 +9,7 @@
     {
       "name": "appropriate-comments-code",
       "source": "./plugins/appropriate-comments-code",
-      "description": "Comment discipline for code the agent writes — every comment carries information the code does not and describes the current state only, with no iteration labels, finding numbers, wave or task IDs, or narration of how the code got here; regressions are pinned by tests instead.",
+      "description": "Comment discipline for code the agent writes — every comment stays within a line or two, carries information the code does not, and describes the current state only, with no iteration labels, finding numbers, wave or task IDs, project phase names, or narration of how the code got here; regressions are pinned by tests instead.",
       "category": "code-quality",
       "keywords": ["comments", "code-quality", "documentation", "readability", "maintainability", "ai-slop"],
       "author": {

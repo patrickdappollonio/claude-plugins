@@ -95,20 +95,24 @@ adversarial review"* for the quick panel. [Read more →](plugins/adversarial-re
 ### appropriate-comments-code
 
 Comment discipline for the code your agent writes, on one rule: **every comment
-carries information the code does not, and describes the current state only.**
-The audience is a developer months from now who was not in the session, did not
-read the PR, does not know what was tried first, and cannot ask. If a sentence
-only makes sense to someone who watched the code being written, it doesn't
-belong in the code.
+carries information the code does not, about the code as it is now, in as few
+lines as that takes.** The audience is a developer months from now who was not in
+the session, did not read the PR, does not know what was tried first, and cannot
+ask — and who is skimming, so every line above the function they came for is a
+toll they pay to reach it.
 
-That rules out three things agents do constantly. Narrating the journey — *"we
+That rules out four things agents do constantly. Narrating the journey — *"we
 used to buffer the whole response but it blew up memory, so now we stream it"* —
 describes an edit, not the code, and rots on the next change; the standing
 constraint gets stated instead. Restating the line below — *"// Opens the DB
 connection"* above `connection.open()` — costs the reader time for nothing.
-And committing identifiers that outlive nothing: finding numbers like `F7`,
-iteration labels, wave and task IDs, agent run labels. Those mean something to
-exactly one person for about a day, and then sit in the file forever.
+Committing identifiers that outlive nothing: finding numbers like `F7`,
+iteration labels, wave and task IDs, project phase names, agent run labels —
+those mean something to exactly one person for about a day, and then sit in the
+file forever. And going long: a twenty-line comment can be accurate,
+present-tense and ticket-free and still be documentation parked above a
+function, where nobody reads it. One or two lines is the working limit, and the
+only exemption is a decision table or state machine that prose can't replace.
 
 Nothing gets thrown away, it gets routed: a regression is pinned by a test named
 after the invariant (a comment saying *"don't remove this check"* fails nobody's
