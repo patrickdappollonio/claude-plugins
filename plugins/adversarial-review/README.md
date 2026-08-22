@@ -11,16 +11,16 @@ This plugin ships **two skills** — the same method at two sizes. Pick by how m
 **`adversarial-review`** — all **18 reviewers**, plus the verifier and the fix validator. Everything below describes this one.
 
 > [!WARNING]
-> **This is token-intensive.** Twenty agents each read the diff and the code around it, in parallel. That breadth is the value, but it is not free, and most changes don't need it. For a cheaper pass, run [the quick panel](#the-quick-panel) instead — it keeps the nine highest-yield reviewers and both verification gates.
+> **This is token-intensive.** Twenty agents each read the diff and the code around it, in parallel. That breadth is the value, but it is not free, and most changes don't need it. For a cheaper pass, run [the quick panel](#the-quick-panel) instead — it keeps the eight highest-yield reviewers and both verification gates.
 
 ## The quick panel
 
-**`adversarial-review-quick`** — **9 reviewers**, same brief, same scope rule, same standalone False-Positive Filter and Solution Validator. Ask for *"a smaller adversarial review"* and your agent picks this one.
+**`adversarial-review-quick`** — **8 reviewers**, same brief, same scope rule, same standalone False-Positive Filter and Solution Validator. Ask for *"a smaller adversarial review"* and your agent picks this one.
 
-The nine are the two design charters (which no bug hunt substitutes for) plus the seven that historically produced the most confirmed high- and medium-severity findings: **Spec Conformance Auditor**, **Premise Auditor**, **Test Skeptic**, **Failure Injection Adversary**, **Assumption Hunter**, **Observability Auditor**, **Incomplete-Fix Prosecutor**, **Rollback & Change-Safety Adversary**, **Data Integrity Prosecutor**.
+The eight are the two design charters (which no bug hunt substitutes for) plus the six that historically produced the most confirmed high- and medium-severity findings: **Spec Conformance Auditor**, **Premise Auditor**, **Test Skeptic**, **Assumption Hunter**, **Observability Auditor**, **Incomplete-Fix Prosecutor**, **Data Integrity Prosecutor**, **API Contract Pedant**.
 
 > [!NOTE]
-> **It is narrower, and it says so.** Dropping nine angles means input attacks, authorization, concurrency, resource exhaustion, API contract, maintainability, scope creep, AI-slop and fact-checking go unexamined — so a clean quick report is not a clean bill of health. The skill names the gap before it starts and again in the report. When the change touches authentication, permissions, shared state, untrusted input, or a public API, run [the full panel](#the-full-panel).
+> **It is narrower, and it says so.** Dropping ten angles means input attacks, authorization, concurrency, failure injection, resource exhaustion, rollback safety, maintainability, scope creep, AI-slop and fact-checking go unexamined — so a clean quick report is not a clean bill of health. When the change touches one of those angles, the skill stops and asks which missing reviewers you want; pick some and it escalates to [the full panel](#the-full-panel) running just those plus the quick eight, decline and it runs quick and names the gap in the report.
 
 ## What the reviewers are — and aren't — told
 
@@ -38,24 +38,24 @@ So the brief is allowed to tell reviewers what's in bounds, and never allowed to
 
 ## The reviewer panel
 
-Each reviewer attacks from one narrow angle. **✓ marks the nine that the quick panel also runs.**
+Each reviewer attacks from one narrow angle. **✓ marks the eight that the quick panel also runs.**
 
 | | Reviewer | Attacks |
 |---|---|---|
 | ✓ | **Spec Conformance Auditor** | was the *approved* thing actually built? Dropped elements, silent deviations, and where the missing element's data ended up instead |
 | ✓ | **Premise Auditor** | was the approved thing *worth* building? A perfect implementation of this design — what still goes wrong? |
 | ✓ | **Test Skeptic** | the bug the tests would quietly let through |
-| ✓ | **Failure Injection Adversary** | every dependency times out or returns garbage |
 | ✓ | **Assumption Hunter** | unstated invariants that nothing enforces |
 | ✓ | **Observability Auditor** | silent failures, useless logs, missing signals |
 | ✓ | **Incomplete-Fix Prosecutor** | symptomatic patches; the same bug left unfixed elsewhere (doing *too little*) |
-| ✓ | **Rollback & Change-Safety Adversary** | can we kill this in five minutes? |
 | ✓ | **Data Integrity Prosecutor** | wrong queries, lost records, broken transactions |
+| ✓ | **API Contract Pedant** | where the promise and the implementation diverge |
+| | **Failure Injection Adversary** | every dependency times out or returns garbage |
+| | **Rollback & Change-Safety Adversary** | can we kill this in five minutes? |
 | | **Concurrency & State Saboteur** | races, deadlocks, lost updates, ordering bugs |
 | | **Input Attacker** | malformed, oversized, injection, and boundary inputs |
 | | **Authorization Attacker** | what a valid-but-unauthorized user can reach |
 | | **Resource Exhaustion Adversary** | unbounded growth, leaks, quadratic blowups |
-| | **API Contract Pedant** | where the promise and the implementation diverge |
 | | **Maintainability Cynic** | what the next reader will misread |
 | | **Karpathy Minimalist** | speculative complexity and scope creep (doing *too much*) |
 | | **AI Anti-Slop Critic** | plausible-but-hollow generated code, hallucinated APIs |
@@ -132,6 +132,6 @@ If you approved a plan or a mock, point at it — *"review this against the plan
 
 - **It reports, it doesn't rewrite.** Every finding is verified and every proposed fix is validated by a separate agent, and then it stops and hands you the choice: explain, apply, or triage.
 - **A problem with the plan is never fixed silently.** When the finding is that the agreed design was wrong, the fix necessarily changes what you approved — so it comes to you as a decision with its cost attached, and a fourth choice appears: revise the design. Deciding to live with it is a valid answer too.
-- **Token-heavy by design.** It runs many agents in parallel. In Claude Code each reviewer uses the cheaper `sonnet` model to keep cost sane — the value is in the panel's breadth, not any single agent's horsepower. The quick panel trades nine of those angles for roughly half the agents; it never trades away the two verification gates, which is where the trust comes from.
+- **Token-heavy by design.** It runs many agents in parallel. In Claude Code each reviewer uses the cheaper `sonnet` model to keep cost sane — the value is in the panel's breadth, not any single agent's horsepower. The quick panel trades ten of those angles for roughly half the agents; it never trades away the two verification gates, which is where the trust comes from.
 - **The Fact-Checker needs web access** (web search / fetch) to ground claims against real documentation. It is a full-panel reviewer only, so the quick panel never needs the network.
 - **`gh` CLI is optional** — it's only needed to review GitHub PRs directly; local diffs work without it.

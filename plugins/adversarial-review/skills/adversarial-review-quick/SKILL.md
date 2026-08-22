@@ -1,32 +1,37 @@
 ---
 name: adversarial-review-quick
-description: Use when you want a smaller, quicker, cheaper adversarial review of a code change — "a smaller adversarial review", "a quick adversarial review", "a light adversarial review", "adversarial review but don't burn tokens". Runs a 9-reviewer panel (design conformance, whether the design was right, tests, failure injection, unstated assumptions, observability, incomplete fixes, rollback, data integrity) instead of the full 18, with the same verifier and fix validator. Prefer this over `adversarial-review` whenever the user asks for a smaller/quick/light/cheap one; use the full skill when they ask for a thorough or complete review, or when the change touches authentication, permissions, concurrency, untrusted input, or a public API.
+description: Use when you want a smaller, quicker, cheaper adversarial review of a code change — "a smaller adversarial review", "a quick adversarial review", "a light adversarial review", "adversarial review but don't burn tokens". Runs an 8-reviewer panel (design conformance, whether the design was right, tests, unstated assumptions, observability, incomplete fixes, data integrity, API contract) instead of the full 18, with the same verifier and fix validator. Prefer this over `adversarial-review` whenever the user asks for a smaller/quick/light/cheap one; use the full skill when they ask for a thorough or complete review. When the change touches an angle this panel drops — authentication, permissions, concurrency, untrusted input, failure-prone external dependencies, or anything that must roll back cleanly — this skill asks the user which missing reviewers to add and, if they pick any, escalates to the full skill running just those plus the quick eight.
 ---
 
 # Adversarial Review — Quick Panel
 
 ## Overview
 
-The same hostile review as the full `adversarial-review` skill, on a **9-reviewer panel instead of 18**. Each reviewer runs as a fresh subagent that assumes the code is broken and tries to prove it, from one narrow angle. Because they are fresh, **none of them inherit the main session's reasoning or the author's rationalizations** — that is the whole point.
+The same hostile review as the full `adversarial-review` skill, on an **8-reviewer panel instead of 18**. Each reviewer runs as a fresh subagent that assumes the code is broken and tries to prove it, from one narrow angle. Because they are fresh, **none of them inherit the main session's reasoning or the author's rationalizations** — that is the whole point.
 
-The panel is the nine angles that historically produced the most confirmed high- and medium-severity findings, plus the two that check the design itself. **The verifier and the fix validator are not cut** — they are what makes the output trustworthy, and they cost two agents.
+The panel is the two charters that check the design itself, plus the six bug-hunting angles that historically produced the most confirmed high- and medium-severity findings. **The verifier and the fix validator are not cut** — they are what makes the output trustworthy, and they cost two agents.
 
 **Claude: do not use dynamic workflows.** That means more token consumption for no functional gain. Dispatch plain subagents in parallel.
 
 ### Say what this panel does not cover
 
-This is a narrower net, and the user must know which way it is narrow. Nine angles are **not** on this panel:
+This is a narrower net, and the user must know which way it is narrow. Ten angles are **not** on this panel:
 
 | Not covered | Escalate to the full `adversarial-review` when |
 |---|---|
 | Input Attacker, Authorization Attacker | the change touches untrusted input, authentication, or permissions |
 | Concurrency & State Saboteur | the change touches shared state, locking, or parallelism |
+| Failure Injection Adversary | the change talks to networks, disks, databases, or third-party services that can fail mid-operation |
 | Resource Exhaustion Adversary | the change touches unbounded collections, loops over user data, or hot paths |
-| API Contract Pedant | the change touches a public or cross-service interface |
+| Rollback & Change-Safety Adversary | the change includes migrations, rollouts, or anything that must be reversible under pressure |
 | Maintainability Cynic, Karpathy Minimalist | the change is large, or you suspect scope creep |
 | AI Anti-Slop Critic, Fact-Checker | the code is AI-generated, or leans on claims about libraries, versions, or standards |
 
-**If the change touches any of those, say so before you start** and offer the full skill. If the user still wants the quick panel, run it — and repeat the gap in the report's close, so nobody reads a clean report as a clean bill of health.
+**If the change touches any of those, stop and ask before dispatching anyone.** Use `AskUserQuestion` (multi-select): one option per missing angle the change actually touches — named for the risk, not the charter ("it calls services that can fail mid-operation", not "Failure Injection Adversary") — plus a "quick panel as-is" option. Do not ask about angles the change doesn't touch.
+
+- **User picks one or more angles** → run the full `adversarial-review` skill instead, and tell it to run only this panel's eight reviewers plus the chosen ones. The full skill owns those charters; never copy them into this run.
+- **User picks "as-is"** → run the quick panel, and repeat the gap in the report's close, so nobody reads a clean report as a clean bill of health.
+- **The change touches none of the ten** → no question; just run.
 
 ### The one thing reviewers must know: what was agreed
 
@@ -89,11 +94,11 @@ Give the brief to **every** reviewer, the verifier, and the validator, marked cl
 
 ### 3. Pick the reviewers
 
-Run **all 9** (charters below). Skip one only when it clearly cannot apply, and **say which and why** in the report. Fair skips: no persistence touched → *Data Integrity Prosecutor*; no approved artifact or statement of work at all → *Spec Conformance Auditor*.
+Run **all 8** (charters below). Skip one only when it clearly cannot apply, and **say which and why** in the report. Fair skips: no persistence touched → *Data Integrity Prosecutor*; no approved artifact or statement of work at all → *Spec Conformance Auditor*; no interface anyone else calls touched → *API Contract Pedant*.
 
 **Never skip the *Premise Auditor*.** With no brief, the design is whatever the change implies, and that implied design is still open to being wrong.
 
-Do not add reviewers from the full panel one at a time. If more angles are needed, run the full `adversarial-review` skill instead.
+Never bolt full-panel charters onto this run on your own judgment. The only way the panel grows is the question at the top of this skill: the user picks the missing angles, and the review moves to the full `adversarial-review` skill running the eight plus their picks.
 
 ### 4. Dispatch (parallel, isolated, cheap model)
 
@@ -151,8 +156,8 @@ You hold code-level material. **The report is not that material — it is a plai
 2. **One line on the brief** — "it does what was agreed", or "two things from the approved design didn't make it in". If there was no brief, say nobody checked this against an agreed design, because there wasn't one.
 3. **One line on whether the design held up** — separate from the line above, because the answers are independent. A clean conformance line never stands in for this one.
 4. **A one-line count** — "6 confirmed issues across 4 files; 2 serious, 3 moderate, 1 minor."
-5. **The findings, grouped** under short plain themes rather than charter names — *the plan itself has a problem*, *doesn't match what was agreed*, *could crash or break*, *data ending up wrong*, *invisible when it fails*, *hard to undo*, *weak tests*, *the same bug is still elsewhere*.
-6. **A close** — **which angles this quick panel did not cover at all** (from the table at the top, tailored to what the change touches), then which of the nine were skipped and why, then anything the brief declared out of scope that a reviewer flagged anyway, listed as *deliberately left out — flagged anyway*.
+5. **The findings, grouped** under short plain themes rather than charter names — *the plan itself has a problem*, *doesn't match what was agreed*, *could crash or break*, *data ending up wrong*, *invisible when it fails*, *weak tests*, *the same bug is still elsewhere*, *breaks a promise to callers*.
+6. **A close** — **which angles this quick panel did not cover at all** (from the table at the top, tailored to what the change touches), then which of the eight were skipped and why, then anything the brief declared out of scope that a reviewer flagged anyway, listed as *deliberately left out — flagged anyway*.
 
 **Two groups lead, in this order, whenever they have anything in them:**
 
@@ -174,7 +179,7 @@ A finding renders like this — note the explanation has no function name and no
 > **What's wrong:** If the upload to storage fails halfway, the record is already saved as "ready". The file it points at was never written, so anyone opening it later gets an error and there is nothing in the logs saying why.
 > **The fix:** Mark the record ready only after the upload confirms, and log the failure with the record's ID.
 > **Where:** `internal/media/upload.go:88`
-> **Severity:** serious — **Found by:** Failure Injection Adversary
+> **Severity:** serious — **Found by:** Data Integrity Prosecutor
 
 A `design_is_wrong` finding is the same shape with two changes: the second field is headed **The change to the plan**, and it ends with what that change costs, because it asks the user to revisit a decision rather than approve a patch.
 
@@ -191,7 +196,7 @@ Present these choices with `AskUserQuestion` and wait:
 3. **Triage** — defer some, let the user dismiss ones they judge non-issues (record their reasoning), act on the rest.
 4. **Revise the design** — offer this **only when there is at least one `design_is_wrong` finding**, and when there is, offer it first. Applying such a fix silently would be you re-deciding a design on the user's behalf. If they'd rather keep the design, record it as an accepted trade-off with their reasoning; that is a legitimate answer.
 
-A fifth option is worth offering whenever the change touched an uncovered angle: **run the full 18-reviewer `adversarial-review`** for the angles this panel skipped.
+A fifth option is worth offering whenever the change touched an uncovered angle: **run the full `adversarial-review`** — all 18 reviewers, or just the angles this panel skipped, their pick.
 
 **Never fold a design change into "apply the fixes."** If the user picks *Apply* while a `design_is_wrong` finding is undecided, apply everything else and stop at that one. "Apply the fixes", "all of them", and "just do everything" are answers about the fixes you offered, not approval of a design they have not been shown.
 
@@ -274,19 +279,15 @@ Every finding you report is `"design_is_wrong": true`. Severity: wrong data or w
 
 Distrust the tests themselves. Hunt tests that assert nothing meaningful, mock away the thing under test, only cover the happy path, are coupled to implementation rather than behavior, or pass for the wrong reason. **Charter: "Show me the bug these tests would let through."** For each finding, describe a real bug the test would not catch.
 
-## 4. The Failure Injection Adversary
-
-Treat every boundary — network, disk, database, third-party call, subprocess — as something that will fail, time out, or return success with garbage. Ask what happens on retry, whether operations are idempotent, whether partial failures leave inconsistent state, and what the blast radius is. **Charter: "Make every dependency hostile and find where that breaks things."** For each finding, name the dependency and the failure mode that breaks it.
-
-## 5. The Assumption Hunter
+## 4. The Assumption Hunter
 
 The meta-reviewer. Read only for unstated invariants — "this assumes the list is non-empty", "this assumes the call already happened", "this assumes the config is present". For each, ask where it's enforced; if it isn't, that's the finding. **Charter: "List every assumption, then break the unenforced ones."** For each finding, state the assumption and where enforcement is missing.
 
-## 6. The Observability Auditor
+## 5. The Observability Auditor
 
 Assume the system will fail silently at 3am and leave you blind. Hunt swallowed errors, missing context in logs, no actionable signal on the failure path, alerts that will false-positive, and metrics that explode in cardinality. **Charter: "When this breaks in production, what's the first signal — and is it useful?"** For each finding, describe what an operator would (not) see.
 
-## 7. The Incomplete-Fix Prosecutor (root-cause & consistency auditor)
+## 6. The Incomplete-Fix Prosecutor (root-cause & consistency auditor)
 
 Assume this change treats a symptom, not the disease — a fast, local patch that fixes the one case in front of it while the same defect survives in sibling code paths, parallel call sites, and the layer where the bug actually originates. Do NOT confine yourself to the diff: use the changed files as a starting point and search the wider codebase for the same shape of problem. Hunt:
 
@@ -298,13 +299,13 @@ Assume this change treats a symptom, not the disease — a fast, local patch tha
 
 **Charter: "Assume this fix is local and the problem is systemic. Find the other places the same bug lives and the root cause this patch left standing."** For each finding, name the specific other location(s) or the upstream origin, and say why patching only the diffed spot leaves the system broken or inconsistent.
 
-## 8. The Rollback & Change-Safety Adversary
-
-Assume this change must be reverted under pressure. Ask whether migrations are reversible, whether the new path can be disabled without a redeploy, whether old and new versions can coexist during rollout, and whether anything is irreversible once shipped. **Charter: "Assume we need to kill this in five minutes — can we?"** For each finding, state what blocks a fast, safe rollback.
-
-## 9. The Data Integrity Prosecutor
+## 7. The Data Integrity Prosecutor
 
 Assume every persistence operation is subtly wrong. Hunt incorrect queries/filters, lost or duplicated records, transaction boundaries that don't hold, schema changes that break during a rolling deploy, and reads that can see partial writes. **Charter: "Find where the stored data ends up wrong or inconsistent."** For each finding, describe the sequence that leaves data wrong.
+
+## 8. The API Contract Pedant
+
+Assume every interface will be misused by a future caller and that the implementation quietly violates its own contract. Hunt breaking changes disguised as additions, inconsistent error semantics, leaky abstractions, and mismatches between documented behavior and actual behavior. **Charter: "Find where the promise and the implementation diverge."** For each finding, quote the promise (signature/doc) and the diverging behavior.
 
 ---
 
@@ -360,15 +361,16 @@ Be strict. A fix is valid only if you can point at the specific code that makes 
 ## Common Mistakes
 
 - **Running this when the user asked for a thorough review.** This panel is the quick one. "Complete", "thorough", "full", "don't miss anything" means the full `adversarial-review` skill.
-- **Hiding the narrowness.** Nine angles are missing from this panel. Say which before you start when the change touches them, and say it again in the report's close. A clean report from a narrow panel is not a clean bill of health.
-- **Growing the panel one reviewer at a time.** If this change needs the auth, concurrency, input, or contract angles, run the full skill — don't rebuild it here.
+- **Hiding the narrowness.** Ten angles are missing from this panel. Say which before you start when the change touches them, and say it again in the report's close. A clean report from a narrow panel is not a clean bill of health.
+- **Growing the panel on your own judgment.** If this change needs the auth, concurrency, input, failure-injection, or rollback angles, ask the user which to add and run the full skill with that subset — don't rebuild those charters here, and don't add them without asking.
+- **Asking about angles the change doesn't touch.** The escalation question lists only the missing angles this change actually triggers. A blanket "want all 18?" question on every run defeats the point of a quick panel.
 - **Reviewing without the brief.** Reviewers hunt bugs well and find none, and the change ships visibly wrong because it wasn't what was approved and nobody was checking.
 - **Leaking assessments into reviewer prompts.** "The author says this is safe", "Y is already handled", "I think the bug is in the parser" all poison the review. The brief is different: it states what the assignment was, not how well it was met.
 - **Inventing a non-goal to explain a gap.** When you don't know whether an omission was deliberate, say nothing and let the reviewer flag it.
 - **Treating the brief as proof that something is correct.** The brief bounds what is in scope; it never establishes that anything is correct.
 - **Letting a design finding die at a gate.** The verifier rejecting it as "already agreed", or the validator rejecting its fix as "outside the brief", are the same circular error at two stations. The `design_is_wrong` flag exists to carry a finding past both.
 - **Reporting a design finding as if the implementer erred.** The code here is faithful. Say so, or the user goes hunting a coding mistake that isn't there.
-- **Skipping the verifier or the validator to save tokens.** They are two agents out of eleven and they are what makes the output trustworthy. The panel is where this skill economizes, not the gates.
+- **Skipping the verifier or the validator to save tokens.** They are two agents out of ten and they are what makes the output trustworthy. The panel is where this skill economizes, not the gates.
 - **Applying fixes before the user chooses.** This produces a *review with proposed fixes*, not changes to the code. Stop at the report.
 - **Running reviewers sequentially.** Dispatch them in one batch so they run concurrently.
 - **Using the expensive model for subagents in Claude Code.** Use `sonnet`.

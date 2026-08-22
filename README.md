@@ -79,7 +79,7 @@ clickable `file:line` under each finding.
 
 Eighteen reviewers plus two gate agents is a lot of tokens, and most changes
 don't need all of it — so the plugin also ships a **quick panel**
-(`adversarial-review-quick`): the nine highest-yield angles, including both
+(`adversarial-review-quick`): the eight highest-yield angles, including both
 design charters, with the same verifier and the same fix validator. Ask for *"a
 smaller adversarial review"* and your agent runs that one instead. It says up
 front which angles it isn't covering, so a clean report never reads as a clean
