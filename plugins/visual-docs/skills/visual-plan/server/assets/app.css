@@ -92,7 +92,7 @@ body {
 button { font: inherit; cursor: pointer; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-#app { display: flex; min-height: 100vh; }
+#app { display: flex; min-height: 100vh; min-height: 100dvh; }
 
 /* ---------- Sidebar ---------- */
 #sidebar {
@@ -104,7 +104,7 @@ button { font: inherit; cursor: pointer; }
   flex-direction: column;
   position: sticky;
   top: 0;
-  height: 100vh;
+  height: 100vh; height: 100dvh;
 }
 .side-head {
   display: flex;
@@ -750,7 +750,7 @@ mark.comment-highlight.st-dismissed { background: transparent; border-bottom-col
 }
 
 .change-pop {
-  position: fixed; z-index: 70; max-width: 440px; max-height: 55vh; overflow: auto;
+  position: fixed; z-index: 70; max-width: 440px; max-height: 55vh; max-height: 55dvh; overflow: auto;
   background: var(--panel); border: 1px solid var(--line-strong); border-radius: 10px;
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.2); padding: 8px 10px; font-size: 0.76rem;
 }
@@ -790,7 +790,7 @@ mark.comment-highlight.st-dismissed { background: transparent; border-bottom-col
 /* ---------- Comment drawer ---------- */
 #comment-drawer {
   width: 320px; flex: 0 0 auto; border-left: 1px solid var(--line); background: var(--panel);
-  position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column;
+  position: sticky; top: 0; height: 100vh; height: 100dvh; display: flex; flex-direction: column;
 }
 .drawer-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px 9px; }
 .drawer-head .drawer-title { font-size: 0.86rem; font-weight: 700; }
@@ -958,7 +958,7 @@ body:has(.update-banner) #app { padding-top: 37px; }
   /* Same treatment for the left sidebar: expanded = overlay panel, collapsed =
      thin in-flow rail — the doc is never pushed down or squeezed. */
   #sidebar:not(.collapsed) {
-    position: fixed; left: 0; top: 0; bottom: 0; height: 100vh; z-index: 46;
+    position: fixed; left: 0; top: 0; bottom: 0; height: 100vh; height: 100dvh; z-index: 46;
     width: min(300px, 85vw); box-shadow: 12px 0 32px rgba(0, 0, 0, 0.18);
   }
   .sidebar-backdrop { display: block; position: fixed; inset: 0; z-index: 45; background: rgba(15, 15, 15, 0.32); }
