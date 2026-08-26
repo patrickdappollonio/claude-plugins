@@ -39,13 +39,10 @@ you'd spend narrating into the plan's coverage instead.
 5. Serve it and hand over the link.
 6. Read and act on comments — **then back to 3 and 4 for every edit.**
 
-**Every write goes through the same gate — first draft or fifth revision.**
-Whenever the plan file is created *or edited*, the next three steps are, in
-order, non-negotiable: **write → lint → verify.** Do not serve, share, or
-report "done" after an edit until the linter has run clean on the edited file
-and you have re-read the changed sections against the linter's closing
-reminder. Revisions are where this gets skipped — and where change-log prose
-creeps in.
+**Every write — first draft or fifth revision — runs write → lint → verify.**
+Never serve, share, or say "done" after an edit until the linter is clean on
+that file and you have re-read the changed sections against its closing
+reminder. Revisions are where this gets skipped.
 
 ## Workflow
 
@@ -143,10 +140,8 @@ Do not write the file and stop.**
    ```
    node "${CLAUDE_PLUGIN_ROOT}/skills/visual-plan/server/bin/visual-docs-lint.js" "$DIR/<file>.md"
    ```
-   The linter closes with a short **self-review reminder** (timeless prose, the
-   CEO test, a pointer back to document-quality.md). It is not a finding and
-   "clean" does not cover it — read it and check the document against it every
-   run, including every revision.
+   It ends with a **self-review reminder** that "clean" does not cover — check
+   the document against it every run.
 2. **Self-review**: re-read the whole plan top to bottom as the user will see it,
    and check: **the CEO test first** — everything through `## Architecture`
    reads cleanly to a non-developer, with no function, file, or symbol names,
@@ -246,16 +241,12 @@ headings, keep superseded sections "for context," or write prose that describes
 the edit instead of the plan.
 
 **The plan is timeless — it states the current plan, not how it got there.**
-The rule bites at the word level, not just the heading level: "One safety rule,
-*corrected*", "the connection *now* waits…", "*previously*…", "*as clarified*…",
-"*instead of the earlier* approach" each assert a prior draft the reader never
-saw. The user may review the plan tomorrow with no memory of yesterday's
-version and will read "corrected" as *a rule existed and was wrong*, when the
-plan was only ever defining the rule. And the viewer already shows what
-changed on hover — narrating the delta in prose duplicates that diff, badly.
-Test every sentence you touch: would it read the same to someone seeing the
-document for the first time? If a word only makes sense against an earlier
-draft, delete the word. Then re-run the linter and read its closing reminder.
+That bites at the word level: "one safety rule, *corrected*", "*now* waits…",
+"*previously*…", "*as clarified*…" each assert a prior draft the reader never
+saw — reviewed tomorrow, "corrected" reads as *a rule existed and was wrong*.
+The viewer already shows what changed on hover. Test every sentence you touch:
+would it read the same to a first-time reader? If a word only makes sense
+against an earlier draft, delete it (document-quality §8 has the full rule).
 
 If the digest is followed by a `note: this server is running visual-docs vX but
 vY is now installed…` line, tell the user and suggest `--restart` (per the

@@ -38,13 +38,10 @@ spend instead making the document more complete.
 6. Serve it and hand over the link.
 7. Read and act on comments — **then back to 4 and 5 for every edit.**
 
-**Every write goes through the same gate — first draft or fifth revision.**
-Whenever the recap file is created *or edited*, the next three steps are, in
-order, non-negotiable: **write → lint → verify.** Do not serve, share, or
-report "done" after an edit until the linter has run clean on the edited file
-and you have re-read the changed sections against the linter's closing
-reminder. Revisions are where this gets skipped — and where change-log prose
-creeps in.
+**Every write — first draft or fifth revision — runs write → lint → verify.**
+Never serve, share, or say "done" after an edit until the linter is clean on
+that file and you have re-read the changed sections against its closing
+reminder. Revisions are where this gets skipped.
 
 ## Workflow
 
@@ -164,10 +161,8 @@ Do not write the file and stop.**
    ```
    node "${CLAUDE_PLUGIN_ROOT}/skills/visual-recap/server/bin/visual-docs-lint.js" "$DIR/<file>.md"
    ```
-   The linter closes with a short **self-review reminder** (timeless prose, the
-   CEO test, a pointer back to document-quality.md). It is not a finding and
-   "clean" does not cover it — read it and check the document against it every
-   run, including every revision.
+   It ends with a **self-review reminder** that "clean" does not cover — check
+   the document against it every run.
 2. **Self-review**: re-read the whole document top to bottom as the reviewer will
    see it, and check:
    - **the CEO test first**: everything through `## Architecture` reads cleanly
@@ -265,15 +260,13 @@ coherent document, never `## Update`/addendum sections or prose describing the
 edit (document-quality §8).
 
 **The recap is timeless — it describes the change as it stands, not the recap's
-own revisions.** Watch the word level: "*corrected*", "*now*", "*previously*",
-"*as clarified*", "*instead of the earlier*" about the *document* each assert a
-prior draft the reader never saw; a user re-reading tomorrow will take
-"corrected" as a fact about the code. The viewer already shows what changed on
-hover, so narrating the edit in prose duplicates that diff, badly. Prior state
-of the *code* ("the old endpoint returned 500", a `Before`/`After` fence) is the
-subject of a recap and stays. Test every sentence you touch: would it read the
-same to someone seeing the document for the first time? Then re-run the linter
-and read its closing reminder.
+own revisions.** At the word level: "*corrected*", "*now*", "*previously*",
+"*as clarified*" about the *document* assert a prior draft the reader never saw
+— re-read tomorrow, "corrected" becomes a fact about the code. The viewer
+already shows what changed on hover. Prior state of the *code* ("the old
+endpoint returned 500", a `Before`/`After` fence) is the subject and stays.
+Test every sentence you touch: would it read the same to a first-time reader?
+(document-quality §8 has the full rule.)
 
 If the user wants to share or archive the recap (send it, attach it, keep a
 copy), offer `--export`: it builds one self-contained HTML file — no server
