@@ -1680,6 +1680,7 @@
 
   const STATUS_RANK = { new: 0, acknowledged: 1, resolved: 2, dismissed: 3 };
   const STATUS_CLASSES = ['st-new', 'st-acknowledged', 'st-resolved', 'st-dismissed'];
+  const STATUS_LABELS = { new: 'New', acknowledged: 'Agent is working on this', resolved: 'Resolved', dismissed: 'Dismissed' };
 
   /** Elements a whole-block comment can target: every direct child of the
       document that isn't a component, plus list items and top-level table
@@ -1739,16 +1740,18 @@
     existingBlocks.forEach((el) => {
       el.classList.remove('comment-highlight-block', ...STATUS_CLASSES);
       el.onclick = null;
+      detachCommentPop(el);
       delete el.dataset.commentIds;
     });
 
     // A block target can carry several comments — collect them per element,
     // then paint once with the most-open status.
-    const perBlock = new Map(); // element -> {rank, ids}
+    const perBlock = new Map(); // element -> {rank, ids, comments}
     const noteBlock = (el, c) => {
       const rank = STATUS_RANK[commentStatus(c)] ?? 0;
-      const cur = perBlock.get(el) || { rank: Infinity, ids: [] };
+      const cur = perBlock.get(el) || { rank: Infinity, ids: [], comments: [] };
       cur.rank = Math.min(cur.rank, rank);
+      cur.comments.push(c);
       if (c.id) cur.ids.push(c.id);
       perBlock.set(el, cur);
     };
@@ -1759,10 +1762,14 @@
       const isBlock = a.block === true || (!a.prefix && !a.suffix);
       if (isBlock) {
         blockTargets = blockTargets || blockHighlightTargets(container);
-        const quote = a.quote.replace(/\s+/g, ' ').trim();
+        // The gutter stores at most 400 characters of a block; measure the cut
+        // before trimming, since the 400th character is often a space.
+        const collapsed = a.quote.replace(/\s+/g, ' ');
+        const quote = collapsed.trim();
+        const truncated = collapsed.length >= 400;
         const el = blockTargets.find((cand) => {
           const t = blockOwnText(cand);
-          return t === quote || (quote.length >= 400 && t.startsWith(quote));
+          return t === quote || (truncated && t.startsWith(quote));
         });
         if (el) { noteBlock(el, c); continue; }
         // No block matches (doc edited since) — fall through to a span match
@@ -1778,8 +1785,8 @@
           const mark = document.createElement('mark');
           mark.className = `comment-highlight st-${commentStatus(c)}`;
           mark.dataset.commentId = c.id || '';
-          mark.title = c.text;
           mark.addEventListener('click', () => onOpen());
+          attachCommentPop(mark, [c]);
           range.surroundContents(mark);
         } catch { /* this segment not wrappable — keep the others */ }
       }
@@ -1792,7 +1799,68 @@
       el.classList.add('comment-highlight-block', STATUS_CLASSES[info.rank === Infinity ? 0 : info.rank]);
       if (info.ids.length) el.dataset.commentIds = info.ids.join(' ');
       setBlockOpenHandler(el, onOpen);
+      attachCommentPop(el, info.comments);
     }
+  }
+
+  /** Hover card for a highlighted range or block: the comment text with its
+      status and age, in the app's own styling instead of the browser's native
+      title tooltip. One card is shared by every highlight; it follows the
+      hovered element and hides on leave, scroll, or Escape. Handlers live on
+      the element as properties so re-applying highlights replaces them. */
+  let commentPop = null;
+  let commentPopTimer = 0;
+  function commentPopEl() {
+    if (commentPop) return commentPop;
+    commentPop = document.createElement('div');
+    commentPop.className = 'comment-pop';
+    commentPop.hidden = true;
+    commentPop.setAttribute('role', 'tooltip');
+    document.body.appendChild(commentPop);
+    const hide = () => hideCommentPop();
+    window.addEventListener('scroll', hide, { passive: true });
+    window.addEventListener('keydown', (e) => { if (e.key === 'Escape') hide(); });
+    return commentPop;
+  }
+  function hideCommentPop() {
+    clearTimeout(commentPopTimer);
+    if (commentPop) commentPop.hidden = true;
+  }
+  function showCommentPop(target, comments) {
+    const pop = commentPopEl();
+    const shown = comments.slice(0, 3);
+    pop.innerHTML = shown.map((c) => {
+      const st = commentStatus(c);
+      return `<div class="cp-entry st-${st}">
+        <div class="cp-meta"><span class="cp-dot"></span>${escapeHTML(STATUS_LABELS[st] || st)} · ${escapeHTML(timeAgo(c.createdAt))}</div>
+        <div class="cp-text">${escapeHTML(c.text || '')}</div>
+      </div>`;
+    }).join('') + (comments.length > shown.length
+      ? `<div class="cp-more">+${comments.length - shown.length} more · click to open</div>`
+      : '');
+    pop.hidden = false;
+    // Below the element, left-aligned, clamped to the viewport; above if the
+    // bottom of the screen is too close.
+    const r = target.getBoundingClientRect();
+    const gap = 6;
+    const pw = pop.offsetWidth;
+    const ph = pop.offsetHeight;
+    let left = Math.max(8, Math.min(r.left, window.innerWidth - pw - 8));
+    let top = r.bottom + gap;
+    if (top + ph > window.innerHeight - 8) top = Math.max(8, r.top - ph - gap);
+    pop.style.left = `${left}px`;
+    pop.style.top = `${top}px`;
+  }
+  function attachCommentPop(el, comments) {
+    el.onmouseenter = () => {
+      clearTimeout(commentPopTimer);
+      commentPopTimer = setTimeout(() => showCommentPop(el, comments), 180);
+    };
+    el.onmouseleave = hideCommentPop;
+  }
+  function detachCommentPop(el) {
+    el.onmouseenter = null;
+    el.onmouseleave = null;
   }
 
   /** Whitespace-collapsed view of the container's visible text plus a map from
