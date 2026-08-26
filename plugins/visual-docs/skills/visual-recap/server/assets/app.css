@@ -722,7 +722,6 @@ mark.comment-highlight.st-resolved { border-bottom-color: transparent; opacity: 
 .markdown-body .comment-highlight-block {
   background: var(--t-yellow);
   border-radius: 6px;
-  box-shadow: -3px 0 0 0 var(--warn);
   cursor: pointer;
 }
 .markdown-body .component-block.comment-highlight-block {
@@ -730,7 +729,7 @@ mark.comment-highlight.st-resolved { border-bottom-color: transparent; opacity: 
   border-radius: 12px;
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--warn) 55%, transparent);
 }
-.markdown-body .comment-highlight-block.st-resolved { box-shadow: none; opacity: 0.85; }
+.markdown-body .comment-highlight-block.st-resolved { opacity: 0.85; }
 
 /* Hover card for a commented range/block — replaces the browser's native
    title tooltip. Positioned by script (fixed, clamped to the viewport). */
