@@ -39,10 +39,10 @@ you'd spend narrating into the plan's coverage instead.
 5. Serve it and hand over the link.
 6. Read and act on comments — **then back to 3 and 4 for every edit.**
 
-**Every write — first draft or fifth revision — runs write → lint → verify.**
-Never serve, share, or say "done" after an edit until the linter is clean on
+**Every write runs write → lint → verify — the first draft and every revision.**
+After an edit, do not serve, share, or say "done" until the linter is clean on
 that file and you have re-read the changed sections against its closing
-reminder. Revisions are where this gets skipped.
+reminder. Revisions are where agents skip this.
 
 ## Workflow
 
@@ -240,13 +240,12 @@ written fresh. Never add `## Update`/`## Revision`/"changed after review"
 headings, keep superseded sections "for context," or write prose that describes
 the edit instead of the plan.
 
-**The plan is timeless — it states the current plan, not how it got there.**
-That bites at the word level: "one safety rule, *corrected*", "*now* waits…",
-"*previously*…", "*as clarified*…" each assert a prior draft the reader never
-saw — reviewed tomorrow, "corrected" reads as *a rule existed and was wrong*.
-The viewer already shows what changed on hover. Test every sentence you touch:
-would it read the same to a first-time reader? If a word only makes sense
-against an earlier draft, delete it (document-quality §8 has the full rule).
+**The plan is timeless. Every sentence you touch must read the same to someone
+opening the plan for the first time.** Delete any word that only makes sense
+against an earlier draft: "*corrected*", "*now* waits…", "*previously*…", "*as
+clarified*…". The reader has no earlier draft. Reviewed tomorrow, "corrected"
+reads as *a rule existed and was wrong*. The viewer already shows every edit on
+hover. Full rule: document-quality §8.
 
 If the digest is followed by a `note: this server is running visual-docs vX but
 vY is now installed…` line, tell the user and suggest `--restart` (per the

@@ -202,20 +202,21 @@ genuinely matters to the reader (a rejected alternative with a real tradeoff),
 it belongs as a plain sentence inside the relevant section — "we chose X over Y
 because…" — not as a record of the document's own evolution.
 
-**This applies at the sentence and word level, not just to headings.** The
-common failure is not a `## Revision` section; it is a single word smuggled into
-an otherwise correct sentence: "One safety rule, *corrected*." — "the terminal
-*now* waits for…" — "*previously* the check happened on open" — "*instead of
-the earlier* approach" — "*as clarified*, the retry…". Each one asserts a prior
-version the reader never saw. Someone opening the plan tomorrow has no memory
-of yesterday's draft and will read "corrected" as *a rule existed and was
-wrong*, when the plan was simply defining the rule. The viewer already shows
-what changed on hover, so narrating the delta in prose is a lossy copy of a diff
-the reader can already open.
-
-The test for every sentence: **would it read the same to someone seeing this
-document for the first time?** If a word only makes sense against an earlier
+**The document is timeless. Every sentence must read the same to someone who
+opens it for the first time.** If a word only makes sense against an earlier
 draft, delete the word.
+
+This rule reaches single words, not just headings. The usual failure is one
+word inside an otherwise correct sentence: "One safety rule, *corrected*." —
+"the terminal *now* waits for…" — "*previously* the check happened on open" —
+"*instead of the earlier* approach" — "*as clarified*, the retry…". Each word
+claims a prior version of the document. The reader never saw that version.
+
+Why it matters: the user often reviews a plan a day after it was written. They
+do not remember yesterday's draft. They read "corrected" as *a rule existed and
+was wrong*, when the plan was only ever defining the rule. And the viewer
+already shows the before and after of every edit on hover. Prose that narrates
+the edit is a worse copy of a diff the reader can already open.
 
 ```
 BAD   One safety rule, corrected. The terminal connection may only retry once
@@ -224,10 +225,9 @@ GOOD  One safety rule. The terminal connection may only retry once the events
       connection has confirmed it is talking to the same server.
 ```
 
-Prior state of the *system* is a different thing and stays: "the old endpoint
-returned 500", a `Before` / `After` fence, a `- removed` diff line. Those
-describe the code's history, which is the subject; the rule forbids describing
-the document's history.
+The *code's* history is the subject and stays: "the old endpoint returned
+500", a `Before` / `After` fence, a `- removed` diff line. The rule forbids only
+the *document's* history.
 
 ## 9. Calibration — GOOD vs BAD
 

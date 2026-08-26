@@ -38,10 +38,10 @@ spend instead making the document more complete.
 6. Serve it and hand over the link.
 7. Read and act on comments — **then back to 4 and 5 for every edit.**
 
-**Every write — first draft or fifth revision — runs write → lint → verify.**
-Never serve, share, or say "done" after an edit until the linter is clean on
+**Every write runs write → lint → verify — the first draft and every revision.**
+After an edit, do not serve, share, or say "done" until the linter is clean on
 that file and you have re-read the changed sections against its closing
-reminder. Revisions are where this gets skipped.
+reminder. Revisions are where agents skip this.
 
 ## Workflow
 
@@ -259,14 +259,13 @@ When revising the recap, **rewrite the affected sections in place** — one
 coherent document, never `## Update`/addendum sections or prose describing the
 edit (document-quality §8).
 
-**The recap is timeless — it describes the change as it stands, not the recap's
-own revisions.** At the word level: "*corrected*", "*now*", "*previously*",
-"*as clarified*" about the *document* assert a prior draft the reader never saw
-— re-read tomorrow, "corrected" becomes a fact about the code. The viewer
-already shows what changed on hover. Prior state of the *code* ("the old
-endpoint returned 500", a `Before`/`After` fence) is the subject and stays.
-Test every sentence you touch: would it read the same to a first-time reader?
-(document-quality §8 has the full rule.)
+**The recap is timeless. Every sentence you touch must read the same to someone
+opening the recap for the first time.** Delete any word that describes the
+recap's own edits: "*corrected*", "*now*", "*previously*", "*as clarified*". The
+reader has no earlier draft. Re-read tomorrow, "corrected" becomes a fact about
+the code. The viewer already shows every edit on hover. The code's own history
+("the old endpoint returned 500", a `Before`/`After` fence) is the subject and
+stays. Full rule: document-quality §8.
 
 If the user wants to share or archive the recap (send it, attach it, keep a
 copy), offer `--export`: it builds one self-contained HTML file — no server
