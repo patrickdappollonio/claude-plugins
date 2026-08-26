@@ -1712,7 +1712,7 @@
 
   /** Highlight everything that has comments, so the reader can always see what's
       been commented on — highlights persist for the life of the comment
-      (new → acknowledged → resolved, or dismissed), later states rendered
+      (new → acknowledged → resolved), later states rendered
       softer. Three shapes, all idempotent (prior marks/classes reset first):
       - selection quotes → <mark> wraps, one per spanned text node, so a quote
         crossing bold/code/link boundaries still highlights;
@@ -1723,8 +1723,11 @@
   function applyTextHighlights(container, comments, onOpen) {
     const existingMarks = container.querySelectorAll('mark.comment-highlight');
     const existingBlocks = container.querySelectorAll('.comment-highlight-block');
-    const texts = comments.filter((c) => c.anchor && c.anchor.kind === 'text');
-    const compos = comments.filter((c) => c.anchor && c.anchor.kind === 'component' && c.anchor.id && c.anchor.type !== 'question');
+    // A dismissed comment leaves no mark: the reader asked for it to go away,
+    // and the text should look untouched again. It stays listed in the drawer.
+    const live = comments.filter((c) => commentStatus(c) !== 'dismissed');
+    const texts = live.filter((c) => c.anchor && c.anchor.kind === 'text');
+    const compos = live.filter((c) => c.anchor && c.anchor.kind === 'component' && c.anchor.id && c.anchor.type !== 'question');
     // Nothing to draw and nothing drawn before — skip the whole-document walk.
     if (!texts.length && !compos.length && !existingMarks.length && !existingBlocks.length) return;
     existingMarks.forEach((m) => {
@@ -3278,18 +3281,24 @@
   }
 
   /** Question fences are interactive (answers post as comments) in the live
-      viewer; there's nowhere for an answer to go here, so hide the form and
-      say so instead of rendering a dead submit button. */
-  function makeQuestionsReadOnly(container) {
+      viewer; there's nowhere for an answer to go here, so the form is hidden
+      and the footer shows the answer the export was built with — the same
+      "your answer" box as the live viewer, minus "Change answer" — or says
+      the question is still open. */
+  function makeQuestionsReadOnly(container, answers) {
     container.querySelectorAll('.question-block').forEach((blk) => {
+      const answer = answers[blk.dataset.blockId || ''];
+      if (answer) { showQuestionAnswered(blk, answer); return; }
       const form = blk.querySelector('.q-form');
-      if (form) form.hidden = true;
-      if (blk.querySelector('.q-export-note')) return;
-      const note = document.createElement('p');
-      note.className = 'q-export-note mono';
-      note.style.cssText = 'margin:10px 0 0;font-size:12.5px;color:var(--ink-soft);';
-      note.textContent = 'Answerable in the live viewer — this export is read-only.';
-      blk.appendChild(note);
+      const box = blk.querySelector('.q-answered');
+      if (!form || !box) return;
+      form.hidden = true;
+      box.hidden = false;
+      box.innerHTML = `<span class="q-ans-label mono q-ans-label-open">${ICON.help} not answered yet</span>`;
+      const note = document.createElement('span');
+      note.className = 'q-ans';
+      note.textContent = 'Answer it in the live viewer — this export is read-only.';
+      box.appendChild(note);
     });
   }
 
@@ -3297,6 +3306,7 @@
     let markdown = '';
     try { markdown = decodeURIComponent(escape(atob(data.markdown || ''))); } catch { markdown = ''; }
     const files = data.files && typeof data.files === 'object' ? data.files : {};
+    const answers = data.answers && typeof data.answers === 'object' ? data.answers : {};
     const theme0 = initialTheme();
     document.documentElement.setAttribute('data-theme', theme0);
 
@@ -3342,10 +3352,11 @@
       hydrateAdmonitions(content);
       hydrateCallouts(content);
       hydrateTldr(content);
+      hydrateDecisions(content);
       hydrateDiffs(content);
       hydrateMigrations(content);
       hydrateNomnoml(content);
-      makeQuestionsReadOnly(content);
+      makeQuestionsReadOnly(content, answers);
       resolveExportImages(content, files);
       hydrateMermaid(content, () => false);
     };

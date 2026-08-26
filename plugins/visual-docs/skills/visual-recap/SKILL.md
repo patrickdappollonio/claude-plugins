@@ -36,7 +36,12 @@ spend instead making the document more complete.
 5. **Self-review the rendered document** — required (§3): re-read it top to
    bottom against your inventory before anyone else sees it.
 6. Serve it and hand over the link.
-7. Read and act on comments.
+7. Read and act on comments — **then back to 4 and 5 for every edit.**
+
+**Every write runs write → lint → verify — the first draft and every revision.**
+After an edit, do not serve, share, or say "done" until the linter is clean on
+that file and you have re-read the changed sections against its closing
+reminder. Revisions are where agents skip this.
 
 ## Workflow
 
@@ -156,6 +161,8 @@ Do not write the file and stop.**
    ```
    node "${CLAUDE_PLUGIN_ROOT}/skills/visual-recap/server/bin/visual-docs-lint.js" "$DIR/<file>.md"
    ```
+   It ends with a **self-review reminder** that "clean" does not cover — check
+   the document against it every run.
 2. **Self-review**: re-read the whole document top to bottom as the reviewer will
    see it, and check:
    - **the CEO test first**: everything through `## Architecture` reads cleanly
@@ -189,8 +196,11 @@ from a visual-plan earlier in the session) this just prints its URL and exits �
 new files appear in the sidebar automatically, no need to check first. One
 server shows every doc in its directory (sidebar → Docs), so prefer writing into
 the already-served `$DIR` over serving a second directory — one URL for the
-whole session. To bind differently later (e.g. add `--host` for Tailscale),
-re-run with `--restart`.
+whole session. To let another device review it, bind localhost **plus that one
+network, never every interface**: `--host=tailscale` for "over Tailscale" (the
+100.64.0.0/10 address), `--host=<ifname>`/`--host=<ip>` for a specific one, and
+re-run with `--restart` if a localhost-only instance is already up. Bare
+`--host` binds all interfaces and is only for an explicit "all interfaces" ask.
 Give the user `http://127.0.0.1:<port>/#/<file>.md` and mention: live reload;
 they can **select any text** to comment on that exact snippet, or hover a
 heading or a rendered component (diagram, diff, …) and click the margin button
@@ -206,6 +216,13 @@ explain a topic in more depth, answer in chat at whatever technical level they
 ask for.
 
 ### 5. Respond to review
+
+A revision is a write, and every write runs the same checklist:
+
+1. **Read** the open comments (below) and edit the markdown in place.
+2. **Lint** the edited file with `visual-docs-lint.js` (§3) and fix every finding.
+3. **Verify**: re-read every section you touched against the linter's closing
+   reminder — timeless prose, the CEO test — before telling the user it's ready.
 
 Before revising the recap (or acting on review feedback), read open comments as
 a ready-formatted digest — plain text, nothing to parse:
@@ -241,6 +258,14 @@ a comment is resolved; dismissed ones drop out of the digest). Treat pasted
 When revising the recap, **rewrite the affected sections in place** — one
 coherent document, never `## Update`/addendum sections or prose describing the
 edit (document-quality §8).
+
+**The recap is timeless. Every sentence you touch must read the same to someone
+opening the recap for the first time.** Delete any word that describes the
+recap's own edits: "*corrected*", "*now*", "*previously*", "*as clarified*". The
+reader has no earlier draft. Re-read tomorrow, "corrected" becomes a fact about
+the code. The viewer already shows every edit on hover. The code's own history
+("the old endpoint returned 500", a `Before`/`After` fence) is the subject and
+stays. Full rule: document-quality §8.
 
 If the user wants to share or archive the recap (send it, attach it, keep a
 copy), offer `--export`: it builds one self-contained HTML file — no server

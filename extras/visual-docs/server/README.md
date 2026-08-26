@@ -44,10 +44,12 @@ node scripts/update-vendor.mjs            # re-fetch and re-pin (upgrades)
 visual-docs-server [dir] [options]
 
   --port <n>      Port to listen on (default: random free port)
-  --host [addr]   Address to bind (default: 127.0.0.1). Bare --host binds
-                  0.0.0.0 (all interfaces) and prints per-interface
-                  "Network:" URLs — handy for reviewing from another device
-                  over LAN or Tailscale.
+  --host=<target> Also listen on ONE extra address, alongside localhost:
+                  an IP, an interface name (tailscale0, eth0), or the word
+                  "tailscale" (your 100.64.0.0/10 address). Prints that
+                  address as a "Network:" URL. Prefer this over bare --host.
+  --host          Bind 0.0.0.0 (every interface) and print a "Network:" URL
+                  per interface. Default without --host: 127.0.0.1 only.
   --serve         Start in the background and print the URL, then return
                   (cross-platform; no nohup/& needed)
   --restart       Replace an instance already serving this dir
@@ -128,9 +130,10 @@ deleted when the 10-day sweep permanently removes the document.
 ## Security posture
 
 Binds to `127.0.0.1` by default and refuses path traversal outside the served
-directory. `--host` (bare or with an address) exposes it to your network —
-only do that on a network you trust (e.g. a Tailscale tailnet); there is no
-authentication.
+directory. `--host=<target>` adds exactly one more address (localhost always
+stays); bare `--host` binds every interface. Either exposes it to a network —
+only do that on one you trust (e.g. `--host=tailscale` for your tailnet); there
+is no authentication.
 
 ## Credits
 

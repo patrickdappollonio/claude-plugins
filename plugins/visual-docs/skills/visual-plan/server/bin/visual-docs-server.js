@@ -6,6 +6,7 @@ import { buildExportHtml, docStem } from '../lib/export.js';
 import { resolve, join, dirname, basename } from 'node:path';
 import { statSync, readFileSync, writeFileSync, unlinkSync, mkdirSync } from 'node:fs';
 import { networkInterfaces, tmpdir } from 'node:os';
+import { isIP } from 'node:net';
 
 function usage() {
   console.log(`Usage: visual-docs-server [dir] [options]
@@ -21,9 +22,13 @@ The server records itself in <dir>/.visual-docs/server.json, so:
 
 Options:
   --port <n>       Port to listen on (default: random free port)
-  --host           Bind 0.0.0.0 — all interfaces, including LAN/Tailscale.
-                   No authentication, so only on networks you trust.
-  --host=<addr>    Bind a specific address (default: 127.0.0.1)
+  --host=<target>  Also listen on ONE extra address, alongside localhost.
+                   <target> is an IP, an interface name (tailscale0, eth0),
+                   or the word "tailscale" (your 100.64.0.0/10 address).
+                   Prefer this: it never exposes the other interfaces.
+  --host           Bind 0.0.0.0 — every interface at once. Only when a single
+                   address won't do; there is no authentication.
+                   (default without --host: 127.0.0.1 only)
   --restart        Replace an instance already serving this dir
   --stop           Stop the instance serving this dir, then exit
   --no-watch       Disable live reload
@@ -59,18 +64,59 @@ function looksLikeHost(token) {
   return true;
 }
 
-/** Print a `Network: http://<ip>:<port>/` line per external IPv4 interface, when
-    bound to all interfaces — so a LAN/Tailscale reviewer has an address to hit.
-    Shared by the foreground path and --serve (which can't see the child's stdout). */
-function printNetwork(host, port) {
-  if (host !== '0.0.0.0' && host !== '::') return;
-  for (const ifaces of Object.values(networkInterfaces())) {
-    for (const iface of ifaces || []) {
-      if (iface.family === 'IPv4' && !iface.internal) {
-        console.log(`Network: http://${iface.address}:${port}/`);
+const isLoopback = (a) => a === '127.0.0.1' || a === '::1' || a === 'localhost';
+const isCgnat = (a) => {
+  const m = /^100\.(\d+)\.\d+\.\d+$/.exec(a);
+  return !!m && Number(m[1]) >= 64 && Number(m[1]) <= 127;
+};
+
+/** Turn a --host target into the bind list: loopback plus exactly one address.
+    Accepts an IP, an interface name, or "tailscale" (the 100.64.0.0/10 address).
+    Bare 0.0.0.0/:: is passed through as the all-interfaces wildcard. */
+function resolveHosts(target) {
+  if (target === '0.0.0.0' || target === '::') return [target];
+  if (isLoopback(target)) return ['127.0.0.1'];
+  const ifaces = networkInterfaces();
+  let addr = target;
+  if (isIP(target) === 0) {
+    const all = Object.values(ifaces).flat().filter((i) => i && i.family === 'IPv4' && !i.internal);
+    if (target.toLowerCase() === 'tailscale') {
+      const ts = all.find((i) => isCgnat(i.address));
+      if (!ts) {
+        console.error('--host=tailscale: no Tailscale address (100.64.0.0/10) found on this machine — is Tailscale running?');
+        process.exit(1);
       }
+      addr = ts.address;
+    } else if (ifaces[target]) {
+      const v4 = (ifaces[target] || []).find((i) => i.family === 'IPv4');
+      if (!v4) { console.error(`--host=${target}: that interface has no IPv4 address.`); process.exit(1); }
+      addr = v4.address;
+    } else {
+      const names = Object.keys(ifaces).join(', ');
+      console.error(`--host=${target}: not an IP address, an interface name (${names}), or "tailscale".`);
+      process.exit(1);
     }
   }
+  return ['127.0.0.1', addr];
+}
+
+/** Print a `Network: http://<ip>:<port>/` line for every non-loopback address
+    the server is reachable on — so a LAN/Tailscale reviewer has an address to
+    hit. Shared by the foreground path and --serve (which can't see the child's
+    stdout). `host` is the bind list, or a single address from an older lock. */
+function printNetwork(host, port) {
+  const hosts = Array.isArray(host) ? host : [host];
+  if (hosts.includes('0.0.0.0') || hosts.includes('::')) {
+    for (const ifaces of Object.values(networkInterfaces())) {
+      for (const iface of ifaces || []) {
+        if (iface.family === 'IPv4' && !iface.internal) {
+          console.log(`Network: http://${iface.address}:${port}/`);
+        }
+      }
+    }
+    return;
+  }
+  for (const h of hosts) if (!isLoopback(h)) console.log(`Network: http://${h}:${port}/`);
 }
 
 const lockPath = (dir) => join(dir, '.visual-docs', 'server.json');
@@ -275,21 +321,21 @@ if (args[0] === '--comments' || args[0] === '--status') {
   }
 }
 
-const opts = { dir: process.cwd(), port: 0, host: '127.0.0.1', watch: true };
+const opts = { dir: process.cwd(), port: 0, host: ['127.0.0.1'], watch: true };
 let restart = false, stop = false;
 
 for (let i = 0; i < args.length; i++) {
   const a = args[i];
   if (a === '-h' || a === '--help') { usage(); process.exit(0); }
   else if (a === '--port') opts.port = Number(args[++i]);
-  else if (a.startsWith('--host=')) opts.host = a.slice('--host='.length) || '0.0.0.0';
+  else if (a.startsWith('--host=')) opts.host = resolveHosts(a.slice('--host='.length) || '0.0.0.0');
   else if (a === '--host') {
     // Astro-style: bare --host binds all interfaces. Only consume the next
     // token as an address when it actually looks like one — never swallow a
     // trailing directory argument (e.g. `--host ./docs`).
     const next = args[i + 1];
-    if (next && !next.startsWith('-') && looksLikeHost(next)) opts.host = args[++i];
-    else opts.host = '0.0.0.0';
+    if (next && !next.startsWith('-') && looksLikeHost(next)) opts.host = resolveHosts(args[++i]);
+    else opts.host = ['0.0.0.0'];
   }
   else if (a === '--restart') restart = true;
   else if (a === '--stop') stop = true;
@@ -413,7 +459,7 @@ try {
 } catch (err) {
   if (claimed) { try { const l = readLock(opts.dir); if (l && l.pid === process.pid) unlinkSync(lockPath(opts.dir)); } catch { /* ignore */ } }
   const reason = err && err.code === 'EADDRINUSE' ? `port ${opts.port} already in use`
-    : err && err.code === 'EACCES' ? `permission denied binding ${opts.host}:${opts.port}`
+    : err && err.code === 'EACCES' ? `permission denied binding ${opts.host.join(', ')}:${opts.port}`
     : (err && err.message) || String(err);
   console.error(`Failed to start server: ${reason}`);
   process.exit(1);

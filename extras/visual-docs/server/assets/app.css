@@ -673,6 +673,8 @@ button { font: inherit; cursor: pointer; }
 .q-answered { display: flex; align-items: baseline; gap: 10px; padding: 12px 16px; background: var(--surface); border-top: 1px solid var(--line); }
 .q-ans-label { color: var(--ok); font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
 .q-ans-label .icon { width: 0.85em; height: 0.85em; color: var(--ok); }
+/* Export only: the question has no answer yet — same footer, muted instead of green. */
+.q-ans-label-open, .q-ans-label-open .icon { color: var(--ink-soft); }
 .q-ans { color: var(--ink); font-size: 0.9rem; }
 /* "Change answer": quiet, right-aligned; dismisses the open answer comment
    (or just reopens the form when the answer was already resolved). */
@@ -712,8 +714,6 @@ mark.comment-highlight {
 }
 /* Highlight persists once resolved, just settled — same yellow, no underline. */
 mark.comment-highlight.st-resolved { border-bottom-color: transparent; opacity: 0.72; }
-/* Dismissed: the comment won't be acted on — fade the highlight almost out. */
-mark.comment-highlight.st-dismissed { background: transparent; border-bottom-color: transparent; opacity: 0.55; }
 
 /* Whole-block comment highlight (gutter comments, table rows, components):
    the element itself is tinted — a quote spanning many text nodes can't be
@@ -731,8 +731,6 @@ mark.comment-highlight.st-dismissed { background: transparent; border-bottom-col
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--warn) 55%, transparent);
 }
 .markdown-body .comment-highlight-block.st-resolved { box-shadow: none; opacity: 0.85; }
-.markdown-body .comment-highlight-block.st-dismissed { background: transparent; box-shadow: none; cursor: default; }
-.markdown-body .component-block.comment-highlight-block.st-dismissed { box-shadow: none; }
 
 /* ---------- "Changed since last review" markers ---------- */
 /* Margin bars on blocks that changed since the reader last hit "Mark

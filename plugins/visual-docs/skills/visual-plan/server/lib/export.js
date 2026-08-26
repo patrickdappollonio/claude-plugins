@@ -6,7 +6,7 @@
 import { promises as fs } from 'node:fs';
 import { join, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { resolveServable, sniffImage, firstH1, MAX_DOC_BYTES, FILE_EXTS } from './server.js';
+import { resolveServable, sniffImage, firstH1, MAX_DOC_BYTES, FILE_EXTS, readComments, commentStatus } from './server.js';
 import { readPluginVersion } from './version.js';
 
 const ASSETS_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'assets');
@@ -115,10 +115,25 @@ export async function buildExportHtml(rootDir, docPath) {
   const vendorJs = await Promise.all(VENDOR_JS.map((f) => fs.readFile(join(ASSETS_DIR, 'vendor', f), 'utf8')));
   const appJs = await fs.readFile(join(ASSETS_DIR, 'app.js'), 'utf8');
 
+  // Answers to ```question fences live in the comment store, so an export
+  // carries them — the page shows "your answer" exactly like the live viewer,
+  // just without the form. Only question answers are embedded, never the
+  // rest of the comment thread.
+  const answers = {};
+  try {
+    const { comments } = await readComments(rootReal);
+    for (const c of comments) {
+      if (c.path !== docPath || !c.anchor || c.anchor.kind !== 'component' || c.anchor.type !== 'question' || !c.anchor.id) continue;
+      if (commentStatus(c) === 'dismissed') continue;
+      answers[c.anchor.id] = String(c.text || ''); // later answers supersede earlier ones
+    }
+  } catch { /* unreadable store — export without answers rather than fail */ }
+
   const exportData = {
     path: docPath,
     markdown: Buffer.from(markdown, 'utf8').toString('base64'),
     files,
+    answers,
     version,
   };
   // </script>-safe: none of the vendored/first-party sources contain a literal
