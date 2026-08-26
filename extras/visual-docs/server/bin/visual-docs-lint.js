@@ -49,8 +49,14 @@ const NEEDS_INTENT = new Set([
 
 // Sections whose prose must read plainly for a non-developer (document-quality
 // §0–1): the preamble before the first H2, and these H2s. Everything under any
-// other H2 (Key changes, API, Database changes, …) may name symbols.
+// other H2 (Key changes, Key changes made, API, Database changes, …) may name symbols.
 const PLAIN_H2_RE = /^(summary|outcome|overview|goals?|context|background|what changed)\b|^architecture\b/i;
+
+// A plan's `## Key changes` (a recap uses `## Key changes made`) must say what
+// we will do, not only what is wrong (document-quality §2b). Heuristic: a
+// subsection's prose needs at least one sentence with a remedy verb.
+const PLAN_KEY_CHANGES_RE = /^key changes\s*$/i;
+const REMEDY_RE = /\b(we(?:'ll| will| now| then| also)? [a-z]+|the (?:fix|plan|change|remedy) (?:is|:)|fix(?:ed|es)? (?:this|that|it) by|will (?:no longer|now|also|then|only|re-)?[a-z]+)\b/i;
 
 /** Code-symbol tokens that give away implementation detail in prose meant for a
     non-developer: identifiers (camelCase, snake_case, calls), paths with file
@@ -107,6 +113,15 @@ function lintText(text, file) {
   // The decisions card must lead the document (right below the tldr, or
   // first) — one that appears after body sections has lost its purpose.
   let sawH2 = false;
+  // Plan Key changes: collect each H3's prose and check it states the fix.
+  let inPlanKeyChanges = false;
+  let h3 = null; // { line, prose: [] }
+  const closeH3 = () => {
+    if (h3 && !REMEDY_RE.test(h3.prose.join(' '))) {
+      add(h3.line, 'warn', `Key changes subsection describes the problem but never says what we will do about it — add one plain-language sentence with the fix ("We fix this by …") and what is true afterwards (document-quality §2b).`);
+    }
+    h3 = null;
+  };
   while (i < lines.length) {
     const open = lines[i].match(/^```(\S*)/);
     if (open) {
@@ -172,7 +187,19 @@ function lintText(text, file) {
 
     // audience: prose in the plain-language zone must not name code symbols
     const h2 = lines[i].match(/^##\s+(.+)/);
-    if (h2) { sawH2 = true; plainZone = PLAIN_H2_RE.test(h2[1].trim()); }
+    const h3m = lines[i].match(/^###\s+(.+)/);
+    if (h2) {
+      sawH2 = true;
+      plainZone = PLAIN_H2_RE.test(h2[1].trim());
+      closeH3();
+      inPlanKeyChanges = PLAN_KEY_CHANGES_RE.test(h2[1].trim());
+    } else if (h3m) {
+      closeH3();
+      if (inPlanKeyChanges) h3 = { line: i + 1, prose: [] };
+    } else if (h3 && lines[i].trim() && !/^#/.test(lines[i])) {
+      h3.prose.push(lines[i]);
+    }
+    if (h2) { /* handled above */ }
     else if (plainZone && !/^#/.test(lines[i])) {
       const syms = audienceSymbols(lines[i]);
       if (syms.length) {
@@ -182,6 +209,7 @@ function lintText(text, file) {
 
     i++;
   }
+  closeH3();
   return findings;
 }
 
@@ -344,6 +372,9 @@ function selfReviewReminder() {
     '    history ("the old endpoint returned 500") is the subject and stays.',
     '  · CEO test. Everything through Architecture reads to a non-developer.',
     '    No file, function, or symbol names there.',
+    '  · So what? In a plan, every Key changes subsection says what we will do',
+    '    about the problem, not only what is wrong. In a recap (Key changes',
+    '    made), it says what changed and why it matters.',
     '  · Revising after comments? Change-log prose creeps in here. First re-read',
     `    ${quality}`,
     '    (sections 7–8).',
