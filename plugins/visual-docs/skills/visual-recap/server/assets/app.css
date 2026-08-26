@@ -712,8 +712,6 @@ mark.comment-highlight {
 }
 /* Highlight persists once resolved, just settled — same yellow, no underline. */
 mark.comment-highlight.st-resolved { border-bottom-color: transparent; opacity: 0.72; }
-/* Dismissed: the comment won't be acted on — fade the highlight almost out. */
-mark.comment-highlight.st-dismissed { background: transparent; border-bottom-color: transparent; opacity: 0.55; }
 
 /* Whole-block comment highlight (gutter comments, table rows, components):
    the element itself is tinted — a quote spanning many text nodes can't be
@@ -731,8 +729,6 @@ mark.comment-highlight.st-dismissed { background: transparent; border-bottom-col
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--warn) 55%, transparent);
 }
 .markdown-body .comment-highlight-block.st-resolved { box-shadow: none; opacity: 0.85; }
-.markdown-body .comment-highlight-block.st-dismissed { background: transparent; box-shadow: none; cursor: default; }
-.markdown-body .component-block.comment-highlight-block.st-dismissed { box-shadow: none; }
 
 /* ---------- "Changed since last review" markers ---------- */
 /* Margin bars on blocks that changed since the reader last hit "Mark

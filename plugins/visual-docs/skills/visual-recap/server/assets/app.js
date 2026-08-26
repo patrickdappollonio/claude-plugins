@@ -1712,7 +1712,7 @@
 
   /** Highlight everything that has comments, so the reader can always see what's
       been commented on — highlights persist for the life of the comment
-      (new → acknowledged → resolved, or dismissed), later states rendered
+      (new → acknowledged → resolved), later states rendered
       softer. Three shapes, all idempotent (prior marks/classes reset first):
       - selection quotes → <mark> wraps, one per spanned text node, so a quote
         crossing bold/code/link boundaries still highlights;
@@ -1723,8 +1723,11 @@
   function applyTextHighlights(container, comments, onOpen) {
     const existingMarks = container.querySelectorAll('mark.comment-highlight');
     const existingBlocks = container.querySelectorAll('.comment-highlight-block');
-    const texts = comments.filter((c) => c.anchor && c.anchor.kind === 'text');
-    const compos = comments.filter((c) => c.anchor && c.anchor.kind === 'component' && c.anchor.id && c.anchor.type !== 'question');
+    // A dismissed comment leaves no mark: the reader asked for it to go away,
+    // and the text should look untouched again. It stays listed in the drawer.
+    const live = comments.filter((c) => commentStatus(c) !== 'dismissed');
+    const texts = live.filter((c) => c.anchor && c.anchor.kind === 'text');
+    const compos = live.filter((c) => c.anchor && c.anchor.kind === 'component' && c.anchor.id && c.anchor.type !== 'question');
     // Nothing to draw and nothing drawn before — skip the whole-document walk.
     if (!texts.length && !compos.length && !existingMarks.length && !existingBlocks.length) return;
     existingMarks.forEach((m) => {
