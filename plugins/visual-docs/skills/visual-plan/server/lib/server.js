@@ -276,7 +276,7 @@ async function readCommentsRaw(root) {
   return { data: parsed, hash: createHash('sha1').update(raw).digest('hex') };
 }
 
-async function readComments(root) {
+export async function readComments(root) {
   return (await readCommentsRaw(root)).data;
 }
 
@@ -493,7 +493,7 @@ const COMMENT_STATUSES = ['new', 'acknowledged', 'resolved', 'dismissed'];
     legacy `resolved` boolean so older comments.json files keep working.
     NOTE: duplicated in assets/app.js (commentStatus) — no shared module across
     the Node/browser split; keep the two in sync. */
-function commentStatus(c) {
+export function commentStatus(c) {
   if (c && COMMENT_STATUSES.includes(c.status)) return c.status;
   return c && c.resolved ? 'resolved' : 'new';
 }

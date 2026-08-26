@@ -673,6 +673,8 @@ button { font: inherit; cursor: pointer; }
 .q-answered { display: flex; align-items: baseline; gap: 10px; padding: 12px 16px; background: var(--surface); border-top: 1px solid var(--line); }
 .q-ans-label { color: var(--ok); font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
 .q-ans-label .icon { width: 0.85em; height: 0.85em; color: var(--ok); }
+/* Export only: the question has no answer yet — same footer, muted instead of green. */
+.q-ans-label-open, .q-ans-label-open .icon { color: var(--ink-soft); }
 .q-ans { color: var(--ink); font-size: 0.9rem; }
 /* "Change answer": quiet, right-aligned; dismisses the open answer comment
    (or just reopens the form when the answer was already resolved). */
