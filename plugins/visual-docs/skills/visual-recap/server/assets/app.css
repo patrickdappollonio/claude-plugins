@@ -732,6 +732,26 @@ mark.comment-highlight.st-resolved { border-bottom-color: transparent; opacity: 
 }
 .markdown-body .comment-highlight-block.st-resolved { box-shadow: none; opacity: 0.85; }
 
+/* Hover card for a commented range/block — replaces the browser's native
+   title tooltip. Positioned by script (fixed, clamped to the viewport). */
+.comment-pop {
+  position: fixed; z-index: 70; width: max-content; max-width: min(360px, calc(100vw - 16px));
+  background: var(--panel); border: 1px solid var(--line-strong); border-radius: 10px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.2); padding: 8px 10px; font-size: 0.78rem;
+  line-height: 1.4; pointer-events: none;
+}
+.comment-pop .cp-entry + .cp-entry { border-top: 1px solid var(--line); margin-top: 6px; padding-top: 6px; }
+.comment-pop .cp-meta { display: flex; align-items: center; gap: 6px; font-size: 0.68rem; color: var(--stone); margin-bottom: 2px; }
+.comment-pop .cp-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--warn); flex: 0 0 auto; }
+.comment-pop .st-acknowledged .cp-dot { background: var(--accent); }
+.comment-pop .st-resolved .cp-dot { background: var(--ok); }
+.comment-pop .st-dismissed .cp-dot { background: var(--stone); }
+.comment-pop .cp-text {
+  white-space: pre-wrap; word-break: break-word;
+  display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden;
+}
+.comment-pop .cp-more { font-size: 0.68rem; color: var(--stone); margin-top: 6px; }
+
 /* ---------- "Changed since last review" markers ---------- */
 /* Margin bars on blocks that changed since the reader last hit "Mark
    reviewed": green = new, accent = edited, a short red tick = a block was
