@@ -62,6 +62,11 @@ A sketch-style view of the same flow, for contrast:
 
 ### New middleware
 
+Today nothing stops one API key from using the whole capacity. We add one
+check in front of every request: it takes a token from the key's bucket and
+lets the request through, or answers "slow down" with a wait time. After the
+change, one noisy customer can only exhaust their own allowance.
+
 ```go
 func RateLimit(store limiter.Store) func(http.Handler) http.Handler {
     return func(next http.Handler) http.Handler {
@@ -81,7 +86,7 @@ func RateLimit(store limiter.Store) func(http.Handler) http.Handler {
 
 ### Router wiring
 
-The limiter middleware is mounted in front of `/api/v1`, before the routes it protects:
+We mount the check in front of every API route, so no endpoint can bypass it:
 
 ```diff
 --- a/internal/server/router.go

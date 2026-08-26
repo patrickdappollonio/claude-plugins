@@ -113,7 +113,7 @@ before writing** — it is the standard for making the document comprehensive,
 layered simple→complex, and terse. Use
 [authoring-guide.md](shared/authoring-guide.md) for fence syntax.
 This document is where your tokens go: any budget you didn't spend narrating
-steps 1–2 belongs here — prefer one more `## Key changes` hunk, one more grounded
+steps 1–2 belongs here — prefer one more `## Key changes made` hunk, one more grounded
 `api`/`migration` example, or a fuller `## Risks` list over a shorter recap.
 
 **Write for the CEO** (document-quality §0): a tech-savvy non-developer who
@@ -147,8 +147,11 @@ has items for it, skip one only when the inventory had nothing there:
 5. `## Data & schema` — ` ```migration ` fences for schema changes.
 6. `## API` — ` ```api ` examples and/or an ` ```openapi ` fence per changed
    endpoint (each distinct message shape its own example).
-7. `## Key changes` — 3–8 H3 subsections, each explained in plain language
-   first (*what* changed and *why it matters*). Add a trimmed ` ```diff `
+7. `## Key changes made` — 3–8 H3 subsections, each explained in plain
+   language first (*what* changed and *why it matters*), in the past tense.
+   The heading is `Key changes made`, not `Key changes`: that one is the plan's
+   and the linter expects a "what we will do" sentence under it
+   (document-quality §2b). Add a trimmed ` ```diff `
    (≤~150 lines) only when seeing the code is necessary to understand the
    change, plus 2–4 annotation bullets on the lines that matter (see
    document-quality.md §0, §5). Most subsections need no code at all.
@@ -167,7 +170,7 @@ Do not write the file and stop.**
    see it, and check:
    - **the CEO test first**: everything through `## Architecture` reads cleanly
      to a non-developer — no function, file, or symbol names — and each
-     `## Key changes` subsection makes its point in plain language before any
+     `## Key changes made` subsection makes its point in plain language before any
      code appears;
    - every inventory item maps to a block, or has a one-clause omission reason;
    - every fence is well-formed for its type — a ` ```diff ` has real `+`/`-`

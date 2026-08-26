@@ -83,7 +83,7 @@ Minimal prose + maximal structure + trimmed-to-what-matters = terse and complete
 change actually contains, never padded to a template. A 100-line branch gets a
 short document — a few sections, one or two blocks — that still covers every
 meaningful item; forcing it to look substantial is a failure. A 10k-line PR gets
-a genuinely comprehensive one: many `## Key changes` subsections, a block per
+a genuinely comprehensive one: many `## Key changes` (or `## Key changes made`) subsections, a block per
 distinct diagram/migration/endpoint, a full risks list. Thoroughness (every
 item on the inventory is represented) is constant; the *amount* of output tracks
 the size and complexity of the diff. Right-size, don't inflate and don't thin.
@@ -97,7 +97,7 @@ architecture → data/API → the actual code → risks. Hold that gradient.
   through *What changed* and *Architecture* **without hitting a function name, a
   variable, a filename-as-jargon, or a line number.** Describe the effect and
   the reason, not the mechanism.
-- Only `## Key changes` and the structured fences below it may name specific
+- Only `## Key changes` / `## Key changes made` and the structured fences below it may name specific
   functions, symbols, or lines — and only when the reader needs *that specific
   one* to follow the story. Never drop a symbol in for color or false precision.
   Even there, the lead-in sentence must carry the meaning on its own (§0): the
@@ -129,6 +129,40 @@ card at the top of the document (see the authoring guide) — the card is
 mandatory when any such item exists and omitted entirely when none do. An open
 decision buried mid-document is a missing item: surface it in the card and
 point at where the reader acts on it.
+
+## 2b. A plan says what we will do; a recap says what we did
+
+The two documents share one skeleton but not one tense, and the heading of the
+change sections carries the difference:
+
+- **A plan uses `## Key changes`.** Each subsection has three parts, all in
+  plain language: what is wrong or missing today, **what we will do about it**,
+  and what is true afterwards that is not true now. The common failure is a
+  subsection that diagnoses beautifully and then stops — the reader finishes it
+  asking *"so what are we going to do?"* A one-sentence remedy is enough: "We
+  fix this by requeuing the wallets to the pool when a sweep fails." It is a
+  business-level statement, not a technical one; the CEO rule still applies.
+- **A recap uses `## Key changes made`.** Each subsection says what changed and
+  why it matters, in the past tense. No remedy sentence is needed — the change
+  *is* the remedy.
+
+The linter reads the heading: under `## Key changes` it warns on any subsection
+that never states the fix. Do not rename the heading to dodge the warning; add
+the sentence.
+
+```
+BAD   ## Two ordering races can leave wallets frozen
+      The sweep trusts the work item's snapshot instead of re-checking the
+      customer's current lists, so a list removed moments later can still
+      have its whole backlog frozen, and nothing ever releases it.
+GOOD  ## Two ordering races can leave wallets frozen
+      The sweep trusts the work item's snapshot instead of re-checking the
+      customer's current lists, so a list removed moments later can still
+      have its whole backlog frozen, and nothing ever releases it.
+      We fix this by making the freeze side re-check the customer's current
+      lists before it freezes, the same check the release side already does.
+      After the change, a list removed before the sweep runs is left alone.
+```
 
 ## 3. Prefer the purpose-built block over a raw diff
 
@@ -238,7 +272,7 @@ reviewer must read every hunk to learn what any of it is for.
 
 **GOOD.** Outcome explains the change in three sentences with zero code; *What
 changed* lists all 20 files with one clause each; the schema delta is two
-`migration` fences, each with a one-line reason above it; `## Key changes` is
+`migration` fences, each with a one-line reason above it; `## Key changes made` is
 five trimmed `diff` hunks, each led by a why-sentence and 2–3 annotation bullets
 on the lines that matter; *Risks* names the one compatibility break. Terse
 prose, dense structure, full coverage.

@@ -10,6 +10,11 @@ served entirely from their machine. The plan is a plain markdown file — the
 bundled server renders it with diagrams, diffs, and styled blocks, live-reloads
 as you edit it, and collects the user's comments for you to read back.
 
+**A plan says what we will do.** A recap explains what changed; a plan explains
+what is wrong *and what we will do about it*. A section that diagnoses a problem
+and stops is the plan's most common failure — the reader finishes it asking
+"so what?" — and the linter flags it (document-quality §2b).
+
 **Before anything else, fix who you're writing for: the CEO of the company — a
 tech-savvy non-developer.** Not a fellow engineer, not the person who wrote the
 code, and not someone who will ever open the repo. This shapes every sentence
@@ -122,11 +127,16 @@ has items, skip one only when it had nothing there:
    bold-keyword blockquote) for anything the user must decide.
 3. `## Architecture` — a ` ```mermaid `/` ```nomnoml ` diagram when components or
    flows change (prefer a 2-D shape over a chain).
-4. `## Key changes` — one H3 per meaningful change, each explained in plain
-   language first (*what* changes and *why it matters*). Add a ` ```diff ` hunk
-   only when seeing the code is necessary to evaluate the change — trimmed to
-   the load-bearing lines with 2–4 annotation bullets (document-quality §0, §5).
-   3–8 subsections is healthy; most need no code at all.
+4. `## Key changes` — one H3 per meaningful change. Each H3 has three parts,
+   all in plain language and in this order: what is wrong or missing today,
+   **what we will do about it** (one to three sentences of behavior — "we fix
+   this by requeuing the wallets to the pool when a sweep fails"), and what is
+   true afterwards that is not true now. The fix is a business-level statement,
+   never a technical one; the linter warns when a subsection never states it
+   (document-quality §2b). Add a ` ```diff ` hunk only when seeing the code is
+   necessary to evaluate the change — trimmed to the load-bearing lines with
+   2–4 annotation bullets (document-quality §0, §5). 3–8 subsections is
+   healthy; most need no code at all.
 5. `## Database changes` — ` ```migration ` fences with `-- up` / `-- down`.
 6. `## API behavior` / `## API surface` — ` ```api ` examples and/or ` ```openapi `.
 7. `## Rollout` — ordered steps, flags, sequencing.
@@ -146,7 +156,9 @@ Do not write the file and stop.**
    and check: **the CEO test first** — everything through `## Architecture`
    reads cleanly to a non-developer, with no function, file, or symbol names,
    and each `## Key changes` subsection makes its point in plain language
-   before any code appears; every inventory item maps to a block or has a
+   before any code appears; **the "so what?" test** — from each `## Key
+   changes` subsection alone, the reader can answer "what are we going to do
+   about this?"; every inventory item maps to a block or has a
    one-clause omission reason; every fence is well-formed for its type (a ` ```diff ` has real
    `+`/`-` lines, a ` ```migration ` has `-- up`/`-- down`, an ` ```api ` has a
    request line, a ` ```mermaid ` is valid); no leftover placeholder or truncated
