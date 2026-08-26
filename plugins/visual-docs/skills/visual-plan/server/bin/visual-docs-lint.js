@@ -17,10 +17,16 @@
  *     one background breaks the other — deliberate mid-tones may stay)
  *   - plain-language sections (preamble, Summary/Outcome, What changed,
  *     Architecture) name no code symbols — the reader is a non-developer
+ *
+ * It always closes with a short reminder of the rules only a human read can
+ * check (timeless prose, the CEO test). That block is not a finding and never
+ * affects the exit code; it exists because the lint step is the one thing
+ * guaranteed to run right before every serve and every revision.
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 // Keep in sync with the fence dispatch in assets/app.js (renderCodeFence): a new
 // structured fence there needs adding here (and to NEEDS_INTENT if it wants an
@@ -319,6 +325,33 @@ function collectFiles(target) {
   return [target];
 }
 
+// The rules below cannot be checked mechanically, so they are printed every
+// run as a closing reminder — "clean" must not be the last word the author
+// sees. Keep it short: a long checklist gets skimmed exactly like the quality
+// guide it points at.
+function selfReviewReminder() {
+  const shared = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'shared');
+  const quality = path.join(shared, 'document-quality.md');
+  return [
+    '',
+    'Before you serve — review these yourself; the linter cannot check them:',
+    '  · Timeless. The document describes the plan or the change as it stands now,',
+    '    never its own edits. No "corrected", "now", "previously", "no longer",',
+    '    "updated to", "as clarified", "instead of the earlier…" about the document.',
+    '    A reader arriving tomorrow has no earlier version to compare against and',
+    '    will take "corrected" to mean a real rule once existed; the viewer already',
+    '    shows what changed on hover, so narrating the delta in prose is a lossy',
+    '    copy of that diff. Rewrite each such sentence as if it were the only',
+    '    version ever written. (Prior state of the *code* is fine — that is the',
+    '    subject of a recap.)',
+    '  · CEO test. Everything through Architecture reads to a non-developer with',
+    '    no file, function, or symbol names.',
+    '  · Revising a document that already has comments? Re-read',
+    `    ${quality}`,
+    '    (sections 7–8) first — this is the moment change-log prose creeps in.',
+  ].join('\n');
+}
+
 function main() {
   const args = process.argv.slice(2);
   const strict = args.includes('--strict');
@@ -353,6 +386,7 @@ function main() {
   } else {
     console.log(`\n${total} problem(s): ${errors} error(s), ${warnings} warning(s).`);
   }
+  console.log(selfReviewReminder());
   if (errors > 0 || (strict && warnings > 0)) process.exit(1);
 }
 

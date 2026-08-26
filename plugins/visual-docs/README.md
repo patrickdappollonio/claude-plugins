@@ -204,14 +204,16 @@ node <skill-dir>/server/bin/visual-docs-server.js ./my-notes
 # VISUAL_DOCS_URL=http://127.0.0.1:39257/
 ```
 
-Options: `--port <n>` (fixed port), `--host` (Astro-style: bare `--host`
-binds all interfaces and prints per-network URLs, so you can review from
-another device over LAN or Tailscale — off by default on purpose; there is no
-auth), `--no-watch` (disable live reload). Two convenience commands power the
+Options: `--port <n>` (fixed port), `--host=<target>` (listen on localhost
+**plus one** extra address — an IP, an interface name, or `tailscale` for your
+100.x tailnet address — and print it as a `Network:` URL; bare `--host` binds
+every interface instead. Off by default on purpose; there is no auth),
+`--no-watch` (disable live reload). Two convenience commands power the
 skills and work cross-platform (Windows included): `--serve` backgrounds the
 server and prints the URL, then returns (no `nohup`/`&`), and `--docdir` prints a
 fresh, session-scoped temp directory to drop docs in. Want it reachable on your
-tailnet? Just tell the agent to start the server with `--host`.
+tailnet? Tell the agent to serve it over Tailscale — it runs
+`--host=tailscale`, which never touches your other interfaces.
 See [the server README](../../extras/visual-docs/server/README.md) for the package details, and
 [demo-plan.md](../../extras/visual-docs/server/examples/demo-plan.md) for a document
 that exercises every feature.

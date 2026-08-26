@@ -37,7 +37,15 @@ you'd spend narrating into the plan's coverage instead.
 4. **Self-review the rendered document** — required (§3): re-read it top to
    bottom against your inventory before anyone else sees it.
 5. Serve it and hand over the link.
-6. Read and act on comments.
+6. Read and act on comments — **then back to 3 and 4 for every edit.**
+
+**Every write goes through the same gate — first draft or fifth revision.**
+Whenever the plan file is created *or edited*, the next three steps are, in
+order, non-negotiable: **write → lint → verify.** Do not serve, share, or
+report "done" after an edit until the linter has run clean on the edited file
+and you have re-read the changed sections against the linter's closing
+reminder. Revisions are where this gets skipped — and where change-log prose
+creeps in.
 
 ## Workflow
 
@@ -135,6 +143,10 @@ Do not write the file and stop.**
    ```
    node "${CLAUDE_PLUGIN_ROOT}/skills/visual-plan/server/bin/visual-docs-lint.js" "$DIR/<file>.md"
    ```
+   The linter closes with a short **self-review reminder** (timeless prose, the
+   CEO test, a pointer back to document-quality.md). It is not a finding and
+   "clean" does not cover it — read it and check the document against it every
+   run, including every revision.
 2. **Self-review**: re-read the whole plan top to bottom as the user will see it,
    and check: **the CEO test first** — everything through `## Architecture`
    reads cleanly to a non-developer, with no function, file, or symbol names,
@@ -170,10 +182,19 @@ documents into the already-served `$DIR` instead of serving a second directory �
 one URL for the whole session. Only serve a separate directory for content with
 a different lifecycle (e.g. disposable test fixtures whose comments get churned).
 
-If the user asks to review from another device (LAN, Tailscale), add a bare
-`--host` flag (with `--restart` if a localhost-only instance is already up): the
-server binds all interfaces and prints a `Network: http://<ip>:<port>/` line per
-interface — share those. Only when asked; the server has no authentication.
+If the user asks to review from another device, bind **localhost plus that one
+network — never every interface**. Add `--restart` if a localhost-only instance
+is already up:
+
+- "over Tailscale" / "on my tailnet" → `--host=tailscale` (resolves the
+  machine's 100.64.0.0/10 address).
+- a named interface or a specific IP → `--host=<ifname>` or `--host=<ip>`.
+- bare `--host` binds 0.0.0.0 — every interface — and is **not** what "serve
+  over Tailscale" means; use it only if the user explicitly asks for all
+  interfaces.
+
+The server prints a `Network: http://<ip>:<port>/` line for each address it is
+reachable on — share that. Only when asked; the server has no authentication.
 
 ### 5. Hand the user the link
 
@@ -199,6 +220,13 @@ ask for.
 
 ### 6. Read feedback before revising — every time
 
+A revision is a write, and every write runs the same checklist:
+
+1. **Read** the open comments (below) and edit the markdown in place.
+2. **Lint** the edited file with `visual-docs-lint.js` (§3) and fix every finding.
+3. **Verify**: re-read every section you touched against the linter's closing
+   reminder — timeless prose, the CEO test — before telling the user it's ready.
+
 Before any revision (user asks for changes, or you're checking in), read the
 open comments as a ready-formatted digest — plain text, nothing to parse:
 
@@ -216,6 +244,18 @@ Rewrite the affected sections so the document always reads as one coherent plan
 written fresh. Never add `## Update`/`## Revision`/"changed after review"
 headings, keep superseded sections "for context," or write prose that describes
 the edit instead of the plan.
+
+**The plan is timeless — it states the current plan, not how it got there.**
+The rule bites at the word level, not just the heading level: "One safety rule,
+*corrected*", "the connection *now* waits…", "*previously*…", "*as clarified*…",
+"*instead of the earlier* approach" each assert a prior draft the reader never
+saw. The user may review the plan tomorrow with no memory of yesterday's
+version and will read "corrected" as *a rule existed and was wrong*, when the
+plan was only ever defining the rule. And the viewer already shows what
+changed on hover — narrating the delta in prose duplicates that diff, badly.
+Test every sentence you touch: would it read the same to someone seeing the
+document for the first time? If a word only makes sense against an earlier
+draft, delete the word. Then re-run the linter and read its closing reminder.
 
 If the digest is followed by a `note: this server is running visual-docs vX but
 vY is now installed…` line, tell the user and suggest `--restart` (per the

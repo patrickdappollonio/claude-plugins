@@ -547,7 +547,12 @@ function crossOrigin(req) {
   }
 }
 
+/** `host` is one bind address or a list. With a list, the first address picks
+    the port and every other one gets its own listener on that same port — so
+    `['127.0.0.1', '100.x.y.z']` reaches loopback plus exactly one interface,
+    never the whole machine. */
 export async function startServer({ dir, port = 0, host = '127.0.0.1', watch: enableWatch = true }) {
+  const hosts = Array.isArray(host) ? host : [host];
   const root = resolve(dir);
   const rootReal = await fs.realpath(root).catch(() => root);
   const assetsReal = await fs.realpath(ASSETS_DIR).catch(() => ASSETS_DIR);
@@ -1046,13 +1051,28 @@ export async function startServer({ dir, port = 0, host = '127.0.0.1', watch: en
     }
   }
 
-  await new Promise((resolveListen, reject) => {
-    server.once('error', reject);
-    server.listen(port, host, resolveListen);
+  const listen = (srv, bindHost, bindPort) => new Promise((resolveListen, reject) => {
+    srv.once('error', reject);
+    srv.listen(bindPort, bindHost, resolveListen);
   });
-
+  await listen(server, hosts[0], port);
   const addr = server.address();
-  const displayHost = host === '0.0.0.0' || host === '::' ? 'localhost' : host;
+  // Extra addresses share the primary's port; each extra server just forwards
+  // its requests to the primary so routing, SSE and comments stay in one place.
+  const extras = [];
+  for (const h of hosts.slice(1)) {
+    const extra = http.createServer((req, res) => server.emit('request', req, res));
+    try {
+      await listen(extra, h, addr.port);
+    } catch (err) {
+      for (const e of extras) e.close();
+      server.close();
+      throw err;
+    }
+    extras.push(extra);
+  }
+  const primary = hosts[0];
+  const displayHost = primary === '0.0.0.0' || primary === '::' ? 'localhost' : primary;
   const url = `http://${displayHost}:${addr.port}/`;
-  return { server, url, port: addr.port };
+  return { server, extras, url, port: addr.port };
 }
