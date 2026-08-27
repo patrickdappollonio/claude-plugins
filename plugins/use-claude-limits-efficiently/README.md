@@ -12,14 +12,13 @@ morning.
 
 - Runs waves of at most 3 parallel subagents by default, and never interrupts
   in-flight work just to save budget.
-- Checks 5-hour and weekly usage between waves with a real usage signal — a
-  first-party host tool when available, otherwise
-  `npx -y ccusage@latest blocks --active --json` in Claude Code — instead of
-  guessing or inventing a number.
+- Checks 5-hour and weekly usage between waves with the host's own usage
+  report — `claude -p "/usage"` in Claude Code — instead of a third-party
+  package, or guessing or inventing a number.
 - Pauses new work when either window reaches **95%** of its limit.
 - Resumes only after confirming the window actually rolled over, by comparing
-  the active block's start timestamp against the previous check — never by
-  trusting elapsed wall-clock time.
+  the window's reset time against the previous check — never by trusting
+  elapsed wall-clock time.
 - Chains wakeups when the runtime clamps wake delays (commonly 60–3600
   seconds), so overnight and multi-hour pauses work: each wakeup re-checks
   usage and reschedules until the window is clear.

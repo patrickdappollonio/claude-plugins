@@ -200,7 +200,7 @@ A budget loop for long-running or parallel agent work under Claude's 5-hour
 and weekly usage limits — a rewrite of [`stay-within-limits` from
 @agent-native/skills](https://www.npmjs.com/package/@agent-native/skills). The
 agent runs work in bounded waves, checks real observed usage between waves
-(via a host usage tool or `ccusage`), pauses new work at 95% of either window,
+(via the host's own usage command, e.g. `claude -p "/usage"`), pauses new work at 95% of either window,
 and resumes only after confirming the window actually rolled over — comparing
 block timestamps, never trusting elapsed wall-clock time. Wake prompts are
 self-contained, and wakeups chain past runtime clamps so overnight pauses
