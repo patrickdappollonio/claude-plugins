@@ -130,17 +130,23 @@ Then just write code — it loads itself. [Read more →](plugins/appropriate-co
 ### code-simplification
 
 Language-agnostic code simplification that reduces complexity — deep nesting,
-long functions, duplicated logic, dead code, unclear names — while preserving
-behavior exactly. The goal is not fewer lines; it's code a new team member
+long functions, high cyclomatic complexity, near-duplicate functions,
+duplicated logic, dead code, unclear names, narrating comments — while
+preserving behavior exactly. The goal is not fewer lines; it's code a new team member
 would understand faster. It blends [Anthropic's code-simplifier](https://github.com/anthropics/claude-plugins-official/blob/main/plugins/code-simplifier/agents/code-simplifier.md),
 [Addy Osmani's code-simplification skill](https://github.com/addyosmani/agent-skills/blob/main/skills/code-simplification/SKILL.md),
 and [Happycapy's code-simplification skill](https://happycapy.ai/skills/code-simplification)
 into one process.
 
 The discipline is the point: it understands code before touching it
-(Chesterton's Fence), applies one tested change at a time, refuses drive-by
-refactors outside the requested scope, and if a test fails after a change, it
-reverts the change — never the test.
+(Chesterton's Fence), pins behavior with a test *before* each change and
+proves equivalence by that test still passing after it, asks before adding
+tests to a repo that has none, proposes function merges instead of doing them
+by reflex, refuses drive-by refactors outside the requested scope, and if a
+test fails after a change, it reverts the change — never the test. It also
+carries a condensed form of the `appropriate-comments-code` rules, and
+routes evidence gathering to cheap models or `grep` while keeping judgment —
+and the verification of every subagent finding — on the premium model.
 
 ```
 /plugin install code-simplification@patrickdappollonio

@@ -1,7 +1,7 @@
 {
   "name": "code-simplification",
   "description": "Language-agnostic code simplification — reduces complexity (nesting, long functions, duplication, dead code, unclear names) while preserving exact behavior, applying one tested change at a time within a deliberate scope.",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "author": {
     "name": "Patrick D'appollonio",
     "email": "patrickdappollonio@gmail.com"

@@ -13,11 +13,26 @@ It works on patterns, not on any one language's idioms:
   "what" comments deleted, "why" comments kept
 - **Redundancy** — duplicated logic extracted, dead code removed, valueless
   wrappers inlined, over-engineered patterns replaced with the direct approach
+- **Cyclomatic complexity** — decision points are counted (by tool or by
+  hand), reported before and after, and functions too tangled to test are
+  split along their decision clusters into pure, individually testable pieces
+- **Roughly equivalent functions** — two functions with the same shape and
+  different names are diffed, their callers counted, and a merge is
+  *proposed* to you rather than done by reflex
+- **Comments** — a condensed version of the `appropriate-comments-code` skill:
+  comments on touched lines must carry information the code does not, in the
+  present tense, in one or two lines, with no session-scoped identifiers
 
 And it's disciplined about *how*, not just *what*:
 
-- **Behavior is preserved exactly** — if the tests need "a small tweak" to
-  pass, the simplification changed behavior and gets reverted, not the tests.
+- **Behavior is preserved exactly, and proven** — every change is pinned by
+  a test written *before* the change that still passes, unmodified, after it.
+  If the tests need "a small tweak" to pass, the simplification changed
+  behavior and gets reverted, not the tests.
+- **No tests? It asks first.** If the repository has no tests covering the code
+  in scope, it asks before creating any — even under deadline pressure. If you
+  decline, it says the change is unproven instead of pretending a deleted
+  throwaway script counts as evidence.
 - **Chesterton's Fence** — nothing is changed or removed before understanding
   why it exists (including checking git history).
 - **One change at a time** — each simplification is applied and tested
@@ -74,6 +89,18 @@ Or invoke it explicitly with the slash command:
 By default it scopes itself to recently modified code (your session's edits or
 the working diff). Name a file, module, or the whole codebase to widen it.
 
+## Layout
+
+`SKILL.md` carries the principles, the process, and a self-sufficient summary
+of every step; four sibling files carry the comprehensive version an agent
+reads when it reaches that step — `cyclomatic-complexity.md` (counting, tools,
+the split procedure), `equivalent-functions.md` (diff → callers → propose →
+merge), `evidence-gathering.md` (model-tier routing, handoff packets,
+verification), and `comments.md` (the comment digest). All live in the skill
+directory, so both install paths ship them. The skill requires the agent to
+read all four on first use in a session, before any other step, and again at
+the step that names each one.
+
 ## Notes
 
 - **It refuses some work on purpose.** Already-clean code, code it doesn't yet
@@ -83,3 +110,14 @@ the working diff). Name a file, module, or the whole codebase to widen it.
   a feature change — those are two diffs.
 - **Big sweeps get automated.** Refactors touching more than ~500 lines call
   for codemods or AST transforms, not hand edits.
+- **Merges are proposals.** Near-duplicate functions are the one simplification
+  that routinely crosses scope and changes an API surface, so the skill shows
+  you the diff and the caller count and waits for a yes.
+- **Cheap models find, premium models decide.** Pattern finding (complexity
+  counts, same-shape candidates, callers) goes to Haiku/Sonnet or Luna — or
+  to `grep` and the project's complexity tool on a single-model harness —
+  while comprehension and the change itself stay on Opus/Fable or Sol/Terra.
+  It asks you how much parallelism to use before fanning out, and it
+  re-verifies every subagent finding itself before acting on it.
+- **Comments get the short version.** The comment rules here are a digest; for
+  the full treatment install the standalone `appropriate-comments-code` skill.
