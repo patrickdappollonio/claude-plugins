@@ -15,9 +15,9 @@ plugins under `plugins/`.
   **minor** for new backwards-compatible capability (a new command, fence, or
   skill behavior), **major** for breaking changes (removed/renamed commands,
   changed file formats or defaults users rely on). Pure repo chores that don't
-  touch a plugin (root README, CI) don't need a bump. Check the version isn't
-  already taken by a published release before reusing it — pick the next free
-  one.
+  touch a plugin (root README, CI) don't need a bump. The version lives **only** in that
+  `plugin.json` — there are no git tags, GitHub releases, or per-plugin
+  versions in `marketplace.json` to check or update, so don't go looking.
 - **Both install paths must stay equivalent: Claude Code marketplace *and*
   `npx skills`.** A Claude Code install brings a whole plugin (every skill under
   `plugins/<name>/skills/`); `npx skills add … --skill <name>` installs **one
@@ -32,6 +32,25 @@ plugins under `plugins/`.
   When you add a skill, also add it to the root README's `--skill` name table,
   and phrase cross-skill references so they degrade to a name a reader can
   install ("the full `adversarial-review` skill"), never a relative path.
+- **Skills: extract whatever can be read on demand, but always keep the
+  general guideline inline — otherwise the extraction is moot.** The whole
+  `SKILL.md` loads into context on every invocation, so keep it under ~500
+  lines. It holds what steers behavior on *every* pass — principles, the
+  process outline, decision tables, rationalizations, red flags, the checklist
+  — plus a short, self-sufficient summary of every extracted topic (the rule,
+  the threshold, the one-line procedure). The comprehensive version — full
+  procedures, routing tables, handoff templates, digests of other skills — goes
+  in a `.md` file **in the same skill directory**, and the summary says exactly
+  when to read it ("read `cyclomatic-complexity.md` before splitting a
+  function"). An agent that never opens the side file must still do the right
+  thing from the summary alone. Load-bearing discipline rules stay inline in
+  full — an agent under pressure will skip a side file. Reference sibling
+  files by bare filename, never a path, so both install paths ship them.
+  And the skill must **insist that the agent read every companion file on
+  first use in a session, before any other step** — a dedicated section near
+  the top listing the files, plus a red flag and a checklist item — and re-read
+  the named file at its step. Summaries are reminders of text already read,
+  never a substitute. `code-simplification` is the worked example.
 - The visual-docs server has **no authentication**. `--host` / `0.0.0.0` binding
   must stay opt-in and documented as trusted-network-only.
 - **Agents must never have to write code — not even a small script — to operate
