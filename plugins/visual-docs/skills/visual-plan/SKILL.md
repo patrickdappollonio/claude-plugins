@@ -180,6 +180,18 @@ automatically:
 node "${CLAUDE_PLUGIN_ROOT}/skills/visual-plan/server/bin/visual-docs-server.js" --serve "$DIR"
 ```
 
+**Sandboxed harnesses need elevated execution for this step.** Some agent
+runtimes run every command inside a sandbox that blocks listening sockets or
+kills background processes when the command returns — the server then fails to
+bind, or dies before the user opens the URL. OpenAI Codex is a known case: its
+sandbox blocks `--serve`, so the command must be run with elevated execution
+(outside the sandbox). If your harness has a sandbox with an escalation /
+"run outside the sandbox" / elevated-execution option, use it for `--serve`,
+`--restart`, and `--stop` (the linter, `--docdir`, `--comments`, `--status` and
+`--export` are plain file operations and run fine sandboxed). If the harness
+offers no escape hatch, say so, hand the user the exact `--serve` command to
+run themselves, and fall back to `--export` for a static HTML copy.
+
 The output contains `VISUAL_DOCS_URL=http://127.0.0.1:<port>/`. The server binds
 to localhost on a random free port, has no dependencies, and serves the renderer
 libraries from vendored local copies — the whole flow works offline.

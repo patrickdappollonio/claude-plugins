@@ -194,6 +194,18 @@ platform, no `nohup`/`&`:
 node "${CLAUDE_PLUGIN_ROOT}/skills/visual-recap/server/bin/visual-docs-server.js" --serve "$DIR"
 ```
 
+**Sandboxed harnesses need elevated execution for this step.** Some agent
+runtimes run every command inside a sandbox that blocks listening sockets or
+kills background processes when the command returns — the server then fails to
+bind, or dies before the user opens the URL. OpenAI Codex is a known case: its
+sandbox blocks `--serve`, so the command must be run with elevated execution
+(outside the sandbox). If your harness has a sandbox with an escalation /
+"run outside the sandbox" / elevated-execution option, use it for `--serve`,
+`--restart`, and `--stop` (the linter, `--docdir`, `--comments`, `--status` and
+`--export` are plain file operations and run fine sandboxed). If the harness
+offers no escape hatch, say so, hand the user the exact `--serve` command to
+run themselves, and fall back to `--export` for a static HTML copy.
+
 The server self-manages via a lock file: if one is already serving `$DIR` (e.g.
 from a visual-plan earlier in the session) this just prints its URL and exits —
 new files appear in the sidebar automatically, no need to check first. One
