@@ -208,7 +208,11 @@ run themselves, and fall back to `--export` for a static HTML copy.
 
 The server self-manages via a lock file: if one is already serving `$DIR` (e.g.
 from a visual-plan earlier in the session) this just prints its URL and exits —
-new files appear in the sidebar automatically, no need to check first. One
+new files appear in the sidebar automatically, no need to check first. Liveness
+is checked over HTTP, not by PID (sandboxes such as Codex give every command
+its own PID namespace, where a live server's PID looks dead), and a server that
+really died is restarted **on the same port**, so the URL you gave the user is
+stable for the session — never `--restart` just to "check" it. One
 server shows every doc in its directory (sidebar → Docs), so prefer writing into
 the already-served `$DIR` over serving a second directory — one URL for the
 whole session. To let another device review it, bind localhost **plus that one
@@ -246,7 +250,10 @@ a ready-formatted digest — plain text, nothing to parse:
 node "${CLAUDE_PLUGIN_ROOT}/skills/visual-recap/server/bin/visual-docs-server.js" --comments "$DIR"
 ```
 
-(Append a file — `--comments "$DIR" <file>.md` — to scope to one document.) Each
+(Append a file — `--comments "$DIR" <file>.md` — to scope to one document.
+`--comments` and `--status` read and write `$DIR/.visual-docs/` directly, so
+they need no reachable server and work inside a sandbox; the running server
+picks the change up and updates the viewer.) Each
 comment is labelled with what it's anchored to (a section, a quoted snippet, or a
 component like "mermaid diagram") and carries an `id`. Comments on a recap often
 request code changes, not document changes — when a comment asks for a fix,

@@ -501,7 +501,48 @@ export function commentStatus(c) {
 /** Render a comment list as a ready-to-read markdown digest, grouped by document
     with open comments first. Served at /agent/comments.md so an agent can read
     feedback with a plain `curl` instead of parsing JSON. */
-function renderCommentsMarkdown(comments, scopePath, base = 'http://127.0.0.1') {
+/** Move every comment in `ids` to `status`, with the same history bookkeeping
+    and optimistic-concurrency retry the HTTP endpoint uses. Shared by the
+    endpoint and the CLI (`--status`), which edits the store directly so it
+    works even when no server is reachable. Returns one of
+    `{updated}`, `{notFound}`, `{conflict}` or `{error}`. */
+export async function setCommentStatus(root, ids, status) {
+  if (!COMMENT_STATUSES.includes(status)) {
+    return { conflict: `status must be one of: ${COMMENT_STATUSES.join(', ')}` };
+  }
+  const idSet = new Set(ids);
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const { data, hash } = await readCommentsRaw(root);
+    const updated = [];
+    for (const c of data.comments) {
+      if (!idSet.has(c.id)) continue;
+      // A resolved comment is done — dismissing it would erase the record
+      // that it was addressed. Dismiss is only valid from new/acknowledged.
+      if (status === 'dismissed' && commentStatus(c) === 'resolved') {
+        return { conflict: `comment ${c.id} is already resolved and can no longer be dismissed` };
+      }
+      // Record when each transition happened so the viewer can show
+      // "resolved by the agent · 2m ago" instead of a bare badge.
+      // Older comments.json files simply have no history array.
+      if (commentStatus(c) !== status) {
+        if (!Array.isArray(c.history)) c.history = [];
+        c.history.push({ status, at: new Date().toISOString() });
+        if (c.history.length > 20) c.history = c.history.slice(-20);
+      }
+      c.status = status;
+      c.resolved = status === 'resolved'; // keep legacy flag in sync
+      updated.push(c);
+    }
+    if (!updated.length) return { notFound: true };
+    if (await writeComments(root, data, hash)) return { updated };
+  }
+  return { error: 'write conflict — please retry' };
+}
+
+/** The agent-facing digest of `comments` (open ones first), scoped to
+    `scopePath` when given. Also used by the CLI (`--comments`), which reads the
+    store directly. */
+export function renderCommentsMarkdown(comments, scopePath, base = 'http://127.0.0.1') {
   if (!comments.length) {
     return `# Comments${scopePath ? ` for ${scopePath}` : ''}\n\n_No comments yet._\n`;
   }
@@ -597,6 +638,28 @@ export async function startServer({ dir, port = 0, host = '127.0.0.1', watch: en
     try {
       const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
       const pathname = url.pathname;
+
+      // Identity check for the CLI: a lock file names a PID, but that PID is
+      // meaningless from another PID namespace (sandboxed agent harnesses run
+      // each command in its own), so liveness is decided by asking the port
+      // whether a visual-docs server for this exact directory answers.
+      if (pathname === '/api/health' && req.method === 'GET') {
+        return sendJSON(res, 200, { ok: true, server: 'visual-docs', dir: rootReal, pid: process.pid, version: serverVersion });
+      }
+
+      // Stop the server when the CLI cannot signal its PID (foreign namespace).
+      // Loopback callers only: the server has no auth, so a --host-exposed
+      // instance must not be stoppable from the network.
+      if (pathname === '/api/shutdown' && req.method === 'POST') {
+        if (crossOrigin(req)) return sendJSON(res, 403, { error: 'cross-origin request refused' });
+        const from = req.socket.remoteAddress || '';
+        if (!['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(from)) {
+          return sendJSON(res, 403, { error: 'shutdown is only accepted from localhost' });
+        }
+        sendJSON(res, 200, { ok: true, stopping: true });
+        setImmediate(() => process.exit(0)); // the bin's exit handler removes the lock
+        return;
+      }
 
       if (pathname === '/api/docs' && req.method === 'GET') {
         // Lazy purge: entries past retention lose their file, manifest entry,
@@ -847,36 +910,7 @@ export async function startServer({ dir, port = 0, host = '127.0.0.1', watch: en
         if (Array.isArray(payload.ids)) for (const x of payload.ids) if (typeof x === 'string') idSet.add(x);
         if (!idSet.size) return sendJSON(res, 400, { error: 'id or ids is required' });
 
-        const result = await withComments(async () => {
-          // Same optimistic-concurrency retry as the POST path: re-read on a
-          // hash miss so a concurrent write (or hand edit) isn't clobbered.
-          for (let attempt = 0; attempt < 3; attempt++) {
-            const { data, hash } = await readCommentsRaw(root);
-            const updated = [];
-            for (const c of data.comments) {
-              if (!idSet.has(c.id)) continue;
-              // A resolved comment is done — dismissing it would erase the record
-              // that it was addressed. Dismiss is only valid from new/acknowledged.
-              if (payload.status === 'dismissed' && commentStatus(c) === 'resolved') {
-                return { conflict: `comment ${c.id} is already resolved and can no longer be dismissed` };
-              }
-              // Record when each transition happened so the viewer can show
-              // "resolved by the agent · 2m ago" instead of a bare badge.
-              // Older comments.json files simply have no history array.
-              if (commentStatus(c) !== payload.status) {
-                if (!Array.isArray(c.history)) c.history = [];
-                c.history.push({ status: payload.status, at: new Date().toISOString() });
-                if (c.history.length > 20) c.history = c.history.slice(-20);
-              }
-              c.status = payload.status;
-              c.resolved = payload.status === 'resolved'; // keep legacy flag in sync
-              updated.push(c);
-            }
-            if (!updated.length) return { notFound: true };
-            if (await writeComments(root, data, hash)) return { updated };
-          }
-          return { error: 'write conflict — please retry' };
-        });
+        const result = await withComments(() => setCommentStatus(root, [...idSet], payload.status));
         if (result.notFound) return sendJSON(res, 404, { error: 'no comment matched the given id(s)' });
         if (result.conflict) return sendJSON(res, 409, { error: result.conflict });
         if (result.error) return sendJSON(res, 409, { error: result.error });

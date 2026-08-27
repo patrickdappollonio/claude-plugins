@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-import { startServer } from '../lib/server.js';
+import { startServer, readComments, renderCommentsMarkdown, setCommentStatus } from '../lib/server.js';
 import { readPluginVersion } from '../lib/version.js';
 import { PREF_SCHEMA, prefsFile, readPrefs, sanitizePrefs, updatePrefs } from '../lib/prefs.js';
 import { buildExportHtml, docStem } from '../lib/export.js';
 import { resolve, join, dirname, basename } from 'node:path';
-import { statSync, readFileSync, writeFileSync, unlinkSync, mkdirSync } from 'node:fs';
+import { statSync, readFileSync, writeFileSync, unlinkSync, mkdirSync, realpathSync, openSync, closeSync } from 'node:fs';
 import { networkInterfaces, tmpdir } from 'node:os';
 import { isIP } from 'node:net';
 
@@ -16,8 +16,11 @@ rendered visual document with Mermaid diagrams, highlighted code, rich
 diffs, styled DB migrations, live reload, and reviewer comments.
 
 The server records itself in <dir>/.visual-docs/server.json, so:
-  - starting again for a dir that's already served just prints its URL;
-  - --restart replaces the running instance (e.g. to change --host/--port);
+  - starting again for a dir that's already served just prints its URL
+    (liveness is checked over HTTP, so it also works from a sandbox whose
+    PID namespace can't see the server);
+  - --restart replaces the running instance (e.g. to change --host) and a
+    dead server is restarted on its previous port, so the URL stays stable;
   - --stop stops it. No manual PID juggling.
 
 Options:
@@ -37,9 +40,10 @@ Options:
   --serve          Start in the background and print the URL, then return
                    (cross-platform; no nohup/& needed)
   --comments <dir> [<path.md>]
-                   Print the open-comments digest for a served dir
+                   Print the open-comments digest (reads the store directly;
+                   no server needed)
   --status <dir> <id[,id2,…]> <state>
-                   Set a comment's lifecycle state
+                   Set a comment's lifecycle state (no server needed)
                    (new|acknowledged|resolved|dismissed — dismiss only
                    while the comment is still new or acknowledged)
   --prefs [<key> <value>]
@@ -153,11 +157,44 @@ function isOurServer(pid) {
   }
 }
 
-/** The lock of a live server for this dir, or null (stale locks are cleared). */
-function liveLock(dir) {
+const realDir = (dir) => { try { return realpathSync(dir); } catch { return resolve(dir); } };
+
+/** Ask the port in `lock` whether a visual-docs server for `dir` answers.
+    'alive' / 'dead' when the probe is conclusive; 'unknown' when this process
+    is not allowed to connect at all (a sandbox that blocks sockets) — in which
+    case nothing can be concluded and the lock must be left alone. */
+async function probeHealth(lock, dir) {
+  if (!lock || !lock.url) return 'dead';
+  let res;
+  try {
+    res = await fetch(`${lock.url.replace(/\/+$/, '')}/api/health`, { signal: AbortSignal.timeout(1500) });
+  } catch (err) {
+    const code = err && err.cause && err.cause.code;
+    if (code === 'ECONNREFUSED' || code === 'ECONNRESET' || err.name === 'TimeoutError') return 'dead';
+    return 'unknown';
+  }
+  if (!res.ok) return 'dead'; // something else owns that port now
+  const body = await res.json().catch(() => null);
+  if (!body || body.server !== 'visual-docs') return 'dead';
+  return realDir(body.dir) === realDir(dir) ? 'alive' : 'dead';
+}
+
+/** The lock of a live server for this dir, or null (stale locks are cleared).
+    Liveness is decided by an HTTP probe, not by the PID: sandboxed harnesses
+    (Codex wraps every command in its own PID namespace) make a live server's
+    PID invisible, and trusting the PID there deleted the lock and spawned a
+    duplicate on a new port at every turn. The PID check is only the fallback
+    when the probe cannot run. Records the port of a confirmed-dead lock in
+    `liveLock.lastPort` so a restart can keep the URL stable. */
+async function liveLock(dir) {
   const lock = readLock(dir);
-  if (lock && isOurServer(lock.pid)) return lock;
-  if (lock) { try { unlinkSync(lockPath(dir)); } catch { /* ignore */ } }
+  if (!lock) return null;
+  const health = await probeHealth(lock, dir);
+  if (health === 'alive') return lock;
+  if (health === 'unknown') return lock; // can't verify — never discard a possibly live server
+  if (!lock.url && isOurServer(lock.pid)) return lock; // claimed, still binding
+  if (lock.port) liveLock.lastPort = lock.port;
+  try { unlinkSync(lockPath(dir)); } catch { /* ignore */ }
   return null;
 }
 
@@ -174,11 +211,28 @@ function printVersionNote(lockVersion) {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-async function stopPid(pid) {
-  try { process.kill(pid, 'SIGTERM'); } catch { return; }
-  for (let i = 0; i < 30 && pidAlive(pid); i++) await sleep(100); // up to ~3s
-  if (pidAlive(pid)) { try { process.kill(pid, 'SIGKILL'); } catch { /* ignore */ } }
+/** Stop the server described by `lock`. Signals the PID when it is visible
+    from here; otherwise (foreign PID namespace) asks the server to exit over
+    HTTP and waits for the port to stop answering. */
+async function stopServer(lock, dir) {
+  const { pid } = lock;
+  if (isOurServer(pid)) {
+    try { process.kill(pid, 'SIGTERM'); } catch { return true; }
+    for (let i = 0; i < 30 && pidAlive(pid); i++) await sleep(100); // up to ~3s
+    if (pidAlive(pid)) { try { process.kill(pid, 'SIGKILL'); } catch { /* ignore */ } }
+    return true;
+  }
+  if (!lock.url) return true;
+  try {
+    await fetch(`${lock.url.replace(/\/+$/, '')}/api/shutdown`, { method: 'POST', signal: AbortSignal.timeout(1500) });
+  } catch {
+    return false; // can't signal it and can't reach it: the caller must not pretend
+  }
+  for (let i = 0; i < 30 && (await probeHealth(lock, dir)) === 'alive'; i++) await sleep(100);
+  return true;
 }
+
+const CANNOT_STOP = 'Cannot stop it from here: its PID is not visible and this process is not allowed to connect to it (a sandbox is blocking sockets). Run this exact command with elevated (outside-the-sandbox) execution.';
 
 const args = process.argv.slice(2);
 
@@ -277,26 +331,29 @@ if (args[0] === '--export') {
   }
 }
 
-// Agent comment helpers — thin Node wrappers over the running server's HTTP API
-// so the whole review loop is `node …` (no curl, no shell). They locate the
-// server via its lock file, so you pass the served directory, not a URL.
+// Agent comment helpers — plain file operations on <dir>/.visual-docs/
+// comments.json through the same library code the server uses, so the whole
+// review loop is `node …` (no curl, no shell) and needs no reachable server:
+// sandboxed harnesses may forbid even a loopback connection. A running server
+// watches the store and pushes the change to open viewers.
 //   --comments <dir> [<path.md>]          → print the open-comments digest
 //   --status   <dir> <id[,id2,…]> <state> → set lifecycle state (new|acknowledged|resolved|dismissed)
 if (args[0] === '--comments' || args[0] === '--status') {
   const dir = resolve(args[1] || process.cwd());
-  const lock = liveLock(dir);
-  if (!lock || !lock.url) {
-    console.error(`No visual-docs server is running for ${dir}. Start one with --serve first.`);
+  try { if (!statSync(dir).isDirectory()) throw new Error(); } catch {
+    console.error(`${dir} is not a directory.`);
     process.exit(1);
   }
-  const base = lock.url.replace(/\/+$/, '');
+  const lock = readLock(dir); // only for the URL in the digest and the version note
+  const base = lock && lock.url ? lock.url.replace(/\/+$/, '') : 'http://127.0.0.1';
   try {
     if (args[0] === '--comments') {
       const p = args[2] && !args[2].startsWith('-') ? args[2] : '';
-      const res = await fetch(`${base}/agent/comments.md${p ? `?path=${encodeURIComponent(p)}` : ''}`);
-      process.stdout.write(await res.text());
-      printVersionNote(lock.version);
-      process.exit(res.ok ? 0 : 1);
+      const data = await readComments(dir);
+      const comments = p ? data.comments.filter((c) => c.path === p) : data.comments;
+      process.stdout.write(renderCommentsMarkdown(comments, p, base));
+      if (lock) printVersionNote(lock.version);
+      process.exit(0);
     }
     // --status
     const ids = String(args[2] || '').split(',').map((s) => s.trim()).filter(Boolean);
@@ -305,29 +362,26 @@ if (args[0] === '--comments' || args[0] === '--status') {
       console.error('usage: --status <dir> <comment-id[,id2,…]> <new-status>  (new | acknowledged | resolved | dismissed)');
       process.exit(2);
     }
-    const res = await fetch(`${base}/api/comments/status`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(ids.length === 1 ? { id: ids[0], status } : { ids, status }),
-    });
-    const body = await res.json().catch(() => ({}));
-    if (!res.ok) { console.error(`Status update failed: ${body.error || res.status}`); process.exit(1); }
-    console.log(`Updated ${body.updated} comment(s) to "${status}".`);
-    printVersionNote(lock.version);
+    const result = await setCommentStatus(dir, ids, status);
+    if (result.notFound) { console.error('Status update failed: no comment matched the given id(s)'); process.exit(1); }
+    if (result.conflict || result.error) { console.error(`Status update failed: ${result.conflict || result.error}`); process.exit(1); }
+    console.log(`Updated ${result.updated.length} comment(s) to "${status}".`);
+    if (lock) printVersionNote(lock.version);
     process.exit(0);
   } catch (err) {
-    console.error(`Request failed: ${err.message}`);
+    console.error(`Failed: ${err.message}`);
     process.exit(1);
   }
 }
 
 const opts = { dir: process.cwd(), port: 0, host: ['127.0.0.1'], watch: true };
-let restart = false, stop = false;
+let restart = false, stop = false, preferPort = 0;
 
 for (let i = 0; i < args.length; i++) {
   const a = args[i];
   if (a === '-h' || a === '--help') { usage(); process.exit(0); }
   else if (a === '--port') opts.port = Number(args[++i]);
+  else if (a === '--prefer-port') preferPort = Number(args[++i]); // internal: --serve → child
   else if (a.startsWith('--host=')) opts.host = resolveHosts(a.slice('--host='.length) || '0.0.0.0');
   else if (a === '--host') {
     // Astro-style: bare --host binds all interfaces. Only consume the next
@@ -365,7 +419,7 @@ try {
 // Reuse a live instance; otherwise spawn a DETACHED child that runs the normal
 // foreground path and poll the lock file for the URL it publishes once listening.
 if (args.includes('--serve')) {
-  const live = liveLock(opts.dir);
+  const live = await liveLock(opts.dir);
   if (live && !restart) {
     console.log(`Serving ${opts.dir}`);
     console.log(`VISUAL_DOCS_URL=${live.url}`);
@@ -375,14 +429,25 @@ if (args.includes('--serve')) {
   }
   const { spawn } = await import('node:child_process');
   const childArgs = args.filter((a) => a !== '--serve');
+  // A replaced or dead server's port is handed to the child so the URL the
+  // user already has keeps working (the child falls back to a free port).
+  const keepPort = live ? live.port : liveLock.lastPort;
+  if (!opts.port && keepPort && !args.includes('--prefer-port')) childArgs.push('--prefer-port', String(keepPort));
+  // The child's stderr goes to a file so a failure to bind (a sandbox that
+  // forbids listening sockets, a taken --port) is reported by name instead of
+  // as an opaque timeout.
+  const errFile = join(tmpdir(), `visual-docs-serve-${process.pid}.log`);
+  let errFd = null;
+  try { errFd = openSync(errFile, 'w'); } catch { /* fall back to discarding */ }
   const child = spawn(process.execPath, [process.argv[1], ...childArgs], {
-    detached: true, stdio: 'ignore', windowsHide: true, env: process.env,
+    detached: true, stdio: ['ignore', 'ignore', errFd === null ? 'ignore' : errFd], windowsHide: true, env: process.env,
   });
   child.unref();
-  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  if (errFd !== null) closeSync(errFd);
   const deadline = Date.now() + 20000;
+  let failed = false;
   while (Date.now() < deadline) {
-    if (child.exitCode !== null && child.exitCode !== 0) break;
+    if (child.exitCode !== null && child.exitCode !== 0) { failed = true; break; }
     const lock = readLock(opts.dir);
     // Wait for the child's OWN lock, finalized with a url (written only once it's
     // actually listening) — not a stale/other lock for this dir.
@@ -390,19 +455,31 @@ if (args.includes('--serve')) {
       console.log(`Serving ${opts.dir}`);
       console.log(`VISUAL_DOCS_URL=${lock.url}`);
       printNetwork(lock.host, lock.port);
+      try { unlinkSync(errFile); } catch { /* ignore */ }
       process.exit(0);
     }
     await sleep(150);
   }
-  console.error(`Timed out starting the background server for ${opts.dir}.`);
+  let childError = '';
+  try { childError = readFileSync(errFile, 'utf8').trim(); unlinkSync(errFile); } catch { /* ignore */ }
+  console.error(failed
+    ? `The background server for ${opts.dir} exited before it was listening.`
+    : `Timed out starting the background server for ${opts.dir}.`);
+  if (childError) console.error(childError);
+  if (/EPERM|EACCES/.test(childError)) {
+    console.error('This process is not allowed to open a listening socket — a sandbox is blocking it. Run this exact command with elevated (outside-the-sandbox) execution.');
+  }
   process.exit(1);
 }
 
 // --stop: stop whatever is serving this dir, then exit.
 if (stop) {
-  const lock = liveLock(opts.dir);
+  const lock = await liveLock(opts.dir);
   if (lock) {
-    await stopPid(lock.pid);
+    if (!(await stopServer(lock, opts.dir))) {
+      console.error(`A visual-docs-server for ${opts.dir} is recorded at ${lock.url}. ${CANNOT_STOP}`);
+      process.exit(1);
+    }
     try { unlinkSync(lockPath(opts.dir)); } catch { /* ignore */ }
     console.log(`Stopped visual-docs-server for ${opts.dir}`);
   } else {
@@ -412,11 +489,15 @@ if (stop) {
 }
 
 // An instance is already serving this dir: reuse it (idempotent) or replace it.
-const existing = liveLock(opts.dir);
+const existing = await liveLock(opts.dir);
 if (existing) {
   if (restart) {
-    await stopPid(existing.pid);
+    if (!(await stopServer(existing, opts.dir))) {
+      console.error(`A visual-docs-server for ${opts.dir} is recorded at ${existing.url}. ${CANNOT_STOP}`);
+      process.exit(1);
+    }
     try { unlinkSync(lockPath(opts.dir)); } catch { /* ignore */ }
+    if (!preferPort && existing.port) preferPort = existing.port; // keep the URL stable
   } else {
     console.log(`Serving ${opts.dir}`);
     console.log(`VISUAL_DOCS_URL=${existing.url}`);
@@ -440,7 +521,7 @@ try {
   claimed = true;
 } catch (err) {
   if (err && err.code === 'EEXIST') {
-    const other = liveLock(opts.dir);
+    const other = await liveLock(opts.dir);
     if (other && !restart) {
       console.log(`Serving ${opts.dir}`);
       console.log(`VISUAL_DOCS_URL=${other.url}`);
@@ -448,14 +529,26 @@ try {
       printVersionNote(other.version);
       process.exit(0);
     }
-    if (other) { await stopPid(other.pid); }
+    if (other && !(await stopServer(other, opts.dir))) {
+      console.error(`A visual-docs-server for ${opts.dir} is recorded at ${other.url}. ${CANNOT_STOP}`);
+      process.exit(1);
+    }
     try { writeLock({}); claimed = true; } catch { /* proceed unmanaged */ }
   } // any other error: proceed without lifecycle management
 }
 
 let started;
 try {
-  started = await startServer(opts);
+  // Prefer the port a previous instance used (a restart, or a server that
+  // died) so the URL already in the user's browser keeps working; if something
+  // else took it meanwhile, fall back to a free port rather than fail.
+  if (!opts.port && !preferPort && liveLock.lastPort) preferPort = liveLock.lastPort;
+  if (!opts.port && preferPort) {
+    try { started = await startServer({ ...opts, port: preferPort }); } catch (err) {
+      if (!err || err.code !== 'EADDRINUSE') throw err;
+    }
+  }
+  if (!started) started = await startServer(opts);
 } catch (err) {
   if (claimed) { try { const l = readLock(opts.dir); if (l && l.pid === process.pid) unlinkSync(lockPath(opts.dir)); } catch { /* ignore */ } }
   const reason = err && err.code === 'EADDRINUSE' ? `port ${opts.port} already in use`
