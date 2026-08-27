@@ -252,6 +252,15 @@ directory — starting the server, reading comments, and updating their status a
 all `node` commands (no `curl`, no scripts). Approve those and the whole flow is
 hands-off.
 
+**It says the server started but nothing is listening / the page never
+loads.** Your agent is probably running in a sandbox. Sandboxed harnesses can
+block listening sockets or kill background processes as soon as the command
+returns, so `--serve` needs to run outside the sandbox. On OpenAI Codex that
+means approving the command with elevated execution; other harnesses have their
+own "run outside the sandbox" escalation. The skills tell the agent to ask for
+it — if there is no escape hatch, run the printed `--serve` command yourself or
+ask for `--export` to get a static HTML file instead.
+
 **Where do the documents live?** Throwaway reviews go to a temp directory.
 Ask the agent to keep a plan (e.g. "put it in docs/plans/") and it will write
 and serve it from your repo instead.
