@@ -1,7 +1,7 @@
 {
   "name": "appropriate-comments-code",
   "description": "Comment discipline for code the agent writes — every comment stays within a line or two, carries information the code does not, and describes the current state only, with no iteration labels, finding numbers, wave or task IDs, project phase names, or narration of how the code got here; regressions are pinned by tests instead.",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "author": {
     "name": "Patrick D'appollonio",
     "email": "patrickdappollonio@gmail.com"

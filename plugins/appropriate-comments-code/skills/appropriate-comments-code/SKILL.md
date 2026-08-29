@@ -1,6 +1,6 @@
 ---
 name: appropriate-comments-code
-description: Use when writing, editing, or reviewing code in any language, and especially before adding or changing a comment or docstring — when tempted to narrate in a comment what was tried first, why an approach was replaced, or what a bug, regression, or review turned up; to restate what the next line already says; to write more than a couple of lines above a declaration; or to cite a ticket, finding number, iteration label, wave or task ID, or any other session-scoped identifier.
+description: Use when writing, editing, or reviewing code in any language, and especially before adding or changing a comment or docstring — when tempted to narrate in a comment what was tried first, why an approach was replaced, or what a bug, regression, or review turned up; to restate what the next line already says; to write more than a couple of lines above a declaration; or to cite a ticket, finding number, iteration label, wave or task ID, or any other session-scoped identifier; or when a comment describes what a feature or endpoint *is* rather than why the line beneath it is built the way it is.
 ---
 
 # Appropriate Comments in Code
@@ -49,7 +49,7 @@ documentation convention the project already uses.
 teaching code, where narrating every line *is* the deliverable. Say that you are
 setting the skill aside and why.
 
-## The Four Tenets
+## The Five Tenets
 
 ### 1. Two lines is the working limit
 
@@ -159,7 +159,67 @@ session and states its own exit condition:
 requestAnimationFrame(measure);
 ```
 
-### 4. Never commit an identifier that outlives nothing
+### 4. A comment is about its lines, not about the feature they belong to
+
+The cover test asks whether the comment adds information. It does not ask whether
+the information is about *these lines*. A comment can add plenty and still be
+wrong for the spot, because it describes the product behind the code — what the
+feature is, who uses it, what it means to the business — instead of the mechanism
+in front of the reader.
+
+**The subject test:** name the thing the comment is about. If it is a route, a
+feature, a customer, a policy, or a decision, and the code below is a call, a
+wrapper, a branch, or a registration, the comment is on the wrong subject. Ask
+instead: *what is non-obvious about how this line is built?* Comment that, or
+nothing.
+
+The most valuable answer is usually **why this line differs from its
+neighbours**. A route wired differently from the ten around it, a branch that
+skips a step every sibling takes, a call with one extra wrapper — those look
+like mistakes, and the next reader (or agent) will "fix" them back into line
+unless the comment says the difference is deliberate and why.
+
+A comment on a line that differs from its siblings has three parts, in this
+order, and nothing else:
+
+1. **That the difference is deliberate** — one word or phrase: "Deliberately",
+   "On purpose", "Unlike the routes above".
+2. **The one mechanical difference** — what this line does that the neighbours
+   do not, named in the code's own terms (the wrapper, the label, the skipped step).
+3. **What breaks if it is normalized** — the observable consequence of "fixing"
+   it to match.
+
+```go
+// Bad — five lines about what the feature is and who may call it. The one
+// fact that matters — this route is deliberately wired unlike the others —
+// is buried in the last clause, and a skimmer never reaches it.
+// The cross-asset search is TOP-LEVEL: it is not "one asset's entries" but
+// "where does this wallet (or customer, or asset) appear". It shares the
+// surface's dual-credential auth — a key caller is scope-filtered, a token
+// sees every customer — and carries its own handler label for the same
+// reason every other route here does.
+r.With(metrics.WithHandler(metrics.HandlerOnboardingSearch)).
+	Get("/onboardings", h.SearchOnboardings)
+
+// Good — says the line is intentionally different, and what would break
+// Deliberately its own With chain: this route reports under the onboarding
+// handler label, not the shared label the rest of this router uses. Folding
+// it into the group would lump its metrics in with the asset endpoints.
+r.With(metrics.WithHandler(metrics.HandlerOnboardingSearch)).
+	Get("/onboardings", h.SearchOnboardings)
+```
+
+Everything the bad version says may be true and worth writing down. It is
+product documentation: it belongs in the API doc, the package comment, or the
+PR — where a reader looking for "what is cross-asset search" will look. Nobody
+looking for that reads a router file, and nobody reading a router file is
+asking it.
+
+A reliable tell is **ratio**: a five-line comment on a two-line registration, a
+paragraph above a one-line call. When the comment is bigger than the code, it is
+almost always about something other than the code.
+
+### 5. Never commit an identifier that outlives nothing
 
 Identifiers minted during a working session are meaningless to every reader
 except the person who was driving that session, and meaningless to *them* within
@@ -214,6 +274,42 @@ This is not paranoia; it is the failure mode long comments have. Nobody reads
 twenty lines closely enough to notice that one names a function that does not
 exist. Length and inaccuracy are the same problem wearing two hats.
 
+## Fix the code before you comment it
+
+A comment is the second-best tool for making code clear. Reach for the first
+one — a name, a smaller function, a constant — before writing prose.
+
+- **A comment does not excuse unclear code.** `// n is the retry count` above
+  `n := 3` is a request to rename `n` to `retryCount`. `// convert to cents`
+  above `x * 100` is a request for a `toCents` helper or a named constant. If
+  the comment names what the code should have been called, rename instead.
+- **If you cannot write a clear comment, the code is the problem.** When you
+  cannot say in two lines why a block exists or what it guarantees, that is not
+  a reason to write ten lines — it is a sign the block needs splitting, renaming,
+  or rethinking. Fix that, then see whether a comment is still needed.
+- **A cryptic comment is worse than none.** "Magic, do not touch", "you are not
+  expected to understand this", a bare `// XXX` — these announce confusion
+  without dispelling it. Either state the actual invariant or delete the note.
+
+Two comment kinds the article-style advice gets right and this skill endorses,
+with the conventions that keep them from rotting:
+
+- **Copied code links its source.** Code lifted from a Stack Overflow answer, a
+  blog post, or another repository carries a one-line comment with the URL.
+  Readers can reach the original context, licence, and later corrections; you
+  cannot reproduce those in prose.
+- **Incomplete work is marked, not implied.** A known gap gets a `TODO` in the
+  form the project already uses (grep for `TODO` / `FIXME` first — some repos
+  require a tracker link, some an owner). State *what* is missing in the
+  present tense: `// TODO: handle 429 by honouring Retry-After`, never
+  `// TODO: fix later` or `// TODO from review`.
+
+**Bug fixes and tenet 2, reconciled.** Conventional advice says "add a comment
+when you fix a bug". This skill says the same thing narrowly: comment the
+*workaround* — the external defect, its link, and its exit condition — because
+that is a standing constraint. Do not comment the *incident*: what broke, who
+found it, what you tried. The regression itself is pinned by a test.
+
 ## When you edit code, you own its comments
 
 When you change a line, you own every comment describing it. A comment that was
@@ -225,6 +321,26 @@ each one that no longer matches.
 Watch especially for a comment that describes **one** of something when your
 change made it **two** — one direction, one caller, one status, one supported
 mode. Those read as still-true and are not.
+
+## Reviewing comments: flag, rewrite, or delete
+
+When reviewing a diff — yours or another agent's — treat every added or changed
+comment as a finding until it passes. For each one:
+
+1. **Classify** it with one label: `restates` (fails the cover test), `narrates`
+   (past tense, journey, process), `documents` (true, but too long or about the
+   feature rather than the line), `unverified` (names something you have not
+   confirmed), `stale` (no longer matches the code beside it).
+2. **Rewrite or delete — never keep as-is.** A flagged comment has exactly two
+   exits. Rewrite when there is one mechanical fact about *these lines* the
+   reader cannot get from the code — most often, why the line differs from its
+   neighbours. Delete when there is not. "Shorten it a bit" is not an option: a
+   trimmed comment on the wrong subject is still on the wrong subject.
+3. **Relocate, don't discard.** If the deleted text was accurate documentation,
+   say where it goes (package doc, API doc, PR description) in the review, and
+   put it there if that is in scope.
+4. **Report it as a defect**, in the same list as the code findings, with the
+   label and the replacement text. A comment on the wrong subject is not a nit.
 
 ## Doing this at scale
 
@@ -295,6 +411,11 @@ code: it goes above the constant.
 | "I'll leave the old approach in a comment in case we need it" | That is what version control is for. Commented-out code and eulogies for deleted code both get deleted. |
 | "The comment is slightly stale but still mostly right" | Mostly-right comments are how people get misled with confidence. Fix it or remove it. |
 | "I shortened it, so it's better" | Only if every rule survived. A tidy comment missing a precondition is a downgrade. |
+| "It explains what this endpoint / feature is" | That is documentation for the feature, filed above a line that is not the feature. Comment the mechanism in the line — usually why it differs from its neighbours — and put the feature description where feature descriptions live. |
+| "It's context the reader needs" | The reader of *this line* needs to know why the line is shaped as it is. Context about the product goes in the package doc, once. |
+| "A comment will explain what `n` means" | Rename `n`. A comment that names what the code should have been called is a rename request written in the wrong place. |
+| "It's too complicated to explain briefly" | Then it is too complicated. Split or rename until two lines suffice; a long comment is a symptom, not a treatment. |
+| "I'll just tighten it" | Tightening a comment on the wrong subject produces a shorter comment on the wrong subject. Rewrite it about the line, or delete it. |
 
 ## Red flags in your own draft
 
@@ -309,9 +430,17 @@ Any of these means stop and rewrite:
 - An index into something the reader does not have: "finding 3", "item 3",
   "wave 4", "task 17", "pass 2", a bare ID like `F7` or `R2`
 - Restatement: the comment is a prose translation of the identifier below it
+- **Wrong subject:** the comment is about the feature, route, policy, or business
+  meaning while the code is a call, wrapper, branch, or registration
+- **The comment is longer than the code it sits on**
+- Emphatic capitals or scare quotes teaching a concept — `TOP-LEVEL`, `"one
+  asset's entries"` — a comment that is teaching a concept is a doc
 - A named identifier, file, or test **you have not confirmed exists**
 - A section banner repeating the name of the thing beneath it
 - Commented-out code kept "for reference"
+- A comment that names what a variable or block **should be called** — rename it
+- A `TODO` with no stated gap, or a TODO in a form the repo does not use
+- Copied code with no source link
 - An apology or a hedge: "hacky but", "not sure why this works" — if you do not
   know why it works, that is a thing to find out, not to record
 - The phrase "for context" or "background:" — that is documentation announcing
@@ -325,6 +454,14 @@ Any of these means stop and rewrite:
 - [ ] No comment narrates a previous attempt, a past bug, or the edit you just made
 - [ ] Any regression you fixed is pinned by a test, named after the invariant
 - [ ] Every comment survives the cover test — hide it, and the code is genuinely poorer
+- [ ] Every comment passes the subject test — it is about the mechanism in the
+      lines beneath it (usually why they differ from their neighbours), not the
+      feature they implement
+- [ ] No comment is longer than the code it annotates
+- [ ] No comment stands in for a rename or a split that would make it unnecessary
+- [ ] Copied code links its source; every `TODO` states the gap and matches the
+      repo's convention
+- [ ] Every comment flagged in review was rewritten or deleted, never kept as-is
 - [ ] Every identifier, path, and test name a comment mentions has been confirmed
       to exist
 - [ ] No session-scoped identifiers: finding numbers, iteration labels,
