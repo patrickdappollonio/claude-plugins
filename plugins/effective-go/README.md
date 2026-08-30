@@ -34,6 +34,16 @@ It condenses:
   `httptest` for HTTP.
 - **Tests** are table-driven, use `t.Context()` / `t.TempDir()` /
   `t.Setenv()`, print got-before-want, and assert errors with `errors.Is`.
+- **Tests are cheap now — write more.** Red → green for new code; for a
+  refactor, a pinning test that passes before and after with no edits.
+  Features get **user-journey tests**: the agent proposes the end-to-end
+  paths a user would take (happy and unhappy), and writes the ones you pick,
+  in a build-tagged file.
+- **No test-file sprawl.** New tests are appended to the existing
+  `_test.go`; a new file only when none exists or a separate tier (smoke,
+  e2e, journey) needs a build tag.
+- **The user has the last word on permanence.** The agent commits on
+  approval and never pushes without explicit approval for that push.
 - **Dependencies:** stdlib first; a little copying beats a little dependency;
   use the Go version in `go.mod`.
 

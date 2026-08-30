@@ -123,9 +123,12 @@ gain nothing from a shared helper with a vague name.
 
 ```
 FOR EACH SIMPLIFICATION:
-1. Confirm a test pins the behavior you are about to reshape.
-   None? Write one first (a characterization test of what the code does
-   TODAY — including its odd edge cases). Run it on the ORIGINAL; it must pass.
+1. Confirm a test pins the behavior you are about to reshape — red→green
+   inverted: the test is written against the public surface so it will pass
+   after the refactor with no edits, or mechanical ones only. None? Write
+   one first (a characterization test of what the code does TODAY,
+   including its odd edge cases), appended to the existing `_test.go`.
+   Run it on the ORIGINAL; it must pass.
 2. Make ONE change.
 3. go build ./... && go vet ./... && go test -race ./...
 4. Pass → keep, next.  Fail → revert the change. Never edit the test to pass.

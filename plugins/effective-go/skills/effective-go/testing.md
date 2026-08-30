@@ -4,9 +4,76 @@ Read this file on first use of the skill in a session, and again before
 writing any `_test.go` file or test double. `SKILL.md` carries the summary;
 this file is the specification.
 
+## Tests are cheap now — write more, not fewer
+
+When an agent writes the tests, the historical cost argument for a thin
+suite is gone. Err on the side of more coverage: every branch you can
+reach, every error path, every edge case (empty, zero, nil, oversized,
+malformed, duplicate, concurrent). Coverage is still not the goal —
+confidence is — but the default answer to "should I add a case for
+that?" is yes.
+
+## Red → green, for new code and for refactors
+
+For new behavior: write the test first, run it, watch it **fail** for the
+reason you expect, write the least code that makes it pass, run it green,
+then clean up. A test that has never failed proves nothing.
+
+For a refactor, the same cycle inverted: **before** touching the code,
+write (or find) a test that pins today's behavior and passes on the
+original. Make the change. The same test, **unmodified or with only
+mechanical edits** (a renamed identifier, an import), must still pass.
+If it needs its expectations changed, the refactor changed behavior —
+revert the refactor, not the test. A test that needs rewriting to survive
+a refactor was testing the implementation, not the behavior; write it
+against the public surface so it survives the next refactor too.
+
+## User-journey tests
+
+Unit tests prove functions; journey tests prove the product. A user
+journey is one thing a real user does end to end, in order, through the
+public surface — for a banking system: *create an account, send money to
+it from another account, observe the balance land*. That is one journey
+of many.
+
+When you add or change a feature:
+
+1. **Propose journeys to the user** — a short numbered list of the
+   end-to-end paths a user would actually take through what you built,
+   including the unhappy ones (insufficient funds, a duplicate transfer,
+   a cancelled request). Ask which to add; do not write them all
+   unasked, and do not skip proposing them.
+2. Write each approved journey as one test that drives the system the way
+   a user would — through the API, the CLI, or the top-level service —
+   with real or in-memory dependencies, not mocks of the code under test.
+3. Name it after the journey: `TestJourney_TransferLandsInRecipientBalance`.
+4. Keep journeys in their own file with a build tag (`//go:build journey`
+   or `e2e`) when they need infrastructure or take real time, so
+   `go test ./...` stays fast and the journeys run on demand
+   (`go test -tags journey ./...`).
+
 ## Where tests live
 
-- Same package as the code (`package uploader`), in `*_test.go`. Use the
+**Append to the existing `_test.go` file.** New tests for a package go at
+the bottom of the test file that already covers that source file
+(`foo.go` → `foo_test.go`); a diff that adds functions to the end of a
+file is perfectly readable. Do **not** create a new test file for a single
+function, a single scenario, a "cleaner" grouping, or because the existing
+file is long. Create a new `_test.go` file only when:
+
+- (a) **no test file exists** for the source file or package yet, or
+- (b) the tests are a **different tier** that must be separated — unit vs
+  smoke vs e2e/journey — because the separated tier needs a build tag, a
+  different package (`foo_test` black-box), or infrastructure the unit
+  tests must not depend on.
+
+One source file, one test file, is the steady state. A package with
+`foo_test.go`, `foo_edge_cases_test.go`, `foo_errors_test.go` and
+`foo_more_test.go` is the failure mode.
+
+
+- Same package as the code (`package uploader`), in `*_test.go`, named
+  after the source file it covers. Use the
   black-box package `uploader_test` only when you want to prove the exported
   API is sufficient on its own or to break an import cycle.
 - Fixtures in `testdata/` next to the test (the toolchain ignores that
@@ -103,8 +170,9 @@ The rules that make this pattern work:
 
 ## Coverage and running
 
-- Coverage is a signal, not a goal. Cover the critical paths, the edge
-  cases and the error branches; skip trivial getters.
+- Coverage is a signal, not a goal — but tests are cheap to write now, so
+  cover every reachable branch, edge case and error path; skip only
+  trivial getters.
 - Run `go test -race ./...` for anything that touches goroutines, channels
   or shared state; run `go vet ./...` always.
 - A bug fix ships with a test that fails before the fix and passes after.
@@ -167,6 +235,11 @@ func TestClient_UploadFile(t *testing.T) {
 `errors.Is(nil, nil)` is true, so the success case needs no special branch.
 
 ## Review checklist for tests
+
+- [ ] New behavior: a test was written first and seen to fail before the code made it pass
+- [ ] Refactor: a pinning test passed on the original and still passes unmodified (or with mechanical edits only)
+- [ ] Journeys proposed to the user for any feature change; approved ones written, tagged, and named after the journey
+- [ ] New tests appended to the existing `_test.go`; a new file only because none existed or a separate tier needs one
 
 - [ ] Table-driven with named cases; Arrange/Act/Assert visible
 - [ ] `t.Context()`, `t.TempDir()`, `t.Setenv()`, `t.Cleanup()`, `t.Helper()` where applicable

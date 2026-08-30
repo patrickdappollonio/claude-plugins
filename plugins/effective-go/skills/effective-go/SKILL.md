@@ -112,9 +112,14 @@ re-read when it applies.
    `failed to <verb> <object> [%q detail]: %w`; `errors.New` for any
    message with no `%` in it — in `main` and in tests too. Handle each
    error exactly once.
-6. **Write the tests.** Re-read `testing.md`. Table-driven, `t.Context()`,
-   got-before-want messages, hand-written `Fn`-field mocks whose nil
-   fields fail loudly.
+6. **Write the tests — first, and more of them.** Re-read `testing.md`.
+   Red → green: a new test fails before the code exists and passes after;
+   a refactor's pinning test passes before and after, unmodified. Append
+   to the existing `_test.go`; a new file only when none exists or a
+   separate tier (smoke, e2e, journey) needs a build tag. Table-driven,
+   `t.Context()`, got-before-want messages, hand-written `Fn`-field mocks
+   whose nil fields fail loudly. For a feature, propose user journeys and
+   write the ones the user picks.
 7. **Comment only what the code cannot say.** Re-read `comments.md`.
    Doc comments on every exported identifier, starting with its name,
    ending with a period. Nothing that restates the next line; nothing
@@ -129,6 +134,30 @@ re-read when it applies.
    result.
 10. **Walk the checklist** at the end of this file against the diff. Fix
     what fails, then re-run step 9.
+11. **Stop before committing.** Report what changed and offer to commit.
+    Commit when the user approves; **push only on the user's explicit
+    say-so**, which "commit it" does not include. In a non-interactive run
+    (a subagent, a background job, a pipeline) leave the work uncommitted
+    and say so in the report. Making a change permanent is the user's
+    call, never the agent's.
+
+## Committing and pushing
+
+The user has the last word on when work becomes permanent.
+
+- **Never push without explicit approval for that push.** Not to a branch,
+  not to a fork, not because the commit was approved, not because the PR
+  already exists, not because "it's just a follow-up". A standing
+  instruction from the user ("push after every commit on this branch")
+  counts as approval; an inference does not.
+- **Commit on approval whenever possible.** Finish the change, run the
+  gates, walk the checklist, fix what fails — *then* say what you would
+  commit and wait. A WIP commit to set work aside is acceptable when the
+  user asked for that workflow or the environment requires it; say so.
+- Commit messages are plain sentences describing the change; no
+  co-authorship, no generated-by lines, no session links.
+- If you were told to commit but not to push, the report ends with "committed,
+  not pushed" and nothing more happens.
 
 ## Errors (summary — full text in `errors.md`)
 
@@ -159,6 +188,9 @@ A chain must read as a sentence:
 - Errors asserted with `errors.Is`/`errors.As`, never by string.
 - Mocks are hand-written structs with one `Fn` field per method. A nil `Fn` returns `errors.New("mockT.Method: methodFn not implemented")`; a method without an error return panics with the same text. Add call counters when the code under test swallows errors.
 - `httptest` for HTTP; real or in-memory implementations for stores; no mocking or assertion libraries added to a project that has none; no `sqlmock`.
+- Tests are cheap when the agent writes them: cover every reachable branch, edge and error path. Red → green for new code; for a refactor, a pinning test that passes before and after with no edits.
+- Features get **user-journey tests**: propose the end-to-end paths a user would take (happy and unhappy), write the ones the user picks, one journey per test, driven through the public surface, in a build-tagged file.
+- **Append to the existing `_test.go`.** A new test file only when (a) none exists for that source file or package, or (b) a separate tier — unit / smoke / e2e / journey — needs a build tag, a black-box package, or infrastructure the unit tests must not touch.
 - `go vet ./...` and `go test -race ./...` before claiming green.
 
 ## Style (summary — full text in `style.md`)
@@ -281,6 +313,11 @@ to a hand-rolled loop.
 | "It compiles and the tests pass, it's done" | Done is the checklist below being true, with the gate output in hand. |
 | "I'll skip `-race`, there's no concurrency here" | If there's a goroutine, channel, or shared map anywhere in the package, run it. It's cheap. |
 | "The comment helps explain what this line does" | If the line needs explaining, rename or split; comments carry *why*. |
+| "I'll push so the user can see it in the PR" | Pushing publishes. Say it's ready; the user decides when it leaves the machine. |
+| "The commit was approved, so pushing is implied" | Two approvals. Commit means commit. |
+| "A new test file keeps things organized" | The existing file's bottom is the organization. A new file is for a missing file or a separate tier, nothing else. |
+| "Tests after the refactor prove it works" | They prove the new code does what the new code does. The pinning test predates the change. |
+| "Journeys are the user's job" | Proposing them is yours. Writing the picked ones is yours. |
 | "Reading the companion files is overkill for a one-line change" | One-line changes are where error strings and `'%s'` slip in. Read them. |
 | "The comment explains the history of this fix" | The reader sees today's code. State the constraint; the story goes in the commit. |
 | "The tests need a small tweak after my refactor" | You changed behavior. Revert the refactor, not the test. |
@@ -303,6 +340,9 @@ to a hand-rolled loop.
 - "It builds" reported without the `vet`/`test -race` output
 - A comment that says "used to", "per review", names a finding or pass number, or is longer than the code beneath it
 - A refactor that needed a test edited to pass, or that touched code outside the request
+- A new `_test.go` beside an existing one for the same source file, with no build tag and no separate tier
+- A feature change with no journeys proposed to the user
+- `git push` in your plan without a user message approving *that* push; a commit the user has not asked for
 - You reached step 3 without checking whether `use-modern-go` is available, or you are recommending it for the second time this session
 - You have not opened `errors.md`, `testing.md`, `style.md`, `comments.md` and `simplification.md` this session
 
@@ -323,4 +363,8 @@ to a hand-rolled loop.
 - [ ] Any reshaping of existing code: one change at a time, pinned by a pre-existing test, complexity reported for splits, merges proposed first
 - [ ] Tests: table-driven, `t.Context()`, got-before-want messages, `errors.Is` assertions, `Fn`-field mocks that fail loudly, `t.Parallel()` where safe
 - [ ] Interface changed → every implementation and every mock updated
+- [ ] New tests failed before the code and pass after; refactors pinned by a test that passes unmodified before and after
+- [ ] Tests appended to the existing `_test.go`; a new file only for a missing file or a separate build-tagged tier
+- [ ] User journeys proposed for any feature change; the approved ones written and tagged
 - [ ] `gofmt`/`goimports`, `go vet ./...`, `go build ./...`, `go test -race ./...`, project linter — run, and the output reported
+- [ ] Nothing committed without the user's approval; nothing pushed without explicit approval for that push

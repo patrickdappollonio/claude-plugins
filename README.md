@@ -192,9 +192,14 @@ never `open %q: %w`), sentinels are noun phrases, `errors.New` when nothing
 is formatted, `%q` instead of `'%s'`, `errors.Is`/`errors.As` to compare,
 and every error is handled exactly once — no log-and-return.
 
-Tests are table-driven with `t.Context()` and got-before-want messages, and
-mocks are hand-written `Fn`-field structs whose unwired methods fail loudly,
-so a test that forgot to wire a dependency can never pass on a zero value.
+Tests are written first and generously — red → green for new code, a
+pinning test for refactors, and proposed **user-journey tests** for
+features — appended to the existing `_test.go` rather than sprawled across
+new files. They are table-driven with `t.Context()` and got-before-want
+messages, and mocks are hand-written `Fn`-field structs whose unwired
+methods fail loudly, so a test that forgot to wire a dependency can never
+pass on a zero value. The agent commits on approval and never pushes
+without explicit approval for that push.
 It also folds in Go-flavored versions of `appropriate-comments-code` and
 `code-simplification` — comments that carry only what the code cannot say,
 in the present tense, and refactors done one tested change at a time — so
