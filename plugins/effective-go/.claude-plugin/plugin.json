@@ -1,0 +1,12 @@
+{
+  "name": "effective-go",
+  "description": "Opinionated Go writing discipline — idiomatic Go from Effective Go, the Google style guide, the Go Proverbs and the Gruntwork guide, with a stated house preference for natural-language, wrappable error messages, hand-written Fn-field mocks that fail loudly, comment and simplification discipline folded in, and a per-change checklist the agent runs before calling Go code done.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Patrick D'appollonio",
+    "email": "patrickdappollonio@gmail.com"
+  },
+  "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/effective-go",
+  "license": "MIT",
+  "keywords": ["go", "golang", "style", "idiomatic", "errors", "testing", "code-quality"]
+}
