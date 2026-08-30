@@ -17,9 +17,11 @@ plugins under `plugins/`.
   changed file formats or defaults users rely on). Pure repo chores that don't
   touch a plugin (root README, CI) don't need a bump. The version lives **only** in that
   `plugin.json` — there are no git tags, GitHub releases, or per-plugin
-  versions in `marketplace.json` to check or update, so don't go looking.
-- **Both install paths must stay equivalent: Claude Code marketplace *and*
-  `npx skills`.** A Claude Code install brings a whole plugin (every skill under
+  versions in `marketplace.json` to check or update, so don't go looking. The matching
+  `plugins/<name>/.codex-plugin/plugin.json` repeats that version for Codex and must
+  be updated in the same change.
+- **All install paths must stay equivalent: Claude Code marketplace, Codex marketplace,
+  and `npx skills`.** Claude Code and Codex install a whole plugin (every skill under
   `plugins/<name>/skills/`); `npx skills add … --skill <name>` installs **one
   skill directory and nothing above it**. So a skill must be **self-contained**:
   everything it needs lives inside its own `skills/<skill>/` directory, and
@@ -45,12 +47,17 @@ plugins under `plugins/`.
   function"). An agent that never opens the side file must still do the right
   thing from the summary alone. Load-bearing discipline rules stay inline in
   full — an agent under pressure will skip a side file. Reference sibling
-  files by bare filename, never a path, so both install paths ship them.
+  files by bare filename, never a path, so every install path ships them.
   And the skill must **insist that the agent read every companion file on
   first use in a session, before any other step** — a dedicated section near
   the top listing the files, plus a red flag and a checklist item — and re-read
   the named file at its step. Summaries are reminders of text already read,
   never a substitute. `code-simplification` is the worked example.
+- **Skill frontmatter must parse as YAML.** Keep `name` and `description` as
+  non-empty strings. Quote or fold descriptions containing `: ` rather than
+  leaving them as plain YAML scalars. After adding or editing a skill, run
+  `npm run lint:skills`; CI runs the same check for every
+  directory under `plugins/*/skills/`.
 - The visual-docs server has **no authentication**. `--host` / `0.0.0.0` binding
   must stay opt-in and documented as trusted-network-only.
 - **Agents must never have to write code — not even a small script — to operate

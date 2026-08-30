@@ -1,0 +1,19 @@
+{
+  "name": "use-premium-models-efficiently",
+  "version": "1.0.1",
+  "description": "Use premium models for judgment while delegating bounded, token-heavy work to cheaper subagents.",
+  "author": { "name": "Patrick D'appollonio", "email": "patrickdappollonio@gmail.com" },
+  "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/use-premium-models-efficiently",
+  "license": "MIT",
+  "keywords": ["orchestration", "subagents", "delegation", "cost-efficiency"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Use Premium Models Efficiently",
+    "shortDescription": "Delegate heavy work while retaining judgment.",
+    "longDescription": "Keeps architecture, synthesis, and verification on a premium model while cheaper subagents handle bounded research, coding, and tests.",
+    "developerName": "Patrick D'appollonio",
+    "category": "Productivity",
+    "capabilities": ["Orchestrate", "Delegate", "Review"],
+    "defaultPrompt": ["Delegate the heavy lifting and verify the result."]
+  }
+}

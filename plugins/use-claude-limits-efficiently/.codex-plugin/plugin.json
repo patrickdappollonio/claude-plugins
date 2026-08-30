@@ -1,0 +1,19 @@
+{
+  "name": "use-claude-limits-efficiently",
+  "version": "1.0.2",
+  "description": "Budget loop for long-running or parallel Claude work under five-hour and weekly usage limits.",
+  "author": { "name": "Patrick D'appollonio", "email": "patrickdappollonio@gmail.com" },
+  "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/use-claude-limits-efficiently",
+  "license": "MIT",
+  "keywords": ["usage-limits", "budget", "long-running", "claude"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Use Claude Limits Efficiently",
+    "shortDescription": "Manage long work within Claude limits.",
+    "longDescription": "Runs work in bounded waves, checks observed Claude usage, and pauses or resumes safely around usage windows.",
+    "developerName": "Patrick D'appollonio",
+    "category": "Productivity",
+    "capabilities": ["Orchestrate", "Monitor"],
+    "defaultPrompt": ["Finish this long-running task without exceeding my Claude usage limits."]
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "name": "patrickdappollonio",
+  "interface": { "displayName": "Patrick D'appollonio's AI Skills" },
+  "plugins": [
+    {
+      "name": "appropriate-comments-code",
+      "source": { "source": "local", "path": "./plugins/appropriate-comments-code" },
+      "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
+      "category": "Developer Tools"
+    },
+    {
+      "name": "effective-communicator",
+      "source": { "source": "local", "path": "./plugins/effective-communicator" },
+      "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
+      "category": "Productivity"
+    },
+    {
+      "name": "effective-go",
+      "source": { "source": "local", "path": "./plugins/effective-go" },
+      "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
+      "category": "Developer Tools"
+    },
+    {
+      "name": "adversarial-review",
+      "source": { "source": "local", "path": "./plugins/adversarial-review" },
+      "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
+      "category": "Developer Tools"
+    },
+    {
+      "name": "code-simplification",
+      "source": { "source": "local", "path": "./plugins/code-simplification" },
+      "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
+      "category": "Developer Tools"
+    },
+    {
+      "name": "read-the-docs-first",
+      "source": { "source": "local", "path": "./plugins/read-the-docs-first" },
+      "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
+      "category": "Productivity"
+    },
+    {
+      "name": "use-claude-limits-efficiently",
+      "source": { "source": "local", "path": "./plugins/use-claude-limits-efficiently" },
+      "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
+      "category": "Productivity"
+    },
+    {
+      "name": "use-premium-models-efficiently",
+      "source": { "source": "local", "path": "./plugins/use-premium-models-efficiently" },
+      "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
+      "category": "Productivity"
+    },
+    {
+      "name": "visual-docs",
+      "source": { "source": "local", "path": "./plugins/visual-docs" },
+      "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
+      "category": "Productivity"
+    }
+  ]
+}

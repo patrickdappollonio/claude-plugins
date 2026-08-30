@@ -1,0 +1,19 @@
+{
+  "name": "read-the-docs-first",
+  "version": "1.0.1",
+  "description": "Docs-first discipline for external APIs, packages, providers, and fast-moving product behavior.",
+  "author": { "name": "Patrick D'appollonio", "email": "patrickdappollonio@gmail.com" },
+  "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/read-the-docs-first",
+  "license": "MIT",
+  "keywords": ["documentation", "api-drift", "research", "official-docs"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Read the Docs First",
+    "shortDescription": "Check current official docs before coding.",
+    "longDescription": "Grounds work involving external or fast-moving systems in current primary documentation before implementation or advice.",
+    "developerName": "Patrick D'appollonio",
+    "category": "Productivity",
+    "capabilities": ["Research", "Analyze"],
+    "defaultPrompt": ["Check the current official docs before implementing this."]
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "effective-go",
+  "version": "1.0.1",
+  "description": "Opinionated Go writing discipline covering idiomatic code, errors, tests, comments, and behavior-preserving simplification.",
+  "author": { "name": "Patrick D'appollonio", "email": "patrickdappollonio@gmail.com" },
+  "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/effective-go",
+  "license": "MIT",
+  "keywords": ["go", "golang", "style", "testing", "code-quality"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Effective Go",
+    "shortDescription": "Write idiomatic, well-tested Go.",
+    "longDescription": "Applies established Go conventions to implementation, error handling, tests, comments, and simplification.",
+    "developerName": "Patrick D'appollonio",
+    "category": "Developer Tools",
+    "capabilities": ["Write", "Review", "Test"],
+    "defaultPrompt": ["Implement this in idiomatic Go."]
+  }
+}
