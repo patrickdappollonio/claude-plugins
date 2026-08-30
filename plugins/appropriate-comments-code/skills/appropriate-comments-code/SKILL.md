@@ -1,6 +1,6 @@
 ---
 name: appropriate-comments-code
-description: Use when writing, editing, or reviewing code in any language, and especially before adding or changing a comment or docstring — when tempted to narrate in a comment what was tried first, why an approach was replaced, or what a bug, regression, or review turned up; to restate what the next line already says; to write more than a couple of lines above a declaration; or to cite a ticket, finding number, iteration label, wave or task ID, or any other session-scoped identifier; or when a comment describes what a feature or endpoint *is* rather than why the line beneath it is built the way it is.
+description: Use when writing, editing, or reviewing code in any language, and especially before adding or changing a comment or docstring — when tempted to narrate in a comment what was tried first, why an approach was replaced, or what a bug, regression, or review turned up; to restate what the next line already says; to write more than a couple of lines above a declaration; or to cite a ticket, finding number, iteration label, wave or task ID, or any other session-scoped identifier; to write a count into a comment ("the 7 tests", "all 13 integration tests", "the three callers", "both fields") of things that live elsewhere and can be added to; or when a comment describes what a feature or endpoint *is* rather than why the line beneath it is built the way it is.
 ---
 
 # Appropriate Comments in Code
@@ -49,7 +49,7 @@ documentation convention the project already uses.
 teaching code, where narrating every line *is* the deliverable. Say that you are
 setting the skill aside and why.
 
-## The Five Tenets
+## The Six Tenets
 
 ### 1. Two lines is the working limit
 
@@ -257,6 +257,49 @@ Linear, GitHub, or Notion ID into a comment, check whether the project already
 does it — grep for the ticket prefix in existing comments. If the convention is
 there, match it. If not, ask before introducing one.
 
+### 6. Name the set, not its size
+
+A count in a comment is a tally of something that lives elsewhere. "The 7
+tests that cover this", "the 13 other integration tests", "the three callers",
+"both fields" — each is true the day it is written and silently falsified by
+the next addition, because nothing recomputes it. The reader trusts a wrong
+number, or the next editor hunts down every tally a one-line change disturbed.
+
+**The count test:** could someone add one more of the thing, in another file,
+without touching this comment? Then the number goes, replaced by what it stood
+in for — a name, a location, a pattern, an invariant — which grows with the set.
+
+```go
+// Bad — two tallies, both stale the moment anyone adds a test
+// The current suite has 7 tests that verify this against Postgres. To switch
+// to CouchDB you also need to run the 13 other integration tests.
+func TestInsert(t *testing.T) {
+
+// Good — names the set; grows with it
+// Verified against Postgres here; the CouchDB tests are in couchdb_test.go
+// under the `integration` build tag.
+func TestInsert(t *testing.T) {
+```
+
+**Where a number belongs:** when it is a *constraint this code enforces or
+depends on* — "backs off to a 30s ceiling", "batch size must stay under 50; the
+API rejects larger". The value is the point, and it lives here. Even then, the
+durable form is a named constant the comment explains, not a literal in prose
+beside a literal in code.
+
+| Wrote | Because you meant | Write instead |
+|---|---|---|
+| "the 7 tests in this file" | the tests here | "the tests in this file" |
+| "all 13 integration tests" | a suite with a name | "the `integration`-tagged tests" |
+| "the three callers" | callers exist and care | "callers depend on this ordering" |
+| "both fields must be set" | a pair that may become three | "every credential field must be set" |
+| "the 4 steps below" | a sequence | "the steps below, in order" |
+| "retries 5 times" | a limit the code enforces | `maxRetries = 5` with a comment saying why 5 |
+
+A count that is genuinely load-bearing — "must be exactly two, the protocol
+sends a pair" — is an invariant, and an invariant is enforced by an assertion
+or a test, then commented, not commented alone.
+
 ## Verify what the comment claims
 
 A comment can be confidently, fluently wrong. Before you write or keep one that
@@ -269,6 +312,8 @@ names something, confirm the something exists:
 - **A test** — a comment saying "pinned by TestFoo" is an assertion about the
   suite. If `TestFoo` is gone, the comment now promises a guarantee nobody has.
 - **A numeric claim** — "the ceiling is four attempts" is checkable. Check it.
+  And if the number is a tally of things elsewhere rather than a value in
+  this code, it fails tenet 6 regardless of whether it is currently right.
 
 This is not paranoia; it is the failure mode long comments have. Nobody reads
 twenty lines closely enough to notice that one names a function that does not
@@ -330,7 +375,7 @@ comment as a finding until it passes. For each one:
 1. **Classify** it with one label: `restates` (fails the cover test), `narrates`
    (past tense, journey, process), `documents` (true, but too long or about the
    feature rather than the line), `unverified` (names something you have not
-   confirmed), `stale` (no longer matches the code beside it).
+   confirmed), `counts` (a tally of things that live elsewhere), `stale` (no longer matches the code beside it).
 2. **Rewrite or delete — never keep as-is.** A flagged comment has exactly two
    exits. Rewrite when there is one mechanical fact about *these lines* the
    reader cannot get from the code — most often, why the line differs from its
@@ -416,6 +461,9 @@ code: it goes above the constant.
 | "A comment will explain what `n` means" | Rename `n`. A comment that names what the code should have been called is a rename request written in the wrong place. |
 | "It's too complicated to explain briefly" | Then it is too complicated. Split or rename until two lines suffice; a long comment is a symptom, not a treatment. |
 | "I'll just tighten it" | Tightening a comment on the wrong subject produces a shorter comment on the wrong subject. Rewrite it about the line, or delete it. |
+| "The count is accurate, I just checked" | Accurate today. Nothing re-checks it when the eighth test lands, and the reader will believe seven. Name the set instead. |
+| "The number tells the reader how much there is" | The reader can count; they cannot tell whether your count is still current. A location or a name lets them see for themselves. |
+| "It's a small number, it won't change" | Small sets are the ones that grow. "Both" becomes three more often than "the 40" becomes 41. |
 
 ## Red flags in your own draft
 
@@ -429,6 +477,9 @@ Any of these means stop and rewrite:
 - Project phases: "in this stage", "until stage 3", "for now, phase 1"
 - An index into something the reader does not have: "finding 3", "item 3",
   "wave 4", "task 17", "pass 2", a bare ID like `F7` or `R2`
+- **A tally of things that live elsewhere:** "the 7 tests", "13 other",
+  "three callers", "both", "all four" — anything one more addition would
+  falsify without touching this comment
 - Restatement: the comment is a prose translation of the identifier below it
 - **Wrong subject:** the comment is about the feature, route, policy, or business
   meaning while the code is a call, wrapper, branch, or registration
@@ -466,6 +517,9 @@ Any of these means stop and rewrite:
       to exist
 - [ ] No session-scoped identifiers: finding numbers, iteration labels,
       wave/batch/task IDs, project phase names, agent run labels
+- [ ] No count of things that live elsewhere (tests, callers, fields, cases,
+      steps); every number left is a constraint this code enforces, ideally
+      as a named constant
 - [ ] Any tracker ID matches a convention already in the repo, or was approved
 - [ ] Comments near every line you changed were re-read and are still accurate
 - [ ] Nothing that describes **one** of something is now stale because your change

@@ -22,6 +22,7 @@ It works on patterns, not on any one language's idioms:
 - **Comments** — a condensed version of the `appropriate-comments-code` skill:
   comments on touched lines must carry information the code does not, in the
   present tense, in one or two lines, with no session-scoped identifiers
+  and no counts of things that live elsewhere
 
 And it's disciplined about *how*, not just *what*:
 

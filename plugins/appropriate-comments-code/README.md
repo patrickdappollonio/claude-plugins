@@ -5,14 +5,15 @@ comment is written or touched:
 
 > **Every comment carries information the code does not, about the code as it
 > is now, in as few lines as that takes. No iteration labels, finding numbers,
-> wave or task IDs, or "how we got here" narrative.**
+> wave or task IDs, counts of things that live elsewhere, or "how we got here"
+> narrative.**
 
 The audience is a developer months from now who was not in the session, did not
 read the pull request, does not know what was tried first, and cannot ask. If a
 sentence only makes sense to someone who watched the code being written, it does
 not belong in the code.
 
-## The four tenets
+## The five tenets
 
 - **Two lines is the working limit.** Above a declaration, aim for one or two
   lines. A comment can be accurate, present-tense and free of every ticket
@@ -32,6 +33,13 @@ not belong in the code.
   stage 3"), agent run labels, checklist positions — all meaningless to every reader but the one driving that session,
   and meaningless to them within a day. Tracker IDs (JIRA, Linear, Notion) only
   if the repo already uses them, or you ask first.
+- **Name the set, not its size.** "The 7 tests that cover this", "the 13
+  other integration tests", "both fields", "the three callers" — each is a
+  tally of something that lives elsewhere, true the day it is written and
+  silently wrong after the next addition. Point at the set instead (a file, a
+  build tag, a pattern, an invariant) so the comment grows with it. A number
+  stays only when it is a constraint this code enforces — and then it is a
+  named constant the comment explains.
 
 ## A regression is documented by a test
 

@@ -19,6 +19,15 @@ not, about the code as it is now, in as few lines as that takes.** The full
   ("pass 2"), wave/batch/task IDs, project phase names ("until stage 3"), agent
   or review run labels. They meant something for one session and nothing after.
   Tracker IDs (JIRA, Linear, GitHub) only if the repo already uses them.
+- **Name the set, not its size.** "The 7 tests that cover this", "the 13
+  other integration tests", "both fields", "the three callers" are tallies of
+  things that live elsewhere: true today, silently wrong after the next
+  addition, because nothing recomputes them. Point at the set instead — a
+  file, a build tag, a pattern, an invariant — so the comment grows with it.
+  A number stays only when it is a constraint this code enforces ("batch
+  size must stay under 50; the API rejects larger"), and then it is a named
+  constant the comment explains. Simplifying a function that used to be
+  three and is now one is exactly when these go stale — check for them.
 - **Verify what a comment names.** A function, file, test, or number a comment
   cites must exist and be correct — grep for it.
 - **You own the comments on lines you touch.** After a split or merge, re-read

@@ -102,7 +102,7 @@ the session, did not read the PR, does not know what was tried first, and cannot
 ask — and who is skimming, so every line above the function they came for is a
 toll they pay to reach it.
 
-That rules out four things agents do constantly. Narrating the journey — *"we
+That rules out five things agents do constantly. Narrating the journey — *"we
 used to buffer the whole response but it blew up memory, so now we stream it"* —
 describes an edit, not the code, and rots on the next change; the standing
 constraint gets stated instead. Restating the line below — *"// Opens the DB
@@ -110,7 +110,10 @@ connection"* above `connection.open()` — costs the reader time for nothing.
 Committing identifiers that outlive nothing: finding numbers like `F7`,
 iteration labels, wave and task IDs, project phase names, agent run labels —
 those mean something to exactly one person for about a day, and then sit in the
-file forever. And going long: a twenty-line comment can be accurate,
+file forever. Counting things that live elsewhere — *"the 7 tests that cover
+this"*, *"the 13 other integration tests"*, *"both fields"* — which is accurate
+the day it is written and silently wrong after the next addition; the comment
+names the set instead so it grows with it. And going long: a twenty-line comment can be accurate,
 present-tense and ticket-free and still be documentation parked above a
 function, where nobody reads it. One or two lines is the working limit, and the
 only exemption is a decision table or state machine that prose can't replace.
