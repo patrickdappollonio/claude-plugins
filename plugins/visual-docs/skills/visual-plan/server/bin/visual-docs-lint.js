@@ -221,6 +221,15 @@ function lintFence(lang, body, start, add) {
     // its real line number, so title findings point at the right line.
     const idxs = [];
     body.forEach((l, k) => { if (l.trim()) idxs.push(k); });
+    // Key/value form (`id:` / `type:` / `prompt:` / `options:`). The viewer
+    // tolerates it, but it is not the syntax and reads worse in plain-text
+    // exports, so steer back to plain lines and skip the title checks (the
+    // prompt is on a `prompt:` line, not line one).
+    const keyed = body.findIndex((l) => /^(id|type|prompt|question|options|multiple)\s*:/i.test(l.trim()));
+    if (keyed >= 0) {
+      add(start + 2 + keyed, 'warn', 'question fence is written as `key: value` lines (`id:`, `type:`, `prompt:`, `options:`) — the fence is not YAML. Write it as plain lines: an optional `multiple` line, the question sentence, optional description lines, then `- ` options. No `id:` (the block gets a stable id automatically) and no `type:`.');
+      return;
+    }
     let p = 0;
     if (idxs.length && /^(multiple|multi|select all( that apply)?)$/i.test(body[idxs[0]].trim())) p = 1;
     if (p >= idxs.length) {

@@ -142,6 +142,22 @@ has items, skip one only when it had nothing there:
 7. `## Rollout` — ordered steps, flags, sequencing.
 8. `## Open questions` — a ` ```question ` fence per decision (single/multi
    options + free-text); the user's answer comes back as a comment you read.
+   The fence is **plain lines, not YAML** — no `id:`, `type:`, `prompt:`, or
+   `options:` keys (a `key: value` first line becomes the card's title and the
+   rest turns into an unreadable description). Exactly this shape:
+
+   ```question
+   multiple
+   Which regions should get it first?
+   Optional description lines go here, between the question and the options.
+   - us-east
+   - eu-west (recommended)
+   - ap-south
+   ```
+
+   Line one is the question (or a lone `multiple` for checkboxes, then the
+   question); `- ` lines are the options; anything else is the description.
+   The block gets a stable id on its own. See `authoring-guide.md` for details.
 
 **Then lint and self-review — both required, before you serve or share anything.
 Do not write the file and stop.**
