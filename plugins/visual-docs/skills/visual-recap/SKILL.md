@@ -111,7 +111,11 @@ to avoid.
 **Read [document-quality.md](shared/document-quality.md) once (silently)
 before writing** — it is the standard for making the document comprehensive,
 layered simple→complex, and terse. Use
-[authoring-guide.md](shared/authoring-guide.md) for fence syntax.
+[authoring-guide.md](shared/authoring-guide.md) for fence syntax. If you ask
+the reader anything with a ` ```question ` fence, write it as **plain lines,
+not YAML** — line one is the question (or a lone `multiple`, then the
+question), `- ` lines are options, other lines are the description; never
+`id:` / `type:` / `prompt:` / `options:` keys, which render as garbage.
 This document is where your tokens go: any budget you didn't spend narrating
 steps 1–2 belongs here — prefer one more `## Key changes made` hunk, one more grounded
 `api`/`migration` example, or a fuller `## Risks` list over a shorter recap.

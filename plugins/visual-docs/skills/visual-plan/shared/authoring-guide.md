@@ -195,6 +195,12 @@ non-option line after the prompt becomes an optional **description** shown under
 the title. The question, description, and option labels all support inline
 markdown (`` `code` ``, **bold**, *italic*) for emphasis.
 
+**The fence is plain lines, not YAML.** Do not write `id:`, `type:`,
+`prompt:`, or `options:` keys — the viewer tolerates that form, but the linter
+flags it and the plain form is the one to write. There is no id to declare
+(each block gets a stable id from its content) and no `type:` (a lone
+`multiple` first line is the only switch).
+
 **Keep the title short, and never put a heading in it.** The first line
 renders as the card's title — the card supplies its own title styling, so a
 `#`/`##` heading inside the fence just shows up as literal `#` characters.
