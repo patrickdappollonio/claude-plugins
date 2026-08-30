@@ -97,8 +97,11 @@ One source file, one test file, is the steady state. A package with
   scenario when the table does.
 - `t.Parallel()` on tests and subtests that share no mutable fixture. Note
   `t.Setenv` and `t.Parallel` are mutually exclusive.
-- `t.Context()` for a context, never `context.Background()` — it is
-  cancelled when the (sub)test ends, so leaked goroutines die with the test.
+- `t.Context()` for a context (Go 1.24+), never a bare
+  `context.Background()` — it is cancelled when the (sub)test ends, so
+  leaked goroutines die with the test. On a `go.mod` older than 1.24, the
+  equivalent is `ctx, cancel := context.WithCancel(context.Background())`
+  followed by `t.Cleanup(cancel)`.
 - `t.TempDir()`, `t.Setenv()`, `t.Cleanup()` over hand-rolled setup/teardown.
 - Helpers call `t.Helper()` first so failures point at the test, not the helper.
 - No global mutable state shared between tests; no test order dependence.
@@ -217,7 +220,7 @@ func TestClient_UploadFile(t *testing.T) {
             t.Parallel()
             path := writeFileOfSize(t, tc.size)
             storage := &mockStorage{putFn: tc.putFn}
-            client := NewClient(storage, slog.New(slog.DiscardHandler))
+            client := NewClient(storage, slog.New(slog.NewTextHandler(io.Discard, nil)))
 
             err := client.UploadFile(t.Context(), path, "media")
 
@@ -233,6 +236,8 @@ func TestClient_UploadFile(t *testing.T) {
 ```
 
 `errors.Is(nil, nil)` is true, so the success case needs no special branch.
+`slog.NewTextHandler(io.Discard, nil)` builds on any Go with `log/slog`;
+from Go 1.24 on, `slog.New(slog.DiscardHandler)` is the shorter form.
 
 ## Review checklist for tests
 

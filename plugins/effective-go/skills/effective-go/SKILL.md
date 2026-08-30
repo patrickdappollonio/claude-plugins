@@ -183,7 +183,7 @@ A chain must read as a sentence:
 ## Testing (summary — full text in `testing.md`)
 
 - Table-driven with named cases and visible Arrange / Act / Assert.
-- `t.Context()`, `t.TempDir()`, `t.Setenv()`, `t.Cleanup()`, `t.Helper()`, `t.Parallel()` where safe.
+- `t.Context()` (Go 1.24+; the pre-1.24 equivalent is in `testing.md`), `t.TempDir()`, `t.Setenv()`, `t.Cleanup()`, `t.Helper()`, `t.Parallel()` where safe.
 - Messages: `t.Errorf("Func(%v) = %v, want %v", in, got, want)` — got before want. `t.Fatalf` only when continuing is meaningless.
 - Errors asserted with `errors.Is`/`errors.As`, never by string.
 - Mocks are hand-written structs with one `Fn` field per method. A nil `Fn` returns `errors.New("mockT.Method: methodFn not implemented")`; a method without an error return panics with the same text. Add call counters when the code under test swallows errors.
@@ -306,7 +306,7 @@ to a hand-rolled loop.
 | "Logging it here too gives more context" | It gives the same failure twice. Put the context in the wrap and log once at the top. |
 | "`fmt.Errorf` with a constant string is harmless" | It is `errors.New`. Linters flag it; reviewers flag it; write it right the first time. |
 | "A struct-field mock is simpler than `Fn` fields" | A struct-field mock passes silently when the code calls a method the test forgot about. Nil `Fn` must fail. |
-| "`context.Background()` in a test is fine" | `t.Context()` cancels when the test ends and kills leaked goroutines. Use it. |
+| "`context.Background()` in a test is fine" | `t.Context()` cancels when the test ends and kills leaked goroutines. Use it, or `WithCancel` + `t.Cleanup(cancel)` before Go 1.24. |
 | "I'll add an interface so it's mockable later" | Interfaces are defined by consumers when they need them. Later is later. |
 | "This helper deserves its own package / dependency" | A little copying beats a little dependency. Copy it. |
 | "The package already does it this other way" | Match the package where it is right; write new code correctly where it isn't. Consistency doesn't spread mistakes. |
