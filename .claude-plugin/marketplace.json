@@ -31,6 +31,18 @@
       "license": "MIT"
     },
     {
+      "name": "effective-go",
+      "source": "./plugins/effective-go",
+      "description": "Opinionated Go writing discipline — idiomatic Go from Effective Go, the Google style guide, the Go Proverbs and the Gruntwork guide, with a stated house preference for natural-language, wrappable error messages, hand-written Fn-field mocks that fail loudly, comment and simplification discipline folded in, and a per-change checklist the agent runs before calling Go code done.",
+      "category": "code-quality",
+      "keywords": ["go", "golang", "style", "idiomatic", "errors", "testing", "code-quality"],
+      "author": {
+        "name": "Patrick D'appollonio"
+      },
+      "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/effective-go",
+      "license": "MIT"
+    },
+    {
       "name": "adversarial-review",
       "source": "./plugins/adversarial-review",
       "description": "Hostile, bias-free review of a change — dispatches independent adversarial reviewers that hold the code against what was agreed and question whether what was agreed was right, plus a standalone false-positive filter, and reports only verified findings in plain language. Ships a full 18-reviewer panel and a cheaper 8-reviewer quick panel that keeps both verification gates.",

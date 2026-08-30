@@ -41,6 +41,7 @@ Each plugin below maps to one skill of the same name, except `adversarial-review
 | appropriate-comments-code | `appropriate-comments-code` |
 | code-simplification | `code-simplification` |
 | effective-communicator | `effective-communicator` |
+| effective-go | `effective-go` |
 | read-the-docs-first | `read-the-docs-first` |
 | use-claude-limits-efficiently | `use-claude-limits-efficiently` |
 | use-premium-models-efficiently | `use-premium-models-efficiently` |
@@ -177,6 +178,44 @@ produces identifier-heavy output.
 
 Then just ask: *"Explain that in plain English."* — or install it and never ask
 again. [Read more →](plugins/effective-communicator)
+
+### effective-go
+
+Go written the way the Go community writes it — condensing [Effective
+Go](https://go.dev/doc/effective_go), the [Google Go Style
+Guide](https://google.github.io/styleguide/go/guide), the [Go
+Proverbs](https://go-proverbs.github.io/) and the [Gruntwork
+guide](https://docs.gruntwork.io/guides/style/golang-style-guide/) into one
+process with a checklist — plus a few house rules that win when the sources
+disagree. Errors read like sentences (`failed to open config file %q: %w`,
+never `open %q: %w`), sentinels are noun phrases, `errors.New` when nothing
+is formatted, `%q` instead of `'%s'`, `errors.Is`/`errors.As` to compare,
+and every error is handled exactly once — no log-and-return.
+
+Tests are written first and generously — red → green for new code, a
+pinning test for refactors, and proposed **user-journey tests** for
+features — appended to the existing `_test.go` rather than sprawled across
+new files. They are table-driven with `t.Context()` and got-before-want
+messages, and mocks are hand-written `Fn`-field structs whose unwired
+methods fail loudly, so a test that forgot to wire a dependency can never
+pass on a zero value. The agent commits on approval and never pushes
+without explicit approval for that push.
+It also folds in Go-flavored versions of `appropriate-comments-code` and
+`code-simplification` — comments that carry only what the code cannot say,
+in the present tense, and refactors done one tested change at a time — so
+one install covers the whole discipline. It pairs with JetBrains'
+[`modern-go-guidelines`](https://github.com/JetBrains/go-modern-guidelines)
+plugin: if its `use-modern-go` skill is installed the agent uses it for
+version-specific idioms newer than its training data, and if not it
+recommends it once. Nothing is called done until
+`gofmt`, `go vet`, `go test -race` and the project linter have run and their
+output is reported.
+
+```
+/plugin install effective-go@patrickdappollonio
+```
+
+Then just write Go — it loads itself. [Read more →](plugins/effective-go)
 
 ### read-the-docs-first
 
