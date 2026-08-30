@@ -41,7 +41,7 @@ for every line above it. Twenty accurate lines are a worse comment than two.
 - Deprecations use the `// Deprecated: use X instead.` paragraph form so
   tooling sees it.
 
-## Five tenets
+## Six tenets
 
 ### 1. Two lines is the working limit
 
@@ -134,6 +134,35 @@ checklist positions. The context that gave them meaning is gone; the ID
 stays forever. Tracker IDs (JIRA, GitHub issues) only if the project
 already uses them in comments — grep first; otherwise ask.
 
+### 6. Name the set, not its size
+
+A count in a comment is a tally of something that lives elsewhere, true
+the day it is written and silently wrong after the next addition, because
+nothing recomputes it. **The count test:** could someone add one more of
+the thing, in another file, without touching this comment? Then the number
+goes, and the comment points at the set instead — a file, a build tag, a
+pattern, an invariant — so it grows with it.
+
+```go
+// Bad — stale the moment anyone adds a test
+// The current suite has 7 tests that verify this against Postgres. To switch
+// to CouchDB you also need to run the 13 other integration tests.
+func TestInsert(t *testing.T) {
+
+// Good — names the set
+// Verified against Postgres here; the CouchDB tests are in couchdb_test.go
+// under the `integration` build tag.
+func TestInsert(t *testing.T) {
+```
+
+Same for "both fields", "the three callers", "the four cases above". A
+number stays only when it is a constraint this code enforces — "batch size
+must stay under 50; the API rejects larger" — and then it is a named
+constant the comment explains, not a literal in prose beside a literal in
+code. A count that is genuinely load-bearing ("exactly two: the protocol
+sends a pair") is an invariant, enforced by a test or a check and *then*
+commented.
+
 ## Fix the code before you comment it
 
 - A comment that names what a variable should be called is a rename
@@ -198,6 +227,8 @@ wrong subject is not a nit. Don't sweep comments outside the change.
 | "It's too complicated to explain briefly" | Then it is too complicated. Split or rename until two lines suffice. |
 | "I'll leave the old code commented out" | Version control. Delete it. |
 | "I shortened it, so it's better" | Only if every rule survived. A tidy comment missing `callers must hold mu` is a downgrade. |
+| "The count is accurate, I just checked" | Accurate today; nothing re-checks it when the eighth test lands. Name the set instead. |
+| "It's a small number, it won't change" | Small sets are the ones that grow. "Both" becomes three more often than 40 becomes 41. |
 
 ## Red flags in your draft
 
@@ -205,6 +236,7 @@ wrong subject is not a nit. Don't sweep comments outside the change.
 - "used to", "previously", "we tried", "no longer", "originally", "instead of the old"
 - "per review", "as discussed", "from the audit", "flagged by", "for context", "background:"
 - "in this stage", "phase 2", "wave 4", "task 17", "pass 2", `F7`
+- A tally of things that live elsewhere: "the 7 tests", "13 other", "three callers", "both", "all four"
 - A prose translation of the identifier below it
 - About the feature, route, or policy while the code is a call or a branch
 - Longer than the code it annotates
@@ -220,6 +252,7 @@ wrong subject is not a nit. Don't sweep comments outside the change.
 - [ ] Every comment is present tense and survives the cover test and the subject test
 - [ ] No comment narrates a previous attempt, a past bug, or this edit; any fixed regression is pinned by a test named after the invariant
 - [ ] No session-scoped identifiers; tracker IDs only if the repo already uses them
+- [ ] No count of tests, callers, fields, cases, or steps that live elsewhere; every number left is a constraint this code enforces, as a named constant
 - [ ] Every name, path, test, and number a comment mentions was confirmed
 - [ ] No comment stands in for a rename or a split
 - [ ] Comments near every changed line were re-read and still hold

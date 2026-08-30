@@ -159,6 +159,7 @@ Scan for these patterns — each is a concrete signal, not a vague smell:
 | Comments explaining "what" | `// increment counter` above an increment | Delete the comment — the code says it |
 | Comments explaining "why" | `// Retry because the API is flaky under load` | Keep these — they carry intent the code can't express |
 | Comments narrating history or a session | "used to", "pass 2", `F7`, "per review" | Rewrite as a present-tense constraint or delete — see *Comments* |
+| Comments counting things that live elsewhere | "the 7 tests", "both fields", "the three callers" | Name the set (file, tag, pattern, invariant) so the comment grows with it — see *Comments* |
 
 **Redundancy:**
 
@@ -303,7 +304,9 @@ by carrying information the code does not, about the code as it is now, in as
 few lines as that takes.** Cover it with your hand — if the code is no poorer,
 delete it. Present tense, not history; two lines above a declaration; no
 session-scoped identifiers (finding numbers, pass labels, task IDs, phase
-names); verify anything a comment names. **Read `comments.md` before writing or
+names); no counts of things that live elsewhere ("the 7 tests", "both
+fields") — name the set so the comment grows with it; verify anything a
+comment names. **Read `comments.md` before writing or
 rewriting a comment.** The standalone `appropriate-comments-code` skill is the
 full treatment.
 
@@ -361,6 +364,7 @@ Same errors, same behavior, same edge cases — only the shape changed.
 | "The summary in SKILL.md is enough, I'll skip the companion file" | The summary is a reminder of text you are supposed to have read. Read the four files on first use, and the named one again at its step. |
 | "Reading the whole module is more thorough than grepping" | For finding, grep is thorough and cheap. Read whole files for meaning, not for locating. |
 | "The comment explains the history of this fix" | The reader sees today's code. State the constraint in the present tense; the story goes in the commit message. |
+| "The count is accurate, I just checked" | Accurate today; nothing re-checks it when the next one lands. Name the set instead. |
 
 ## Red Flags — Stop and Reassess
 
@@ -378,6 +382,7 @@ Same errors, same behavior, same edge cases — only the shape changed.
 - You are merging two functions you have not diffed line by line, or without checking their callers
 - A function's complexity went *up* in a helper you extracted (you moved the tangle, not untangled it)
 - A comment you wrote says "used to", "per review", names a finding or pass number, or is longer than two lines above a declaration
+- A comment you wrote or kept counts tests, callers, fields, or cases that live elsewhere ("the 7 tests", "both", "all three")
 - You are about to edit on the strength of a subagent's finding you have not opened and confirmed yourself
 - You fanned out subagents without asking the user how many, or used a premium model to grep
 
@@ -394,7 +399,7 @@ After completing a simplification pass:
 - [ ] Any function merge was proposed with the diff and caller count before being made, and every caller was updated
 - [ ] Every finding that became a change was reproduced by the model running this skill — location opened, numbers recounted, pairs re-diffed, tests re-run
 - [ ] Subagent fan-out and model tiers matched what the user agreed to; finding went to cheap models or grep, judgment to premium
-- [ ] Comments on touched lines survive the cover test, are present-tense, fit in two lines above a declaration, and cite nothing session-scoped
+- [ ] Comments on touched lines survive the cover test, are present-tense, fit in two lines above a declaration, cite nothing session-scoped, and count nothing that lives elsewhere
 - [ ] Build succeeds with no new warnings; linter/formatter passes
 - [ ] Each simplification was applied and tested as its own incremental change
 - [ ] The diff is clean — no unrelated changes mixed in

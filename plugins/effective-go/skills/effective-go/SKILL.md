@@ -256,7 +256,8 @@ the working limit. Cover test: hide the comment — if the code lost
 nothing, delete it. Subject test: the comment is about *these lines*
 (usually why they differ from their neighbours), not the feature. Present
 tense only; no "used to", "per review", finding numbers, pass labels, task
-IDs, phase names. A regression is pinned by a test named after the
+IDs, phase names. No counts of things that live elsewhere ("the 7 tests",
+"both fields") — name the set so the comment grows with it. A regression is pinned by a test named after the
 invariant, not by a warning comment. Verify every name a comment
 mentions. Never touch `//go:build`, `//go:generate`, `//nolint` directives.
 
@@ -320,6 +321,7 @@ to a hand-rolled loop.
 | "Journeys are the user's job" | Proposing them is yours. Writing the picked ones is yours. |
 | "Reading the companion files is overkill for a one-line change" | One-line changes are where error strings and `'%s'` slip in. Read them. |
 | "The comment explains the history of this fix" | The reader sees today's code. State the constraint; the story goes in the commit. |
+| "The count is accurate, I just checked" | Accurate today; nothing re-checks it when the next one lands. Name the set instead. |
 | "The tests need a small tweak after my refactor" | You changed behavior. Revert the refactor, not the test. |
 | "I'll fix the error wording while I'm refactoring" | That's a behavior change hiding in a refactor. Separate step, stated in the report — or leave it. |
 | "Those two functions are basically the same, I'll merge them" | Diff, count callers, propose. A near-duplicate is sometimes two things that change for different reasons. |
@@ -339,6 +341,7 @@ to a hand-rolled loop.
 - A `panic` reachable from input; a `Must*` fed runtime data
 - "It builds" reported without the `vet`/`test -race` output
 - A comment that says "used to", "per review", names a finding or pass number, or is longer than the code beneath it
+- A comment that counts tests, callers, fields, or cases that live elsewhere ("the 7 tests", "both", "all three")
 - A refactor that needed a test edited to pass, or that touched code outside the request
 - A new `_test.go` beside an existing one for the same source file, with no build tag and no separate tier
 - A feature change with no journeys proposed to the user
@@ -359,7 +362,7 @@ to a hand-rolled loop.
 - [ ] Errors compared with `errors.Is`/`errors.As`
 - [ ] Receivers consistent per type; zero value useful; no copied mutexes
 - [ ] Goroutines have owners and exits; `ctx` forwarded, never stored
-- [ ] Doc comment on every exported identifier, sentence form, ends with a period; every comment passes the cover and subject tests; no history, no session IDs
+- [ ] Doc comment on every exported identifier, sentence form, ends with a period; every comment passes the cover and subject tests; no history, no session IDs, no counts of things that live elsewhere
 - [ ] Any reshaping of existing code: one change at a time, pinned by a pre-existing test, complexity reported for splits, merges proposed first
 - [ ] Tests: table-driven, `t.Context()`, got-before-want messages, `errors.Is` assertions, `Fn`-field mocks that fail loudly, `t.Parallel()` where safe
 - [ ] Interface changed → every implementation and every mock updated
