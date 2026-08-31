@@ -69,6 +69,7 @@ Each plugin below maps to one skill of the same name, except `adversarial-review
 | code-simplification | `code-simplification` |
 | effective-communicator | `effective-communicator` |
 | effective-go | `effective-go` |
+| implement-plan | `implement-plan` |
 | read-the-docs-first | `read-the-docs-first` |
 | use-claude-limits-efficiently | `use-claude-limits-efficiently` |
 | use-premium-models-efficiently | `use-premium-models-efficiently` |
@@ -298,6 +299,37 @@ npx skills add patrickdappollonio/claude-plugins --skill effective-go
 ```
 
 Then just write Go — it loads itself. [Read more →](plugins/effective-go)
+
+### implement-plan
+
+The "now build it" step after a plan is agreed. The agent splits the plan into
+independent slices, gives each a git worktree and a cheaper executor working
+under TDD with unit tests as the floor — journey-style integration/E2E tests
+and real dependencies via testcontainers are recommended, and you size them —
+then checks every slice **against the plan,
+item by item** on the premium model, runs an adversarial review sized to the
+change (the `adversarial-review` skills when installed, an on-the-spot panel
+when not), fixes what it finds, and iterates. Technical decisions are logged
+at the end of the plan in plain language; functional and operational ones are
+parked for you, never assumed. It estimates capacity before starting, hands
+you a `/goal` condition so the run is hands-free, merges back into the branch
+you started on, and never deletes a worktree without asking.
+
+```text
+# Claude Code session — type this as a message
+/plugin install implement-plan@patrickdappollonio
+
+# Shell — Claude Code
+claude plugin install implement-plan@patrickdappollonio
+
+# Shell — Codex CLI
+codex plugin add implement-plan@patrickdappollonio
+
+# Shell — npx skills
+npx skills add patrickdappollonio/claude-plugins --skill implement-plan
+```
+
+Then, once a plan is agreed: *"Implement the plan we agreed on."* [Read more →](plugins/implement-plan)
 
 ### read-the-docs-first
 

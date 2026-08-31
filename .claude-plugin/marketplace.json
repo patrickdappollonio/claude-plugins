@@ -67,6 +67,18 @@
       "license": "MIT"
     },
     {
+      "name": "implement-plan",
+      "source": "./plugins/implement-plan",
+      "description": "Hands-free implementation of an agreed plan — worktrees and cheap-model executors under TDD, an item-by-item conformance check against the plan on the premium model, an adversarial review sized to the change (installed skills or an on-the-spot panel), technical decisions logged and functional ones left to the user, a capacity check and /goal condition up front, and no worktree deleted without asking.",
+      "category": "orchestration",
+      "keywords": ["implementation", "orchestration", "worktrees", "subagents", "tdd", "adversarial-review", "plan-execution", "hands-free"],
+      "author": {
+        "name": "Patrick D'appollonio"
+      },
+      "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/implement-plan",
+      "license": "MIT"
+    },
+    {
       "name": "read-the-docs-first",
       "source": "./plugins/read-the-docs-first",
       "description": "Docs-first discipline for anything involving third-party APIs, packages, providers, or fast-moving product behavior — the agent web-searches for current official docs and reads primary sources before assuming from memory, grounding answers in what the docs actually say.",

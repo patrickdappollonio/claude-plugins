@@ -1,0 +1,163 @@
+# Handoff Packet
+
+The prompt every executor receives. Executors have **no chat context**: nothing
+you know reaches them unless it is in the packet. Write it as if to a capable
+contractor who has never seen the project or the conversation.
+
+## What goes in, in this order
+
+1. **Repo path and branch.** The worktree path and the slice branch. "Work only
+   inside this directory."
+2. **The plan section, verbatim.** Copy the slice's part of the plan word for
+   word — never paraphrase, a paraphrase is where requirements drift. Include
+   the plan's non-goals and any item marked *undecided by the user*, with the
+   instruction: **do not decide undecided items; leave them out and report them.**
+3. **Scope.** Files and surfaces in scope; files explicitly out of scope (other
+   slices' files, shared config the orchestrator owns).
+4. **Announced deviations** already agreed with the user, if any.
+5. **Testing rules** (below), plus the repo's actual test command, layout, and
+   any integration/E2E convention you found.
+6. **The executor discipline** (below), verbatim.
+7. **Evidence to return** (below).
+8. **Stop conditions** (below).
+
+Parallel slices should not share files. When two slices must touch the same
+file (a dispatch table, a router, a `switch` in the CLI entry point), either
+serialize them or name the shared file in both packets as *append-only in your
+own section* and own the merge yourself — the conflict is the orchestrator's,
+never an executor's to resolve by editing the other slice.
+
+## Testing rules
+
+The floor is fixed; the tiers above it are whatever the user chose at G1.
+Include the floor verbatim, then only the tiers that apply:
+
+> **TDD is mandatory.** For every behavior: write a unit test, run it and
+> watch it fail for the right reason, write the minimum code to pass, run it
+> green, refactor with tests green. Tests written after the code do not count
+> — if you notice code without a failing test behind it, delete the code and
+> start that step over.
+>
+> Extend the nearest existing test file before creating a new one. Do not add
+> test infrastructure for this task alone. Test the behavior this slice
+> changes; do not backfill unrelated coverage.
+
+Add when the repo has integration/E2E tests, or the user asked for journeys:
+
+> **Integration and E2E tests are user journeys.** Design each test the way a
+> real consumer of this project behaves: run the real CLI binary, call the real
+> HTTP endpoint, drive the real UI flow, read the real file the user would
+> read. **Mock only what cannot run for real** — third-party services, the
+> wall clock, external networks, paid APIs. Everything else executes from the
+> real codebase. Follow this repository's existing layout, runner, fixtures,
+> and naming exactly: `<describe>`.
+
+Add when the user asked for real dependencies:
+
+> **Real dependencies, not fakes.** For databases, queues, caches, object
+> stores, and similar, use testcontainers (or this repository's existing
+> equivalent) to run a real instance in the test. Do not stub the driver.
+
+## Executor discipline
+
+Include verbatim:
+
+> Complete the task with the **minimum sufficient change**.
+>
+> **Before editing**
+> - Read the relevant code, tests, and configuration directly. Do not work from
+>   search snippets or guesses.
+> - If a requirement is ambiguous or a premise is unverified, stop and report
+>   it; do not build on it.
+> - State a minimal plan in your first message, in this shape:
+>   - **Outcome** — the exact behavior requested
+>   - **Non-goals** — what this task will not do
+>   - **Files** — the smallest set expected to change
+>   - **Proof** — the check that will prove the change works
+> - Take one implementation path. Do not split the work further.
+>
+> **While editing**
+> - Reuse existing code, helpers, patterns, and test setup before adding anything.
+> - Fix bugs at the root cause. Do not stack patches around a wrong premise.
+> - Add an abstraction, adapter, or config layer only for a second real caller
+>   in this task or a stated requirement.
+> - Preserve behavior outside the requested change.
+> - Do not design for rare or future cases nobody asked about.
+> - Remove code you replace. Keep an old path only when compatibility is an
+>   explicit requirement.
+>
+> **Pause and report — do not proceed — before:**
+> - Materially expanding scope or touching files outside the stated set
+> - Adding a dependency, framework, service, or new test infrastructure
+> - Changing a public API, schema, storage format, or wire format the plan
+>   does not already specify
+> - Deleting or overwriting user data, discarding uncommitted work, rewriting
+>   history, or dropping data
+> - Keeping two implementations of the same behavior alive
+> - Deciding anything the plan marks as undecided, or anything a user could
+>   reasonably say "I didn't want that" about — output wording, new flags or
+>   syntax, defaults
+>
+> **If the plan grows:** stop when the work starts adding future-use layers,
+> workaround stacks, unrelated cleanup, or tests for unstated behavior. Report
+> the smaller scope you propose and wait.
+>
+> **Done means**
+> - The requested behavior works and every item of the plan section is met
+> - Relevant checks pass, with the exact commands and their results reported
+> - Every touched file is necessary and the diff contains nothing unrelated
+> - No debug code, backup copies, dead paths, or scratch files remain
+> - Assumptions, limitations, and unverified runtime behavior are stated plainly
+
+## Evidence to return
+
+The orchestrator does the conformance review from this, so it must be complete:
+
+- Each plan item, quoted, with the file:line that fulfils it and the test that
+  proves it — or "not done" with the reason.
+- The exact test commands run and their output summary (pass/fail counts).
+- The commit hash(es) on the slice branch.
+- Every assumption made, every item left undecided, every deviation from the
+  plan section and why.
+- Anything the stop conditions triggered.
+
+The report is a lead, not a fact: the orchestrator reopens the cited files.
+
+## Stop conditions
+
+Stop and report instead of improvising when: the code does not match what the
+packet describes; a command fails after one reasonable retry; the task needs
+out-of-scope files; a pause-and-report condition fires; a test cannot be made
+to fail first (the behavior may already exist — report it).
+
+## Template
+
+```
+You are implementing one slice of an agreed plan in <worktree path>, branch <slice-branch>.
+Work only inside that directory. Do not push. Do not touch other branches.
+
+## The plan section you are implementing (verbatim — this is the spec)
+<paste>
+
+## Non-goals and items the user has not decided (do not decide them)
+<paste>
+
+## Scope
+In: <files/surfaces>   Out: <files/surfaces>
+
+## Already-announced deviations
+<none | list>
+
+## Testing rules
+<paste the TDD floor; then only the tiers the user chose at G1>
+Repo test command: <cmd>. Existing integration/E2E convention: <describe or "none">.
+
+## Discipline
+<paste the Executor discipline block>
+
+## What to return
+<paste the Evidence to return block>
+
+## Stop conditions
+<paste the Stop conditions block>
+```
