@@ -1,0 +1,19 @@
+{
+  "name": "appropriate-comments-code",
+  "version": "1.2.1",
+  "description": "Comment discipline for code the agent writes: every comment adds information the code does not and describes the current state only.",
+  "author": { "name": "Patrick D'appollonio", "email": "patrickdappollonio@gmail.com" },
+  "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/appropriate-comments-code",
+  "license": "MIT",
+  "keywords": ["comments", "code-quality", "documentation", "readability"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Appropriate Code Comments",
+    "shortDescription": "Write useful, durable code comments.",
+    "longDescription": "Keeps code comments concise, current, and limited to information the code itself cannot express.",
+    "developerName": "Patrick D'appollonio",
+    "category": "Developer Tools",
+    "capabilities": ["Write", "Review"],
+    "defaultPrompt": ["Review the comments in this change."]
+  }
+}

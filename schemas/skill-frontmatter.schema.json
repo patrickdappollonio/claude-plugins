@@ -1,0 +1,20 @@
+{
+  "type": "object",
+  "required": ["name", "description"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "\\S"
+    },
+    "description": {
+      "type": "string",
+      "pattern": "\\S"
+    },
+    "disable-model-invocation": {
+      "const": false
+    },
+    "disable_model_invocation": {
+      "const": false
+    }
+  }
+}

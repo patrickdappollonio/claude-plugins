@@ -1,0 +1,19 @@
+{
+  "name": "effective-communicator",
+  "version": "0.1.1",
+  "description": "Plain-language communication for readers who cannot see the code, using Simplified Technical English and outcome-first explanations.",
+  "author": { "name": "Patrick D'appollonio", "email": "patrickdappollonio@gmail.com" },
+  "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/effective-communicator",
+  "license": "MIT",
+  "keywords": ["communication", "plain-language", "readability", "findings"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Effective Communicator",
+    "shortDescription": "Explain technical work in plain language.",
+    "longDescription": "Turns identifier-heavy technical findings, plans, and updates into concise explanations a reader can understand without opening the code.",
+    "developerName": "Patrick D'appollonio",
+    "category": "Productivity",
+    "capabilities": ["Write", "Explain"],
+    "defaultPrompt": ["Explain this in plain English."]
+  }
+}

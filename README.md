@@ -1,22 +1,49 @@
-# patrickdappollonio's Claude plugins
+# patrickdappollonio's AI agent plugins
 
-My collection of Claude (and other AI's) skills, plugins, MCP servers, and more — packaged as a [Claude Code plugin marketplace](https://code.claude.com/docs/en/plugin-marketplaces) so you can install any of them with one command. Not on Claude Code? The same collection installs into 75+ other agents with [`npx skills`](https://github.com/vercel-labs/skills) — see [Installing](#installing).
+My collection of Claude, Codex, and other AI skills, plugins, MCP servers, and more. It is packaged as native marketplaces for Claude Code and the Codex CLI, with each entry installable on its own. The same skills also install into 75+ other agents with [`npx skills`](https://github.com/vercel-labs/skills) — see [Installing](#installing).
 
 ## Installing
 
-There are two ways in, and they install the same skills from the same repository. Pick the one that matches your agent.
+Pick the native marketplace for your agent, or use the cross-agent skills installer. All three routes install from this repository.
 
 ### Claude Code
 
-```
+From inside a running Claude Code session, type this as a message:
+
+```text
 /plugin marketplace add patrickdappollonio/claude-plugins
 ```
 
-That registers this marketplace under the name `patrickdappollonio`. You only do this once; afterwards every plugin below is available to install with the command shown in its section.
+Or run the equivalent command from your regular shell:
 
-### Any other AI agent — Cursor, Codex, Copilot, opencode, Gemini, Windsurf…
+```bash
+claude plugin marketplace add patrickdappollonio/claude-plugins
+```
 
-Use [`npx skills`](https://github.com/vercel-labs/skills), Vercel's open skills installer, which supports 75+ agents. It reads this repository's marketplace file directly, so nothing extra is needed on your side:
+That registers this marketplace under the name `patrickdappollonio`. You only do this once. Afterwards, install individual plugins either from inside Claude Code with `/plugin install …` or from your shell with `claude plugin install …`, as shown below.
+
+### Codex CLI
+
+Register this repository as a Codex plugin marketplace from your regular shell:
+
+```bash
+codex plugin marketplace add patrickdappollonio/claude-plugins
+```
+
+Codex does not currently expose marketplace registration as an in-session slash command. Once the marketplace is registered, you can install plugins in either place:
+
+- Inside a running Codex session, enter `/plugins`, open the `patrickdappollonio` marketplace, and select the plugin.
+- From your regular shell, install the plugin directly:
+
+```bash
+codex plugin add appropriate-comments-code@patrickdappollonio
+```
+
+Replace `appropriate-comments-code` with any plugin name in the table below. Codex installs that plugin's own `skills/` directory, not the rest of this collection. Start a new Codex session before using an installed or updated plugin. Run `codex plugin marketplace upgrade patrickdappollonio` from your shell to fetch updates, then reinstall the plugin to refresh it.
+
+### Any other AI agent — Cursor, Copilot, opencode, Gemini, Windsurf…
+
+Run [`npx skills`](https://github.com/vercel-labs/skills), Vercel's open skills installer, from your regular shell. It supports 75+ agents and reads this repository's marketplace file directly, so nothing extra is needed on your side:
 
 ```bash
 # pick interactively from the whole collection
@@ -50,6 +77,8 @@ Each plugin below maps to one skill of the same name, except `adversarial-review
 > Skills installed this way run with your agent's full permissions, the same as any other skill. They are plain markdown — read them before you install them.
 
 ## Plugins
+
+In each block below, the slash command is a message you type inside Claude Code. Commands beginning with `claude`, `codex`, or `npx` run in your regular shell. Inside Codex, you can use `/plugins` instead of the direct shell command and select the named plugin from the marketplace.
 
 ### adversarial-review
 
@@ -86,8 +115,18 @@ smaller adversarial review"* and your agent runs that one instead. It says up
 front which angles it isn't covering, so a clean report never reads as a clean
 bill of health.
 
-```
+```text
+# Claude Code session — type this as a message
 /plugin install adversarial-review@patrickdappollonio
+
+# Shell — Claude Code
+claude plugin install adversarial-review@patrickdappollonio
+
+# Shell — Codex CLI
+codex plugin add adversarial-review@patrickdappollonio
+
+# Shell — npx skills
+npx skills add patrickdappollonio/claude-plugins --skill adversarial-review --skill adversarial-review-quick
 ```
 
 Then just ask: *"Give this change an adversarial review."* — or *"a smaller
@@ -125,8 +164,18 @@ review thread. And it's explicit about what *does* earn a comment — external
 constraints, invariants callers must uphold, units and ownership, upstream-bug
 workarounds with their exit condition, public API docs.
 
-```
+```text
+# Claude Code session — type this as a message
 /plugin install appropriate-comments-code@patrickdappollonio
+
+# Shell — Claude Code
+claude plugin install appropriate-comments-code@patrickdappollonio
+
+# Shell — Codex CLI
+codex plugin add appropriate-comments-code@patrickdappollonio
+
+# Shell — npx skills
+npx skills add patrickdappollonio/claude-plugins --skill appropriate-comments-code
 ```
 
 Then just write code — it loads itself. [Read more →](plugins/appropriate-comments-code)
@@ -152,8 +201,18 @@ carries a condensed form of the `appropriate-comments-code` rules, and
 routes evidence gathering to cheap models or `grep` while keeping judgment —
 and the verification of every subagent finding — on the premium model.
 
-```
+```text
+# Claude Code session — type this as a message
 /plugin install code-simplification@patrickdappollonio
+
+# Shell — Claude Code
+claude plugin install code-simplification@patrickdappollonio
+
+# Shell — Codex CLI
+codex plugin add code-simplification@patrickdappollonio
+
+# Shell — npx skills
+npx skills add patrickdappollonio/claude-plugins --skill code-simplification
 ```
 
 Then just ask: *"Simplify what we just wrote."* [Read more →](plugins/code-simplification)
@@ -175,8 +234,18 @@ answers in code terms, it matches them for that exchange, then resets. It pairs
 naturally with `adversarial-review` and any audit or debugging pass that
 produces identifier-heavy output.
 
-```
+```text
+# Claude Code session — type this as a message
 /plugin install effective-communicator@patrickdappollonio
+
+# Shell — Claude Code
+claude plugin install effective-communicator@patrickdappollonio
+
+# Shell — Codex CLI
+codex plugin add effective-communicator@patrickdappollonio
+
+# Shell — npx skills
+npx skills add patrickdappollonio/claude-plugins --skill effective-communicator
 ```
 
 Then just ask: *"Explain that in plain English."* — or install it and never ask
@@ -214,8 +283,18 @@ recommends it once. Nothing is called done until
 `gofmt`, `go vet`, `go test -race` and the project linter have run and their
 output is reported.
 
-```
+```text
+# Claude Code session — type this as a message
 /plugin install effective-go@patrickdappollonio
+
+# Shell — Claude Code
+claude plugin install effective-go@patrickdappollonio
+
+# Shell — Codex CLI
+codex plugin add effective-go@patrickdappollonio
+
+# Shell — npx skills
+npx skills add patrickdappollonio/claude-plugins --skill effective-go
 ```
 
 Then just write Go — it loads itself. [Read more →](plugins/effective-go)
@@ -230,8 +309,18 @@ provider SDKs, auth/billing/webhook flows, API-drift errors, "latest/official"
 requests), ranks what counts as authoritative, and requires naming the sources
 consulted. A work-friendly rewrite of the `read-the-damn-docs` skill.
 
-```
+```text
+# Claude Code session — type this as a message
 /plugin install read-the-docs-first@patrickdappollonio
+
+# Shell — Claude Code
+claude plugin install read-the-docs-first@patrickdappollonio
+
+# Shell — Codex CLI
+codex plugin add read-the-docs-first@patrickdappollonio
+
+# Shell — npx skills
+npx skills add patrickdappollonio/claude-plugins --skill read-the-docs-first
 ```
 
 Then just ask: *"Add Stripe webhooks to this app — check the current docs first."* [Read more →](plugins/read-the-docs-first)
@@ -248,8 +337,18 @@ block timestamps, never trusting elapsed wall-clock time. Wake prompts are
 self-contained, and wakeups chain past runtime clamps so overnight pauses
 work.
 
-```
+```text
+# Claude Code session — type this as a message
 /plugin install use-claude-limits-efficiently@patrickdappollonio
+
+# Shell — Claude Code
+claude plugin install use-claude-limits-efficiently@patrickdappollonio
+
+# Shell — Codex CLI
+codex plugin add use-claude-limits-efficiently@patrickdappollonio
+
+# Shell — npx skills
+npx skills add patrickdappollonio/claude-plugins --skill use-claude-limits-efficiently
 ```
 
 Then just ask: *"Migrate all 340 handlers overnight, but don't blow through my usage limits."* [Read more →](plugins/use-claude-limits-efficiently)
@@ -268,8 +367,18 @@ delegation is a self-contained handoff packet with scope, evidence format, and
 stop conditions, and subagent reports are treated as leads, not facts — the
 premium model re-verifies cited evidence before declaring work done.
 
-```
+```text
+# Claude Code session — type this as a message
 /plugin install use-premium-models-efficiently@patrickdappollonio
+
+# Shell — Claude Code
+claude plugin install use-premium-models-efficiently@patrickdappollonio
+
+# Shell — Codex CLI
+codex plugin add use-premium-models-efficiently@patrickdappollonio
+
+# Shell — npx skills
+npx skills add patrickdappollonio/claude-plugins --skill use-premium-models-efficiently
 ```
 
 Then just ask: *"Find and fix the double-charge bug in this monorepo — delegate the heavy lifting."* [Read more →](plugins/use-premium-models-efficiently)
@@ -289,8 +398,18 @@ without leaving your browser.
 
 ![The visual-docs viewer rendering a plan with its comments panel open](assets/visual-docs-viewer.png)
 
-```
+```text
+# Claude Code session — type this as a message
 /plugin install visual-docs@patrickdappollonio
+
+# Shell — Claude Code
+claude plugin install visual-docs@patrickdappollonio
+
+# Shell — Codex CLI
+codex plugin add visual-docs@patrickdappollonio
+
+# Shell — npx skills
+npx skills add patrickdappollonio/claude-plugins --skill visual-plan --skill visual-recap
 ```
 
 Then just ask: *"Give me a visual plan for adding rate limiting to the API"* or *"Visual recap of PR 142."* [Read more →](plugins/visual-docs)
@@ -299,13 +418,25 @@ Then just ask: *"Give me a visual plan for adding rate limiting to the API"* or 
 
 When I push new plugins or new versions, refresh your local copy.
 
-Claude Code:
+Claude Code session — type this as a message:
 
-```
+```text
 /plugin marketplace update patrickdappollonio
 ```
 
-Everywhere else:
+Or run the equivalent Claude Code command from your shell:
+
+```bash
+claude plugin marketplace update patrickdappollonio
+```
+
+Codex CLI — run this from your shell, then reinstall the plugins you want to refresh:
+
+```bash
+codex plugin marketplace upgrade patrickdappollonio
+```
+
+`npx skills` — run this from your shell:
 
 ```bash
 npx skills update

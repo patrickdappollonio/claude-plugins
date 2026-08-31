@@ -1,0 +1,11 @@
+{
+  "name": "patrickdappollonio-ai-agent-plugins",
+  "private": true,
+  "scripts": {
+    "lint:skills": "remark-lint-frontmatter-validation \"plugins/*/skills/*/SKILL.md\" --schema schemas/skill-frontmatter.schema.json --format github"
+  },
+  "devDependencies": {
+    "remark": "15.0.1",
+    "remark-lint-frontmatter-validation": "1.0.4"
+  }
+}

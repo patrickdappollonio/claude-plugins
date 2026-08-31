@@ -1,0 +1,19 @@
+{
+  "name": "visual-docs",
+  "version": "1.12.1",
+  "description": "Fully local visual plans and recaps with diagrams, rich diffs, live reload, and a browser feedback loop.",
+  "author": { "name": "Patrick D'appollonio", "email": "patrickdappollonio@gmail.com" },
+  "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/visual-docs",
+  "license": "MIT",
+  "keywords": ["visual-plan", "visual-recap", "markdown", "mermaid", "planning"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Visual Docs",
+    "shortDescription": "Review plans and completed work visually.",
+    "longDescription": "Creates local browser-based implementation plans and change recaps with diagrams, diffs, API cards, live reload, and comments.",
+    "developerName": "Patrick D'appollonio",
+    "category": "Productivity",
+    "capabilities": ["Visualize", "Plan", "Review"],
+    "defaultPrompt": ["Show me a visual plan.", "Give me a visual recap of this change."]
+  }
+}
