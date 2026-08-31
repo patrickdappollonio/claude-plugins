@@ -1,0 +1,19 @@
+{
+  "name": "implement-plan",
+  "version": "1.0.0",
+  "description": "Implement an agreed plan hands-free: worktrees and cheap executors under TDD, an item-by-item check against the plan, an adversarial review, and decisions kept where they belong.",
+  "author": { "name": "Patrick D'appollonio", "email": "patrickdappollonio@gmail.com" },
+  "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/implement-plan",
+  "license": "MIT",
+  "keywords": ["implementation", "orchestration", "worktrees", "subagents", "tdd", "adversarial-review"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Implement Plan",
+    "shortDescription": "Build an agreed plan, check it against the plan, review it.",
+    "longDescription": "Splits an agreed plan into worktree slices run by cheaper executors under TDD, checks every slice against the plan on the premium model, runs an adversarial review sized to the change, logs technical decisions and leaves functional ones to the user, and never deletes a worktree without asking.",
+    "developerName": "Patrick D'appollonio",
+    "category": "Productivity",
+    "capabilities": ["Implement", "Orchestrate", "Review"],
+    "defaultPrompt": ["Implement the plan we agreed on."]
+  }
+}
