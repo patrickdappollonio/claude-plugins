@@ -304,10 +304,10 @@ Then just write Go — it loads itself. [Read more →](plugins/effective-go)
 
 The "now build it" step after a plan is agreed. The agent splits the plan into
 independent slices, gives each a git worktree and a cheaper executor working
-under TDD with unit tests as the floor — journey-style integration/E2E tests
-and real dependencies via testcontainers are recommended, and you size them —
-then checks every slice **against the plan,
-item by item** on the premium model, runs an adversarial review sized to the
+under TDD with unit tests as the floor and every related document updated in
+the same diff — journey-style integration/E2E tests and real dependencies via
+testcontainers are recommended, and you size them — then checks every slice
+**against the plan, item by item** on the premium model, docs included, runs an adversarial review sized to the
 change (the `adversarial-review` skills when installed, an on-the-spot panel
 when not), fixes what it finds, and iterates. Technical decisions are logged
 at the end of the plan in plain language; functional and operational ones are

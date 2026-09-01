@@ -7,7 +7,7 @@ description: Use when the user has an agreed plan — a visual plan, a plan-mode
 
 ## Overview
 
-Turn an **agreed plan** into merged, reviewed, tested code — hands-free where
+Turn an **agreed plan** into merged, reviewed, tested, documented code — hands-free where
 possible, and never deciding for the user what is theirs to decide. The
 orchestrator (you) plans the split, dispatches executors, checks their work
 against the plan **thoroughly**, runs an adversarial review, fixes what it
@@ -34,7 +34,7 @@ keep-going contract — is this skill's own.
 This skill ships in two layers. `SKILL.md` carries the rules and a summary of
 each step; six files beside it carry the full procedures:
 
-- `handoff-packet.md` — the executor prompt: scope, TDD, user-journey tests, the executor discipline, stop conditions
+- `handoff-packet.md` — the executor prompt: scope, TDD, the documentation rule, user-journey tests, the executor discipline, stop conditions
 - `conformance-review.md` — the thorough plan-vs-work check, item by item
 - `adversarial-review-fallback.md` — how to run the installed review skills, the plan-as-diff variant, and the on-the-spot panel when no skill is installed
 - `model-routing.md` — which model executes, which judges, and the trade you must state
@@ -177,18 +177,20 @@ cheaper executor makes more mistakes, so the review is where the rigor goes —
 never route both execution and judgment to the cheap tier.
 
 Every packet is self-contained (the executor has no chat context): repo path,
-the plan section verbatim, in/out of scope, **TDD required**, the repo's
-integration/E2E conventions, the user-journey testing rule, the executor
-discipline, evidence format, stop conditions. Parallel slices go out in one
+the plan section verbatim, in/out of scope, **TDD required**, **documentation
+required**, the repo's integration/E2E conventions, the user-journey testing
+rule, the executor discipline, evidence format, stop conditions. Parallel slices go out in one
 message.
 
 ### 5. Conformance review — thorough, not a skim
 
 Read `conformance-review.md`. Before any review skill runs, **you** check the
 work against the plan: enumerate every promise in the plan section, then for
-each one point at the diff line that fulfils it and the test that proves it.
-Record *missing*, *different*, *extra*, and *undecided-but-decided*. Any of the
-first three → back to step 4 with a corrected packet that quotes the gap. An
+each one point at the diff line that fulfils it, the test that proves it, and
+the document that describes it — or the search that showed no document does.
+Record *missing*, *different*, *extra*, *undocumented*, and
+*undecided-but-decided*. Any of the first four → back to step 4 with a
+corrected packet that quotes the gap. An
 "undecided-but-decided" item is a functional decision the executor made for the
 user: revert it to the plan and park it under *Pending*.
 
@@ -255,16 +257,30 @@ Exactly these four bullets, short:
 - **What's pending for me to decide on** (functional/operational, each with your recommendation)
 - **What's next**
 
-## Testing — the floor is TDD; the rest is the user's to size
+## Testing and documentation — the floor is TDD plus current docs; the rest is the user's to size
 
 **The user decides how much testing is enough.** The skill sets a floor,
 recommends more where it pays, and never demands the full stack up front.
+The floor has two parts, and both are mandatory on every slice.
 
 - **Floor — always required: TDD with unit tests.** For every behavior the
   slice changes: a failing test first, watched to fail, then the minimum code,
   then green, then refactor. No test-after. Unit tests are what prove a change
   works and keep working when the next change lands — this is the one thing
   the skill insists on even when the user asks for "just the code".
+- **Floor — always required: documentation updated in the same diff.** A
+  slice is not done while any document that describes the behavior it
+  changed still describes the old one. Before the mini-plan, the executor
+  searches the repo for every document that mentions the surface it is
+  changing — README and `docs/`, CLI help and usage text, man pages, config
+  and environment-variable references, CHANGELOG when the repo keeps one,
+  OpenAPI or schema files, example and sample files, doc comments and
+  docstrings on the public API touched — lists them under **Files**, and
+  updates them alongside the code. There is no separate documentation pass:
+  the slice ships with its docs or it does not ship. When the search finds
+  nothing, the evidence says so and names what was searched. Existing
+  documents are extended; a document that does not exist is created only
+  when the plan calls for it — otherwise report the gap.
 - **Encouraged, optional — integration / E2E as user journeys.** When the
   repo already has integration or E2E tests, executors follow their layout,
   runner, and conventions for the behavior they touch. When it does not,
@@ -280,10 +296,11 @@ recommends more where it pays, and never demands the full stack up front.
   infrastructure for one task; test the behavior the plan changes, do not
   backfill unrelated coverage.
 
-State the depth at G1 in one line — *"Testing: TDD with unit tests; the repo
-has no integration tests, so I'll add none unless you want CLI journey tests
-(recommended for the new commands)."* — and put whatever the user chooses in
-every packet.
+State the depth at G1 in one line — *"Testing: TDD with unit tests and docs
+updated in the same diff; the repo has no integration tests, so I'll add none
+unless you want CLI journey tests (recommended for the new commands)."* — and
+put whatever the user chooses in every packet. The two floors go in every
+packet regardless.
 
 ## Executor Discipline (summary — full text in `handoff-packet.md`)
 
@@ -292,9 +309,10 @@ four-line mini-plan (**Outcome / Non-goals / Files / Proof**) before touching
 anything. Reuse before adding; fix at the root; no abstraction for one caller;
 no future-proofing; remove what you replace. Stop and report instead of
 improvising when scope grows, a dependency is needed, a public surface changes,
-or data would be lost. Done means: behavior works, exact commands and results
-reported, nothing unrelated in the diff, no debug or scratch left, assumptions
-stated plainly.
+or data would be lost. Done means: behavior works, every document that
+describes the changed behavior is updated in the same diff, exact commands and
+results reported, nothing unrelated in the diff, no debug or scratch left,
+assumptions stated plainly.
 
 ## Rationalizations — Observed, and Wrong
 
@@ -311,6 +329,9 @@ stated plainly.
 | "It's a technical choice — storage format, algorithm, retry policy — so it's mine" | Only while its effect stays invisible. The moment it changes what users or operators experience, it is theirs. Trace the consequence first. |
 | "Tests pass and the diff is clean, so it matches the plan" | A faithful build of the wrong thing has no failing tests. Enumerate the plan and check item by item. |
 | "The user said just the code, so no tests" | Unit tests under TDD are the floor, not an option. Everything above them is the user's to size; the floor is not. |
+| "I'll do the docs in a follow-up pass once the code settles" | There is no follow-up pass. Docs are the second half of the floor and ship in the same diff as the code, or the slice is not done. |
+| "Nothing user-facing changed, so there are no docs to update" | That is a search result, not a belief. Grep the repo for the surface you touched and report what you searched; "none found" is evidence, "probably none" is not. |
+| "The README is out of scope for this slice" | A document that describes the behavior this slice changes is in scope by definition. Only another slice's files are out. |
 | "A real project needs journeys and containers, I'll add them all" | Encouraged is not required. State the recommendation at G1 and build what the user chose. |
 | "Sonnet wrote it, Sonnet can verify it" | The cheap executor's mistakes are why judgment stays premium. Never cheap on both sides. |
 | "The change is small, I'll skip the adversarial review" | Small changes get the quick panel; nothing gets no panel. |
@@ -324,6 +345,8 @@ stated plainly.
 - A merge into any branch other than the recorded starting branch
 - A `git push`, a PR, or a commit to `main` the user did not ask for
 - An executor's report used as the conformance review
+- A slice merged that changes a flag, default, output, command, or API some document describes, without a change to that document in the same diff
+- An evidence report with no documentation line — neither the files updated nor the search that found none
 - A reviewer, verifier, or conformance check running on the cheap tier while the executor was also cheap
 - A user-facing change applied because "the review said so"
 - A new flag, syntax, default, or output format the plan did not specify
@@ -342,9 +365,9 @@ Create a todo per item.
 - [ ] Starting branch + commit recorded; branch recommended once (G1)
 - [ ] Capacity estimated and real usage checked; `/goal` condition handed over
 - [ ] Split stated: slices, order, worktrees, model per role, the trade said out loud
-- [ ] Testing depth stated at G1 (TDD unit floor + what the user chose) and copied into every packet
-- [ ] Every packet self-contained: plan section verbatim, scope, discipline, evidence, stop conditions
-- [ ] Conformance review done by me, item by item, gaps sent back
+- [ ] Testing depth stated at G1 (TDD unit floor + docs-in-the-same-diff floor + what the user chose) and copied into every packet
+- [ ] Every packet self-contained: plan section verbatim, scope, testing and documentation rules, discipline, evidence, stop conditions
+- [ ] Conformance review done by me, item by item — line, test, and document for each — gaps sent back
 - [ ] Slices merged into the starting branch, no push
 - [ ] Adversarial review sized; large → quick now, G2 asked for the full one; fallback panel if no skill
 - [ ] Every finding fixed or parked by the authority split; every fix round re-reviewed; loop ended clean or at three rounds

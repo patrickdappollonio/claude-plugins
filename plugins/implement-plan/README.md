@@ -1,6 +1,6 @@
 # Implement Plan
 
-Turn an agreed plan into merged, reviewed, tested code — mostly hands-free, and
+Turn an agreed plan into merged, reviewed, tested, documented code — mostly hands-free, and
 without deciding for you what is yours to decide. Every question it has for
 you is asked in plain text with options and a recommendation, so it works in
 any agent and can be answered while you are away.
@@ -28,13 +28,18 @@ parked with a recommendation, never assumed.
 - **Splits and dispatches** — one worktree and one executor per independent
   slice, cheap models for execution, the premium model for every judgment,
   with the trade stated out loud.
-- **Executors follow TDD with unit tests as the floor.** Journey-style
+- **Executors follow TDD with unit tests as the floor — and update the docs
+  in the same diff.** Every document that describes the behavior a slice
+  changes (README, `docs/`, help text, CHANGELOG, specs, docstrings) is found
+  and updated alongside the code; there is no separate documentation pass, and
+  a slice whose docs still describe the old behavior is not done. Journey-style
   integration/E2E tests (real CLI, real endpoints; mock only what cannot run
   for real) and real dependencies via testcontainers are recommended, and you
   decide how much of that is enough. Executors also obey the
   minimum-sufficient-change discipline (see *Credit*).
 - **Conformance review** on the premium model: enumerate the plan's promises,
-  point at the line and the test for each, send gaps back.
+  point at the line, the test, and the document for each, grep the docs for
+  stale descriptions, send gaps back.
 - **Adversarial review** sized to the change: the `adversarial-review-quick`
   skill for small changes, the full `adversarial-review` skill for large ones
   (asking first — it is token-heavy), or an on-the-spot six-reviewer panel when
