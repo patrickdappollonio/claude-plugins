@@ -15,8 +15,9 @@ contractor who has never seen the project or the conversation.
 3. **Scope.** Files and surfaces in scope; files explicitly out of scope (other
    slices' files, shared config the orchestrator owns).
 4. **Announced deviations** already agreed with the user, if any.
-5. **Testing rules** (below), plus the repo's actual test command, layout, and
-   any integration/E2E convention you found.
+5. **Testing and documentation rules** (below), plus the repo's actual test
+   command, layout, any integration/E2E convention you found, and where its
+   documentation lives (README, `docs/`, help text, CHANGELOG, specs).
 6. **The executor discipline** (below), verbatim.
 7. **Evidence to return** (below).
 8. **Stop conditions** (below).
@@ -27,10 +28,11 @@ serialize them or name the shared file in both packets as *append-only in your
 own section* and own the merge yourself — the conflict is the orchestrator's,
 never an executor's to resolve by editing the other slice.
 
-## Testing rules
+## Testing and documentation rules
 
-The floor is fixed; the tiers above it are whatever the user chose at G1.
-Include the floor verbatim, then only the tiers that apply:
+The floor is fixed and has two parts — TDD and documentation in the same diff;
+the tiers above it are whatever the user chose at G1. Include both floor
+blocks verbatim, then only the tiers that apply:
 
 > **TDD is mandatory.** For every behavior: write a unit test, run it and
 > watch it fail for the right reason, write the minimum code to pass, run it
@@ -41,6 +43,20 @@ Include the floor verbatim, then only the tiers that apply:
 > Extend the nearest existing test file before creating a new one. Do not add
 > test infrastructure for this task alone. Test the behavior this slice
 > changes; do not backfill unrelated coverage.
+
+> **Documentation is updated in this same diff.** Before writing the
+> mini-plan, search the repository for every document that describes the
+> surface this slice changes: README and `docs/`, CLI help and usage text,
+> man pages, config and environment-variable references, CHANGELOG when
+> the repo keeps one, OpenAPI or schema files, example and sample files,
+> and the doc comments or docstrings on any public API you touch. List each
+> one under **Files** and update it alongside the code so that no document
+> describes the old behavior when you finish. Extend existing documents;
+> create a new one only when the plan section calls for it, otherwise
+> report the gap. This is not a follow-up task and is not optional: a slice
+> whose docs still describe the old behavior is not done. If the search
+> finds no document describing this surface, say so in the evidence and
+> name what you searched.
 
 Add when the repo has integration/E2E tests, or the user asked for journeys:
 
@@ -105,6 +121,8 @@ Include verbatim:
 > **Done means**
 > - The requested behavior works and every item of the plan section is met
 > - Relevant checks pass, with the exact commands and their results reported
+> - Every document that describes the changed behavior is updated in this
+>   diff, or the evidence names the search that found none
 > - Every touched file is necessary and the diff contains nothing unrelated
 > - No debug code, backup copies, dead paths, or scratch files remain
 > - Assumptions, limitations, and unverified runtime behavior are stated plainly
@@ -116,6 +134,8 @@ The orchestrator does the conformance review from this, so it must be complete:
 - Each plan item, quoted, with the file:line that fulfils it and the test that
   proves it — or "not done" with the reason.
 - The exact test commands run and their output summary (pass/fail counts).
+- For each plan item, the documents updated for it (file:line) — or
+  "no document describes this" with the search that established it.
 - The commit hash(es) on the slice branch.
 - Every assumption made, every item left undecided, every deviation from the
   plan section and why.
@@ -148,9 +168,10 @@ In: <files/surfaces>   Out: <files/surfaces>
 ## Already-announced deviations
 <none | list>
 
-## Testing rules
-<paste the TDD floor; then only the tiers the user chose at G1>
+## Testing and documentation rules
+<paste the TDD floor and the documentation floor; then only the tiers the user chose at G1>
 Repo test command: <cmd>. Existing integration/E2E convention: <describe or "none">.
+Where the docs live: <README, docs/, help text, CHANGELOG, specs — or "none found">.
 
 ## Discipline
 <paste the Executor discipline block>
