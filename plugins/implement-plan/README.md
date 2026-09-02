@@ -32,7 +32,10 @@ parked with a recommendation, never assumed.
   in the same diff.** Every document that describes the behavior a slice
   changes (README, `docs/`, help text, CHANGELOG, specs, docstrings) is found
   and updated alongside the code; there is no separate documentation pass, and
-  a slice whose docs still describe the old behavior is not done. Journey-style
+  a slice whose docs still describe the old behavior is not done. Before
+  writing any test, executors map the tests that already cover the surface
+  and extend them by default — a new test needs a gap the map shows, and a
+  duplicate of an existing test is sent back by the review. Journey-style
   integration/E2E tests (real CLI, real endpoints; mock only what cannot run
   for real) and real dependencies via testcontainers are recommended, and you
   decide how much of that is enough. Executors also obey the

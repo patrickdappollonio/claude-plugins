@@ -20,6 +20,9 @@ review skill, on every slice, every iteration.
    - **missing** — nothing implements it;
    - **different** — implemented, but not as specified (quote both);
    - **untested** — present but no test would fail if it broke;
+   - **duplicated** — proved by a new test that mirrors an existing one for
+     the same surface (same fixture, same setup, same call, one different
+     input) when the case belonged in the existing test. Quote both;
    - **undocumented** — present and tested, but a document that describes
      this surface (README, `docs/`, help text, CHANGELOG, spec, docstring)
      still describes the old behavior or omits the new one. Do not take the
@@ -37,6 +40,14 @@ review skill, on every slice, every iteration.
 6. **Chase what a missing item took with it.** A dropped element usually
    orphans its data — it gets rendered somewhere wrong rather than nowhere.
    Find where the value went.
+6a. **Check every new test against the test map.** For each test file or
+   test function the diff adds, find the evidence's justification and verify
+   it: grep the test directories yourself for the surface it exercises. An
+   existing test on that surface whose table or block could have hosted the
+   case makes the new test *duplicated* — send it back with the existing
+   test named, so the executor moves the case there and deletes the copy.
+   Do not take "no existing test covers this" on faith any more than "no
+   document describes this".
 7. **Run the suite yourself.** Record the exact command and counts. Then run
    the plan's user journeys by hand where cheap (the CLI, the endpoint).
 8. **Verdict.** Pass only when every item is *present*, *tested*, and
@@ -52,6 +63,7 @@ review skill, on every slice, every iteration.
 | "`todo add` accepts `--priority <level>`" | present | `src/cli.js:14` | `test/cli.test.js` "add with priority" | `README.md:41`, `src/cli.js:9` (help text) |
 | "invalid level exits with code 2" | different — exits 1 | `src/cli.js:18` | none | `README.md:44` still says exit 1 |
 | "`--priority` default is `normal`" | undocumented | `src/cli.js:15` | `test/cli.test.js` "default priority" | `README.md:41` lists no default |
+| "`--priority` rejects unknown levels" | duplicated | `src/cli.js:18` | new `test/priority.test.js` mirrors `test/cli.test.js` "add with priority" — move the case there | `README.md:44` |
 | "empty-list export: not decided" | decided by executor — header only | `src/export.js:9` | revert + park | — |
 
 Below the table: **Extras** (unannounced), **Announced deviations** (confirmed
@@ -68,3 +80,5 @@ list, if any).
 | "The extra flag is harmless" | Harmless is the user's call. It is an unannounced deviation until they say so. |
 | "The docs can be tidied in a later pass" | There is no later pass. An item whose document still describes the old behavior is *undocumented* and goes back to the executor with the rest. |
 | "The executor said no docs mention it" | A report is a lead. Run the grep; it takes seconds. |
+| "The new test file is well written, no reason to send it back" | Well written twice is still twice. If an existing test on the same surface could host the case, the case goes there and the copy goes. |
+| "The executor said no existing test covers this" | Same as docs: a lead, not a fact. Grep the test directories for the surface yourself. |

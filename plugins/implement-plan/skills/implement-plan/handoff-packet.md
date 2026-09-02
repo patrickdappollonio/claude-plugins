@@ -30,9 +30,10 @@ never an executor's to resolve by editing the other slice.
 
 ## Testing and documentation rules
 
-The floor is fixed and has two parts — TDD and documentation in the same diff;
-the tiers above it are whatever the user chose at G1. Include both floor
-blocks verbatim, then only the tiers that apply:
+The floor is fixed and has three parts — TDD, a map of the existing tests
+before any new one, and documentation in the same diff; the tiers above it
+are whatever the user chose at G1. Include all three floor blocks verbatim,
+then only the tiers that apply:
 
 > **TDD is mandatory.** For every behavior: write a unit test, run it and
 > watch it fail for the right reason, write the minimum code to pass, run it
@@ -40,9 +41,26 @@ blocks verbatim, then only the tiers that apply:
 > — if you notice code without a failing test behind it, delete the code and
 > start that step over.
 >
-> Extend the nearest existing test file before creating a new one. Do not add
-> test infrastructure for this task alone. Test the behavior this slice
-> changes; do not backfill unrelated coverage.
+> Do not add test infrastructure for this task alone. Test the behavior this
+> slice changes; do not backfill unrelated coverage.
+
+> **Map the existing tests before writing one.** Before the mini-plan, find
+> every test that already exercises the surface this slice changes: grep the
+> test directories for the function, command, endpoint, type, and fixture
+> names you will touch, and open every file that hits. Write the result down
+> as a **test map** in your first message, under **Proof**: each existing
+> test file or case that covers the surface, and for each behavior this slice
+> changes, either *extend* — name the existing test and how (a new case in
+> its table or describe block, a new assertion, an edited expectation) — or
+> *new*, with the gap that justifies it. **Extend is the default.** A new
+> test is justified only by a gap the map shows: no existing test exercises
+> this surface, the existing test's setup cannot host the case, or the plan
+> asks for a tier (integration, E2E, journey) this repository has no test
+> for. A new test that stands up the same fixture as an existing one and
+> exercises the same surface is a duplicate and will be sent back; add the
+> case to the existing test instead. When the search finds no test for the
+> surface, say so and name what you searched. A test extended under TDD still
+> fails first: add the case, watch it fail, then write the code.
 
 > **Documentation is updated in this same diff.** Before writing the
 > mini-plan, search the repository for every document that describes the
@@ -89,11 +107,14 @@ Include verbatim:
 >   - **Outcome** — the exact behavior requested
 >   - **Non-goals** — what this task will not do
 >   - **Files** — the smallest set expected to change
->   - **Proof** — the check that will prove the change works
+>   - **Proof** — the check that will prove the change works: the test map —
+>     the existing tests for this surface, and per behavior, the test you
+>     extend or the gap that justifies a new one
 > - Take one implementation path. Do not split the work further.
 >
 > **While editing**
-> - Reuse existing code, helpers, patterns, and test setup before adding anything.
+> - Reuse existing code, helpers, patterns, tests, and test setup before
+>   adding anything.
 > - Fix bugs at the root cause. Do not stack patches around a wrong premise.
 > - Add an abstraction, adapter, or config layer only for a second real caller
 >   in this task or a stated requirement.
@@ -134,6 +155,9 @@ The orchestrator does the conformance review from this, so it must be complete:
 - Each plan item, quoted, with the file:line that fulfils it and the test that
   proves it — or "not done" with the reason.
 - The exact test commands run and their output summary (pass/fail counts).
+- The test map as executed: the existing tests found for the surface (or the
+  search that found none), and for every test added or changed, *extended*
+  with the file:line of the case, or *new* with the gap that justified it.
 - For each plan item, the documents updated for it (file:line) — or
   "no document describes this" with the search that established it.
 - The commit hash(es) on the slice branch.
@@ -169,8 +193,8 @@ In: <files/surfaces>   Out: <files/surfaces>
 <none | list>
 
 ## Testing and documentation rules
-<paste the TDD floor and the documentation floor; then only the tiers the user chose at G1>
-Repo test command: <cmd>. Existing integration/E2E convention: <describe or "none">.
+<paste the TDD floor, the test-map floor, and the documentation floor; then only the tiers the user chose at G1>
+Repo test command: <cmd>. Test directories and naming: <describe>. Existing integration/E2E convention: <describe or "none">.
 Where the docs live: <README, docs/, help text, CHANGELOG, specs — or "none found">.
 
 ## Discipline

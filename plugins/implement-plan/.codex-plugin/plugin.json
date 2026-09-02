@@ -1,6 +1,6 @@
 {
   "name": "implement-plan",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Implement an agreed plan hands-free: worktrees and cheap executors under TDD with docs updated in the same diff, an item-by-item check against the plan, an adversarial review, and decisions kept where they belong.",
   "author": { "name": "Patrick D'appollonio", "email": "patrickdappollonio@gmail.com" },
   "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/implement-plan",
