@@ -34,7 +34,7 @@ keep-going contract — is this skill's own.
 This skill ships in two layers. `SKILL.md` carries the rules and a summary of
 each step; six files beside it carry the full procedures:
 
-- `handoff-packet.md` — the executor prompt: scope, TDD, the documentation rule, user-journey tests, the executor discipline, stop conditions
+- `handoff-packet.md` — the executor prompt: scope, TDD, the test map, the documentation rule, user-journey tests, the executor discipline, stop conditions
 - `conformance-review.md` — the thorough plan-vs-work check, item by item
 - `adversarial-review-fallback.md` — how to run the installed review skills, the plan-as-diff variant, and the on-the-spot panel when no skill is installed
 - `model-routing.md` — which model executes, which judges, and the trade you must state
@@ -188,8 +188,9 @@ Read `conformance-review.md`. Before any review skill runs, **you** check the
 work against the plan: enumerate every promise in the plan section, then for
 each one point at the diff line that fulfils it, the test that proves it, and
 the document that describes it — or the search that showed no document does.
-Record *missing*, *different*, *extra*, *undocumented*, and
-*undecided-but-decided*. Any of the first four → back to step 4 with a
+Record *missing*, *different*, *extra*, *undocumented*, *duplicated*
+(a new test that mirrors an existing one for the same surface), and
+*undecided-but-decided*. Any of the first five → back to step 4 with a
 corrected packet that quotes the gap. An
 "undecided-but-decided" item is a functional decision the executor made for the
 user: revert it to the plan and park it under *Pending*.
@@ -268,6 +269,21 @@ The floor has two parts, and both are mandatory on every slice.
   then green, then refactor. No test-after. Unit tests are what prove a change
   works and keep working when the next change lands — this is the one thing
   the skill insists on even when the user asks for "just the code".
+- **Floor — always required: map the existing tests before writing one.**
+  Before the mini-plan, the executor finds every test that already exercises
+  the surface the slice changes — grep the test directories for the
+  function, command, endpoint, type, or fixture names it will touch, and open
+  the files that hit — and records a **test map**: each existing test file
+  or case that covers the surface, and for each behavior the slice changes,
+  whether it will be proved by *extending* an existing test (a new case in
+  the same table or describe block, a new assertion, an edited expectation)
+  or by a *new* test, with the reason. **Extend is the default.** A new test
+  is justified only by an observable gap: no existing test exercises this
+  surface, the existing test's setup cannot host the case, or the plan asks
+  for a tier (integration, E2E, journey) the repo has no test for. Two tests
+  that stand up the same fixture and exercise the same surface are one test
+  written twice; the reviewer sends the second one back. Reading the
+  existing suite costs minutes; a duplicate costs every future change.
 - **Floor — always required: documentation updated in the same diff.** A
   slice is not done while any document that describes the behavior it
   changed still describes the old one. Before the mini-plan, the executor
@@ -292,21 +308,22 @@ The floor has two parts, and both are mandatory on every slice.
 - **Encouraged, optional — real dependencies.** For databases, queues, caches
   and similar, recommend testcontainers (or the repo's equivalent) over fakes;
   the user chooses.
-- Extend the nearest existing test file before creating one; no new test
-  infrastructure for one task; test the behavior the plan changes, do not
-  backfill unrelated coverage.
+- No new test infrastructure for one task; test the behavior the plan
+  changes, do not backfill unrelated coverage.
 
 State the depth at G1 in one line — *"Testing: TDD with unit tests and docs
-updated in the same diff; the repo has no integration tests, so I'll add none
-unless you want CLI journey tests (recommended for the new commands)."* — and
-put whatever the user chooses in every packet. The two floors go in every
-packet regardless.
+updated in the same diff, extending the existing suite before adding to it;
+the repo has no integration tests, so I'll add none unless you want CLI
+journey tests (recommended for the new commands)."* — and put whatever the
+user chooses in every packet. The three floors go in every packet regardless.
 
 ## Executor Discipline (summary — full text in `handoff-packet.md`)
 
-Minimum sufficient change. Read the real code before editing. Write the
-four-line mini-plan (**Outcome / Non-goals / Files / Proof**) before touching
-anything. Reuse before adding; fix at the root; no abstraction for one caller;
+Minimum sufficient change. Read the real code and the tests that already
+cover it before editing. Write the four-line mini-plan (**Outcome / Non-goals
+/ Files / Proof**) before touching anything; **Proof** names the existing
+test each behavior extends, or the gap that justifies a new one. Reuse before
+adding — tests included; fix at the root; no abstraction for one caller;
 no future-proofing; remove what you replace. Stop and report instead of
 improvising when scope grows, a dependency is needed, a public surface changes,
 or data would be lost. Done means: behavior works, every document that
@@ -331,6 +348,10 @@ assumptions stated plainly.
 | "The user said just the code, so no tests" | Unit tests under TDD are the floor, not an option. Everything above them is the user's to size; the floor is not. |
 | "I'll do the docs in a follow-up pass once the code settles" | There is no follow-up pass. Docs are the second half of the floor and ship in the same diff as the code, or the slice is not done. |
 | "Nothing user-facing changed, so there are no docs to update" | That is a search result, not a belief. Grep the repo for the surface you touched and report what you searched; "none found" is evidence, "probably none" is not. |
+| "A fresh test file is cleaner than editing the old one" | The old one is where the next person will look. A second file for the same surface is a duplicate with a nicer name. Extend it. |
+| "Reading the existing suite would take longer than writing the test" | It takes minutes once; the duplicate is maintained forever. Map first, then decide. |
+| "The existing test covers something slightly different, so mine is new" | Slightly different is a new case in the same table or block, not a new file. New needs a gap the map shows: no test on this surface, a setup that cannot host the case, or a tier the repo lacks. |
+| "TDD says write a failing test, so I wrote one" | TDD says the test fails first. It does not say the test is new. An added case in an existing test fails first just the same. |
 | "The README is out of scope for this slice" | A document that describes the behavior this slice changes is in scope by definition. Only another slice's files are out. |
 | "A real project needs journeys and containers, I'll add them all" | Encouraged is not required. State the recommendation at G1 and build what the user chose. |
 | "Sonnet wrote it, Sonnet can verify it" | The cheap executor's mistakes are why judgment stays premium. Never cheap on both sides. |
@@ -346,6 +367,8 @@ assumptions stated plainly.
 - A `git push`, a PR, or a commit to `main` the user did not ask for
 - An executor's report used as the conformance review
 - A slice merged that changes a flag, default, output, command, or API some document describes, without a change to that document in the same diff
+- A new test file or test function beside an existing one that exercises the same surface, with no gap named in the evidence
+- An evidence report with no test map — no list of the existing tests for the surface and no extend-or-new decision per behavior
 - An evidence report with no documentation line — neither the files updated nor the search that found none
 - A reviewer, verifier, or conformance check running on the cheap tier while the executor was also cheap
 - A user-facing change applied because "the review said so"
@@ -365,9 +388,9 @@ Create a todo per item.
 - [ ] Starting branch + commit recorded; branch recommended once (G1)
 - [ ] Capacity estimated and real usage checked; `/goal` condition handed over
 - [ ] Split stated: slices, order, worktrees, model per role, the trade said out loud
-- [ ] Testing depth stated at G1 (TDD unit floor + docs-in-the-same-diff floor + what the user chose) and copied into every packet
+- [ ] Testing depth stated at G1 (TDD unit floor + test-map floor + docs-in-the-same-diff floor + what the user chose) and copied into every packet
 - [ ] Every packet self-contained: plan section verbatim, scope, testing and documentation rules, discipline, evidence, stop conditions
-- [ ] Conformance review done by me, item by item — line, test, and document for each — gaps sent back
+- [ ] Conformance review done by me, item by item — line, test, and document for each; new tests checked against the test map — gaps and duplicates sent back
 - [ ] Slices merged into the starting branch, no push
 - [ ] Adversarial review sized; large → quick now, G2 asked for the full one; fallback panel if no skill
 - [ ] Every finding fixed or parked by the authority split; every fix round re-reviewed; loop ended clean or at three rounds
