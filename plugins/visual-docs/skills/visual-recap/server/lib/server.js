@@ -565,7 +565,7 @@ export function renderCommentsMarkdown(comments, scopePath, base = 'http://127.0
     out += `\n## ${p}\n`;
     for (const c of list) {
       const loc = `${p}${c.line ? `:${c.line}` : ''}`;
-      out += `\n- \`${loc}\` — [${commentStatus(c)}] \`${c.id}\` — on ${anchorLabel(c)}\n  > ${String(c.text || '').replace(/\n+/g, ' ')}`;
+      out += `\n- \`${loc}\` — [${commentStatus(c)}] \`${c.id}\` — on ${anchorLabel(c)}\n  > ${String(c.text || '').replace(/\n/g, '\n  > ')}`;
     }
     out += '\n';
   }

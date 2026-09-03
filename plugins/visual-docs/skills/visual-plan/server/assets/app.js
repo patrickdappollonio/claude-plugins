@@ -1767,10 +1767,14 @@
         const collapsed = a.quote.replace(/\s+/g, ' ');
         const quote = collapsed.trim();
         const truncated = collapsed.length >= 400;
-        const el = blockTargets.find((cand) => {
+        const matches = blockTargets.filter((cand) => {
           const t = blockOwnText(cand);
           return t === quote || (truncated && t.startsWith(quote));
         });
+        // A single-item list (or a blockquote wrapping one) has the same text
+        // as the item inside it — paint the innermost match, the element the
+        // gutter button actually offered.
+        const el = matches.find((m) => !matches.some((o) => o !== m && m.contains(o))) || null;
         if (el) { noteBlock(el, c); continue; }
         // No block matches (doc edited since) — fall through to a span match
         // so the comment still has a chance to show.
@@ -2057,7 +2061,9 @@
       const label = commentAnchorLabel(e);
       const loc = `${path}${e.line ? `:${e.line}` : ''}`;
       const head = label ? `${loc} · on ${label}` : loc;
-      lines.push(`- [${head}] ${e.text}`);
+      // Indent continuation lines so a multi-paragraph comment stays inside
+      // its list item instead of breaking out as loose paragraphs.
+      lines.push(`- [${head}] ${String(e.text || '').replace(/\n/g, '\n  ')}`);
     }
     lines.push('', 'Update the markdown file in place; the viewer live-reloads.');
     return lines.join('\n');
