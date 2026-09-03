@@ -1,0 +1,12 @@
+{
+  "name": "planning-flow",
+  "description": "Plan-building flow that ends in one clean plan, never a story of revisions — parallel codebase exploration, a zero-context review of the draft against the original ask, questions batched for the user, tickets with what/why/acceptance criteria/dependencies/size, spikes resolved on the spot, every decision logged with its reason, and a plain-text handoff to implementation.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Patrick D'appollonio",
+    "email": "patrickdappollonio@gmail.com"
+  },
+  "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/planning-flow",
+  "license": "MIT",
+  "keywords": ["planning", "plan", "tickets", "spikes", "decisions", "adversarial-review", "orchestration", "subagents"]
+}

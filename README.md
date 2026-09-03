@@ -70,6 +70,7 @@ Each plugin below maps to one skill of the same name, except `adversarial-review
 | effective-communicator | `effective-communicator` |
 | effective-go | `effective-go` |
 | implement-plan | `implement-plan` |
+| planning-flow | `planning-flow` |
 | read-the-docs-first | `read-the-docs-first` |
 | use-claude-limits-efficiently | `use-claude-limits-efficiently` |
 | use-premium-models-efficiently | `use-premium-models-efficiently` |
@@ -331,6 +332,40 @@ npx skills add patrickdappollonio/claude-plugins --skill implement-plan
 ```
 
 Then, once a plan is agreed: *"Implement the plan we agreed on."* [Read more →](plugins/implement-plan)
+
+### planning-flow
+
+Build a coding plan that ends as **one plan**, never a story of its
+revisions. The agent explores the codebase with parallel subagents, drafts to
+a fixed skeleton in a gitignored `.plans/` file, has a zero-context reviewer
+on the most capable model hold the draft against your original words, and
+asks you only what the code cannot answer — in themed batches, never
+repeating a decision you already made, and never recommending one pull
+request over several. Work is written as tickets with a what, a why in
+Simplified Technical English, acceptance criteria, dependencies by title,
+and a size guessed in lines of code rather than time; spikes are labeled and
+the cheap ones are closed on the spot. Every decision is logged with its
+alternative, reason, and drawback. It offers an adversarial review of the
+plan sized to the change, folds the findings in, presents through
+`visual-plan` or plan mode, and closes with the plan, whether it covers the
+ask, and the gotchas — then asks in plain text whether to start building,
+naming `implement-plan` when installed.
+
+```text
+# Claude Code session — type this as a message
+/plugin install planning-flow@patrickdappollonio
+
+# Shell — Claude Code
+claude plugin install planning-flow@patrickdappollonio
+
+# Shell — Codex CLI
+codex plugin add planning-flow@patrickdappollonio
+
+# Shell — npx skills
+npx skills add patrickdappollonio/claude-plugins --skill planning-flow
+```
+
+Then: `/planning-flow:planning-flow <what you want built, with context>`. [Read more →](plugins/planning-flow)
 
 ### read-the-docs-first
 
