@@ -870,7 +870,7 @@ mark.comment-highlight.st-resolved { border-bottom-color: transparent; opacity: 
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
 .ce-quote:hover { color: var(--accent); border-left-color: var(--accent); }
-.ce-text { font-size: 0.88rem; color: var(--ink); overflow-wrap: anywhere; }
+.ce-text { font-size: 0.88rem; color: var(--ink); overflow-wrap: anywhere; white-space: pre-wrap; }
 .comment-entry.st-resolved .ce-text, .comment-entry.st-dismissed .ce-text { color: var(--ink-soft); }
 .comment-entry.st-dismissed .ce-text { text-decoration: line-through; text-decoration-color: var(--stone); }
 /* Lifecycle microcopy — a quiet system line instead of a solid pill. */

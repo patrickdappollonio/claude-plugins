@@ -1,6 +1,6 @@
 {
   "name": "visual-docs",
-  "version": "1.12.1",
+  "version": "1.12.2",
   "description": "Fully local visual plans and recaps with diagrams, rich diffs, live reload, and a browser feedback loop.",
   "author": { "name": "Patrick D'appollonio", "email": "patrickdappollonio@gmail.com" },
   "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/visual-docs",
