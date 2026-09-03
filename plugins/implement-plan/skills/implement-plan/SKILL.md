@@ -60,7 +60,7 @@ harness — do not install anything yourself mid-run.
 
 **When NOT to use:**
 
-- There is no agreed plan. Say so and stop: this skill executes agreements, it does not invent them. Point the user to planning (plan mode, or the `visual-plan` skill).
+- There is no agreed plan. Say so and stop: this skill executes agreements, it does not invent them. Point the user to planning (the `planning-flow` skill, plan mode, or the `visual-plan` skill).
 - The change is one small edit in one file. Do it directly with TDD; the machinery below would cost more than the work.
 
 ## Two Authorities
@@ -126,7 +126,13 @@ Do every step in order. Gates are marked. Read the named file at its step.
 ### 0. Locate the plan and check it was reviewed
 
 Find the agreement: the visual plan's file, the plan-mode plan, the plan file,
-or the chat agreement (quote it into a file so executors can read it). Then:
+or the chat agreement (quote it into a file so executors can read it). A plan
+file under `.plans/` or `.planning-flow/` at the repo root comes from the
+`planning-flow` skill: its *Decisions* section is already decided — every
+entry there is settled, by the user or on their behalf, and is never re-asked
+— and its tickets are the plan items, with *Depends on* fixing the order and
+*Size* sizing the slice. Append the decisions log (step 8) to that same file.
+Then:
 
 - **Visual plan** → if no adversarial review of the *plan* has run, **recommend
   one** before building; a wrong plan built faithfully is the most expensive
