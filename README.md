@@ -158,6 +158,10 @@ names the set instead so it grows with it. And going long: a twenty-line comment
 present-tense and ticket-free and still be documentation parked above a
 function, where nobody reads it. One or two lines is the working limit, and the
 only exemption is a decision table or state machine that prose can't replace.
+The same limit holds above a statement inside a body, a log line included, and
+a field added to a struct whose other fields are bare stays bare. Test files
+are exempt: their comments are the history of what each test protects, and the
+skill never rewrites or deletes them.
 
 Nothing gets thrown away, it gets routed: a regression is pinned by a test named
 after the invariant (a comment saying *"don't remove this check"* fails nobody's
