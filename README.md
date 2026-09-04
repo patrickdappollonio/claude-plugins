@@ -72,6 +72,7 @@ Each plugin below maps to one skill of the same name, except `adversarial-review
 | implement-plan | `implement-plan` |
 | planning-flow | `planning-flow` |
 | read-the-docs-first | `read-the-docs-first` |
+| recap | `recap` |
 | use-claude-limits-efficiently | `use-claude-limits-efficiently` |
 | use-premium-models-efficiently | `use-premium-models-efficiently` |
 | visual-docs | `visual-plan`, `visual-recap` |
@@ -392,6 +393,47 @@ npx skills add patrickdappollonio/claude-plugins --skill read-the-docs-first
 ```
 
 Then just ask: *"Add Stripe webhooks to this app — check the current docs first."* [Read more →](plugins/read-the-docs-first)
+
+### recap
+
+The end-of-session recap that gives you **the result, not the journey.** Ask
+an agent "what did we do?" after a long session and you usually get its diary:
+every file by path, every function by name, the test it edited and reverted,
+the linter warning it silenced, the unrelated fixture it patched to make the
+tests pass, the idea it had and dropped. You never opened the code — you ran
+an agent against a codebase and watched tool calls scroll by — so none of
+that is information to you.
+
+This skill fixes the recap to six parts, as short as the content allows: an
+opening window of what was built, why, how it works in plain words, and
+whether it is done, partly done, or not; what the system now does from
+your side of it, in behaviors rather than files; **every decision the agent
+made on your behalf** that is still in the result, with the alternative and
+the reason, so you can reverse it in one reply; anything changed outside the ask; the decisions only you can
+make and the risks to watch, each with its consequence and options; and what
+was actually verified. Two filters cut the rest: anything that describes how a
+result was reached instead of the result, and anything whose loss costs you
+nothing you must know, decide, or watch for — so every check that came back
+fine shares one line, and a session with one open item recaps in three
+sentences. It is written in Simplified
+Technical English (ASD-STE100), through `effective-communicator` when that is
+installed and through a distilled copy of the same rules when it is not.
+
+```text
+# Claude Code session — type this as a message
+/plugin install recap@patrickdappollonio
+
+# Shell — Claude Code
+claude plugin install recap@patrickdappollonio
+
+# Shell — Codex CLI
+codex plugin add recap@patrickdappollonio
+
+# Shell — npx skills
+npx skills add patrickdappollonio/claude-plugins --skill recap
+```
+
+Then, at the end of a session: *"Recap this session."* [Read more →](plugins/recap)
 
 ### use-claude-limits-efficiently
 

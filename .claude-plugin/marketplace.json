@@ -103,6 +103,18 @@
       "license": "MIT"
     },
     {
+      "name": "recap",
+      "source": "./plugins/recap",
+      "description": "End-of-session recap that reports the result, not the journey — was the original ask met, what now works in plain words, the decisions the agent made on the user's behalf, the side effects and open decisions the reader must act on, and what was verified — written in Simplified Technical English (ASD-STE100) for a reader who never saw the code, with no detours, reverts, or internal names.",
+      "category": "communication",
+      "keywords": ["recap", "summary", "tldr", "session", "handoff", "communication", "plain-language", "simplified-technical-english", "asd-ste100"],
+      "author": {
+        "name": "Patrick D'appollonio"
+      },
+      "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/recap",
+      "license": "MIT"
+    },
+    {
       "name": "use-claude-limits-efficiently",
       "source": "./plugins/use-claude-limits-efficiently",
       "description": "Budget loop for long-running or parallel agent work under Claude's 5-hour and weekly usage limits — run bounded waves, check real usage between them, pause before the cap, and resume with self-contained prompts only when the window is actually clear.",
