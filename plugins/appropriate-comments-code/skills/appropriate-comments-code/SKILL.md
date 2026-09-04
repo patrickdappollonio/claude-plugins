@@ -1,6 +1,6 @@
 ---
 name: appropriate-comments-code
-description: Use when writing, editing, or reviewing code in any language, and especially before adding or changing a comment or docstring — when tempted to narrate in a comment what was tried first, why an approach was replaced, or what a bug, regression, or review turned up; to restate what the next line already says; to write more than a couple of lines above a declaration, a statement, a log or metric call, or a field you just added; to comment the one new member of a list whose siblings have no comments; to edit or delete a comment inside a test file; when the comments in a change add up to half its code lines or more; or to cite a ticket, finding number, iteration label, wave or task ID, or any other session-scoped identifier; to write a count into a comment ("the 7 tests", "all 13 integration tests", "the three callers", "both fields") of things that live elsewhere and can be added to; or when a comment describes what a feature or endpoint *is* rather than why the line beneath it is built the way it is.
+description: Use when writing, editing, or reviewing code in any language, and especially before adding or changing a comment or docstring — when tempted to narrate in a comment what was tried first, why an approach was replaced, or what a bug, regression, or review turned up; to restate what the next line already says; to write more than a couple of lines above a declaration, a statement, a log or metric call, or a field you just added; to comment the one new member of a list whose siblings have no comments; to edit or delete a comment inside a test file; when the comments you wrote in any one file add up to half its new code lines or more; or to cite a ticket, finding number, iteration label, wave or task ID, or any other session-scoped identifier; to write a count into a comment ("the 7 tests", "all 13 integration tests", "the three callers", "both fields") of things that live elsewhere and can be added to; or when a comment describes what a feature or endpoint *is* rather than why the line beneath it is built the way it is.
 ---
 
 # Appropriate Comments in Code
@@ -395,20 +395,20 @@ directives such as `//go:build` (code for the purpose of never deleting them,
 excluded from this count). A **comment line** is a comment marker line, a line
 inside a block comment, or a docstring line. A code line with a trailing
 comment is a **code line**, and so is everything else. Count the code as the
-project's formatter lays it out; never split or join statements to move the
-number. Skip the count when the region is under five lines in total. When
-comment lines still reach **half of the code lines or more** (one comment line
-for every two of code), every comment left has earned its place individually
-and the file is still a document with code in it. A shorter comment is not the
-fix.
+project's formatter lays it out; never split or join statements, and never
+move a comment to the end of a code line, to change the number. Skip the count
+when fewer than five counted lines remain. When comment lines still reach
+**half of the code lines or more** (one comment line for every two of code),
+every comment left has earned its place individually and the region you wrote
+is still a document with code in it. A shorter comment is not the fix.
 
 **Stop and ask.** Do not trim to slip under the threshold, and do not quietly
 finish. Tell the user the ratio, quote or summarise what the comments say, and
 ask whether that material should become a document (name the candidate: the
 package doc, a README section, an ADR, the API reference) or go to the PR
-description, with one- or two-line pointers left in the code. Proceed on the
-answer. If nobody can answer, default to the handoff and the pointers, and say
-that you did.
+description, with one- or two-line pointers left in the code. Wait for the
+answer. Only when the workflow cannot ask, or the user delegated the decision,
+default to the handoff and the pointers, and say that you did.
 
 A counting example, from the diff of your own change:
 
@@ -635,10 +635,10 @@ Any of these means stop and rewrite:
       skipped test files and said so
 - [ ] Reasoning that shaped the change went to the PR description or the final
       message to the user, not the file
-- [ ] After the pass, the comment-to-code ratio of each changed file was
-      counted; at half or more, the user was asked whether the material belongs
-      in a document, or, with no user to ask, it went to the handoff and the
-      final message says so
+- [ ] After the pass, the comment-to-code ratio of each file's changed region
+      was counted; at half or more, the user was asked whether the material
+      belongs in a document, or, with no way to ask, it went to the handoff and
+      the final message says so
 - [ ] No comment stands in for a rename or a split that would make it unnecessary
 - [ ] Copied code links its source; every `TODO` states the gap and matches the
       repo's convention
