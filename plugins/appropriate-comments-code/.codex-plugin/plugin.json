@@ -1,6 +1,6 @@
 {
   "name": "appropriate-comments-code",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Comment discipline for code the agent writes: every comment adds information the code does not and describes the current state only.",
   "author": { "name": "Patrick D'appollonio", "email": "patrickdappollonio@gmail.com" },
   "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/appropriate-comments-code",
