@@ -1,6 +1,6 @@
 ---
 name: appropriate-comments-code
-description: Use when writing, editing, or reviewing code in any language, and especially before adding or changing a comment or docstring — when tempted to narrate in a comment what was tried first, why an approach was replaced, or what a bug, regression, or review turned up; to restate what the next line already says; to write more than a couple of lines above a declaration; or to cite a ticket, finding number, iteration label, wave or task ID, or any other session-scoped identifier; to write a count into a comment ("the 7 tests", "all 13 integration tests", "the three callers", "both fields") of things that live elsewhere and can be added to; or when a comment describes what a feature or endpoint *is* rather than why the line beneath it is built the way it is.
+description: Use when writing, editing, or reviewing code in any language, and especially before adding or changing a comment or docstring — when tempted to narrate in a comment what was tried first, why an approach was replaced, or what a bug, regression, or review turned up; to restate what the next line already says; to write more than a couple of lines above a declaration, a statement, a log or metric call, or a field you just added; to comment the one new member of a list whose siblings have no comments; to edit or delete a comment inside a test file; or to cite a ticket, finding number, iteration label, wave or task ID, or any other session-scoped identifier; to write a count into a comment ("the 7 tests", "all 13 integration tests", "the three callers", "both fields") of things that live elsewhere and can be added to; or when a comment describes what a feature or endpoint *is* rather than why the line beneath it is built the way it is.
 ---
 
 # Appropriate Comments in Code
@@ -21,54 +21,115 @@ The third is the one people miss. A comment can be entirely accurate, entirely
 present-tense, free of every ticket number and iteration label, and still be
 wrong for the spot it occupies.
 
+## Read the companion file first
+
+On first use in a session, before any other step, read `reviewing-comments.md`
+in this skill's directory. It holds the full procedures for verifying what a
+comment claims, fixing code before commenting it, reviewing comments in a
+diff, and auditing in bulk. The summaries below are reminders of text you have
+already read, not a substitute. Re-read it before any review or sweep.
+
 ## Overview
 
 A comment describes the code as it is now, for a reader who has none of your
 context: someone months from now who was not in this session, did not read the
-pull request, does not know what you tried first, and cannot ask you.
+pull request, and cannot ask you. That reader is **skimming** for one function,
+and every line above it is a toll. Twenty accurate lines above a function is a
+worse comment than two, because nobody reads twenty.
 
-That reader is also **skimming**. They are looking for one function, and every
-line above it is a toll they pay to reach it. A comment's cost is not just being
-wrong later — it is the attention it takes now. Twenty accurate lines above a
-function is a worse comment than two, because nobody reads twenty.
+**The length of a comment tracks the reader's need, never your deliberation.**
+The line you argued about for an hour, the field you just added, the log call a
+reviewer questioned — each feels like it deserves a paragraph because *you*
+thought hard about it. That is not a property of the line.
+
+**Decide the destination before you write.** Anything past two lines has three
+homes, and you choose one on purpose:
+
+1. **The file**: the one or two lines a reader of *this line* needs, or the
+   decision table, state machine, or one-rule-per-line preconditions tenet 1
+   exempts.
+2. **A document**: package doc, README, ADR, or API doc, if editing it is in scope.
+3. **The handoff**: the PR description, or your final message to the user.
+
+The standing constraint stays in the file. The deliberation that led to it,
+the alternatives, and the argument for the change go to the handoff by
+default. Tell the user; do not leave it in the file for them to find.
 
 This skill is language-agnostic. Apply it with whatever comment syntax and
 documentation convention the project already uses.
 
 ## When to Use
 
-- Writing any new function, type, module, or test
+- Writing any new function, type, or module
 - Editing code that already has comments above or inside it
 - Fixing a bug and feeling the urge to explain the fix in place
 - Applying review feedback, whether from a human or from an automated reviewer
 - Writing doc comments / docstrings for a public API
 - Reviewing someone else's diff that adds comments
-- **Auditing existing comments** in bulk — see *Doing this at scale*
+- **Auditing existing comments** in bulk — read `reviewing-comments.md` first
 
 **When NOT to use:** the user explicitly asked for annotated, tutorial, or
 teaching code, where narrating every line *is* the deliverable. Say that you are
 setting the skill aside and why.
 
+## Test files are exempt
+
+**By default, existing comments in test files are not rewritten or deleted
+under this skill, and bulk audits skip test files entirely.** A test file is whatever the
+project treats as one: a test suffix or prefix in the filename, a spec file, or
+anything under a tests, testdata, or fixtures directory.
+
+The reason is that the core tenet inverts in a test. A regression test exists
+*because* of an incident, so the incident is its subject: the date, what
+broke, what was tried, the runbook link, the odd fixture value. That is
+specification and history, and a reader uses it to learn what the test protects.
+"First delivery" / "same event, redelivered" above two identical-looking calls
+is the map that makes the test readable. Deleting any of it is a loss nothing
+fails on.
+
+That is the default, and it covers sweeps and incidental edits. Two cases
+step outside it:
+
+- **You changed a line in a test.** You still own the comments describing that
+  line: a fact your edit made false gets corrected, and the history around it
+  stays. Other comments in the file are not opened up by your edit.
+- **The user explicitly asked for test comments to be reviewed.** Then review
+  them under the relaxed rules below, existing and new alike.
+
+**The relaxed rules for test files.** Two tenets still hold: no session-scoped
+identifiers (tenet 5), and the cover test (tenet 3), so no restating the call
+or assertion below it. Everything else is off, including every length and
+count rule elsewhere in this skill: length and history are allowed when they
+explain the test's sequence, fixture, or reason to exist. Apply them
+to every comment you write in a test file; to existing comments only when the
+user asked for the review, and then to all of them in scope.
+
+If you were asked to sweep a package and it contains test files, say that you
+left their comments alone and why; do not silently include them.
+
 ## The Six Tenets
 
-### 1. Two lines is the working limit
+### 1. Two lines is the working limit, anywhere
 
 Above a declaration — a function, type, variable, constant, or field — aim for
 **one or two lines**. Not as a hard cap, as a forcing function: if you need more,
 you are usually writing documentation, and it belongs somewhere a reader can find
 it on purpose.
 
+The limit is not scoped to declarations. A comment above a **statement inside a
+body** — a call, a branch, a log line, an assignment — is one line, or two when
+it states a constraint or invariant, because it interrupts the flow of the
+function it sits in. Measure against the statement, not its line count: a call
+whose arguments span six lines is still one statement.
+
 ```go
 // Bad — accurate, present-tense, breaks no other rule, and nobody reads it
 // Retry uses exponential backoff starting at 100ms and doubling each attempt up
-// to a ceiling of 30 seconds. The ceiling exists because the upstream service's
-// own timeout is 30 seconds, so waiting longer than that between attempts means
-// the request would have been abandoned by the caller before we retried anyway.
-// Jitter is applied as a random factor between 0.5 and 1.5 of the computed
-// delay, which prevents the thundering-herd problem when many workers fail at
-// the same moment — for example when the upstream restarts and every in-flight
-// request fails simultaneously. We chose full jitter over equal jitter after
-// measuring both under load.
+// to a ceiling of 30 seconds, because the upstream's own timeout is 30 seconds
+// and a longer wait means the caller has already abandoned the request. Jitter
+// is a random factor between 0.5 and 1.5 of the delay, which prevents the
+// thundering herd when many workers fail together, for example on an upstream
+// restart. We chose full jitter over equal jitter after measuring both.
 func Retry(ctx context.Context, fn func() error) error {
 
 // Good — the two facts a caller cannot see, and nothing else
@@ -83,8 +144,10 @@ needs to know the ceiling is not arbitrary and the jitter is not decorative.
 
 **Where the limit genuinely does not apply:** a comment stating a decision table
 or a state machine, where the mapping *is* the contract and prose cannot replace
-it. If you claim this exemption, the comment should be mostly table, not mostly
-prose about the table.
+it, or a set of independent preconditions each of which is a rule. If you claim
+this exemption, the comment should be mostly table or mostly rules, one line
+each, not prose about them. Never drop a rule to hit the limit; compress the
+prose around it.
 
 ### 2. Describe the current state, not the path that got you there
 
@@ -149,13 +212,42 @@ Comments that earn their place say things the code cannot:
 | A value that must be kept in step with something else | "Must match the retry ceiling in the deploy manifest." |
 | What a caller needs without reading the body | Public API doc comments: behavior, errors, side effects |
 
+**Self-describing statements.** A log call, a metric emit, an error message, an
+assertion message, or a panic already carries its prose: the message and its
+fields say what it is for. The cover test for these is stricter: cover the
+comment and read the *message*. If the message already says it, the comment is
+a restatement. First confirm the line should exist at all: a forgotten debug
+print gets deleted, not explained. Then the only comment it can earn is one
+line about a non-obvious choice in its **shape** (a level that looks wrong, a
+field deliberately omitted, a sampling rate, a message that must match an alert
+rule) or one line naming a verifiable external requirement that mandates it (a
+compliance rule, a spec clause). An argument is neither.
+
+```go
+// Bad — defends that the line exists; the message already says what is logged
+// The key ID is deliberately never persisted. Its PREFIX is, on every change
+// the key opens, so "which key did this?" is answerable from stored data. What
+// this line adds is every request the key made, including reads and retries
+// that changed nothing, which is what "this key leaked, what did it do?"
+// needs. Hence logging on EVERY request, not only failures.
+logger.Info("request authenticated with an api key", "key_id", key.ID, ...)
+
+// Good — one line, about the one choice in the line's shape
+// Info, not Debug: this is the only record of a key's reads, which a leak audit needs.
+logger.Info("request authenticated with an api key", "key_id", key.ID, ...)
+```
+
+The long version defends the line's **existence**; the short one explains its
+**shape**. A comment *arguing* that a line should exist is an argument with an
+imagined reviewer, and it goes to the handoff, not the file. Naming the rule
+that mandates the line is a citation, not an argument, and it stays.
+
 For a workaround, the durable form points at something that outlives the
 session and states its own exit condition:
 
 ```js
-// Safari <= 17 fires `resize` before the viewport metrics settle, so read
-// them on the next frame. See https://bugs.webkit.org/show_bug.cgi?id=254340
-// — drop this once the minimum supported Safari is 18.
+// Safari <= 17 fires `resize` before viewport metrics settle; drop this once
+// Safari 18 is the minimum. https://bugs.webkit.org/show_bug.cgi?id=254340
 requestAnimationFrame(measure);
 ```
 
@@ -180,7 +272,12 @@ like mistakes, and the next reader (or agent) will "fix" them back into line
 unless the comment says the difference is deliberate and why.
 
 A comment on a line that differs from its siblings has three parts, in this
-order, and nothing else:
+order, and nothing else, in **two lines total**. Before writing it, point at the
+actual neighbour: the sibling route, branch, or call this one differs from. If
+you cannot name one in the file, do not use this form: a comment built on a
+counterfactual ("not only on failure", "unlike a naive version") is defending
+existence, not shape. The line may still earn a comment under tenet 3 for a
+constraint or invariant; it just has no sibling difference to explain.
 
 1. **That the difference is deliberate** — one word or phrase: "Deliberately",
    "On purpose", "Unlike the routes above".
@@ -190,34 +287,26 @@ order, and nothing else:
    it to match.
 
 ```go
-// Bad — five lines about what the feature is and who may call it. The one
-// fact that matters — this route is deliberately wired unlike the others —
-// is buried in the last clause, and a skimmer never reaches it.
+// Bad — about the feature; the one fact that matters is buried in the last clause
 // The cross-asset search is TOP-LEVEL: it is not "one asset's entries" but
 // "where does this wallet (or customer, or asset) appear". It shares the
-// surface's dual-credential auth — a key caller is scope-filtered, a token
-// sees every customer — and carries its own handler label for the same
-// reason every other route here does.
+// surface's dual-credential auth and carries its own handler label for the
+// same reason every other route here does.
 r.With(metrics.WithHandler(metrics.HandlerOnboardingSearch)).
 	Get("/onboardings", h.SearchOnboardings)
 
 // Good — says the line is intentionally different, and what would break
-// Deliberately its own With chain: this route reports under the onboarding
-// handler label, not the shared label the rest of this router uses. Folding
-// it into the group would lump its metrics in with the asset endpoints.
+// Deliberately its own With chain: this route reports under its own handler
+// label, not the router's shared one, or its metrics merge with the asset endpoints.
 r.With(metrics.WithHandler(metrics.HandlerOnboardingSearch)).
 	Get("/onboardings", h.SearchOnboardings)
 ```
 
-Everything the bad version says may be true and worth writing down. It is
-product documentation: it belongs in the API doc, the package comment, or the
-PR — where a reader looking for "what is cross-asset search" will look. Nobody
-looking for that reads a router file, and nobody reading a router file is
-asking it.
-
-A reliable tell is **ratio**: a five-line comment on a two-line registration, a
-paragraph above a one-line call. When the comment is bigger than the code, it is
-almost always about something other than the code.
+Everything the bad version says may be true. It is product documentation, and
+it belongs in the API doc or package comment, where a reader asking "what is
+cross-asset search" will look. Nobody asks that of a router file. When a
+comment is bigger than the code, it is almost always about something other
+than the code.
 
 ### 5. Never commit an identifier that outlives nothing
 
@@ -243,10 +332,6 @@ forever. None of these belong in a comment:
 // A failed POST leaves the syncer and the force timer armed, so the next
 // poll retries immediately rather than waiting for the backoff window.
 ```
-
-The rewrite keeps every fact a future reader can use and drops the two things
-only the original session understood: which review found it, and which test was
-flipped.
 
 Project phase names deserve their own mention because they look permanent and are
 not. "Always X in this stage" becomes a **lie** the moment the next stage ships,
@@ -300,60 +385,66 @@ A count that is genuinely load-bearing — "must be exactly two, the protocol
 sends a pair" — is an invariant, and an invariant is enforced by an assertion
 or a test, then commented, not commented alone.
 
-## Verify what the comment claims
+## A new member matches its siblings
 
-A comment can be confidently, fluently wrong. Before you write or keep one that
-names something, confirm the something exists:
+When you add one element to a list of peers — a struct field, a class
+attribute, an enum variant, an interface property, a config key, a route
+registration, a table column, a switch case — the new element adopts the
+**comment density and placement its siblings already have**. If the siblings
+are bare, the new one is bare. If they carry trailing one-liners, the new one
+may carry one, and only if it passes the cover test. If the whole list is
+described once above the type, the new member's meaning goes into that
+description. Density sets the ceiling and the placement; it never requires a
+comment that carries nothing.
 
-- **An identifier** — a function, method, type, constant, table, index, env var.
-  Grep for it. A comment naming a method that was renamed, or never existed, is
-  worse than silence: the reader trusts it and goes looking.
-- **A file or document path** — does it still resolve?
-- **A test** — a comment saying "pinned by TestFoo" is an assertion about the
-  suite. If `TestFoo` is gone, the comment now promises a guarantee nobody has.
-- **A numeric claim** — "the ceiling is four attempts" is checkable. Check it.
-  And if the number is a tally of things elsewhere rather than a value in
-  this code, it fails tenet 6 regardless of whether it is currently right.
+```go
+// Bad — the only commented field, in a block its siblings do not have
+type Config struct {
+	PageSize     int
+	Timeout      time.Duration
+	// MaxRetries bounds retries against the upstream inventory API, which
+	// rate-limits after ten rapid retries and locks the key for a minute.
+	MaxRetries int
+}
 
-This is not paranoia; it is the failure mode long comments have. Nobody reads
-twenty lines closely enough to notice that one names a function that does not
-exist. Length and inaccuracy are the same problem wearing two hats.
+// Good — bare like its siblings; the constraint lives where it is enforced
+type Config struct {
+	PageSize     int
+	Timeout      time.Duration
+	MaxRetries   int
+}
 
-## Fix the code before you comment it
+// Upstream locks the key for a minute past 10 rapid retries; 0 means none.
+if c.MaxRetries < 0 || c.MaxRetries > maxUpstreamRetries {
+```
 
-A comment is the second-best tool for making code clear. Reach for the first
-one — a name, a smaller function, a constant — before writing prose.
+Readers infer emphasis from asymmetry: the one commented field among twelve
+reads as the dangerous one. The block is there because the field is new to
+*you*, and "new" stops being true at merge. **The day-one test:** would this
+comment exist if the element had been here since the file was created? If not,
+it is about your edit, not the code. The same test catches the essay above a
+log line you happened to add today.
 
-- **A comment does not excuse unclear code.** `// n is the retry count` above
-  `n := 3` is a request to rename `n` to `retryCount`. `// convert to cents`
-  above `x * 100` is a request for a `toCents` helper or a named constant. If
-  the comment names what the code should have been called, rename instead.
-- **If you cannot write a clear comment, the code is the problem.** When you
-  cannot say in two lines why a block exists or what it guarantees, that is not
-  a reason to write ten lines — it is a sign the block needs splitting, renaming,
-  or rethinking. Fix that, then see whether a comment is still needed.
-- **A cryptic comment is worse than none.** "Magic, do not touch", "you are not
-  expected to understand this", a bare `// XXX` — these announce confusion
-  without dispelling it. Either state the actual invariant or delete the note.
+A real constraint on the new member — a unit, a range, an invariant — still
+goes somewhere: into the name first (`TimeoutMillis`, not `Timeout` plus a
+comment), then a trailing one-liner if the siblings use them, otherwise the
+type's doc comment or the validation that enforces it. A caller must never be
+left unable to learn a public field's unit because its siblings are bare.
 
-Two comment kinds the article-style advice gets right and this skill endorses,
-with the conventions that keep them from rotting:
+## Verify, and fix the code first
 
-- **Copied code links its source.** Code lifted from a Stack Overflow answer, a
-  blog post, or another repository carries a one-line comment with the URL.
-  Readers can reach the original context, licence, and later corrections; you
-  cannot reproduce those in prose.
-- **Incomplete work is marked, not implied.** A known gap gets a `TODO` in the
-  form the project already uses (grep for `TODO` / `FIXME` first — some repos
-  require a tracker link, some an owner). State *what* is missing in the
-  present tense: `// TODO: handle 429 by honouring Retry-After`, never
-  `// TODO: fix later` or `// TODO from review`.
+Full text in `reviewing-comments.md`. The rules that hold without it:
 
-**Bug fixes and tenet 2, reconciled.** Conventional advice says "add a comment
-when you fix a bug". This skill says the same thing narrowly: comment the
-*workaround* — the external defect, its link, and its exit condition — because
-that is a standing constraint. Do not comment the *incident*: what broke, who
-found it, what you tried. The regression itself is pinned by a test.
+- **Confirm anything a comment names exists**: an identifier (grep it), a path,
+  a test, a numeric claim. A comment naming a renamed method is worse than
+  silence, because the reader trusts it.
+- **A comment is the second-best tool.** `// n is the retry count` is a rename
+  request; `// convert to cents` is a helper request. If you cannot say in two
+  lines why a block exists, split or rename it rather than writing ten.
+- **Copied code links its source; a `TODO` states the gap** in the present
+  tense and in the form the repo already uses.
+- **Comment the workaround, never the incident**: the external defect, its
+  link, its exit condition. The regression itself is pinned by a test.
 
 ## When you edit code, you own its comments
 
@@ -367,58 +458,22 @@ Watch especially for a comment that describes **one** of something when your
 change made it **two** — one direction, one caller, one status, one supported
 mode. Those read as still-true and are not.
 
-## Reviewing comments: flag, rewrite, or delete
+## Reviewing comments, in brief
 
-When reviewing a diff — yours or another agent's — treat every added or changed
-comment as a finding until it passes. For each one:
+Read `reviewing-comments.md` before reviewing a diff or auditing in bulk. The
+rules that hold without it:
 
-1. **Classify** it with one label: `restates` (fails the cover test), `narrates`
-   (past tense, journey, process), `documents` (true, but too long or about the
-   feature rather than the line), `unverified` (names something you have not
-   confirmed), `counts` (a tally of things that live elsewhere), `stale` (no longer matches the code beside it).
-2. **Rewrite or delete — never keep as-is.** A flagged comment has exactly two
-   exits. Rewrite when there is one mechanical fact about *these lines* the
-   reader cannot get from the code — most often, why the line differs from its
-   neighbours. Delete when there is not. "Shorten it a bit" is not an option: a
-   trimmed comment on the wrong subject is still on the wrong subject.
-3. **Relocate, don't discard.** If the deleted text was accurate documentation,
-   say where it goes (package doc, API doc, PR description) in the review, and
-   put it there if that is in scope.
-4. **Report it as a defect**, in the same list as the code findings, with the
-   label and the replacement text. A comment on the wrong subject is not a nit.
-
-## Doing this at scale
-
-Auditing comments across a codebase, or across a large change, has failure modes
-of its own.
-
-**Cut in order of length.** A ten-line block is worth more attention than a
-three-line one; trimming three lines to two is churn that risks a fact for almost
-no gain. Sort the work by size and start at the top.
-
-**A shorter comment that lost a rule is a regression, not progress.** The
-dangerous edit is not the one that keeps too much — it is the one that reads
-beautifully and quietly drops "callers must hold the lock". When compressing:
-- Compress the prose *around* a rule; never the rule.
-- If a block states two independent facts, two lines is often the honest floor.
-  Do not merge two rules into one sentence that states one.
-- After the pass, re-read the diff asking only: *what did the old text assert
-  that the new text does not, and does anything depend on it?*
-
-**Do not record why you kept something.** A note explaining that a comment was
-left long, or which fact forced it, is a comment about the comment. It belongs in
-the review conversation, not in the file — and not in a `KEPT.md` either.
-
-**Do not touch comments outside the change you are making.** The rule against
-improving adjacent code applies to comments. A cleanup that rewrites a hundred
-comments nobody asked about buries the change reviewers came to read. If the
-codebase needs a sweep, make it its own change and say so.
-
-**Verify mechanically, not by reading the report.** If you delegate this work,
-check the result: that no functional directive was removed (`//nolint`,
-`//go:build`, `//go:generate`, pragma comments — these are *code*), that no
-non-comment line changed, and that generated files were regenerated rather than
-hand-edited.
+- **Every added or changed comment is a finding until it passes.** Label it
+  `restates`, `narrates`, `documents`, `unverified`, `counts`, or `stale`.
+- **A flagged comment is rewritten or deleted, never kept as-is** and never
+  merely shortened: a trimmed comment on the wrong subject is still on the
+  wrong subject. Relocate accurate documentation and say where it went.
+- **Report it as a defect** in the same list as code findings, with the label
+  and replacement text.
+- **In bulk: cut in order of length, skip test files, and never drop a rule
+  while compressing.** Do not touch comments outside the change you are making.
+  Verify mechanically that no functional directive (`//nolint`, `//go:build`,
+  pragmas) and no non-comment line changed.
 
 ## Where the context actually belongs
 
@@ -430,6 +485,8 @@ stays true and where the right reader will find it.
 | A bug that must never come back | A test named after the invariant it protects |
 | Why this approach over the one it replaced | The commit message / PR description |
 | A finding from a review pass | The review thread on the change |
+| Why a line should exist at all, argued against an imagined objection | The PR description, or your final message to the user |
+| The history behind a regression test | The test file itself: this is where history is allowed |
 | Planned follow-up work | The issue tracker |
 | Alternatives considered and rejected | A design doc or ADR |
 | How a subsystem fits together | A doc, a package-level comment, or a README |
@@ -447,8 +504,7 @@ code: it goes above the constant.
 | "The history explains why I changed it" | The reader sees today's code, not your diff. State the constraint in the present tense, or put the story in the commit message. |
 | "A comment warns the next person not to undo the fix" | It warns nobody — nothing checks it. Write the test; it fails when someone undoes the fix. |
 | "The finding ID keeps it traceable" | Traceable to a session that no longer exists, by a reader who never saw it. Even the same agent has lost that context by the next run. |
-| "It's all true and all relevant" | True and relevant is the bar for documentation. The bar for a comment is *and it fits in two lines*. |
-| "Being detailed is better than being vague" | Detail about ephemeral process is noise. Detail about present constraints is signal. And twenty lines of signal still goes unread. |
+| "It's all true and relevant; detail beats vagueness" | True and relevant is the bar for documentation. The bar for a comment is *and it fits in two lines*, barring tenet 1's exemptions. Detail about process is noise, detail about present constraints is signal, and twenty lines of signal still goes unread. |
 | "The comment documents what the function does" | If it restates the name and the body, it documents nothing. Document what the caller cannot see: errors, side effects, preconditions. |
 | "It's obvious, but a comment makes it clearer" | If it is obvious from the code, the comment adds a maintenance obligation for zero information. |
 | "This code is subtle enough to deserve the space" | Subtle code deserves a *precise* comment, which is usually shorter than a discursive one. If it truly needs paragraphs, it needs a doc — and possibly simpler code. |
@@ -461,16 +517,24 @@ code: it goes above the constant.
 | "A comment will explain what `n` means" | Rename `n`. A comment that names what the code should have been called is a rename request written in the wrong place. |
 | "It's too complicated to explain briefly" | Then it is too complicated. Split or rename until two lines suffice; a long comment is a symptom, not a treatment. |
 | "I'll just tighten it" | Tightening a comment on the wrong subject produces a shorter comment on the wrong subject. Rewrite it about the line, or delete it. |
-| "The count is accurate, I just checked" | Accurate today. Nothing re-checks it when the eighth test lands, and the reader will believe seven. Name the set instead. |
-| "The number tells the reader how much there is" | The reader can count; they cannot tell whether your count is still current. A location or a name lets them see for themselves. |
+| "The count is accurate" / "the number tells the reader how much there is" | Accurate today. Nothing re-checks it when the eighth test lands, and the reader will believe seven. The reader can count; they cannot tell whether your count is current. A name or location lets them see for themselves. |
 | "It's a small number, it won't change" | Small sets are the ones that grow. "Both" becomes three more often than "the 40" becomes 41. |
+| "The reviewer asked me to make the intent unmistakable" | Unmistakable is two precise lines plus a test, not a paragraph. Put the argument in the PR description; the reviewer reads that. |
+| "The log line looks like leftover debugging without an explanation" | First decide whether it is: leftover debugging gets deleted. If it stays, explain the one choice in its shape, in one line. |
+| "This field is new, so it needs explaining" | New to you. The reader sees a field among fields. Match the siblings; put a real constraint where it is enforced. |
+| "I thought hard about this line, it deserves the space" | How long you deliberated is not a property of the line. Write what a reader needs; tell the user the rest. |
+| "It's a test comment, and it narrates history" | Tests are where history lives. Leave existing test comments alone. |
+| "The sweep covers the whole package, tests included" | Sweeps skip test files. Say you skipped them. |
 
 ## Red flags in your own draft
 
 Any of these means stop and rewrite:
 
-- **It is more than two or three lines** and none of them states a constraint,
-  invariant, or contract
+- Reviewing or sweeping comments without having read `reviewing-comments.md`
+  this session
+- **It is more than two lines, or longer than the code it sits on** (a
+  multi-line call is one statement), and none of them states a constraint,
+  invariant, or contract; inside a body, more than one line without one
 - Past-tense narration: "used to", "previously", "we tried", "was changed to",
   "no longer", "originally", "instead of the old"
 - Process references: "per review", "as discussed", "from the audit", "flagged by"
@@ -483,7 +547,14 @@ Any of these means stop and rewrite:
 - Restatement: the comment is a prose translation of the identifier below it
 - **Wrong subject:** the comment is about the feature, route, policy, or business
   meaning while the code is a call, wrapper, branch, or registration
-- **The comment is longer than the code it sits on**
+- **A comment above a log, metric, error, or assert** explains what it is for,
+  when the message already says so
+- **The comment defends that the line exists** rather than explaining its shape:
+  the "neighbour" it differs from is a counterfactual, not a line in the file
+- **The element you added is the only commented one among its siblings**
+- **You are about to edit or delete a comment in a test file** and neither your
+  own edit made it false nor the user asked for a test-comment review
+- The comment would not exist if the line had been here from day one
 - Emphatic capitals or scare quotes teaching a concept — `TOP-LEVEL`, `"one
   asset's entries"` — a comment that is teaching a concept is a doc
 - A named identifier, file, or test **you have not confirmed exists**
@@ -499,16 +570,28 @@ Any of these means stop and rewrite:
 
 ## Before you finish
 
-- [ ] Every comment above a declaration is one or two lines, or states a table
-      or state machine that genuinely cannot compress
-- [ ] Every comment describes the code as it is now, in the present tense
-- [ ] No comment narrates a previous attempt, a past bug, or the edit you just made
+- [ ] `reviewing-comments.md` was read this session before any review or audit
+- [ ] Every comment above a declaration is one or two lines, or states a table,
+      a state machine, or independent preconditions one rule per line
+- [ ] Every comment describes the code as it is now; none narrates a previous
+      attempt, a past bug, or the edit you just made
 - [ ] Any regression you fixed is pinned by a test, named after the invariant
 - [ ] Every comment survives the cover test — hide it, and the code is genuinely poorer
 - [ ] Every comment passes the subject test — it is about the mechanism in the
       lines beneath it (usually why they differ from their neighbours), not the
       feature they implement
-- [ ] No comment is longer than the code it annotates
+- [ ] Inline comments inside bodies are one line, or two when they state a
+      constraint or invariant; any comment longer than the code it annotates
+      was re-checked against the subject test
+- [ ] No comment above a log, metric, error, or assert repeats what the message
+      already says, or argues that the line should exist
+- [ ] Every element added to a list of peers matches its siblings' comment
+      density and placement; no comment fails the day-one test
+- [ ] Existing test-file comments were left alone except where an edit of yours
+      made a fact false or the user asked for a test-comment review; sweeps
+      skipped test files and said so
+- [ ] Reasoning that shaped the change went to the PR description or the final
+      message to the user, not the file
 - [ ] No comment stands in for a rename or a split that would make it unnecessary
 - [ ] Copied code links its source; every `TODO` states the gap and matches the
       repo's convention
@@ -521,8 +604,7 @@ Any of these means stop and rewrite:
       steps); every number left is a constraint this code enforces, ideally
       as a named constant
 - [ ] Any tracker ID matches a convention already in the repo, or was approved
-- [ ] Comments near every line you changed were re-read and are still accurate
-- [ ] Nothing that describes **one** of something is now stale because your change
-      made it two
+- [ ] Comments near every line you changed were re-read and are still accurate,
+      including any that described **one** of something your change made two
 - [ ] Context you removed landed somewhere durable: a test, the commit message,
       the review thread, or the tracker

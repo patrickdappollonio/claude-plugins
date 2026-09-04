@@ -13,10 +13,10 @@ read the pull request, does not know what was tried first, and cannot ask. If a
 sentence only makes sense to someone who watched the code being written, it does
 not belong in the code.
 
-## The five tenets
+## The tenets
 
-- **Two lines is the working limit.** Above a declaration, aim for one or two
-  lines. A comment can be accurate, present-tense and free of every ticket
+- **Two lines is the working limit, anywhere.** Above a declaration, aim for
+  one or two lines; above a statement inside a body, usually one. A comment can be accurate, present-tense and free of every ticket
   number and still be wrong for the spot it occupies: twenty lines above a
   function is documentation, and nobody reads it on the way to the code. The
   exemption is a decision table or a state machine, where the mapping *is* the
@@ -40,6 +40,19 @@ not belong in the code.
   build tag, a pattern, an invariant) so the comment grows with it. A number
   stays only when it is a constraint this code enforces — and then it is a
   named constant the comment explains.
+- **A new member matches its siblings.** A field, enum case, config key, or
+  route added to a list of bare peers stays bare; the one commented field among
+  twelve reads as the dangerous one, and the block is a fingerprint of the edit.
+  The day-one test: would the comment exist if the element had always been here?
+- **A log line already says what it is for.** Logs, metrics, error and assert
+  messages carry their own prose; the only comment they can earn is one line
+  about a non-obvious choice in their shape, such as a level that looks wrong.
+  A comment arguing that the line should exist at all goes to the PR
+  description or the handoff to the user, not the file.
+- **Test files are exempt by default.** Sweeps skip them and existing test
+  comments stay: a regression test's incident history, runbook link, and "same
+  event, redelivered" markers are its specification. They are reviewed only when
+  you ask, and then only session identifiers and restatements go.
 
 ## A regression is documented by a test
 
@@ -104,9 +117,15 @@ Or ask for it in passing: *"Clean up the comments in what we just wrote."*
   comment mentions is confirmed to exist first; a comment naming a method that
   was renamed away is worse than silence, because the reader believes it.
 - **It has rules for bulk audits.** Cutting comments across a codebase goes
-  longest-first, never compresses away a rule such as "callers must hold the
-  lock", leaves comments outside the change alone, and verifies mechanically
-  that no pragma directive (`//nolint`, `//go:build`) was deleted as prose.
+  longest-first, skips test files, never compresses away a rule such as
+  "callers must hold the lock", leaves comments outside the change alone, and
+  verifies mechanically that no pragma directive (`//nolint`, `//go:build`) was
+  deleted as prose. The full procedure ships in `reviewing-comments.md` beside
+  the skill.
+- **Deliberation is not a property of the line.** The skill names the bias
+  directly: a line the agent argued about for an hour feels like it deserves a
+  paragraph. It gets the two lines a reader needs, and the reasoning is told to
+  you in the handoff instead of left in the file.
 - **It steps aside for annotated code.** If you asked for tutorial or teaching
   code where narrating every line *is* the deliverable, the skill says so and
   gets out of the way.
