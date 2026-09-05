@@ -1,0 +1,19 @@
+{
+  "name": "recap",
+  "version": "0.1.0",
+  "description": "End-of-session recap that reports the result, not the journey, in plain language for a reader who never saw the code.",
+  "author": { "name": "Patrick D'appollonio", "email": "patrickdappollonio@gmail.com" },
+  "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/recap",
+  "license": "MIT",
+  "keywords": ["recap", "summary", "tldr", "session", "communication"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Recap",
+    "shortDescription": "Sum up a session: result, side effects, open decisions.",
+    "longDescription": "Produces a short end-of-session recap that says whether the original ask was met, what now works in plain words, which side effects and decisions the reader must act on, and what was verified. It leaves out detours, reverts, and internal code names.",
+    "developerName": "Patrick D'appollonio",
+    "category": "Productivity",
+    "capabilities": ["Write", "Explain"],
+    "defaultPrompt": ["Recap this session."]
+  }
+}

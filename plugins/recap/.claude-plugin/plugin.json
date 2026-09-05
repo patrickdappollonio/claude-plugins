@@ -1,0 +1,12 @@
+{
+  "name": "recap",
+  "description": "End-of-session recap that reports the result, not the journey — was the original ask met, what now works in plain words, the decisions the agent made on the user's behalf, the side effects and open decisions the reader must act on, and what was verified — written in Simplified Technical English (ASD-STE100) for a reader who never saw the code, with no detours, reverts, or internal names.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Patrick D'appollonio",
+    "email": "patrickdappollonio@gmail.com"
+  },
+  "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/recap",
+  "license": "MIT",
+  "keywords": ["recap", "summary", "tldr", "session", "handoff", "communication", "plain-language", "simplified-technical-english", "asd-ste100"]
+}
