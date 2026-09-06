@@ -49,6 +49,11 @@ not belong in the code.
   about a non-obvious choice in their shape, such as a level that looks wrong.
   A comment arguing that the line should exist at all goes to the PR
   description or the handoff to the user, not the file.
+- **Half comments means it is a document.** When the comment lines in a
+  change reach half its code lines, the skill stops and asks you whether that
+  material belongs in a doc, a README, or the PR description, with short
+  pointers left in the code. It never trims comments just to get under the
+  line.
 - **Test files are exempt by default.** Sweeps skip them and existing test
   comments stay: a regression test's incident history, runbook link, and "same
   event, redelivered" markers are its specification. They are reviewed only when

@@ -32,6 +32,12 @@ restatements are findings, length and history are not. For each one:
 Auditing comments across a codebase, or across a large change, has failure modes
 of its own.
 
+**Measure the ratio after the pass.** Run the normal pass on each file in
+scope, then count that file's comment lines against its code lines as
+`SKILL.md`'s ratio check describes, over the whole file when auditing. A file still at half or more is a document with code in it: report
+it to the user with what its comments say and ask whether that material moves
+to a doc, rather than cutting further.
+
 **Cut in order of length.** A ten-line block is worth more attention than a
 three-line one; trimming three lines to two is churn that risks a fact for almost
 no gain. Sort the work by size and start at the top.
