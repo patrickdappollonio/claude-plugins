@@ -419,7 +419,14 @@ was actually verified. Two filters cut the rest: anything that describes how a
 result was reached instead of the result, and anything whose loss costs you
 nothing you must know, decide, or watch for — so every check that came back
 fine shares one line, and a session with one open item recaps in three
-sentences. It is written in Simplified
+sentences. Then one closing line names **the single next action** — the
+question to answer, the command to run, the word to say — instead of "let me
+know if you need anything else", which hands you an empty choice at the
+moment you need a starting point. Lists are capped at five and ranked, work
+left undone is sized in real units rather than "some work", and the shape
+bends for exactly four cases: you ask to be walked through it, something
+cannot be undone, the ranked options are the answer, or a small caveat you
+must act on. It is written in Simplified
 Technical English (ASD-STE100), through `effective-communicator` when that is
 installed and through a distilled copy of the same rules when it is not.
 

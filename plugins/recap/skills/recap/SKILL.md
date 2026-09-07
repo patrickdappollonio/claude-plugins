@@ -42,6 +42,12 @@ out. If the reader wants to know how a conclusion was reached or what else
 was checked, they ask, and you answer that one question. A short recap that
 prompts two questions beats a long one that answers ten nobody had.
 
+**Knowing is not doing.** A recap that leaves the reader informed and still
+stuck is half delivered. Every item that needs them says what to do about
+it, and the message ends on one action small enough to start now. The gap
+between "I understand" and "I did it" is where the work dies, so close it in
+the message rather than leaving the reader to work out their own first step.
+
 **The reader never saw the code.** Start from that assumption every time. They
 did not open a file, run a tool, or read a diff. They ran an agent against a
 codebase, one they may know well or may never have seen. A function name, a
@@ -75,6 +81,12 @@ message. What does apply:
 - **The channel allows questions.** A recap is not the last word. The
   reader can ask, and a question is cheaper for them than reading the
   answer to one they did not have.
+- **Two vague sizes feel the same.** "Some work" and "a few hours" register
+  alike, and neither one lets the reader plan. Whenever effort, risk, or
+  scale changes what they do next, give the number.
+- **A buried win does not register.** What now works is stated in terms the
+  reader can check, with the way to see it when there is one, not as "some
+  changes were made".
 
 ## Register
 
@@ -93,6 +105,17 @@ message. What does apply:
 - **Same language as the reader.** If the session ran in Spanish or
   Portuguese, the recap is in Spanish or Portuguese. Setting names and
   commands stay as they are in any language.
+- **Cap every list at five, then rank it.** Five items ranked land; ten
+  unranked read as a wall and none of them land. Past five, split the list
+  into what to act on now and what can wait, most important first.
+  Splitting is not cutting: every decision, side effect and risk keeps its
+  own sentence, in one group or the other.
+- **No opener, no closer.** These are never the first words: "Great
+  question", "Let me", "I'll now", "Sure!", "Looking at your", "To answer
+  your question", "I have completed", "Here is a summary of". These are
+  never the last: "Let me know if you need anything else", "Hope this
+  helps", "Happy to clarify", "Feel free to ask", "Anything else?". Start
+  with the result. End on the one thing to do next, or stop.
 
 ## Communication rules — load them on first use
 
@@ -123,7 +146,8 @@ that you would want to reverse", and it can share the result sentence. When
 every part has at most one item, the recap is a few short sentences with no
 headings at all. Headings appear only when a part holds two or more items;
 a part with one item sits as a plain paragraph between them, in its place
-in the order. One heading in an otherwise flat message is fine.
+in the order. One heading in an otherwise flat message is fine. After the
+six parts comes the closing line: one action, described below.
 
 The quoted examples below all come from one imaginary session about rate
 limiting. They show the shape and the register, never words to reuse.
@@ -152,7 +176,9 @@ Never state an item in full twice.
 
 What now works or exists, described from the reader's side: what the system
 does that it did not do before, what they can configure, what a caller sees.
-Three to six bullets. Each bullet names a behavior, not a file.
+At most five bullets, most useful first. Each bullet names a behavior, not a
+file. Where the reader can see a thing working for themselves in one step,
+say how — the command to run, the page to open, the setting to change.
 
 Names the reader will **type or set** belong here: environment variables,
 command-line flags, commands, endpoints, config keys. Names only the code
@@ -219,7 +245,16 @@ if there are any, and what the session did in the meantime. Never trim this
 part. These all belong here: a breaking change, a chosen default that
 affects existing users, work left undone on purpose, and a risk the agent
 noticed but did not act on. Say how serious each one is in a word or two
-("harmless", "will break X").
+("harmless", "will break X"), and size the work in real units when the
+reader has to plan around it: "about an hour", "a day if the tests do not
+already cover it". Never "some work" — an unsized estimate tells them
+nothing. Rank the items, worst consequence first, and if there are more than
+five, split them into what to settle before the work goes further and what
+can wait.
+
+If the reader has to carry out more than one step, write the steps as a
+numbered list, one bounded action per step, rather than as a sentence they
+have to unpack.
 
 > - **The default limit will break the nightly billing job.** An internal
 >   service calls this API with one shared key at about four times the new
@@ -240,6 +275,21 @@ it changes what the reader does next; "all tests pass" is usually enough.
 
 > All tests pass, including the check for timing bugs between parallel
 > requests, and the linter is clean. Nothing is committed.
+
+### The closing line
+
+If anything is open, the last line of the recap names **one** action, small
+enough for the reader to start now: the question to answer, the command to
+run, the word to say. One, not a menu — even when part 5 holds several
+items, the closing line points at the first of them. If nothing is open, the
+last line says the work is finished and stops there.
+
+This is the one place a recap asks for something. It replaces every "let me
+know if you need anything else": that sentence hands the reader an empty
+choice, and this one hands them a starting point.
+
+> Next: tell me what limit the billing job should get, and I will set it and
+> commit.
 
 **Length.** As short as the content allows. A session with one open item
 recaps in three or four sentences. A session with several decisions and a
@@ -305,6 +355,30 @@ Sentences that fail this filter almost every time:
 
 A caveat the reader must act on survives this filter even when it is small.
 
+## When the recap bends
+
+The shape always holds; the content wins whenever a rule would delete the
+answer itself. Four cases, and nothing else:
+
+1. **The reader asks for the journey.** "Walk me through it", "how did you
+   get there", "what else did you try". Then the path is what they asked
+   for, and the journey filter is off for that answer. Give it in full, with
+   headings so they can skim back, and still no opener and no closer. The
+   next recap goes back to results only.
+2. **Something can be destroyed or cannot be undone.** Data loss, a force
+   push, a migration with no way back, a credential that leaked. It goes
+   first, in full, before the result window, however long that takes.
+3. **The options are the answer.** When the reader asked which way to go,
+   two to four ranked options with a one-line trade-off each, recommendation
+   first, is the result. Do not collapse them into one path to keep the
+   recap short.
+4. **A caveat is small but must be acted on.** It survives every cut, in the
+   shortest recap, however minor it looks next to the rest.
+
+Everything else the pressure of a long session suggests — an extra
+paragraph of context, one more confirmation, the story of a hard part — is
+not one of these. Cut it.
+
 ## Grounding
 
 A recap reports facts. Before writing:
@@ -340,6 +414,10 @@ A recap reports facts. Before writing:
 | "It was a long session, they need the full picture" | The full picture is the result, the decisions, the side effects, and the verification. That is parts 1 to 6. The rest is the agent's log. |
 | "I'll skip the communication rules, I know them" | You do not have them loaded. Invoke the skill or read the file first. |
 | "The user is technical, so identifiers are fine" | Technical is not the same as having seen this code in this session. Words first; a name as a trailing reference only if the reader will go there. |
+| "I said the work is unfinished; they can judge how much is left" | They cannot. "Some work" and "a few hours" read the same. Give the number, or the range and what decides it. |
+| "There are seven things to watch, and all seven are real" | All seven stay, but not as one list of seven. Rank them and split them into what to settle now and what can wait. An unranked list of seven is read as none. |
+| "Ending with 'let me know if you need anything else' is polite" | It hands the reader an empty choice at the exact moment they need a starting point. Name the one next action instead. |
+| "They asked what I tried, but the journey filter says cut it" | They asked. The filter is off for that answer, and only that answer. The next recap goes back to results. |
 
 ## Red flags — stop and rewrite
 
@@ -368,6 +446,14 @@ A recap reports facts. Before writing:
 - The recap fills a screen, or is longer than its open items justify.
 - A verification claim names a command instead of a result, or claims a
   result you did not observe.
+- The message opens with "Great question", "Let me", "I have completed", or
+  "Here is a summary of", or closes with "Hope this helps" or "Let me know
+  if you need anything else".
+- Something is left open and the last line does not say what to do next.
+- An amount of work, risk, or time is described without a number.
+- Any list runs past five items with no ranking and no split.
+- The reader has to perform several steps and they are packed into one
+  sentence instead of a numbered list.
 
 **All of these mean: rewrite it. Result first, exceptions only, as short as
 the content allows.**
@@ -383,9 +469,15 @@ Before sending:
 - [ ] Every change outside the ask is in part 4, as a state, not a story
 - [ ] Every decision for the reader and every risk is in part 5 with consequence and options
 - [ ] Part 6 reports only checks that actually ran, and the commit state
+- [ ] Every list is five items or fewer and ranked; longer ones are split into act-now and can-wait
+- [ ] Every amount of work, time or risk carries a number or a range, never "some work"
+- [ ] Anything the reader must do in several steps is a numbered list, one action per step
+- [ ] The last line names one action small enough to start now, or says the work is finished
+- [ ] First-and-last-line test: reading only those two lines tells the reader what happened and what to do next
 - [ ] No sentence survives the journey filter or the delete filter by accident
 - [ ] No confirmation, per-check walk-through, self-correction, or "I verified this myself" sentence remains
 - [ ] Headings only where a part holds two or more items; short sessions recap in a few sentences
 - [ ] Only names the reader will type or set remain; every other identifier is replaced by words, or trails the sentence as a reference. Test names, error strings and linter messages never appear
 - [ ] As short as the content allows, short sentences, active voice, present tense
+- [ ] No forbidden opener or closer anywhere in the message
 - [ ] Every number, setting, command, and decision exact; no headings over single items, no tables, same language as the reader

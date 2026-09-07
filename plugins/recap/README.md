@@ -20,8 +20,9 @@ only you can make before the work can safely go further.
 
 ## What the skill does
 
-It sets the recap to six parts, in order, and to the shortest form the
-content allows — a session with one open item recaps in three sentences:
+It sets the recap to six parts and a closing line, in order, and to the
+shortest form the content allows — a session with one open item recaps in
+three sentences:
 
 1. **Result.** Two or three sentences: what was built, why you asked for it,
    how it works in plain words, and whether it is done, partly done, or not
@@ -53,6 +54,26 @@ and every "I verified this one myself." Exceptions get sentences;
 confirmations share one line or none. If you want the detail behind a
 conclusion, you ask, and the agent answers that one question.
 
+Then one closing line: **the single next action**, small enough to start now
+— the question to answer, the command to run, the word to say. One, not a
+menu. If nothing is open, it says the work is finished and stops. That line
+replaces "let me know if you need anything else", which hands you an empty
+choice at the moment you need a starting point.
+
+Three rules keep the parts readable when a session was busy. Every list is
+capped at five items and ranked, worst consequence first; past five it splits
+into what to settle now and what can wait, and nothing is dropped in the
+split. Every amount of work, time, or risk carries a real unit — "about an
+hour", "a day if the tests do not already cover it" — because "some work" and
+"a few hours" register the same and neither lets you plan. Anything you have
+to do in more than one step arrives as a numbered list, one action per step.
+
+The shape bends in four cases, and only these four: you ask to be walked
+through what happened, so the journey is what you get; something can be
+destroyed or cannot be undone, so it goes first and in full; you asked which
+way to go, so the ranked options are the answer; or a caveat is small but you
+must act on it, so it survives every cut.
+
 The agent writes every sentence in Simplified Technical English (the
 ASD-STE100 standard) for a reader who never saw the code: short, active,
 present tense, no unexplained names. If the `effective-communicator` skill is
@@ -80,6 +101,15 @@ Add `-g` to install for your user instead of just this project, and `-a <agent>`
 target one agent. Update later with `npx skills update`.
 
 Then, at the end of a session: *"Recap this session."*
+
+## Credits
+
+The rules for ending on one concrete next action, sizing work in real units,
+capping and ranking lists, and refusing the stock opener and closer come from
+[`i-have-adhd`](https://github.com/ayghri/i-have-adhd) by ayghri, which shapes
+an assistant's whole output for a reader who cannot hold much on screen. This
+skill applies that shaping to one message — the end-of-session recap — rather
+than to every response.
 
 ## License
 
