@@ -83,11 +83,17 @@ turn carries two manifests: `.claude-plugin/plugin.json` and
   the top listing the files, plus a red flag and a checklist item — and re-read
   the named file at its step. Summaries are reminders of text already read,
   never a substitute. `code-simplification` is the worked example.
-- **Skill frontmatter must parse as YAML.** Keep `name` and `description` as
-  non-empty strings. Quote or fold descriptions containing `: ` rather than
-  leaving them as plain YAML scalars. After adding or editing a skill, run
-  `npm run lint:skills`; CI runs the same check for every
-  directory under `plugins/*/skills/`.
+- **Skill frontmatter must parse as YAML and fit the Agent Skills limits.**
+  Keep `name` and `description` as non-empty strings. `name` is lowercase
+  letters, digits, and single hyphens, at most 64 characters; `description`
+  is at most **1024 characters** (the spec's hard cap — an over-limit skill is
+  silently skipped by some agents) with the key use case in the first
+  sentence, because Claude Code truncates the listing text at 1536
+  characters. Quote or fold descriptions containing `: ` rather than leaving
+  them as plain YAML scalars. Keep the `SKILL.md` body under 500 lines. After
+  adding or editing a skill, run `npm run lint:skills`, which enforces the
+  name and description limits; CI runs the same check for every directory
+  under `plugins/*/skills/`.
 - The visual-docs server has **no authentication**. `--host` / `0.0.0.0` binding
   must stay opt-in and documented as trusted-network-only.
 - **Agents must never have to write code — not even a small script — to operate

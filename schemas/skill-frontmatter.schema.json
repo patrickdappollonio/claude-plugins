@@ -4,11 +4,13 @@
   "properties": {
     "name": {
       "type": "string",
-      "pattern": "\\S"
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "maxLength": 64
     },
     "description": {
       "type": "string",
-      "pattern": "\\S"
+      "pattern": "\\S",
+      "maxLength": 1024
     },
     "disable-model-invocation": {
       "const": false

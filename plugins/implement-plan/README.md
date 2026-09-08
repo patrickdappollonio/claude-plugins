@@ -47,6 +47,16 @@ parked with a recommendation, never assumed.
   skill for small changes, the full `adversarial-review` skill for large ones
   (asking first — it is token-heavy), or an on-the-spot six-reviewer panel when
   neither skill is installed.
+- **Cleans up after itself before handing off.** Once the review loop is
+  clean, one last code-changing pass runs over the merged diff: the
+  `appropriate-comments-code` skill (or its distilled version) rewrites or
+  deletes every comment that narrates the session, restates its line, cites a
+  finding or slice label, or is documentation in a comment's seat; then the
+  `code-simplification` skill (or its distilled version) flattens nesting,
+  names things, and removes dead code without changing behavior — every
+  existing test must pass unmodified, and a merge of two look-alike functions
+  is proposed to you, never made. Its two reference files are read fresh at
+  that step, not recalled from the start of the run.
 - **Never deletes a worktree without asking** — the last step before the recap
   is the deletion question.
 - **Ends with four bullets:** what was done, decisions made, pending for you,
