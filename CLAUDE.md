@@ -1,7 +1,10 @@
 # CLAUDE.md — patrickdappollonio/claude-plugins
 
-A Claude Code **plugin marketplace**. `.claude-plugin/marketplace.json` lists the
-plugins under `plugins/`.
+A plugin marketplace for **both Claude Code and the Codex CLI**. Two root
+manifests list the plugins under `plugins/`: `.claude-plugin/marketplace.json`
+(Claude Code) and `.agents/plugins/marketplace.json` (Codex). Each plugin in
+turn carries two manifests: `.claude-plugin/plugin.json` and
+`.codex-plugin/plugin.json`.
 
 ## Hard rules
 
@@ -20,6 +23,33 @@ plugins under `plugins/`.
   versions in `marketplace.json` to check or update, so don't go looking. The matching
   `plugins/<name>/.codex-plugin/plugin.json` repeats that version for Codex and must
   be updated in the same change.
+- **Every plugin ships four files, and a new plugin is not done until all
+  four exist.** Codex and Claude Code never read each other's files, so a
+  plugin missing any one of these is silently absent from that tool's
+  marketplace — nothing fails, it just never shows up:
+  1. `plugins/<name>/.claude-plugin/plugin.json` — the Claude Code manifest.
+  2. `plugins/<name>/.codex-plugin/plugin.json` — the Codex manifest. Same
+     `name`, `version`, `description`, `author`, `homepage`, `license`, and
+     `keywords`, plus `"skills": "./skills/"` and an `interface` block
+     (`displayName`, `shortDescription`, `longDescription`, `developerName`,
+     `category`, `capabilities`, `defaultPrompt`). Copy a sibling plugin's
+     file and edit it.
+  3. An entry in `.claude-plugin/marketplace.json` (name, `source`,
+     description, category, keywords, author, homepage, license).
+  4. An entry in `.agents/plugins/marketplace.json` (name, `source`
+     `{"source":"local","path":"./plugins/<name>"}`, the standard `policy`
+     block, and a `category` matching the Codex manifest's
+     `interface.category`).
+  Keep the two marketplace files listing the **same plugins in the same
+  order**. Before finishing any change that adds, renames, or removes a plugin,
+  run this and expect no output:
+  ```bash
+  diff <(jq -r '.plugins[].name' .claude-plugin/marketplace.json) \
+       <(jq -r '.plugins[].name' .agents/plugins/marketplace.json)
+  ```
+  This rule exists because the three plugins added right after the Codex
+  marketplace landed (`implement-plan`, `planning-flow`, `recap`) each got a
+  Codex manifest but no Codex marketplace entry, so Codex users never saw them.
 - **All install paths must stay equivalent: Claude Code marketplace, Codex marketplace,
   and `npx skills`.** Claude Code and Codex install a whole plugin (every skill under
   `plugins/<name>/skills/`); `npx skills add … --skill <name>` installs **one

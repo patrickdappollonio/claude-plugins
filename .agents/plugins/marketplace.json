@@ -33,8 +33,26 @@
       "category": "Developer Tools"
     },
     {
+      "name": "implement-plan",
+      "source": { "source": "local", "path": "./plugins/implement-plan" },
+      "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
+      "category": "Productivity"
+    },
+    {
+      "name": "planning-flow",
+      "source": { "source": "local", "path": "./plugins/planning-flow" },
+      "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
+      "category": "Productivity"
+    },
+    {
       "name": "read-the-docs-first",
       "source": { "source": "local", "path": "./plugins/read-the-docs-first" },
+      "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
+      "category": "Productivity"
+    },
+    {
+      "name": "recap",
+      "source": { "source": "local", "path": "./plugins/recap" },
       "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
       "category": "Productivity"
     },
