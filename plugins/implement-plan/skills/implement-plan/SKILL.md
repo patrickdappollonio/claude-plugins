@@ -11,7 +11,8 @@ Turn an **agreed plan** into merged, reviewed, tested, documented code — hands
 possible, and never deciding for the user what is theirs to decide. The
 orchestrator (you) plans the split, dispatches executors, checks their work
 against the plan **thoroughly**, runs an adversarial review, fixes what it
-finds, and keeps going until the plan is done.
+finds, cleans up the comments and the shape of the code it merged, and keeps
+going until the plan is done.
 
 The executor discipline in this skill (minimum sufficient change, the four-line
 mini-plan, pause-and-confirm, "done means") is adapted from
@@ -39,7 +40,7 @@ each step; six files beside it carry the full procedures:
 - `adversarial-review-fallback.md` — how to run the installed review skills, the plan-as-diff variant, and the on-the-spot panel when no skill is installed
 - `model-routing.md` — which model executes, which judges, and the trade you must state
 - `capacity-check.md` — the back-of-the-napkin estimate, the usage check, `/goal`, and the resume line
-- `companion-skills.md` — the skills this one uses when installed (`adversarial-review`, `adversarial-review-quick`, `visual-plan`, `use-premium-models-efficiently`, `use-claude-limits-efficiently`), what each adds, and how to install them on Claude Code, Codex, or via `npx skills`
+- `companion-skills.md` — the skills this one uses when installed (`adversarial-review`, `adversarial-review-quick`, `visual-plan`, `appropriate-comments-code`, `code-simplification`, `use-premium-models-efficiently`, `use-claude-limits-efficiently`), what each adds, and how to install them on Claude Code, Codex, or via `npx skills`
 
 **The first time you use this skill in a session, read all six before doing
 anything else** — before opening the plan, before sizing the work, before
@@ -47,6 +48,13 @@ answering a question about it. The summaries here are reminders for a reader
 who has already seen the full text; they are not a substitute for it. Re-read
 the relevant file at the step that names it. If a file is missing, say so and
 work from the summary — do not pretend the summary was the whole skill.
+
+Two more files are **not** part of that first read. They belong to the last
+code-changing step, and they are read there, fresh, immediately before the
+pass they describe — never recalled from an earlier read:
+
+- `appropriate-comments-fallback.md` — the comment pass over the merged diff: the labels, rewrite-or-delete, the ratio check, and how to run the installed `appropriate-comments-code` skill instead
+- `code-simplification-fallback.md` — the behavior-preserving simplification pass: the signals, one change per test run, merges as proposals, and how to run the installed `code-simplification` skill instead
 
 Every companion skill is optional: this skill carries a distilled version of
 each, and uses the real one when it is installed. If the user asks how to
@@ -96,7 +104,8 @@ or test layout.
 ## Keep-Going Contract
 
 Default: **do not stop between phases.** Capacity → split → dispatch →
-conformance → adversarial review → fix → iterate is one continuous effort.
+conformance → adversarial review → fix → iterate → comment and simplification
+pass is one continuous effort.
 
 The **only** legitimate stops, each a gate below: (G1) the starting-point
 question, (G2) permission to run the full adversarial panel, (G3) a functional
@@ -131,7 +140,7 @@ file under `.plans/` or `.planning-flow/` at the repo root comes from the
 `planning-flow` skill: its *Decisions* section is already decided — every
 entry there is settled, by the user or on their behalf, and is never re-asked
 — and its tickets are the plan items, with *Depends on* fixing the order and
-*Size* sizing the slice. Append the decisions log (step 8) to that same file.
+*Size* sizing the slice. Append the decisions log (step 9) to that same file.
 Then:
 
 - **Visual plan** → if no adversarial review of the *plan* has run, **recommend
@@ -239,7 +248,46 @@ confirmed findings, or after **three** fix rounds — then park what remains
 under *Pending* with the validated fixes as recommendations. **You assess
 every iteration; executors never grade themselves.**
 
-### 8. Decisions log
+### 8. Comment and simplification pass
+
+The last step that changes code. Before touching anything, run this pre-flight
+and tick each line in your todo list — the pass does not start until all four
+are true:
+
+- [ ] Checked the harness skill list for `appropriate-comments-code` and `code-simplification`; recorded which is installed. **An installed skill is the pass** — it is the full procedure, and it is run as written, in its own review-a-diff mode, scoped to the merged change. The fallback file is for the skill that is absent.
+- [ ] For each skill **not** installed, the matching file — `appropriate-comments-fallback.md`, `code-simplification-fallback.md` — read **now**, in full: not at session start, not from memory
+- [ ] `conformance-review.md` and `adversarial-review-fallback.md` re-opened, because both run again on this pass's diff
+- [ ] Scope fixed to the merged change, `git diff <starting-commit>..HEAD`; nothing outside it is opened up
+
+- **Comments first.** Every comment the run added or changed is a finding
+  until it passes: it restates the line, narrates how the code got here, is
+  documentation in a comment's seat, cites a finding number, slice, wave, or
+  pass label, counts things that live elsewhere, names something that does not
+  exist, or is stale. Rewrite or delete — never keep as-is, never merely
+  shorten; relocate accurate documentation and say where it went. Existing
+  comments in test files are left alone. The pass changes comment lines only.
+- **Then shape.** Behavior-preserving only, one change per test run, every
+  existing test passing **unmodified**; a test that needs a tweak means the
+  behavior changed — revert. Flatten nesting, name generic things, remove dead
+  code and once-called wrappers, split functions whose decision count is over
+  ten along decision clusters. A function no pre-existing test covers is not
+  simplified; it is parked with the change you would make. **A merge of two
+  near-identical functions is a proposal under *Pending*, never made here.**
+- **The authority split holds.** Anything that would change output, ordering,
+  defaults, error text, an API, a stored format, or a public signature is not
+  a simplification — park it. Log each simplification you made in the
+  decisions log, one line each.
+- **It is still a change.** If the pass moved any code line, re-run
+  conformance on the touched files, then a quick adversarial panel on the
+  pass's diff exactly as a fix round gets one; fix or park by the split. A
+  pass that changed comment lines only needs neither. No second pass after
+  that review.
+- **The ratio check is not a gate.** A file whose changed region is still half
+  comments after the pass goes to *Pending for you* with the ratio, what the
+  comments say, and the recommended home; the material moves to the decisions
+  log with short pointers left in the code. The run keeps going.
+
+### 9. Decisions log
 
 Append a `## Decisions made during implementation` section at the **end of the
 plan file** (the visual plan when there is one — it live-reloads; otherwise the
@@ -248,14 +296,14 @@ plain language: what was chosen, the alternative, and why. Functional items
 waiting on the user go in the same place with the recommended option; in a
 visual plan, use a `question` fence so the answer comes back as a comment.
 
-### 9. Worktree cleanup — G4
+### 10. Worktree cleanup — G4
 
 List every worktree and branch you created, with its merge status. **Ask**,
 in the message: delete all / keep all / choose. **Nothing is deleted until
 the answer arrives.** "They are fully merged" is not consent. If kept, list them
 under *Pending for you*.
 
-### 10. Recap
+### 11. Recap
 
 Exactly these four bullets, short:
 
@@ -365,6 +413,11 @@ assumptions stated plainly.
 | "Let me pause so the user can see progress" | Not a gate. Keep going. |
 | "I'll put the decisions in a new recap document" | The decisions live at the end of the plan file, where the plan is. A new document is extra cost and a second place to look. |
 | "No usage tool, so I'll estimate usage" | Never invent a usage number. Ask the user to run `/usage` and tell you, or proceed with the estimate labeled as unverified. |
+| "The review came back clean, so the code is done" | Clean means no defects. The executors' comments still narrate the session and their helpers still carry slice names. Step 8 runs on every plan. |
+| "I read the comment and simplification files at the start, I remember them" | They are read at step 8, fresh, by design — a summary recalled across a long run is what the pass exists to catch in others. Open both files, then start. |
+| "I'll simplify this while I'm in the file" | Scope is the merged diff. A refactor of the code around it is its own change. |
+| "Those two executors wrote the same function twice, I'll merge them" | A merge changes an API surface and crosses two slices. Diff, count callers, park it under *Pending* with the proposal. |
+| "I only shortened the comments, nothing to re-review" | Comment-only changes are the one case that skips the panel. If a single code line moved, the pass's diff gets a quick review like any fix round. |
 
 ## Red Flags — Stop and Re-read the Step
 
@@ -383,6 +436,9 @@ assumptions stated plainly.
 - A full adversarial panel dispatched without the G2 answer — or a large change that never reached G2
 - A fix round merged without its own quick review
 - Skipping the companion files because "I remember this skill"
+- A decisions log or recap written while the step 8 pre-flight still has an unticked line
+- The comment or simplification pass started without `appropriate-comments-fallback.md` and `code-simplification-fallback.md` opened at that step — an earlier read does not count
+- A simplification that touches a file outside the merged diff, modifies a test, or merges two functions
 - A stop that does not end with **"Reply `continue` to keep going."**
 
 ## Checklist
@@ -400,6 +456,9 @@ Create a todo per item.
 - [ ] Slices merged into the starting branch, no push
 - [ ] Adversarial review sized; large → quick now, G2 asked for the full one; fallback panel if no skill
 - [ ] Every finding fixed or parked by the authority split; every fix round re-reviewed; loop ended clean or at three rounds
+- [ ] Step 8 pre-flight ticked: installed `appropriate-comments-code` / `code-simplification` checked first; the fallback file read fresh at that step only for a skill that is absent; conformance and review files re-opened
+- [ ] Comment pass run on the merged diff — the installed skill as written, else the fallback: every flagged comment rewritten or deleted, test-file comments left alone, ratio-check files parked
+- [ ] Simplification pass run on the merged diff — the installed skill as written, else the fallback: behavior-preserving, tests unmodified and green, merges parked as proposals; code changes re-checked for conformance and quick-reviewed
 - [ ] Decisions log appended at the end of the plan file
 - [ ] Worktree deletion asked (G4) — nothing removed before the answer
 - [ ] Four-bullet recap delivered

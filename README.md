@@ -316,9 +316,13 @@ journey-style integration/E2E tests and real dependencies via
 testcontainers are recommended, and you size them — then checks every slice
 **against the plan, item by item** on the premium model, docs included, runs an adversarial review sized to the
 change (the `adversarial-review` skills when installed, an on-the-spot panel
-when not), fixes what it finds, and iterates. Technical decisions are logged
-at the end of the plan in plain language; functional and operational ones are
-parked for you, never assumed. It estimates capacity before starting, hands
+when not), fixes what it finds, and iterates. Before handing off it runs one
+last pass over the merged diff with the `appropriate-comments-code` and
+`code-simplification` skills when installed, or a distilled version of each
+when not: comments that narrate the session are rewritten or removed, and the
+code's shape is simplified without changing behavior. Technical decisions are
+logged at the end of the plan in plain language; functional and operational
+ones are parked for you, never assumed. It estimates capacity before starting, hands
 you a `/goal` condition so the run is hands-free, merges back into the branch
 you started on, and never deletes a worktree without asking.
 

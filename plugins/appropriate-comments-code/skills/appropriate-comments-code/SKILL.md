@@ -1,6 +1,6 @@
 ---
 name: appropriate-comments-code
-description: Use when writing, editing, or reviewing code in any language, and especially before adding or changing a comment or docstring — when tempted to narrate in a comment what was tried first, why an approach was replaced, or what a bug, regression, or review turned up; to restate what the next line already says; to write more than a couple of lines above a declaration, a statement, a log or metric call, or a field you just added; to comment the one new member of a list whose siblings have no comments; to edit or delete a comment inside a test file; when the comments you wrote in any one file add up to half its new code lines or more; or to cite a ticket, finding number, iteration label, wave or task ID, or any other session-scoped identifier; to write a count into a comment ("the 7 tests", "all 13 integration tests", "the three callers", "both fields") of things that live elsewhere and can be added to; or when a comment describes what a feature or endpoint *is* rather than why the line beneath it is built the way it is.
+description: Use when writing, editing, or reviewing code in any language and about to add, change, or review a comment, docstring, doc comment, or TODO — especially one that narrates history or a past attempt, restates the line below, explains a feature rather than the code, cites a ticket, finding, task, or wave ID, counts tests, callers, or fields, or sits in a test file.
 ---
 
 # Appropriate Comments in Code
