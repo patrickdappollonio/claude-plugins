@@ -22,9 +22,10 @@ parked with a recommendation, never assumed.
   built faithfully.
 - **Records the starting point** and recommends a branch once; whatever you
   choose, every slice merges back into that branch, and nothing is pushed.
-- **Estimates capacity** with back-of-the-napkin math, checks real usage,
-  warns politely if the work will not fit, and hands you a ready-to-paste
-  `/goal` condition (Claude Code and Codex) so the run is hands-free.
+- **Estimates capacity** with back-of-the-napkin math, reports real usage
+  when the host can show it, warns politely if the work will not fit, and
+  hands you a ready-to-paste `/goal` condition (Claude Code and Codex) so the
+  run is hands-free. The check is informational: it never pauses the run.
 - **Splits and dispatches** — one worktree and one executor per independent
   slice, cheap models for execution, the premium model for every judgment,
   with the trade stated out loud.
