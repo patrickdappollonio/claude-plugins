@@ -39,7 +39,7 @@ each step; six files beside it carry the full procedures:
 - `conformance-review.md` — the thorough plan-vs-work check, item by item
 - `adversarial-review-fallback.md` — how to run the installed review skills, the plan-as-diff variant, and the on-the-spot panel when no skill is installed
 - `model-routing.md` — which model executes, which judges, and the trade you must state
-- `capacity-check.md` — the back-of-the-napkin estimate, the usage check, `/goal`, and the resume line
+- `capacity-check.md` — the back-of-the-napkin estimate, the advisory usage check, `/goal`, and the resume line
 - `companion-skills.md` — the skills this one uses when installed (`adversarial-review`, `adversarial-review-quick`, `visual-plan`, `appropriate-comments-code`, `code-simplification`, `use-premium-models-efficiently`, `use-claude-limits-efficiently`), what each adds, and how to install them on Claude Code, Codex, or via `npx skills`
 
 **The first time you use this skill in a session, read all six before doing
@@ -110,13 +110,18 @@ pass is one continuous effort.
 The **only** legitimate stops, each a gate below: (G1) the starting-point
 question, (G2) permission to run the full adversarial panel, (G3) a functional
 or operational decision the plan leaves to the user **when the next slice cannot
-proceed without it**, (G4) worktree deletion, (G5) capacity at or above the
-threshold. Not a stop reason: "let me check in", "the session is long", "I'll
-ask before the next slice", "the user should see progress first".
+proceed without it**, (G4) worktree deletion. Not a stop reason: "let me
+check in", "the session is long", "I'll ask before the next slice", "the user
+should see progress first", "I need the usage numbers first". Capacity is
+information you hand over in passing, never a gate: an unreadable usage
+report gets one line and the run continues.
 
 **Every stop ends with the same closing.** State the phase, what is done, what
-is pending, the exact question, then: **"Reply `continue` to keep going."**
-Carry enough state that one word resumes the work (`capacity-check.md`).
+is pending, the exact question, and that you will keep going as soon as they
+answer. **No keyword**: "go ahead", "approved", "please continue", "yes, the
+first option" all resume the run — read the reply for its meaning, never
+demand a specific word. Carry enough state that such a reply resumes the work
+(`capacity-check.md`).
 
 **How to ask.** Ask in plain text, in the message itself — not through a
 harness-specific question tool. Give the options, the consequence of each,
@@ -163,10 +168,14 @@ starting branch, whatever it is.** Never push, never open a PR, unless asked.
 ### 2. Capacity check
 
 Read `capacity-check.md`. Estimate the agent-runs the plan will cost (slices ×
-rounds + conformance + review + fixes), check real usage with the host's usage
-command, and if the estimate does not fit the window say so **politely, with
-the numbers, and let the user choose to proceed anyway**. Then suggest `/goal`
-with the condition template. Never invent a usage figure.
+rounds + conformance + review + fixes) and try once to read real usage with
+the host's usage command. Report both in one line and **keep going**: this
+step is informational. If usage cannot be read, say so and label the
+estimate unverified; if the estimate looks like it will not fit, say so
+politely with the numbers and name what the user can do (let it run, tell
+you to stop after this slice, wait for the reset) while you proceed. Never invent a usage figure,
+and never stop to ask the user for one — the split starts in the same turn.
+Then suggest `/goal` with the condition template.
 
 ### 3. Split the work
 
@@ -392,7 +401,7 @@ assumptions stated plainly.
 | "The user pre-authorized fixing whatever the review found" | That authorizes *fixing defects*. A fix that changes what users see or type is a functional decision. Park it. |
 | "They were merged, so I deleted the worktrees" | Merged is not consent. Deletion waits for G4, always. |
 | "I recommended a branch and created it" | Recommending is asking. Creating one unasked moves the merge target and leaves the user with a branch they never chose. |
-| "The user is away, so I skipped the permission question" | Absence does not grant permission. Stop with the closing line; `continue` costs them one word. |
+| "The user is away, so I skipped the permission question" | Absence does not grant permission. Stop with the closing line; resuming costs them a short reply in their own words. |
 | "It's one file over the threshold, and asking would block for hours, so I ran the quick panel and named the gap" | One over is over. Run the quick panel now, fix, then stop at G2 for the full one — that is the ordering, not a skip. |
 | "I reproduced the findings myself, so the verifier was unnecessary" | Your reproduction is extra evidence. The review skill's verifier and validator run as written. |
 | "The last fix is 17 lines; my own check is enough" | A fix round without a review is an unreviewed change. A quick panel on 17 lines is cheap; skipping it is not. |
@@ -412,7 +421,9 @@ assumptions stated plainly.
 | "The change is small, I'll skip the adversarial review" | Small changes get the quick panel; nothing gets no panel. |
 | "Let me pause so the user can see progress" | Not a gate. Keep going. |
 | "I'll put the decisions in a new recap document" | The decisions live at the end of the plan file, where the plan is. A new document is extra cost and a second place to look. |
-| "No usage tool, so I'll estimate usage" | Never invent a usage number. Ask the user to run `/usage` and tell you, or proceed with the estimate labeled as unverified. |
+| "No usage tool, so I'll estimate usage" | Never invent a usage number. Say you cannot read it, label the estimate unverified, and keep going. |
+| "I can't read usage, so I'll stop and ask for it" | The capacity check is advisory. One line — estimate, usage or "unreadable", reset if known — then the split starts in the same turn. Waiting for numbers is not a gate. |
+| "Usage is high, better pause until they confirm" | Warn with the numbers and name the choices, then continue. The host enforces its own limits, the user asked for the plan to be built, and they can interrupt a live run with Esc whenever they want. Stopping is their move, not yours. |
 | "The review came back clean, so the code is done" | Clean means no defects. The executors' comments still narrate the session and their helpers still carry slice names. Step 8 runs on every plan. |
 | "I read the comment and simplification files at the start, I remember them" | They are read at step 8, fresh, by design — a summary recalled across a long run is what the pass exists to catch in others. Open both files, then start. |
 | "I'll simplify this while I'm in the file" | Scope is the merged diff. A refactor of the code around it is its own change. |
@@ -439,7 +450,7 @@ assumptions stated plainly.
 - A decisions log or recap written while the step 8 pre-flight still has an unticked line
 - The comment or simplification pass started without `appropriate-comments-fallback.md` and `code-simplification-fallback.md` opened at that step — an earlier read does not count
 - A simplification that touches a file outside the merged diff, modifies a test, or merges two functions
-- A stop that does not end with **"Reply `continue` to keep going."**
+- A stop that does not end with the resume line, or one that asks the user for a specific keyword instead of a plain-language answer
 
 ## Checklist
 
@@ -448,7 +459,7 @@ Create a todo per item.
 - [ ] Read all six companion files (first use in this session)
 - [ ] Plan located; plan review recommended (visual plan) or offered (other) — outcome recorded
 - [ ] Starting branch + commit recorded; branch recommended once (G1)
-- [ ] Capacity estimated and real usage checked; `/goal` condition handed over
+- [ ] Capacity estimated and usage reported in one line (or marked unreadable) without stopping; `/goal` condition handed over
 - [ ] Split stated: slices, order, worktrees, model per role, the trade said out loud
 - [ ] Testing depth stated at G1 (TDD unit floor + test-map floor + docs-in-the-same-diff floor + what the user chose) and copied into every packet
 - [ ] Every packet self-contained: plan section verbatim, scope, testing and documentation rules, discipline, evidence, stop conditions
