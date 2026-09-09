@@ -43,7 +43,9 @@ For every comment the diff adds or changes, in order of length, longest first:
      "no longer", "per review", "as discussed", "flagged by", "from the audit".
    - `documents` — more than two lines above a declaration, or more than one
      line above a statement inside a body, with no constraint, invariant, or
-     contract in it; or on the wrong subject — about the feature, route,
+     contract in it (a rule is a caller obligation or a guarantee; rationale,
+     precedent, a comparison with no neighbour in the file, and the body restated
+     are not rules, while a sibling difference in the two-line form below is, and a prose comment is never a "list of rules"); or on the wrong subject — about the feature, route,
      policy, or business meaning while the code is a call, wrapper, branch, or
      registration; or the only commented member of a list whose siblings are
      bare.
@@ -59,6 +61,16 @@ For every comment the diff adds or changes, in order of length, longest first:
      comment explains.
    - `unverified` — names an identifier, path, test, or number you have not
      confirmed exists. Grep for it.
+   - A doc comment on an item the language's doc generator publishes (Rust
+     `///`, a docstring, Javadoc, a Go exported identifier) is `documents`
+     only for prose past its summary: keep the two-line summary and the
+     convention sections (Errors, Panics, Args, Returns) that state
+     contracts. A doc marker on a private item is a plain comment under the
+     limit.
+   - `names-the-body` — names a field the body reads or a helper the body
+     calls. Each name is a rename away from wrong; say it in words or drop it.
+     The lock a caller must hold, the neighbour a comment differs from, and
+     things in other files stay.
    - `stale` — no longer matches the code beside it, including a comment that
      describes *one* of something the run made two.
 2. **Rewrite or delete — never keep as-is, never merely shorten.** Rewrite when
@@ -68,7 +80,11 @@ For every comment the diff adds or changes, in order of length, longest first:
    and what breaks if it is normalized. Delete when there is not. A trimmed
    comment on the wrong subject is still on the wrong subject. Never drop a
    rule while compressing: compress the prose around a constraint, never the
-   constraint.
+   constraint; rules that share a principle compress into the principle,
+   stated once. A prose comment still over four lines after this is not kept
+   under an exemption claim: leave two lines in the code, move the rest to
+   the decisions log, and put it under *Pending for you* in the recap with a
+   candidate home.
 3. **Relocate, do not discard.** Accurate documentation that came out of a
    comment goes where documentation lives — the package doc, the README, the
    API reference, when that document is already in the diff — or into the

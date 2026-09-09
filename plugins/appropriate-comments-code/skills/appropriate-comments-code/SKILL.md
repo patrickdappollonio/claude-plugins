@@ -21,13 +21,22 @@ The third is the one people miss. A comment can be entirely accurate, entirely
 present-tense, free of every ticket number and iteration label, and still be
 wrong for the spot it occupies.
 
-## Read the companion file first
+## Read the companion files first
 
-On first use in a session, before any other step, read `reviewing-comments.md`
-in this skill's directory. It holds the full procedures for verifying what a
-comment claims, fixing code before commenting it, reviewing comments in a
-diff, and auditing in bulk. The summaries below are reminders of text you have
-already read, not a substitute. Re-read it before any review or sweep.
+On first use in a session, before any other step, read both companion files in
+this skill's directory:
+
+- `reviewing-comments.md` — the full procedures for verifying what a comment
+  claims, fixing code before commenting it, reviewing comments in a diff, and
+  auditing in bulk. Re-read it before any review or sweep.
+- `length-and-doc-comments.md` — the worked examples behind tenets 1 and 7
+  (an eight-line "list of rules" and its two-line rewrite; a comment that
+  names its own body) and the doc-comment syntaxes and section conventions
+  per language. Re-read it before keeping any comment over two lines or
+  writing a doc comment on a public item.
+
+The summaries below are reminders of text you have already read, not a
+substitute.
 
 ## Overview
 
@@ -46,9 +55,10 @@ thought hard about it. That is not a property of the line.
 homes, and you choose one on purpose:
 
 1. **The file**: the one or two lines a reader of *this line* needs, or the
-   decision table, state machine, or one-rule-per-line preconditions tenet 1
-   exempts.
-2. **A document**: package doc, README, ADR, or API doc, if editing it is in scope.
+   decision table, state machine, or one-rule-per-line list tenet 1 exempts.
+2. **A document**: package doc, README, ADR, or API doc, if editing it is in
+   scope. Never CLAUDE.md or AGENTS.md: those instruct agents, and no reader
+   of the code looks there.
 3. **The handoff**: the PR description, or your final message to the user.
 
 The standing constraint stays in the file. The deliberation that led to it,
@@ -107,7 +117,7 @@ user asked for the review, and then to all of them in scope.
 If you were asked to sweep a package and it contains test files, say that you
 left their comments alone and why; do not silently include them.
 
-## The Six Tenets
+## The Seven Tenets
 
 ### 1. Two lines is the working limit, anywhere
 
@@ -142,12 +152,65 @@ The long version's content is not worthless. The measurement that chose full
 jitter belongs in a commit message or a design note. The reader of this function
 needs to know the ceiling is not arbitrary and the jitter is not decorative.
 
-**Where the limit genuinely does not apply:** a comment stating a decision table
-or a state machine, where the mapping *is* the contract and prose cannot replace
-it, or a set of independent preconditions each of which is a rule. If you claim
-this exemption, the comment should be mostly table or mostly rules, one line
-each, not prose about them. Never drop a rule to hit the limit; compress the
-prose around it.
+**Where the limit genuinely does not apply:** a comment written as a decision
+table or a state machine, where the mapping *is* the contract and prose cannot
+replace it, or as a list of preconditions, one rule per line. The exemption is
+about shape. Prose does not qualify, however many rules it contains: rewrite it
+as the list, or shrink it. The exemption never covers *why*; reasons go to the
+doc or the handoff.
+
+**What counts as a rule.** A rule is something the caller must do or hold, or
+something the caller can rely on: a lock to take, an ordering to keep, what a
+return value means on error. These are not rules, and cutting them never drops
+one:
+
+- rationale: "because a manual batch reverts just as badly"
+- precedent: "X already does this for the same reason"
+- a comparison with no neighbour in the file: a counterfactual, or code
+  elsewhere (a sibling difference in tenet 4's form is about shape and stays)
+- a description of the body: "reconciled, then marked confirmed"
+- a restatement of the signature: "returns the kept orders and the count dropped"
+- an adjective: "(conservative)", "(defensive)"
+
+Cut those first. Then, when several rules share a principle, state the principle
+once: "every write path takes mu before touching the store" covers three
+callers' obligations in one line. A rule is dropped only when the new text no
+longer implies it. Never drop a rule to hit the limit; compress the prose
+around it. **Read `length-and-doc-comments.md` before keeping any comment
+over two lines**: it holds the worked example of an eight-line "list of rules"
+and its two-line rewrite.
+
+**A prose comment still over four lines is a question, not a keep.** After
+the tenets, do not keep a prose comment longer than four lines under an
+exemption claim. Show the user the comment and a candidate home (package doc,
+API doc, README, ADR, PR description), and leave one or two lines in the code.
+When there is no user to ask, move it to the handoff and say so. A table or a
+one-rule-per-line list is a different shape and is measured by the ratio check
+instead.
+
+**Doc comments on public items are documentation, and are judged as such.**
+For a public item, the doc comment is where the documentation lives: the
+project's documentation generator renders it, and readers reach it on purpose.
+A doc comment is whatever that generator reads; `length-and-doc-comments.md`
+lists the common syntaxes and the section conventions per language. Read it
+before writing a doc comment on a public item.
+
+Its shape is a summary and then sections. The summary is one or two lines,
+and that is where the limit lands. After it, the sections the language
+convention already defines, each stating a contract: Errors, Panics, Safety,
+Examples in Rust; Args, Returns, Raises in a docstring; the Deprecated
+paragraph in Go. Sections are the doc-comment form of the one-rule-per-line
+list, so length grows by structure. A prose paragraph past the summary is
+still prose and still meets the four-line question above. Every other tenet
+applies unchanged: no rationale, no precedent, no history, no body restated,
+no internals named, no counts. A long doc comment is rewritten, not
+truncated.
+
+**The marker is not the exemption; the audience is.** Three slashes on a
+private Rust function, a docstring on a private helper, or a Go comment above
+an unexported function is a plain comment under the two-line limit. The test
+is observable: does the project's documentation generator publish this item
+by default? If not, it is a comment, whatever syntax it uses.
 
 ### 2. Describe the current state, not the path that got you there
 
@@ -384,6 +447,24 @@ A count that is genuinely load-bearing — "must be exactly two, the protocol
 sends a pair" — is an invariant, and an invariant is enforced by an assertion
 or a test, then commented, not commented alone.
 
+### 7. Name nothing the body already uses
+
+Every identifier in a comment is a coupling nothing checks. Rename the field or
+helper it names and the comment stays, confidently wrong, while the compiler
+says nothing. The more names a comment carries, the more edits falsify it.
+
+Name only what the reader cannot see in the lines below: the lock a caller
+must hold, the neighbour a tenet 4 comment differs from, a constraint in
+another file, an external system, a value that must stay in step with
+something elsewhere. The fields the body reads and the helpers it calls stay
+out. The body is the authority on those, and the reader is about to read it.
+
+**The visibility test:** for each identifier the comment names other than its
+own subject, does the body below use it? If it does, the comment is summarizing
+the body, and that part fails the cover test. Say what the thing does in words
+instead ("the recheck budget", not `s.recheckBudget`), or drop it. The worked
+example is in `length-and-doc-comments.md`.
+
 ## The ratio check: half comments means it is a document
 
 This check runs **after** the tenets, never instead of them. First write the
@@ -534,6 +615,10 @@ because the API is rate-limited" is orientation: it goes in a package doc, once.
 "Batch size must stay under 50; the API rejects larger" is a constraint on *this*
 code: it goes above the constant.
 
+CLAUDE.md and AGENTS.md are not on this list. They instruct agents working on
+the repository; a reader of the code never opens them looking for what a
+function guarantees. Never propose them as the home for a comment's material.
+
 ## Rationalizations
 
 | Rationalization | Reality |
@@ -564,6 +649,10 @@ code: it goes above the constant.
 | "The sweep covers the whole package, tests included" | Sweeps skip test files. Say you skipped them. |
 | "Every one of these reasons has to sit next to its check" | Write it the skill's way first. If the change is still half comments, it is a document; ask the user whether the reasons go in a doc with pointers left in code. |
 | "I'll shorten each comment so the ratio drops under half" | Trimming to pass the count hides the signal. The material is still documentation; ask where it goes. |
+| "Each sentence is a separate rule the caller depends on" | Most of them are reasons, precedents, counterfactual comparisons, or the body restated. Underline the caller obligations; what is left is the comment. If it is still over four lines of prose, ask where it goes. |
+| "Never drop a rule, so it has to stay this long" | The rule against dropping protects obligations, not prose. Rationale is not a rule. Two rules with one principle compress into that principle. |
+| "It can go in CLAUDE.md" | CLAUDE.md instructs agents; a reader of the code never looks there. Documentation goes to the package doc, API doc, README, or ADR. |
+| "It's a doc comment, so the length rules don't apply" | Only on an item the doc generator publishes, and only as a summary plus sections. Three slashes on a private function is a comment. Rationale and the body restated are cut from a doc comment too. |
 
 ## Red flags in your own draft
 
@@ -571,9 +660,22 @@ Any of these means stop and rewrite:
 
 - Reviewing or sweeping comments without having read `reviewing-comments.md`
   this session
+- Keeping a comment over two lines, or writing a public doc comment, without
+  having read `length-and-doc-comments.md` this session
 - **It is more than two lines, or longer than the code it sits on** (a
   multi-line call is one statement), and none of them states a constraint,
   invariant, or contract; inside a body, more than one line without one
+- **It is prose over four lines and you are calling it "rules"** — underline
+  the caller obligations; rationale, precedent, counterfactual comparison, and
+  the body restated are not rules, and what remains over four lines is a question for
+  the user
+- **It names a field the body reads or a helper the body calls** — that part
+  is the body restated, and a rename away from wrong
+- **A doc-comment marker on a private item is your reason for the length** —
+  the generator does not publish it, so it is a comment under the limit
+- **A public doc comment carries prose paragraphs instead of sections** — the
+  summary is two lines; the rest is Errors, Panics, Args, Returns, or it is a
+  question for the user
 - Past-tense narration: "used to", "previously", "we tried", "was changed to",
   "no longer", "originally", "instead of the old"
 - Process references: "per review", "as discussed", "from the audit", "flagged by"
@@ -614,8 +716,17 @@ Any of these means stop and rewrite:
 ## Before you finish
 
 - [ ] `reviewing-comments.md` was read this session before any review or audit
-- [ ] Every comment above a declaration is one or two lines, or states a table,
-      a state machine, or independent preconditions one rule per line
+- [ ] `length-and-doc-comments.md` was read this session before any comment
+      was kept over two lines or any public doc comment was written
+- [ ] Every comment above a declaration is one or two lines, or is written as
+      a table, a state machine, or a one-rule-per-line list; a doc comment on
+      a published item is a two-line summary plus convention sections, and a
+      doc marker on a private item earned nothing
+- [ ] No prose comment over four lines was kept under an exemption claim; each
+      one was shown to the user with a candidate home, or moved to the handoff
+      and said so
+- [ ] Every identifier a comment names is one the body below does not use: a
+      lock to hold, a neighbour, another file, an external system
 - [ ] Every comment describes the code as it is now; none narrates a previous
       attempt, a past bug, or the edit you just made
 - [ ] Any regression you fixed is pinned by a test, named after the invariant

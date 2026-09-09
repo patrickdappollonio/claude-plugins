@@ -19,8 +19,20 @@ not belong in the code.
   one or two lines; above a statement inside a body, usually one. A comment can be accurate, present-tense and free of every ticket
   number and still be wrong for the spot it occupies: twenty lines above a
   function is documentation, and nobody reads it on the way to the code. The
-  exemption is a decision table or a state machine, where the mapping *is* the
-  contract and prose cannot replace it.
+  exemption is a decision table, a state machine, or a one-rule-per-line list,
+  where the mapping *is* the contract; prose never qualifies. A rule is a
+  caller obligation or a guarantee, not rationale, precedent, or the body
+  restated, and a prose comment still over four lines is shown to you with a
+  candidate home rather than kept.
+- **Doc comments on public items are documentation.** Where the doc generator
+  renders them (Rust `///`, docstrings, Javadoc, Go exported identifiers), they
+  keep a two-line summary plus the convention sections that state contracts;
+  rationale and the body restated still go. The marker is not the exemption:
+  `///` on a private function is a comment under the two-line limit.
+- **Name nothing the body already uses.** Every identifier in a comment is
+  a rename away from wrong and nothing checks it. The lock a caller must hold,
+  the neighbour a comment differs from, and things in other files stay; the
+  fields the body reads and the helpers it calls go.
 - **Describe the present, not the journey.** `// We used to buffer the whole
   response but it blew up memory, so now we stream it` describes an edit, not the
   code. State the standing constraint instead — it stays true, and it survives
@@ -126,7 +138,8 @@ Or ask for it in passing: *"Clean up the comments in what we just wrote."*
   "callers must hold the lock", leaves comments outside the change alone, and
   verifies mechanically that no pragma directive (`//nolint`, `//go:build`) was
   deleted as prose. The full procedure ships in `reviewing-comments.md` beside
-  the skill.
+  the skill, and the worked examples for length, rules, and doc comments in
+  `length-and-doc-comments.md`.
 - **Deliberation is not a property of the line.** The skill names the bias
   directly: a line the agent argued about for an hour feels like it deserves a
   paragraph. It gets the two lines a reader needs, and the reasoning is told to

@@ -302,7 +302,9 @@ not equivalent. **Read `equivalent-functions.md` before proposing a merge.**
 Comments on touched lines are in scope. The rule: **a comment earns its place
 by carrying information the code does not, about the code as it is now, in as
 few lines as that takes.** Cover it with your hand — if the code is no poorer,
-delete it. Present tense, not history; two lines above a declaration; no
+delete it. Present tense, not history; two lines above a declaration, and a
+prose comment over four lines is a question for the user, not a keep; never
+name a field the body reads or a helper it calls; no
 session-scoped identifiers (finding numbers, pass labels, task IDs, phase
 names); no counts of things that live elsewhere ("the 7 tests", "both
 fields") — name the set so the comment grows with it; verify anything a
@@ -382,6 +384,7 @@ Same errors, same behavior, same edge cases — only the shape changed.
 - You are merging two functions you have not diffed line by line, or without checking their callers
 - A function's complexity went *up* in a helper you extracted (you moved the tangle, not untangled it)
 - A comment you wrote says "used to", "per review", names a finding or pass number, or is longer than two lines above a declaration
+- A comment you kept over four lines because "every sentence is a rule", or one that names fields the body reads or helpers it calls
 - A comment you wrote or kept counts tests, callers, fields, or cases that live elsewhere ("the 7 tests", "both", "all three")
 - You are about to edit on the strength of a subagent's finding you have not opened and confirmed yourself
 - You fanned out subagents without asking the user how many, or used a premium model to grep
@@ -399,7 +402,7 @@ After completing a simplification pass:
 - [ ] Any function merge was proposed with the diff and caller count before being made, and every caller was updated
 - [ ] Every finding that became a change was reproduced by the model running this skill — location opened, numbers recounted, pairs re-diffed, tests re-run
 - [ ] Subagent fan-out and model tiers matched what the user agreed to; finding went to cheap models or grep, judgment to premium
-- [ ] Comments on touched lines survive the cover test, are present-tense, fit in two lines above a declaration, cite nothing session-scoped, and count nothing that lives elsewhere
+- [ ] Comments on touched lines survive the cover test, are present-tense, fit in two lines above a declaration, name no field or helper from the body, cite nothing session-scoped, and count nothing that lives elsewhere
 - [ ] Build succeeds with no new warnings; linter/formatter passes
 - [ ] Each simplification was applied and tested as its own incremental change
 - [ ] The diff is clean — no unrelated changes mixed in
