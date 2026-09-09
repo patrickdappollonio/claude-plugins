@@ -45,11 +45,28 @@ no gain. Sort the work by size and start at the top.
 **A shorter comment that lost a rule is a regression, not progress.** The
 dangerous edit is not the one that keeps too much — it is the one that reads
 beautifully and quietly drops "callers must hold the lock". When compressing:
+- A rule is a caller obligation or a guarantee, as tenet 1 defines it.
+  Rationale, precedent, a comparison with no neighbour in the file, the body
+  restated, and adjectives are not rules (a sibling difference in tenet 4's
+  form stays); cut them first, and cutting them drops nothing.
 - Compress the prose *around* a rule; never the rule.
-- If a block states two independent facts, two lines is often the honest floor.
-  Do not merge two rules into one sentence that states one.
+- When several rules share a principle, state the principle once and check
+  that it still implies each of them. Two rules with different principles
+  stay two lines. Do not merge two rules into one sentence that implies only
+  one.
 - After the pass, re-read the diff asking only: *what did the old text assert
   that the new text does not, and does anything depend on it?*
+
+**A doc comment on a published item is reviewed as documentation.** Keep
+the summary at two lines and the convention sections (Errors, Panics, Args,
+Returns) that each state a contract; cut rationale, precedent, history, and
+the body restated from it as from any comment. A doc marker on a private item
+changes nothing: it is a comment under the limit.
+
+**"Every sentence is a rule" is the claim to distrust most.** Underline the
+caller obligations in the block. Usually two survive. A prose comment still
+over four lines after that is not kept under the exemption; it goes to the user
+with a candidate home, or to the handoff when nobody can be asked.
 
 **Do not record why you kept something.** A note explaining that a comment was
 left long, or which fact forced it, is a comment about the comment. It belongs in
@@ -90,6 +107,12 @@ names something, confirm the something exists:
 This is not paranoia; it is the failure mode long comments have. Nobody reads
 twenty lines closely enough to notice that one names a function that does not
 exist. Length and inaccuracy are the same problem wearing two hats.
+
+Then count the names. Each identifier a comment carries is one rename away
+from falsifying it, and nothing checks. Tenet 7 keeps the lock a caller must
+hold, the neighbour a comment differs from, and things in other files; a
+comment naming four fields and helpers from its own body is a summary of the
+body and gets rewritten in words or cut.
 
 ## Fix the code before you comment it
 

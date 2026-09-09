@@ -30,9 +30,12 @@ for every line above it. Twenty accurate lines are a worse comment than two.
   it can return that a caller might check, whether it blocks, who owns a
   returned resource, what it panics on. Not how it is implemented.
 - One or two lines above a declaration is the working limit. A longer doc
-  comment is acceptable only for a package comment or for a genuinely
-  complex exported API, and then it is written as `godoc` prose with the
-  constraints first.
+  comment is acceptable only on an identifier `godoc` publishes — an
+  exported one, or the package — and then as a two-line summary followed
+  by the constraints as `godoc` paragraphs or the `Deprecated:` form, each
+  stating a contract. A comment above an unexported identifier is a plain
+  comment under the limit, however it is written. Rationale, precedent,
+  and the body restated are cut from a doc comment too.
 - Package comment: `// Package uploader ...` directly above `package uploader`,
   in one file (`doc.go` when it is long). It orients; it does not repeat
   the doc comments of the exports.
@@ -61,8 +64,21 @@ func Retry(ctx context.Context, fn func() error) error {
 func Retry(ctx context.Context, fn func() error) error {
 ```
 
-The one legitimate exemption is a decision table or state machine where
-the mapping *is* the contract — and then the comment is mostly table.
+The one legitimate exemption is a decision table, a state machine, or a
+one-rule-per-line list, where the mapping *is* the contract — and then the
+comment has that shape. Prose never qualifies, however many rules it holds.
+
+**A rule is a caller obligation or a guarantee**: a lock to hold, an
+ordering to keep, what a return means on error. Rationale ("because a
+manual batch fails just as badly"), precedent ("X already does this"),
+a comparison with no neighbour in the file (a sibling difference in tenet
+4's form stays), the body restated, and adjectives ("conservative") are not rules; cut them
+first, and cutting them drops nothing. Rules that share a principle
+compress into the principle, stated once. A prose comment still over four
+lines after that is not kept under an exemption claim: show the user the
+comment and a candidate home (package doc, README, ADR, PR description),
+leave two lines in the code, or move it to the handoff when nobody can be
+asked.
 
 ### 2. Describe the current state, never the path here
 
@@ -124,6 +140,16 @@ r.With(metrics.WithHandler(metrics.HandlerOnboardingSearch)).
 
 A comment longer than the code it sits on is almost always about something
 other than the code.
+
+### 7. Name nothing the body already uses
+
+Every identifier in a comment is a coupling the compiler never checks; a
+rename leaves it confidently wrong. Name only what the body below does not
+use: the lock a caller must hold, the neighbour a comment differs from, a
+constraint in another file, an external system. The fields the body reads
+and the helpers it calls stay out — the body is the authority on those. A
+doc comment naming four things from its own body is the body restated; say
+it in words or cut it.
 
 ### 5. No identifier that outlives nothing
 
@@ -227,6 +253,9 @@ wrong subject is not a nit. Don't sweep comments outside the change.
 | "It's too complicated to explain briefly" | Then it is too complicated. Split or rename until two lines suffice. |
 | "I'll leave the old code commented out" | Version control. Delete it. |
 | "I shortened it, so it's better" | Only if every rule survived. A tidy comment missing `callers must hold mu` is a downgrade. |
+| "Each sentence is a rule the caller depends on" | Most are reasons, precedents, or the body restated. Underline the obligations; what is left is the comment. Over four lines of prose, ask where it goes. |
+| "It can go in CLAUDE.md" | CLAUDE.md instructs agents; no reader of the code looks there. Package doc, README, or ADR. |
+| "It's a doc comment, so length rules don't apply" | Only on an exported identifier, and only as a summary plus contract paragraphs. Above an unexported function it is a comment. |
 | "The count is accurate, I just checked" | Accurate today; nothing re-checks it when the eighth test lands. Name the set instead. |
 | "It's a small number, it won't change" | Small sets are the ones that grow. "Both" becomes three more often than 40 becomes 41. |
 
@@ -240,6 +269,8 @@ wrong subject is not a nit. Don't sweep comments outside the change.
 - A prose translation of the identifier below it
 - About the feature, route, or policy while the code is a call or a branch
 - Longer than the code it annotates
+- Prose over four lines that you are calling "rules"
+- Names a field the body reads or a helper the body calls
 - Names an identifier, file, or test you have not confirmed exists
 - A section banner repeating the name beneath it
 - Names what the variable or block *should* be called
@@ -248,7 +279,8 @@ wrong subject is not a nit. Don't sweep comments outside the change.
 ## Checklist
 
 - [ ] Every exported identifier has a doc comment: sentence, starts with the name, ends with a period, written for the caller
-- [ ] Every comment above a declaration is one or two lines (or a table that cannot compress)
+- [ ] Every comment above a declaration is one or two lines (or a table or one-rule-per-line list); no prose over four lines kept under an exemption claim
+- [ ] No comment names a field the body reads or a helper the body calls
 - [ ] Every comment is present tense and survives the cover test and the subject test
 - [ ] No comment narrates a previous attempt, a past bug, or this edit; any fixed regression is pinned by a test named after the invariant
 - [ ] No session-scoped identifiers; tracker IDs only if the repo already uses them

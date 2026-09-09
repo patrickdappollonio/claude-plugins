@@ -252,7 +252,10 @@ A comment earns its place by carrying information the code does not,
 about the code as it is now, in as few lines as that takes. Doc comment
 on every exported identifier: a sentence, starting with the name, ending
 with a period, written for the caller. Two lines above a declaration is
-the working limit. Cover test: hide the comment — if the code lost
+the working limit; a rule is a caller obligation or guarantee, never
+rationale or the body restated, and prose over four lines is a question
+for the user, not a keep. Never name a field the body reads or a helper it calls; the lock to hold and the neighbour differed from are fine.
+Cover test: hide the comment — if the code lost
 nothing, delete it. Subject test: the comment is about *these lines*
 (usually why they differ from their neighbours), not the feature. Present
 tense only; no "used to", "per review", finding numbers, pass labels, task
@@ -362,7 +365,7 @@ to a hand-rolled loop.
 - [ ] Errors compared with `errors.Is`/`errors.As`
 - [ ] Receivers consistent per type; zero value useful; no copied mutexes
 - [ ] Goroutines have owners and exits; `ctx` forwarded, never stored
-- [ ] Doc comment on every exported identifier, sentence form, ends with a period; every comment passes the cover and subject tests; no history, no session IDs, no counts of things that live elsewhere
+- [ ] Doc comment on every exported identifier, sentence form, ends with a period; every comment passes the cover and subject tests; no history, no session IDs, no counts of things that live elsewhere; no prose over four lines kept as "rules"; no field or helper from the body named
 - [ ] Any reshaping of existing code: one change at a time, pinned by a pre-existing test, complexity reported for splits, merges proposed first
 - [ ] Tests: table-driven, `t.Context()`, got-before-want messages, `errors.Is` assertions, `Fn`-field mocks that fail loudly, `t.Parallel()` where safe
 - [ ] Interface changed → every implementation and every mock updated

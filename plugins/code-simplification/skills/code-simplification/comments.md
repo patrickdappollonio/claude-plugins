@@ -14,7 +14,21 @@ not, about the code as it is now, in as few lines as that takes.** The full
   not by a "don't remove this" comment.
 - **Two lines above a declaration.** More than that is documentation and belongs
   in a doc, a package comment, or the commit message. The exception is a
-  decision table or state machine the comment *is*.
+  decision table, state machine, or one-rule-per-line list the comment *is*;
+  prose never qualifies. A rule is a caller obligation or a guarantee;
+  rationale, precedent, a comparison with no neighbour in the file, and the
+  body restated are not rules and go first. A prose comment still over four lines is shown to the user with a
+  candidate home, never kept under an exemption claim.
+- **A doc comment on a published item is documentation.** Where the
+  language's doc generator renders it (Rust `///`, a docstring, Javadoc, a Go
+  exported identifier), keep a two-line summary plus the convention sections
+  that each state a contract, and cut rationale and the body restated as from
+  any comment. The marker is not the exemption: `///` on a private function
+  is a comment under the two-line limit.
+- **Name nothing the body already uses.** Every identifier in a comment is
+  a rename away from wrong. Keep the lock to hold, the neighbour differed
+  from, and things in other files; drop the fields the body reads and the
+  helpers it calls.
 - **No session-scoped identifiers.** Finding numbers (`F7`), iteration labels
   ("pass 2"), wave/batch/task IDs, project phase names ("until stage 3"), agent
   or review run labels. They meant something for one session and nothing after.
