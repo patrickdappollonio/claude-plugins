@@ -22,6 +22,14 @@ message describes the plan, whether it covers the ask, and the gotchas.
 - **Drafts to a fixed skeleton** in `.plans/<task>.md` (kept out of the diff
   through the repository's local exclude file, never your `.gitignore`), or
   in the harness's own plan file when the session started in plan mode.
+- **Plans the simplest thing that works, and only plans.** A dedicated
+  step, run on every draft without asking and again on the finished plan,
+  restates the goal in one sentence and tests every part of the plan against
+  it: remove it if the goal survives, otherwise put it on the lowest rung
+  that keeps it — what the codebase has, the standard library or the
+  platform, an installed dependency, one line, and only then new code — with
+  every cut and lowering logged as a decision. The skill writes one markdown
+  file and nothing else: no mockup, prototype, or scaffold, however small.
 - **Reviews the draft with zero context.** One reviewer on the most capable
   model available gets only your original words, the plan, and the codebase,
   and tries to prove the plan fails the ask.

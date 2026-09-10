@@ -34,7 +34,10 @@ and cannot inherit your excuses.
 > first run, migration of existing data, failure of an external system,
 > concurrent use); decisions the plan makes that the requester would want to
 > make themselves; anything the plan would need to know that nobody wrote
-> down; and anything in the plan that is not needed for the request.
+> down; anything in the plan that is not needed for the request; and
+> anything the plan builds that the codebase, the standard library, the
+> platform, or a dependency already installed provides — name the existing
+> thing.
 >
 > Return two lists. **Findings:** each with what is wrong, why it matters,
 > the evidence (a file and line, or the sentence of the request or plan), and
@@ -46,7 +49,7 @@ and cannot inherit your excuses.
 
 Merge its findings into the plan through the authority table in `SKILL.md`
 and its questions into the question list, then filter that list as `SKILL.md`
-step 5 describes.
+step 6 describes.
 
 ## 2. The cold implementer check (always, one subagent)
 
@@ -191,8 +194,10 @@ design_is_wrong}`.
 5. **Feasibility and Scope Prosecutor** — "Find every claim the plan makes
    about the code that the code contradicts, every ticket whose acceptance
    criteria cannot be observed, every dependency between tickets the plan
-   does not state, and every piece of work in the plan the brief did not ask
-   for."
+   does not state, every piece of work in the plan the brief did not ask
+   for, and every component, helper, or dependency the plan adds where the
+   codebase, the standard library, the platform, or an installed dependency
+   already provides it — name the existing thing."
 
 Then dispatch **one verifier** (fresh, cheaper tier) with every finding, the
 brief, the plan, and the repository path: it returns *confirmed / not

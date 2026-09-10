@@ -39,9 +39,16 @@ review skill, on every slice, every iteration.
      this surface (README, `docs/`, help text, CHANGELOG, spec, docstring)
      still describes the old behavior or omits the new one. Do not take the
      executor's "no document describes this" on faith: run the search.
-3. **Hunt extras.** Anything in the diff the plan did not ask for: a new flag,
-   a changed default, a renamed label, a reordered flow, an "improvement".
-   Each is either an announced deviation (fine) or an unannounced one (a gap).
+3. **Hunt extras and over-build.** Anything in the diff the plan did not ask
+   for: a new flag, a changed default, a renamed label, a reordered flow, an
+   "improvement". Each is either an announced deviation (fine) or an
+   unannounced one (a gap). Over-build is an extra too: a component, helper,
+   wrapper, or dependency added where the codebase, the standard library,
+   the platform, or an installed dependency already provides it. When the
+   executor added it beyond the plan, name the lower rung and send it back.
+   When the plan itself prescribed it, the choice is the user's: park it
+   under *Pending* with both paths and their cost, and stop at G3 if the
+   next slice depends on it. Never swap in the simpler path yourself.
 4. **Chase undecided-but-decided.** For every item the plan left to the user,
    check the executor left it out. If it made a choice, that is a functional
    decision made for the user: **revert to the plan and park it under

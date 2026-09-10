@@ -43,6 +43,12 @@ parked with a recommendation, never assumed.
   for real) and real dependencies via testcontainers are recommended, and you
   decide how much of that is enough. Executors also obey the
   minimum-sufficient-change discipline (see *Credit*).
+- **Reports a simpler path instead of taking it.** Executors walk a ladder
+  before writing anything new — skip it, reuse what the codebase has, use the
+  standard library or the platform, use an installed dependency, one line,
+  only then the minimum. When the plan itself prescribes more than that
+  ladder needs, nobody builds either path: the run stops with both paths and
+  their cost, and you choose.
 - **Conformance review** on the premium model: enumerate the plan's promises,
   point at the line, the test, and the document for each, grep the docs for
   stale descriptions, send gaps back.

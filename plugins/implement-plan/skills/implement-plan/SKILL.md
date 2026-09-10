@@ -30,11 +30,10 @@ keep-going contract — is this skill's own.
 3. **Keep going.** Stop only at the named gates, and when you stop, make the
    resume a single word.
 4. **This skill's labels never reach the repository.** Gate IDs (G1–G4),
-   slice and wave names, round and pass numbers, finding numbers, step
-   numbers, ticket titles, and *Pending* mean something to this run and
-   nothing after it, and the plan file that gives them meaning is usually
-   ignored by git. None of them appears in code, comments, test names, docs,
-   or commit messages. The conformance review greps for them; a hit goes back.
+   slice and wave names, round, pass, finding, and step numbers, ticket
+   titles, and *Pending* mean nothing after this run, and the plan file that
+   defines them is usually ignored by git. None appears in code, comments,
+   test names, docs, or commit messages; the conformance review greps for them.
 
 ## Read the Companion Files First
 
@@ -69,10 +68,7 @@ one, `companion-skills.md` has the commands — never install anything mid-run.
 - The user says implement / execute / build / "do the work we agreed", and a plan exists: a visual plan, a plan-mode plan, a plan file, or a design agreed in this conversation.
 - The work has several parts, some independent, and the user wants it done while they are away.
 
-**When NOT to use:**
-
-- There is no agreed plan. Say so and stop: this skill executes agreements, it does not invent them. Point the user to planning (the `planning-flow` skill, plan mode, or the `visual-plan` skill).
-- The change is one small edit in one file. Do it directly with TDD; the machinery below would cost more than the work.
+**When NOT to use:** there is no agreed plan — say so and stop; this skill executes agreements, it does not invent them (point to the `planning-flow` skill, plan mode, or `visual-plan`). Or the change is one small edit in one file — do it directly with TDD; the machinery below costs more than the work.
 
 ## Two Authorities
 
@@ -113,8 +109,9 @@ adversarial review → fix is one continuous effort.
 The **only** legitimate stops, each a gate below: (G1) the starting-point
 question, (G2) the adversarial review question — quick, full, or none, and
 after the fixes whether to run a second — (G3) a functional
-or operational decision the plan leaves to the user **when the next slice cannot
-proceed without it**, (G4) worktree deletion. Not a stop reason: "let me
+or operational decision the plan leaves to the user, or a simpler path than
+the plan prescribes, **when the next slice cannot proceed without it**, (G4)
+worktree deletion. Not a stop reason: "let me
 check in", "the session is long", "I'll ask before the next slice", "the user
 should see progress first", "I need the usage numbers first". Capacity is
 information you hand over in passing, never a gate: an unreadable usage
@@ -204,6 +201,13 @@ the plan section verbatim, in/out of scope, **TDD required**, **documentation
 required**, the repo's integration/E2E conventions, the user-journey testing
 rule, the executor discipline, evidence format, stop conditions. Parallel slices go out in one
 message.
+
+**A simpler path is reported, never taken.** When an executor stops because
+the plan prescribes a rung above what already exists (codebase, standard
+library, platform, installed dependency), or you see it yourself, build
+neither path: stop at **G3** for that slice with both paths, their cost, and
+your recommendation. Independent slices keep going. An executor that
+over-built *beyond* the plan is simply sent back.
 
 ### 5. Conformance review — thorough, not a skim
 
@@ -400,9 +404,11 @@ user chooses in every packet. The three floors go in every packet regardless.
 Minimum sufficient change. Read the real code and the tests that already
 cover it before editing. Write the four-line mini-plan (**Outcome / Non-goals
 / Files / Proof**) before touching anything; **Proof** holds one test-map
-entry per behavior: nearest existing test, marked step list, extend or new. Reuse before
-adding — tests included; fix at the root; no abstraction for one caller;
-no future-proofing; remove what you replace. Stop and report instead of
+entry per behavior: nearest existing test, marked step list, extend or new. Walk
+the ladder before writing anything new — skip, reuse, standard library,
+platform, installed dependency, one line, then the minimum — tests included;
+fix at the root; remove what you replace; never cut trust-boundary
+validation, data-loss handling, security, or accessibility. Stop and report instead of
 improvising when scope grows, a dependency is needed, a public surface changes,
 or data would be lost. Done means: behavior works, every document that
 describes the changed behavior is updated in the same diff, exact commands and
@@ -422,13 +428,11 @@ assumptions stated plainly.
 | "Reviewing each slice as it merges catches problems early" | It also reviews the same code several times. Conformance is the per-slice check; the panel runs once, on the whole diff, after the cleanup pass. |
 | "I reproduced the findings myself, so the verifier was unnecessary" | Your reproduction is extra evidence. The review skill's verifier and validator run as written. |
 | "The fixes changed code, so they need their own panel" | They need conformance, which is yours. A second panel is the user's to buy: ask, recommend by the size of the fixes, and take no for an answer. |
-| "The plan's example shows it this way, but keeping the old column is nicer" | The plan is the spec. Deviating from it is the user's call, not yours. |
 | "It's a technical choice — storage format, algorithm, retry policy — so it's mine" | Only while its effect stays invisible. The moment it changes what users or operators experience, it is theirs. Trace the consequence first. |
 | "Tests pass and the diff is clean, so it matches the plan" | A faithful build of the wrong thing has no failing tests. Enumerate the plan and check item by item. |
 | "The user said just the code, so no tests" | Unit tests under TDD are the floor, not an option. Everything above them is the user's to size; the floor is not. |
 | "I'll do the docs in a follow-up pass once the code settles" | There is no follow-up pass. Docs are the second half of the floor and ship in the same diff as the code, or the slice is not done. |
 | "Nothing user-facing changed, so there are no docs to update" | That is a search result, not a belief. Grep the repo for the surface you touched and report what you searched; "none found" is evidence, "probably none" is not. |
-| "A fresh test file is cleaner than editing the old one" | The old one is where the next person will look. A second file for the same surface is a duplicate with a nicer name. Extend it. |
 | "No existing test covers priority, so it's a new surface" | Priority is the feature. The surface is `add` and `list`, and both have tests. Grep for the command, count the steps. |
 | "Extending the workflow test would blur its single-purpose narrative" | Its purpose is the workflow. The feature is one more step in it. A second copy of the workflow is the blur. |
 | "The table can't host this case, it needs a JSON assertion" | Then the table gets a column. A missing column is an edit, not a gap. |
@@ -438,18 +442,15 @@ assumptions stated plainly.
 | "The README is out of scope for this slice" | A document that describes the behavior this slice changes is in scope by definition. Only another slice's files are out. |
 | "A real project needs journeys and containers, I'll add them all" | Encouraged is not required. State the recommendation at G1 and build what the user chose. |
 | "Sonnet wrote it, Sonnet can verify it" | The cheap executor's mistakes are why judgment stays premium. Never cheap on both sides. |
+| "A small wrapper now keeps it flexible" | Flexible for whom? The ladder stops at the lowest rung that holds; a wrapper for one caller is a rung too high. If the idea matters, it is a line in the decisions log. |
+| "The helper already exists, I'll use it instead of what the plan says" | The plan is the spec, and the simpler path is a deviation from it. Report both with their cost and let the user choose; building either first wastes the other. |
 | "A `// G2: parked` note helps the next person find the decision" | The next person has no G2. The plan is not in the repository. Write what the code does, or nothing; the decision lives in the decisions log. |
-| "The change is small, I'll skip the review question" | Small changes get a recommended quick panel. The user still hears the question and picks quick, full, or none. |
-| "Let me pause so the user can see progress" | Not a gate. Keep going. |
-| "I'll put the decisions in a new recap document" | The decisions live at the end of the plan file, where the plan is. A new document is extra cost and a second place to look. |
-| "No usage tool, so I'll estimate usage" | Never invent a usage number. Say you cannot read it, label the estimate unverified, and keep going. |
-| "I can't read usage, so I'll stop and ask for it" | The capacity check is advisory. One line — estimate, usage or "unreadable", reset if known — then the split starts in the same turn. Waiting for numbers is not a gate. |
+| "No usage tool, so I'll estimate it" or "I'll stop and ask for it" | Never invent a usage number, never wait for one. One line — estimate, usage or "unreadable", reset if known — then the split starts in the same turn. |
 | "Usage is high, better pause until they confirm" | Warn with the numbers and name the choices, then continue. The host enforces its own limits, the user asked for the plan to be built, and they can interrupt a live run with Esc whenever they want. Stopping is their move, not yours. |
 | "The slices are merged, so the review can start" | The executors' comments still narrate the session and their helpers still carry slice names. Step 6 runs first, on every plan, so the one review sees clean code. |
 | "I read the comment and simplification files at the start, I remember them" | They are read at step 6, fresh, by design — a summary recalled across a long run is what the pass exists to catch in others. Open both files, then start. |
 | "I'll simplify this while I'm in the file" | Scope is the merged diff. A refactor of the code around it is its own change. |
 | "Those two executors wrote the same function twice, I'll merge them" | A merge changes an API surface and crosses two slices. Diff, count callers, park it under *Pending* with the proposal. |
-| "The pass moved code, so it needs its own panel" | It needs conformance on the touched files. The one panel in step 7 runs after the pass and covers it. |
 
 ## Red Flags — Stop and Re-read the Step
 
@@ -458,18 +459,17 @@ assumptions stated plainly.
 - A `git push`, a PR, or a commit to `main` the user did not ask for
 - An executor's report used as the conformance review
 - A slice merged that changes a flag, default, output, command, or API some document describes, without a change to that document in the same diff
-- A new test file or test function whose test-map entry has no step list, or a share of 60% or more
-- A test map whose nearest test is "none" while some test already calls the same command or function — the grep was for the feature name, the setup, or the assertion instead
+- A new test whose test-map entry has no step list or a share of 60% or more, or whose nearest test is "none" while some test already calls the same command or function
 - A conformance verdict with no test-to-code line ratio at the top
 - An evidence report with no documentation line — neither the files updated nor the search that found none
 - A reviewer, verifier, or conformance check running on the cheap tier while the executor was also cheap
 - A user-facing change applied because "the review said so"
 - A new flag, syntax, default, or output format the plan did not specify
 - A technical choice logged as yours whose effect a user or operator would notice
-- Any adversarial panel dispatched before the G2 answer, before every slice is merged, or before the comment and simplification pass
-- A second adversarial panel started without a fresh yes from the user
-- A panel run on one slice, or on one fix round, instead of once on the whole merged diff
+- Any adversarial panel dispatched before the G2 answer, before every slice is merged, or before the comment and simplification pass; a panel per slice or per fix round; a second panel without a fresh yes
 - A gate ID, slice or wave name, round or pass number, finding number, step number, or ticket title anywhere in the diff or a commit message
+- A new component, helper, wrapper, or dependency where the codebase, the standard library, the platform, or an installed dependency already provides it
+- A simpler path than the plan prescribes built without the user's choice, or the plan's path built after an executor reported a lower rung
 - Skipping the companion files because "I remember this skill"
 - A decisions log or recap written while the step 6 pre-flight still has an unticked line
 - The comment or simplification pass started without `appropriate-comments-fallback.md` and `code-simplification-fallback.md` opened at that step — an earlier read does not count
@@ -491,8 +491,7 @@ Create a todo per item.
 - [ ] Diff and commit messages grepped for this skill's labels — gate IDs, slice and wave names, round, pass, finding, and step numbers, ticket titles — every hit sent back
 - [ ] Slices merged into the starting branch, no push
 - [ ] Step 6 pre-flight ticked: installed `appropriate-comments-code` / `code-simplification` checked first; the fallback file read fresh at that step only for a skill that is absent; conformance file re-opened
-- [ ] Comment pass run on the merged diff — the installed skill as written, else the fallback: every flagged comment rewritten or deleted, test-file comments left alone, ratio-check files parked
-- [ ] Simplification pass run on the merged diff — the installed skill as written, else the fallback: behavior-preserving, tests unmodified and green, merges parked as proposals; code changes re-checked for conformance
+- [ ] Comment and simplification passes run on the merged diff — the installed skill as written, else the fallback: every flagged comment rewritten or deleted, test-file comments left alone; behavior-preserving, tests unmodified and green, merges parked as proposals; code changes re-checked for conformance
 - [ ] G2 asked once, after the pass: change sized, quick / full / none offered in plain text with the cost of each; exactly the chosen review run once on the whole merged diff; fallback panel if no skill
 - [ ] Every finding fixed or parked by the authority split; conformance re-run on the fixes; a second review offered with a recommendation and run only on a yes
 - [ ] Decisions log appended at the end of the plan file
