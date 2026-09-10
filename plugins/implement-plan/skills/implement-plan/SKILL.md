@@ -126,15 +126,12 @@ is pending, the exact question, and that you will keep going once they answer.
 run — read the reply for its meaning, never demand a word. Carry enough state
 that such a reply resumes the work (`capacity-check.md`).
 
-**How to ask.** Ask in plain text, in the message itself — not through a
-harness-specific question tool. Give the options, the consequence of each,
-and your recommendation, then stop. Plain text works in every harness, and a
-question with its reasoning beside it is the one the user can answer while
-away. Bundle every open question into one stop, so one reply resumes the run.
-
-When `/goal` is available (Claude Code, Codex), hand the user a ready-to-paste
-goal condition at kickoff (template in `capacity-check.md`); the gates still
-pause the loop by design. Without `/goal`, the closing line is the loop.
+**How to ask.** In plain text, in the message itself — never a harness
+question tool, which not every harness has. Give the options, the consequence
+of each, and your recommendation, then stop. Bundle every open question into
+one stop, so one reply resumes the run. When `/goal` is available (Claude
+Code, Codex), hand the user a ready-to-paste goal condition at kickoff
+(template in `capacity-check.md`); the gates still pause the loop by design.
 
 ## The Process
 
