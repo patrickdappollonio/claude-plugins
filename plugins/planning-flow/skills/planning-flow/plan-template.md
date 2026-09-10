@@ -107,6 +107,11 @@ the value lives. The section holds, as bullets grouped by topic:
 - **How tests and checks run today.** The exact command, the runner, the
   workflow file and its trigger paths, the version it runs on, and what is
   missing when nothing exists yet.
+- **The tests that already cover each surface the tickets touch.** For
+  every command, function, endpoint, or type a ticket changes, the test
+  file and test name that exercises it today, and what that test does
+  (its setup, the calls it makes, what it asserts). This is what lets an
+  acceptance criterion name the test it extends.
 - **Where each edit goes.** For a change to a document or a config, the
   section or key that changes and its current text.
 - **The rules of the repository that bind this work**, stated as rules, not
@@ -130,8 +135,8 @@ idea per sentence. What is wrong today, what is true when this is done, and
 who benefits.>
 
 ### Acceptance Criteria
-* <An observable check a reviewer can run.>
-* <Another.>
+* <An observable check a reviewer can run.> — extends `<test file>` `<TestName>`
+* <Another.> — new test: <why no existing test on this surface performs 60% or more of the new test's setup and action steps>
 
 **Depends on.** <Titles of other tickets, or "nothing".>
 
@@ -162,7 +167,15 @@ who benefits.>
   not "concurrently"; "empty", not "nil"). Say the effect on a person: money,
   time, data, safety, confusion.
 - **Acceptance criteria.** Observable and checkable. "The command exits with
-  an error when the file is missing", not "handles errors well".
+  an error when the file is missing", not "handles errors well". **Each
+  criterion ends with the test that will prove it**: `— extends <file>
+  <TestName>` naming an existing test on that surface (found during
+  research, listed in *Technical context*), or `— new test: <reason>` only
+  when no existing test on the surface performs 60% or more of the new
+  test's setup and action steps (assertions do not count). The implementer
+  adds the case to the named test and does not run its own count for that
+  criterion; the plan already decided. A criterion with no proof clause is
+  a research gap.
 - **Depends on.** Titles only, separated by semicolons, each one exactly
   matching a ticket heading in this file. "nothing" when independent.
 - **Size.** A guess at **lines of code touched** (added, changed, removed,
@@ -203,10 +216,9 @@ operator can switch the check on for any supplier from the database, with
 no code change.
 
 ### Acceptance Criteria
-* A supplier with the flag set to true is included in the drop-off comparison.
-* A supplier with the flag set to false is skipped, and the skip is logged once per run.
-* The migration leaves the two existing suppliers switched on and the rest off.
-* The existing drop-off tests pass unchanged; one new case covers a switched-off supplier.
+* A supplier with the flag set to true is included in the drop-off comparison. — extends `importer/dropoff_test.go` `TestDropoff_IncludesEnabledSuppliers`
+* A supplier with the flag set to false is skipped, and the skip is logged once per run. — extends `importer/dropoff_test.go` `TestDropoff_IncludesEnabledSuppliers` (a switched-off supplier row and a log assertion)
+* The migration leaves the two existing suppliers switched on and the rest off. — new test: no existing test applies a migration to seeded supplier rows; nearest is `db/migrate_test.go` `TestMigrate_Up`, which already performs 2 of the 6 setup and action steps
 
 **Depends on.** nothing
 

@@ -71,8 +71,8 @@ the instruction to answer in two passes.
 > the challenge in three sentences. (b) Grade from 1 to 5 whether this text
 > is enough to start implementing without exploring the repository, and
 > list every concrete thing you would still have to go and find: exact
-> strings, formats, paths, conventions, commands, how tests run, where each
-> edit goes.
+> strings, formats, paths, conventions, commands, how tests run, which
+> existing test each acceptance criterion extends, where each edit goes.
 >
 > Pass 2, now open the repository: list what the text got wrong, with the
 > file and line. Then write the bullets that the technical context should

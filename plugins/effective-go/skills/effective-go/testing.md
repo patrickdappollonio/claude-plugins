@@ -91,6 +91,17 @@ One source file, one test file, is the steady state. A package with
   `struct{ name string; ...; want T; wantErr error }`, iterated with
   `t.Run(tc.name, ...)`. Case names say what is being tested
   (`"rejects empty bucket"`), not `"case 3"`.
+- **A row in the existing table before a standalone test.** Before
+  writing a new `Test…` function, find the existing test on the same
+  function or command and count: one step per setup call and action in
+  the test you would write (assertions are not steps). Mark each step the
+  existing test already performs; the share is marked steps divided by
+  listed steps. At 60% or more shared, the new case is a row
+  in that test's table (add the column it needs) or a step in its
+  workflow, not a function of its own. A standalone `TestFoo_Bar` beside a
+  table-driven `TestFoo` that repeats its arrange and act is the failure
+  mode; convert the standalone into a row. Asserting on something no test
+  has asserted on yet is a new column, not a new function.
 - **Arrange / Act / Assert**, visibly separated by a blank line. Arrange
   belongs in the table where possible.
 - `Test<Func>` or `Test<Func>_<Scenario>` for names. Subtests carry the
@@ -247,6 +258,7 @@ from Go 1.24 on, `slog.New(slog.DiscardHandler)` is the shorter form.
 - [ ] New tests appended to the existing `_test.go`; a new file only because none existed or a separate tier needs one
 
 - [ ] Table-driven with named cases; Arrange/Act/Assert visible
+- [ ] When an existing test already performs 60% or more of a new case's setup and action steps, the case is a row or step in that test, not a new `Test…` function
 - [ ] `t.Context()`, `t.TempDir()`, `t.Setenv()`, `t.Cleanup()`, `t.Helper()` where applicable
 - [ ] `t.Parallel()` where nothing shared is mutated
 - [ ] Failure messages name the call, input, got, want — got first
