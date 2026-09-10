@@ -327,7 +327,8 @@ example in `plan-template.md`):
 **Why.** …
 
 ### Acceptance Criteria
-* …
+* … — extends `<test file>` `<TestName>`
+* … — new test: <reason>
 
 **Depends on.** <other ticket titles, or "nothing">
 
@@ -348,8 +349,14 @@ example in `plan-template.md`):
 - **Why** — Simplified Technical English (ASD-STE100): short active-voice
   sentences, one idea each, common words, no unexplained jargon. What is
   wrong today, what is true when this ticket is done, and who benefits.
-- **Acceptance criteria** — observable checks a reviewer can run. For a spike,
-  the criteria are the questions it must answer.
+- **Acceptance criteria** — observable checks a reviewer can run, each
+  ending with the test that proves it: `— extends <file> <TestName>` for an
+  existing test on that surface, or `— new test: <reason>` only when no
+  existing test on that surface performs 60% or more of the new test's
+  setup and action steps. The research pass finds these tests and names
+  them in the plan; the implementer adds the case to the named test and
+  does not run its own count for that criterion. For a spike, the criteria
+  are the questions it must answer.
 - **Depends on** — titles only.
 - **Size** — a guess at lines of code touched, never time. Bands, in lines:
   XS under 200, S 200 to 750, M 750 to 1500, L 1500 to 4500, XL 4500 to

@@ -182,7 +182,7 @@ A chain must read as a sentence:
 
 ## Testing (summary — full text in `testing.md`)
 
-- Table-driven with named cases and visible Arrange / Act / Assert.
+- Table-driven with named cases and visible Arrange / Act / Assert. When an existing test on the same function already performs 60% or more of a new case's setup and action steps (assertions are not steps), the case is a row in that test's table or a step in its workflow, never a standalone `Test…` function; a new kind of assertion is a new column, not a new function.
 - `t.Context()` (Go 1.24+; the pre-1.24 equivalent is in `testing.md`), `t.TempDir()`, `t.Setenv()`, `t.Cleanup()`, `t.Helper()`, `t.Parallel()` where safe.
 - Messages: `t.Errorf("Func(%v) = %v, want %v", in, got, want)` — got before want. `t.Fatalf` only when continuing is meaningless.
 - Errors asserted with `errors.Is`/`errors.As`, never by string.
@@ -320,6 +320,8 @@ to a hand-rolled loop.
 | "I'll push so the user can see it in the PR" | Pushing publishes. Say it's ready; the user decides when it leaves the machine. |
 | "The commit was approved, so pushing is implied" | Two approvals. Commit means commit. |
 | "A new test file keeps things organized" | The existing file's bottom is the organization. A new file is for a missing file or a separate tier, nothing else. |
+| "This case deserves its own test function, the table would get busy" | Count the setup and action steps. At 60% shared it is a row: however many rows a table has, it still has one setup block and one call. |
+| "No existing test checks the file on disk, so this one is new" | The assertion is new. The arrange and act are not. Add the check after the call the existing test already makes. |
 | "Tests after the refactor prove it works" | They prove the new code does what the new code does. The pinning test predates the change. |
 | "Journeys are the user's job" | Proposing them is yours. Writing the picked ones is yours. |
 | "Reading the companion files is overkill for a one-line change" | One-line changes are where error strings and `'%s'` slip in. Read them. |
@@ -347,6 +349,7 @@ to a hand-rolled loop.
 - A comment that counts tests, callers, fields, or cases that live elsewhere ("the 7 tests", "both", "all three")
 - A refactor that needed a test edited to pass, or that touched code outside the request
 - A new `_test.go` beside an existing one for the same source file, with no build tag and no separate tier
+- A new `Test…` function that repeats 60% or more of the setup and action steps an existing test on the same function already performs
 - A feature change with no journeys proposed to the user
 - `git push` in your plan without a user message approving *that* push; a commit the user has not asked for
 - You reached step 3 without checking whether `use-modern-go` is available, or you are recommending it for the second time this session
@@ -371,6 +374,7 @@ to a hand-rolled loop.
 - [ ] Interface changed → every implementation and every mock updated
 - [ ] New tests failed before the code and pass after; refactors pinned by a test that passes unmodified before and after
 - [ ] Tests appended to the existing `_test.go`; a new file only for a missing file or a separate build-tagged tier
+- [ ] New cases where an existing test already performs 60% or more of the setup and action steps added as rows or steps there, not as new `Test…` functions
 - [ ] User journeys proposed for any feature change; the approved ones written and tagged
 - [ ] `gofmt`/`goimports`, `go vet ./...`, `go build ./...`, `go test -race ./...`, project linter — run, and the output reported
 - [ ] Nothing committed without the user's approval; nothing pushed without explicit approval for that push

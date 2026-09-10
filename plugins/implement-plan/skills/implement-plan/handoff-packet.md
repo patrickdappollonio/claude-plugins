@@ -44,23 +44,78 @@ then only the tiers that apply:
 > Do not add test infrastructure for this task alone. Test the behavior this
 > slice changes; do not backfill unrelated coverage.
 
-> **Map the existing tests before writing one.** Before the mini-plan, find
-> every test that already exercises the surface this slice changes: grep the
-> test directories for the function, command, endpoint, type, and fixture
-> names you will touch, and open every file that hits. Write the result down
-> as a **test map** in your first message, under **Proof**: each existing
-> test file or case that covers the surface, and for each behavior this slice
-> changes, either *extend* — name the existing test and how (a new case in
-> its table or describe block, a new assertion, an edited expectation) — or
-> *new*, with the gap that justifies it. **Extend is the default.** A new
-> test is justified only by a gap the map shows: no existing test exercises
-> this surface, the existing test's setup cannot host the case, or the plan
-> asks for a tier (integration, E2E, journey) this repository has no test
-> for. A new test that stands up the same fixture as an existing one and
-> exercises the same surface is a duplicate and will be sent back; add the
-> case to the existing test instead. When the search finds no test for the
-> surface, say so and name what you searched. A test extended under TDD still
-> fails first: add the case, watch it fail, then write the code.
+> **Map the existing tests before writing one, and count the overlap.**
+> Before the mini-plan, find every test that already exercises the surface
+> this slice changes. The surface is the command, function, endpoint, or
+> type the code change lands in — never the feature. Grep the test
+> directories for those names and for the fixture and helper names their
+> tests use, and open every file that hits. "No test mentions <the feature>"
+> is not a gap: the feature is new, the code it lands in is not.
+>
+> Then, for each behavior this slice changes, write a **test map** entry
+> under **Proof**, in exactly this shape:
+>
+> ```
+> <behavior> — nearest: <file>:<TestName>
+>   setup/action steps of the test I would write:
+>   - <step>  ← <TestName> does this | —
+>   - <step>  ← ...
+>   shared <s> of <n> (<p>%) → extend: <how> | new
+> ```
+>
+> The steps are the **setup calls and actions only** — every fixture,
+> helper, or command call the test makes before and while exercising the
+> code. Assertions are not steps: they are what is new by definition, and
+> they never make a test new. The nearest test is the existing test that
+> calls the same command, function, or endpoint the most; `nearest: none`
+> is allowed only when no test in the repository calls that command or
+> function at all — a test that sets up differently, or asserts on
+> something no test has asserted on yet, is still the nearest test. Mark
+> each step with the nearest test's name when it already performs that
+> call, whatever its inputs. When the new test builds state by hand
+> (writing a raw file, inserting a row) where the existing test used a
+> helper, count that as one step and leave it unmarked; the helper calls
+> before and after it are still shared, so mark them. `s` is the marked
+> steps, `n` the steps listed, and `p` is `s / n` written as a percentage,
+> rounded down: 5 of 6 is 83%.
+>
+> A filled-in entry, for a flag added to an `add` command whose table test
+> already covers `add`:
+>
+> ```
+> unknown --priority level is rejected — nearest: cli_test.go:TestUsageErrors
+>   setup/action steps of the test I would write:
+>   - newTodoDir(t)           ← TestUsageErrors does this
+>   - d.run("add", args...)   ← TestUsageErrors does this
+>   - stat todos.json         ← —
+>   shared 2 of 3 (67%) → extend: a row in the cases table plus a wantNoFile column
+> ```
+>
+> When the plan's acceptance criterion already names the test that proves
+> it (`— extends <file> <TestName>`), that test is the answer: add the case
+> there and skip the count. Count only for behaviors whose criterion says
+> `new test` or names no test.
+>
+> **At 60% or more, extend**: a row in that test's table, a step or branch
+> in its workflow, and the new assertion placed after the step it checks
+> (a table without a column for it gets the column; a workflow test gets
+> the read-the-file check after the call that wrote it). The share is the
+> decision; at 60% or more there is no judgment call left to make.
+> "Technically qualifies as extend, but it needed distinct assertions",
+> "a different item shape", "its own function for isolation", and "a
+> judgment call" are the sentences that precede a duplicate — when one
+> appears in your reasoning, add the case to the nearest test. Under 60%,
+> write a new test and keep the list in the map. A test extended under TDD still
+> fails first: add the case, watch it fail, then write the code. A new test
+> at 60% or more, a new test with no listed steps, or a `nearest: none` for
+> a command some test already calls, will be sent back with the recount
+> attached.
+>
+> None of these makes a test new: the existing test would "lose focus" or
+> "blur its narrative"; the new case asserts on something (a file, a JSON
+> key, an absent file) no test has asserted on; the table has no column
+> for it; the feature name has no grep hits; the new test reads better on
+> its own.
 
 > **Documentation is updated in this same diff.** Before writing the
 > mini-plan, search the repository for every document that describes the
@@ -78,13 +133,19 @@ then only the tiers that apply:
 
 Add when the repo has integration/E2E tests, or the user asked for journeys:
 
-> **Integration and E2E tests are user journeys.** Design each test the way a
-> real consumer of this project behaves: run the real CLI binary, call the real
-> HTTP endpoint, drive the real UI flow, read the real file the user would
-> read. **Mock only what cannot run for real** — third-party services, the
-> wall clock, external networks, paid APIs. Everything else executes from the
-> real codebase. Follow this repository's existing layout, runner, fixtures,
-> and naming exactly: `<describe>`.
+> **Integration and E2E tests are user journeys, and one journey owns each
+> workflow.** Design each test the way a real consumer of this project
+> behaves: run the real CLI binary, call the real HTTP endpoint, drive the
+> real UI flow, read the real file the user would read. A workflow an
+> existing journey already walks gets its new step or branch in that
+> journey; a new journey is for a workflow no journey walks yet. Count it
+> the same way as a unit test: a journey whose setup and action steps are
+> 60% or more already performed by an existing journey is that journey,
+> extended. **Mock only what
+> cannot run for real** — third-party services, the wall clock, external
+> networks, paid APIs. Everything else executes from the real codebase.
+> Follow this repository's existing layout, runner, fixtures, and naming
+> exactly: `<describe>`.
 
 Add when the user asked for real dependencies:
 
@@ -108,8 +169,9 @@ Include verbatim:
 >   - **Non-goals** — what this task will not do
 >   - **Files** — the smallest set expected to change
 >   - **Proof** — the check that will prove the change works: the test map —
->     the existing tests for this surface, and per behavior, the test you
->     extend or the gap that justifies a new one
+>     one entry per behavior, naming the nearest existing test, listing
+>     the setup and action steps with a mark for each one that test
+>     already performs, and the extend-or-new decision the share gives
 > - Take one implementation path. Do not split the work further.
 >
 > **While editing**
@@ -157,7 +219,8 @@ The orchestrator does the conformance review from this, so it must be complete:
 - The exact test commands run and their output summary (pass/fail counts).
 - The test map as executed: the existing tests found for the surface (or the
   search that found none), and for every test added or changed, *extended*
-  with the file:line of the case, or *new* with the gap that justified it.
+  with the file:line of the case, or *new* with its map entry (nearest
+  test, the marked step list, the share).
 - For each plan item, the documents updated for it (file:line) — or
   "no document describes this" with the search that established it.
 - The commit hash(es) on the slice branch.

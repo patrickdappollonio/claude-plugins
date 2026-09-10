@@ -35,8 +35,10 @@ parked with a recommendation, never assumed.
   and updated alongside the code; there is no separate documentation pass, and
   a slice whose docs still describe the old behavior is not done. Before
   writing any test, executors map the tests that already cover the surface
-  and extend them by default — a new test needs a gap the map shows, and a
-  duplicate of an existing test is sent back by the review. Journey-style
+  and count the overlap — when an existing test on the same command or
+  function already performs 60% or more of a new test's setup and action
+  steps, the case goes into that test, and the review recounts every new
+  test and sends duplicates back. Journey-style
   integration/E2E tests (real CLI, real endpoints; mock only what cannot run
   for real) and real dependencies via testcontainers are recommended, and you
   decide how much of that is enough. Executors also obey the

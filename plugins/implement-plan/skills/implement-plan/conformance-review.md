@@ -9,6 +9,12 @@ review skill, on every slice, every iteration.
 
 ## Procedure
 
+0. **Measure the diff before you read it.** Run
+   `git diff --numstat <start>..<slice>` and add up the lines added in test
+   files and in everything else. Write both numbers and the ratio at the top
+   of the verdict. Step 6a recounts every new test whatever the ratio; a
+   ratio over 2 to 1 is a warning that the slice added tests it did not
+   need, and the verdict says so.
 1. **Enumerate before you look.** Open the plan section and write a flat
    checklist of every concrete promise: each field, flag, default, ordering,
    error case and exit code, output format, message, migration, endpoint,
@@ -20,9 +26,11 @@ review skill, on every slice, every iteration.
    - **missing** — nothing implements it;
    - **different** — implemented, but not as specified (quote both);
    - **untested** — present but no test would fail if it broke;
-   - **duplicated** — proved by a new test that mirrors an existing one for
-     the same surface (same fixture, same setup, same call, one different
-     input) when the case belonged in the existing test. Quote both;
+   - **duplicated** — proved by a new test function or file whose setup
+     and action steps are 60% or more already performed by an existing
+     test on the same surface, whatever it asserts at the end. A setup
+     block copied from another test is the strongest sign; look for it
+     first. Quote both and the count;
    - **undocumented** — present and tested, but a document that describes
      this surface (README, `docs/`, help text, CHANGELOG, spec, docstring)
      still describes the old behavior or omits the new one. Do not take the
@@ -40,13 +48,23 @@ review skill, on every slice, every iteration.
 6. **Chase what a missing item took with it.** A dropped element usually
    orphans its data — it gets rendered somewhere wrong rather than nowhere.
    Find where the value went.
-6a. **Check every new test against the test map.** For each test file or
-   test function the diff adds, find the evidence's justification and verify
-   it: grep the test directories yourself for the surface it exercises. An
-   existing test on that surface whose table or block could have hosted the
-   case makes the new test *duplicated* — send it back with the existing
-   test named, so the executor moves the case there and deletes the copy.
-   Do not take "no existing test covers this" on faith any more than "no
+6a. **Recount every new test.** For each test function or file the diff
+   adds, find its map entry in the evidence, then redo the count yourself:
+   list the new test's setup calls and actions (not its assertions), grep
+   the test directories for the command, function, or endpoint it calls
+   (not the feature name the executor may have grepped for), take as the
+   nearest the existing test that calls it and shares the most setup
+   steps with the new test (on a tie, the one nearest the top of the
+   file), and mark each step that test already performs. At 60% or more the new test is
+   *duplicated*: send it back with the existing test named and your list,
+   so the executor moves the case there and deletes the copy. Redo the
+   count yourself, whatever the evidence says, when the nearest test is
+   given as none for a command some test already calls, or when the step
+   list includes assertions. A new test with no listed steps goes back for
+   the list. When
+   the plan's acceptance criterion already names the test to extend, a
+   test written anywhere else is *different*, with no count needed. Do
+   not take "no existing test covers this" on faith any more than "no
    document describes this".
 7. **Run the suite yourself.** Record the exact command and counts. Then run
    the plan's user journeys by hand where cheap (the CLI, the endpoint).
@@ -58,12 +76,14 @@ review skill, on every slice, every iteration.
 
 ## Output shape (keep it; it is the record for the next iteration)
 
+Diff: 41 test lines added, 28 non-test (1.5 to 1).
+
 | Plan item (quoted) | Status | Evidence (file:line) | Test | Docs |
 |---|---|---|---|---|
 | "`todo add` accepts `--priority <level>`" | present | `src/cli.js:14` | `test/cli.test.js` "add with priority" | `README.md:41`, `src/cli.js:9` (help text) |
 | "invalid level exits with code 2" | different — exits 1 | `src/cli.js:18` | none | `README.md:44` still says exit 1 |
 | "`--priority` default is `normal`" | undocumented | `src/cli.js:15` | `test/cli.test.js` "default priority" | `README.md:41` lists no default |
-| "`--priority` rejects unknown levels" | duplicated | `src/cli.js:18` | new `test/priority.test.js` mirrors `test/cli.test.js` "add with priority" — move the case there | `README.md:44` |
+| "`--priority` rejects unknown levels" | duplicated | `src/cli.js:18` | new `test/priority.test.js` shares 5 of 6 steps (83%) with `test/cli.test.js` "add with priority" — move the case there | `README.md:44` |
 | "empty-list export: not decided" | decided by executor — header only | `src/export.js:9` | revert + park | — |
 
 Below the table: **Extras** (unannounced), **Announced deviations** (confirmed
@@ -80,5 +100,7 @@ list, if any).
 | "The extra flag is harmless" | Harmless is the user's call. It is an unannounced deviation until they say so. |
 | "The docs can be tidied in a later pass" | There is no later pass. An item whose document still describes the old behavior is *undocumented* and goes back to the executor with the rest. |
 | "The executor said no docs mention it" | A report is a lead. Run the grep; it takes seconds. |
-| "The new test file is well written, no reason to send it back" | Well written twice is still twice. If an existing test on the same surface could host the case, the case goes there and the copy goes. |
-| "The executor said no existing test covers this" | Same as docs: a lead, not a fact. Grep the test directories for the surface yourself. |
+| "The new test file is well written, no reason to send it back" | Well written twice is still twice. Count the steps; at 60% the case goes into the existing test and the copy goes. |
+| "The executor said no existing test covers this" | A lead, not a fact. It grepped for the feature name; grep for the command or function and recount. |
+| "The executor's count says 56%, under the line" | Its count is a claim. Redo it with setup and actions only; the two counts either agree or the higher one wins. |
+| "Nearest is none, no test reads the JSON file" | Nearest is chosen by the command the test calls, never by what it asserts. Some test calls `add`; that is the nearest. |
