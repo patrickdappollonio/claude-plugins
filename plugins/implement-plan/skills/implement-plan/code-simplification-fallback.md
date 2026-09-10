@@ -1,7 +1,7 @@
 # Code Simplification — using the skill, or running the pass on the spot
 
-The simplification pass runs over the merged diff after the last fix round and
-before the decisions log, together with the comment pass. It reduces the
+The simplification pass runs over the merged diff after the last slice is
+merged and before the one adversarial review, together with the comment pass. It reduces the
 complexity the run introduced **without changing behavior**: the nesting an
 executor left because the tests were already green, the helper extracted once
 and never called twice, the generic name that made sense while the slice was
@@ -116,11 +116,11 @@ language: what was reshaped and why it reads better.
 
 The pass produced a diff that nobody has reviewed. Re-run the conformance
 check on the files it touched — the plan's promises are still the spec, and
-a rename or a split can lose one — then run the quick adversarial panel on
-the pass's diff exactly as step 7 of `SKILL.md` does for a fix round, and fix
-or park what it finds by the authority split. The pass does not repeat after
-that review: a second simplification round on the same diff is the loop
-this skill does not have.
+a rename or a split can lose one — and fix or park what it finds by the
+authority split. The one adversarial review in step 7 of `SKILL.md` runs
+after this pass and covers its diff; do not start a panel here. The pass does
+not repeat: a second simplification round on the same diff is the loop this
+skill does not have.
 
 ## Reporting
 

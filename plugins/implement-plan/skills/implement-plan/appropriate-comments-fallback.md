@@ -1,7 +1,7 @@
 # Appropriate Comments — using the skill, or running the pass on the spot
 
-The comment pass runs over the merged diff after the last fix round and before
-the decisions log. Its subject is every comment the run added or changed.
+The comment pass runs over the merged diff after the last slice is merged and
+before the one adversarial review. Its subject is every comment the run added or changed.
 Executors write comments under pressure and with the whole session in their
 head, so the diff arrives with the predictable failures: comments that narrate
 what was tried, restate the line below, cite a finding number or a slice name,
@@ -50,9 +50,11 @@ For every comment the diff adds or changes, in order of length, longest first:
      registration; or the only commented member of a list whose siblings are
      bare.
    - `session-scoped` — a finding number (`F7`, "finding 3"), an iteration
-     label ("pass 2", "round 3"), a wave, batch, slice, or task ID, a plan step
-     number, a project phase name ("in this stage", "until phase 2"), an agent
-     or run label. These meant something to this run and nothing after it.
+     label ("pass 2", "round 3"), a gate ID (`G2`), a wave, batch, slice, or
+     task ID, a plan step number, a ticket title, a project phase name ("in
+     this stage", "until phase 2"), an agent or run label. These meant
+     something to this run and nothing after it, and the plan that defined
+     them is usually not in the repository.
    - `counts` — a tally of things that live elsewhere and can be added to:
      "the 7 tests", "all 13 integration tests", "the three callers", "both
      fields". Name the set instead — a file, a build tag, a pattern, an

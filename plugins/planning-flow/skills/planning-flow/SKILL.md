@@ -13,7 +13,7 @@ process behind it — parallel exploration, a zero-context review, rounds of
 questions, spikes, an adversarial review — exists to make the plan right. None
 of it belongs in the plan or in the message that delivers it.
 
-**Four rules bind everything below:**
+**Five rules bind everything below:**
 
 1. **The plan never describes its own earlier versions.** Every revision
    rewrites the file in place so it reads as if written fresh today. The only
@@ -33,6 +33,20 @@ of it belongs in the plan or in the message that delivers it.
    rounds: each round holds only the questions whose earlier questions are
    already answered. Never answer a question you put to the user. A change
    can be so simple that there are no questions; do not invent them.
+5. **The plan is a document, and it plans the simplest thing that works.**
+   This skill produces one markdown file and nothing else: no prototype, no
+   mockup, no scaffold, no demo, no code — a spike may run a throwaway probe,
+   deleted before the plan is presented. Inside that file, use everything
+   the viewer can render: Mermaid diagrams, diff and migration fences, API
+   cards, file trees, question fences, a summary card. A picture of the
+   design belongs in the plan; a working copy of it does not. And the
+   solution it describes sits
+   on the lowest rung of the ladder in `plan-template.md` that answers the
+   ask: not needed → cut it; the codebase already has it → reuse it; the
+   standard library or the platform has it → use it; an installed dependency
+   has it → use it; otherwise the minimum that works. A higher rung is a
+   decisions entry, rejected, with the reason. Never cut: validation at a
+   trust boundary, data-loss handling, security, accessibility.
 
 ## Read the Companion Files First
 
@@ -99,7 +113,11 @@ failure this rule prevents.
 
 The plan is one markdown file, and the file is the single source of truth.
 Viewers (plan mode, a visual plan) show the file's content; they never hold
-content the file lacks.
+content the file lacks. The file is also the only thing this skill writes:
+a request for a plan is never a request for a working example, a page that
+shows the idea, or a starting scaffold, however small. Describe, and draw
+with every fence the `visual-plan` viewer renders — diagrams, diffs,
+migration and API cards, file trees, question fences — but do not build.
 
 - **The session started in plan mode** (the harness told you writes are limited
   to its own plan file): the harness plan file *is* the plan. Write nothing
@@ -134,7 +152,7 @@ chat to one-line status notes; the plan is where the tokens go.
 Reply with one short sentence that acknowledges the request and says you are
 exploring. Then copy the user's ask **verbatim** into the plan file's *The
 ask* section — the words they typed, not your paraphrase. The reviewer in
-step 4 and the final self-check both measure against these words.
+step 5 and the final self-check both measure against these words.
 
 ### 2. Explore in parallel
 
@@ -158,7 +176,24 @@ while drafting into the decisions section as you make it. List what you do
 not know as either an open question (the user must answer) or a spike ticket
 (the codebase or an experiment can answer).
 
-### 4. Zero-context review and cold implementer check
+### 4. Simplify against the ask — run it, never ask whether to
+
+Before any reviewer sees the draft, read the ask once more and write, in one
+sentence, what must be true when the work is done and for whom — the goal,
+not the mechanism. Then walk the plan top-down with the ladder in
+`plan-template.md`, one question per part of the solution and per ticket:
+**if this part were removed, would the goal still be met?** If yes, cut it.
+If no, find the lowest rung that keeps it — the codebase already has it, the
+standard library or the platform has it, an installed dependency has it, it
+is one line — and rewrite the part at that rung. Every cut and every lowered
+rung is a decisions entry, yours, with the alternative and the reason. A
+simplification that would change what the user sees or gets is not yours: it
+goes on the question list with the simpler path as the recommendation. This
+step is neither offered nor skipped: it runs on every draft, and again on
+the finished plan in step 11. Cutting never reaches validation at a trust
+boundary, data-loss handling, security, or accessibility.
+
+### 5. Zero-context review and cold implementer check
 
 Read `plan-review.md`, the file that defines every review this skill runs.
 Dispatch two fresh subagents in one message, neither with conversation
@@ -187,7 +222,7 @@ The reviewer finds what the plan gets wrong. The implementer finds what the
 plan leaves out. A plan that passes only the first is correct and
 unimplementable.
 
-### 5. Build the design tree, then filter it
+### 6. Build the design tree, then filter it
 
 Read `interviewing.md`, the file that defines how questions are found,
 filtered, and asked. There is **one** question list for the whole flow,
@@ -204,9 +239,9 @@ decision under the decision it depends on. Then remove from it, in order:
 3. Anything technical under the authority table — decide it, log it.
 
 What remains is what only the user can answer. **If nothing remains, say so
-in one line and skip step 6.** Never pad the list.
+in one line and skip step 7.** Never pad the list.
 
-### 6. Ask the frontier, in rounds
+### 7. Ask the frontier, in rounds
 
 The frontier is every unanswered decision whose prerequisites are settled.
 Ask it in rounds of at most **four**, grouped by theme, the decisions that
@@ -216,7 +251,7 @@ question has four parts. The decision, in plain words. Why it is the user's:
 the consequence they would notice. Two to four options, each with its
 consequence. Your recommendation. A question that depends on one still
 open waits for a later round. After each round, fold the answers in (step
-7), recompute the frontier, and ask again; stop when it is empty. **Never
+8), recompute the frontier, and ask again; stop when it is empty. **Never
 answer your own question**: no likely answer filled in, no silence taken as
 consent.
 
@@ -228,7 +263,7 @@ recommendation**. Large tickets and large PRs are legitimate; writing code is
 cheap now and the user decides how they want to review it. Never nudge
 toward splitting.
 
-### 7. Rewrite the plan in place
+### 8. Rewrite the plan in place
 
 After every round of answers, review findings, or spike results: rewrite the
 affected sections so the file reads as one plan written today. Record each
@@ -239,7 +274,7 @@ into the tickets it affected. A ticket a review removed disappears; the
 reason it went lives in the decisions section. Re-read the changed sections
 against the timeless-prose rule in `plan-template.md` before moving on.
 
-### 8. Present the plan
+### 9. Present the plan
 
 Read `companion-skills.md`, the file that says what each optional skill
 adds. Choose the viewer:
@@ -257,40 +292,56 @@ adds. Choose the viewer:
 The file stays the source of truth; when a viewer collects comments or
 answers, fold them into the file.
 
-### 9. Offer the review and the cheap spikes
+### 10. Offer the cheap spikes
 
-In the same message that presents the plan, offer two things in plain text.
-The user may decline either.
+In the same message that presents the plan, list every spike ticket a
+subagent could close quickly — a sanity check on an endpoint, whether a
+library supports a call, whether a path exists — and ask in plain text
+whether to run them now. The user may decline. Do not offer the adversarial
+review here: the plan still has open questions, and a review of a plan that
+is about to change is a review paid for twice.
 
-- **An adversarial review of the plan.** Size it with the table in
-  `plan-review.md`. A change inside one subsystem gets the quick review, as
-  long as it does not touch the database schema, sign-in and permissions,
-  work that runs at the same time, or an outside service. Anything else gets
-  the full one. Run the installed `adversarial-review-quick` or
-  `adversarial-review` skill when present. Give it the plan file as the
-  change under review; a new plan file is all added lines, which is what the
-  skill expects. Give it **the user's ask, word for word, as the standard the
-  plan must meet**. Neither installed: run the on-the-spot panel from
-  `plan-review.md`.
-- **The cheap spikes.** List every spike ticket a subagent could close
-  quickly — a sanity check on an endpoint, whether a library supports a
-  call, whether a path exists — and ask whether to run them now.
+### 11. Fold in what came back, then ask the leftovers
 
-### 10. Fold in what came back
+A spike answer folds in as step 8 describes. Recompute the frontier and run
+step 7 until it is empty. When it is, walk step 4 once more over the whole
+plan: rounds of answers add parts, and a part added under pressure is the
+one most likely to sit a rung too high. The plan is finished when no question
+is open, no spike is pending, the cold implementer's list holds nothing that
+would change what gets built, and the second walk cut nothing.
 
-Review findings and spike results go through the authority table. A finding
-whose fix leaves behavior unchanged: apply it and log it as your decision
-with the reason and any drawback. A finding that changes what the user or an
-operator would experience, and any `design_is_wrong` finding: add it to the
-one question list with the reviewer's suggestion as the recommendation, and
-run it through the same filter and frontier as every other question (steps 5
-and 6). A spike answer: fold it in as step 7 describes. Rewrite in place.
-Never write "the review found" anywhere in the plan.
+### 12. The one adversarial review — only when nothing is open
 
-### 11. Ask the leftovers, then close
+An adversarial review is the most expensive thing this skill can do, so it
+runs **once**, on the finished plan, and only when the user picks it. Size it
+with the table in `plan-review.md`: a change inside one subsystem gets the
+quick recommendation, as long as it does not touch the database schema,
+sign-in and permissions, work that runs at the same time, or an outside
+service; anything else gets the full one. Then offer it in plain text —
+**quick, full, or none** — with your recommendation and what each costs in
+plain words (the full panel is roughly twice the quick one). Run exactly
+what they chose, once: the installed `adversarial-review-quick` or
+`adversarial-review` skill when present, given the plan file as the change
+under review and **the user's ask, word for word, as the standard the plan
+must meet**; the on-the-spot panel from `plan-review.md` when neither is
+installed.
 
-Recompute the frontier after step 10 and run step 6 until it is empty. When
-nothing is open and the user says the plan is approved, close as below.
+Findings go through the authority table. A finding whose fix leaves behavior
+unchanged: apply it and log it as your decision with the reason and any
+drawback. A finding that changes what the user or an operator would
+experience, and any `design_is_wrong` finding: add it to the one question
+list with the reviewer's suggestion as the recommendation, and run it
+through the same filter and frontier as every other question (steps 6 and
+7). Rewrite in place. Never write "the review found" anywhere in the plan.
+
+When the fixes are in, ask before any second review: say what was found and
+what changed, and recommend a second run only when a finding changed the
+solution or a ticket's scope; otherwise recommend none. **No second review
+without a yes.** A no ends it.
+
+### 13. Close
+
+When nothing is open and the user says the plan is approved, close as below.
 
 ## Closing
 
@@ -382,12 +433,19 @@ example in `plan-template.md`):
 | "This ticket is 5,000 lines, I should split it" | XXL is a band, not an error. Split only when the user asks. |
 | "I'll leave the resolved spike ticket so the work is visible" | The answer is the work. It lives in decisions and in the tickets it changed. |
 | "The change is small, so I'll skip the zero-context reviewer" | Small changes get the same one reviewer; it is one subagent. Nothing gets no review. |
+| "The plan is solid, I'll run the adversarial review now and ask the leftovers after" | A review of a plan with open questions reviews a plan that will change. It runs once, when nothing is open, and only when the user picks it. |
+| "The quick panel is cheap enough to run without asking" | No panel runs without the user choosing it. Offer quick, full, or none, with the cost of each, and take no. |
+| "The findings changed the plan, so it needs a second review" | Ask. Recommend a second run only when the solution or a ticket's scope changed; a no ends it. |
 | "The technical context names the files; the implementer can read them" | Then the implementer explores, and the plan did not do its job. Every exact string, format, and location goes in the plan. The cold implementer check is how you know. |
 | "The implementer graded it 3 out of 5, that's a pass" | A pass is a list with nothing on it that would change what gets built. Fill those gaps and run it again. |
 | "The implementer wants every file's surrounding text pasted in" | That is what the implementer reads at edit time. A gap is a fact that changes the build: a string, a format, a rule, a location. Verbatim file contents are not. |
 | "I'll suggest they install the visual plan, it's better" | Never suggest installing a companion skill. Use what is installed; give install lines only when asked. |
 | "I'll use the question tool for the implement offer" | The offer is plain text so the user can answer with any skill they have. |
 | "I remember this skill, no need to open the companion files" | The summaries are reminders. Read the files. |
+| "A quick mockup will make the plan clearer" | The plan is a markdown file. A mockup is an implementation nobody asked for, and it decides things the user has not been asked. Draw it instead: a Mermaid diagram, a diff fence, a migration or API card — everything the viewer renders is fair game. |
+| "A small abstraction now will save work later" | Later is not in the ask. The lowest rung that answers today's ask is the plan; the higher rung is a decisions entry, rejected, with the reason. |
+| "The plan is already lean, step 4 would find nothing" | Then it costs one read and confirms it. It runs on every draft; the plans that "were already lean" are where the mockups came from. |
+| "The framework's component is nicer than the native one" | Nicer is a functional decision, and those are the user's. The native one is the default; the component is a question, with its cost. |
 
 ## Red Flags — Stop and Re-read the Step
 
@@ -407,8 +465,13 @@ example in `plan-template.md`):
 - A ticket split because it "felt too big" with no user request
 - A *Technical context* section that names a file without saying what is in it, or a format without its exact strings
 - A cold implementer check that was run once and its list not folded in
+- An adversarial review dispatched while a question, a spike, or a cold implementer gap is open, or one the user did not choose
+- A second adversarial review started without a fresh yes
 - A closing message that counts revisions or quotes reviewers
 - The implementation offer made through a question tool
+- A file other than the plan written by this skill — a prototype, a mockup, a scaffold, a script kept after its spike
+- A solution that builds what the codebase, the standard library, the platform, or an installed dependency already provides, with no decisions entry rejecting that rung
+- A draft handed to the reviewers before step 4 ran, or a finished plan closed without the second walk
 - Reaching the closing without having read the companion files this session
 
 ## Checklist
@@ -419,13 +482,16 @@ Create a todo per item.
 - [ ] Plan location chosen; ask copied verbatim into the file
 - [ ] Exploration subagents dispatched in parallel on the cheaper tier
 - [ ] Draft written to the full skeleton; decisions logged as made
+- [ ] Step 4 run on the draft without asking, and again on the finished plan: goal restated in one sentence, every part tested for removal and for a lower rung, each cut and lowering logged
+- [ ] Nothing written but the plan file; spike probes deleted
 - [ ] Zero-context reviewer run on the most capable tier with only the ask, the plan, and the codebase
 - [ ] Cold implementer check run on a different model family where possible; every gap that would change what gets built filled with the exact value; re-run until none of that kind remain
 - [ ] One question list from every source, arranged as a design tree, then filtered: decided, answerable by code, technical
 - [ ] Frontier asked in rounds of at most four until empty; delivery shape included without a recommendation; no question answered by the agent
 - [ ] Plan rewritten in place after every round; spikes and dropped tickets folded into decisions
 - [ ] Presented through `visual-plan` (technical audience stated), plan mode, or chat
-- [ ] Adversarial review offered and sized; cheap spikes offered
-- [ ] Results folded in by the authority table; nothing narrated
-- [ ] Leftover questions asked; approval received
+- [ ] Cheap spikes offered at presentation; results folded in; leftover questions asked until nothing is open
+- [ ] One adversarial review offered only then — quick, full, or none, sized with the cost stated — and run once on the user's choice
+- [ ] Findings folded in by the authority table; nothing narrated; a second review offered with a recommendation and run only on a yes
+- [ ] Approval received
 - [ ] Closing in the five-bullet shape; implementation offered in plain text, `implement-plan` named when installed

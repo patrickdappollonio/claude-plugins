@@ -175,8 +175,13 @@ Include verbatim:
 > - Take one implementation path. Do not split the work further.
 >
 > **While editing**
-> - Reuse existing code, helpers, patterns, tests, and test setup before
->   adding anything.
+> - Before writing new code, walk the ladder and stop at the first rung
+>   that holds: this slice does not need it → skip it; the codebase already
+>   has it → reuse it; the standard library or the platform has it → use it;
+>   an installed dependency has it → use it; it is a one-liner → one line;
+>   only then write the minimum that works. Reuse tests and test setup the
+>   same way. Never cut: validation at a trust boundary, data-loss handling,
+>   security, accessibility.
 > - Fix bugs at the root cause. Do not stack patches around a wrong premise.
 > - Add an abstraction, adapter, or config layer only for a second real caller
 >   in this task or a stated requirement.
@@ -196,6 +201,11 @@ Include verbatim:
 > - Deciding anything the plan marks as undecided, or anything a user could
 >   reasonably say "I didn't want that" about — output wording, new flags or
 >   syntax, defaults
+> - Building what the plan section prescribes when the ladder shows a lower
+>   rung that already exists — in the codebase, the standard library, the
+>   platform, or an installed dependency. Build neither. Report both: the
+>   plan's approach, the lower rung with its file and line, and what each
+>   costs. The user chooses; you wait.
 >
 > **If the plan grows:** stop when the work starts adding future-use layers,
 > workaround stacks, unrelated cleanup, or tests for unstated behavior. Report
@@ -208,6 +218,11 @@ Include verbatim:
 >   diff, or the evidence names the search that found none
 > - Every touched file is necessary and the diff contains nothing unrelated
 > - No debug code, backup copies, dead paths, or scratch files remain
+> - Nothing in the diff or the commit message carries a label from this run:
+>   no gate ID (G1–G4), slice or wave name, round or pass number, finding
+>   number, step number, or ticket title. The plan that gives those meaning is
+>   not in the repository, so a reader of the code would find a pointer to
+>   nothing. Write what the code does, or write nothing.
 > - Assumptions, limitations, and unverified runtime behavior are stated plainly
 
 ## Evidence to return

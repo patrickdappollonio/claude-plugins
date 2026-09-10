@@ -33,9 +33,10 @@ mechanism; every identifier is explained in the same sentence.>
 ## The solution
 
 <How the plan solves the problem, top-down: the approach first, then the
-parts. Write for a technical reader who has never opened this repository.
-Explain the behavior, then the mechanism. Diagrams and tables before code;
-code only when the reader must see it to judge the plan.>
+parts, on the lowest rung of the ladder (see "The ladder" below) that
+answers the ask. Write for a technical reader who has never opened this
+repository. Explain the behavior, then the mechanism. Diagrams and tables
+before code; code only when the reader must see it to judge the plan.>
 
 ## Technical context
 
@@ -76,6 +77,36 @@ its answer becomes a decision. When empty: "No open questions.">
 open answer it waits on. Each line graduates into a question, spike, or
 ticket when the answers ahead of it arrive, and is deleted then.>
 ```
+
+## The ladder
+
+The solution is the least new code that answers the ask, and the plan is the
+place to decide that, before anyone builds the wrong rung. Walk the rungs in
+order and stop at the first that holds. Be lazy about the solution, never
+about reading: the rung is chosen after the code has been read, not instead.
+
+1. **Does this need to exist?** If the ask does not need it, cut it. A
+   "while we're here" is a ticket the user did not ask for.
+2. **Does the codebase already have it?** A helper, a pattern, a component,
+   a table. Reuse it, even when a fresh one would be tidier.
+3. **Does the standard library or the platform have it?** A date field is
+   the browser's `<input type="date">` before it is a picker component; a
+   retry is the HTTP client's option before it is a retry package.
+4. **Does an installed dependency have it?** Use what is already in the lock
+   file before adding a sibling that does the same thing.
+5. **Is it a one-liner?** Then it is one line, not a function, a class, or a
+   module.
+6. **Only then:** the minimum that works today. No layer for a second caller
+   that does not exist, no option nobody asked for, no configuration for a
+   value that never changes.
+
+Every rung you climb past is a decisions entry: what the lower rung was, why
+it does not answer the ask, and what the higher one costs. A reviewer who
+finds a lower rung that would have worked has found a defect in the plan.
+
+**Never on the chopping block:** validation at a trust boundary, handling
+that prevents data loss, security, and accessibility. The ladder cuts code
+volume, never correctness.
 
 ## The technical context contract
 

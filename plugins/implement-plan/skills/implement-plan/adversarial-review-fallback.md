@@ -13,25 +13,35 @@ the author's context. It is different from a friendly review in three ways:
 3. **A standalone verifier** filters false positives before anything reaches
    the user, and every proposed fix is validated by another standalone agent.
 
-## Which review to run
+## When it runs, and which one
 
-| Change | Skill installed | Run |
+The review runs **once**, after every slice is merged and the comment and
+simplification pass is done, on the whole merged diff. Nothing runs before
+the user answers the G2 question. Size the change to form a recommendation,
+then ask — quick, full, or none — with the cost of each in plain words:
+
+| Change | Recommend at G2 |
+|---|---|
+| Small (≤ 300 lines and ≤ 5 files and one subsystem and no schema/auth/concurrency/external I/O) | the quick skill, `adversarial-review-quick` |
+| Large — one over on any of those, or one of those angles touched | the full skill, `adversarial-review` |
+
+| User chose | Skill installed | Run |
 |---|---|---|
-| Small (≤ 300 lines and ≤ 5 files and one subsystem and no schema/auth/concurrency/external I/O) | `adversarial-review-quick` | the quick skill, no permission needed |
-| Large — one over on any of those, or one of those angles touched | both | the quick skill **now**, fix its findings, then **ask (G2)** whether to run the full skill on the result; if declined, name the uncovered angles in the recap |
-| Large, user chose the full panel at G2 | only `adversarial-review-quick` | the quick panel already ran; say the full skill is not installed, give the install lines from `companion-skills.md`, name the uncovered angles in the recap, and keep going — do not substitute the on-the-spot panel for the full one |
-| Either | neither | the on-the-spot panel below |
+| Quick or full | that skill | that skill, once, as written |
+| Full | only `adversarial-review-quick` | the quick skill; say the full one is not installed, give the install lines from `companion-skills.md` only if asked, name the uncovered angles in the recap — do not substitute the on-the-spot panel for the full one |
+| Quick or full | neither | the on-the-spot panel below, once |
+| None | any | nothing; name the unreviewed angles in the recap |
 
-Run the skills **as written**: their verifier and fix validator are part of
-the review. Reproducing a finding yourself adds evidence; it does not replace
+Never a panel per slice, per fix round, or on the pass's diff alone. Run the
+skills **as written**: their verifier and fix validator are part of the
+review. Reproducing a finding yourself adds evidence; it does not replace
 them.
 
 Check what is installed by looking at the skill list your harness gives you:
 the quick panel is the `adversarial-review-quick` skill, the full panel is the
 `adversarial-review` skill, and both ship in the `adversarial-review` plugin —
-install commands are in `companion-skills.md`. The quick skill may itself ask which dropped angles to add — under this skill,
-a *small* change runs quick as-is and a *large* one already asked for the full
-panel, so answer its question accordingly rather than re-asking the user.
+install commands are in `companion-skills.md`. The quick skill may itself ask which dropped angles to add — answer from the
+sizing and the user's G2 choice rather than re-asking the user.
 
 ## What to hand the review
 
@@ -115,5 +125,7 @@ Fix what is technical **and stays invisible**. Park what changes user-visible
 or operator-visible behavior — output, ordering, defaults, syntax, APIs,
 storage, timing, deployment, configuration, cost — with the validated fix as
 the recommendation, even when the fix itself is a purely technical change. Then
-re-run the conformance review on the fixes, and a quick review on the fixed
-diff. Iterate until clean or only parked items remain.
+re-run the conformance review on the fixes. Do not start another panel on
+your own: report what was found, fixed, and parked, and ask whether to run a
+second review on the fixed diff, with a recommendation sized to the fixes. A
+no ends the loop with the parked items under *Pending*.

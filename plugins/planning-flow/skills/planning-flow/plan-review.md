@@ -34,7 +34,10 @@ and cannot inherit your excuses.
 > first run, migration of existing data, failure of an external system,
 > concurrent use); decisions the plan makes that the requester would want to
 > make themselves; anything the plan would need to know that nobody wrote
-> down; and anything in the plan that is not needed for the request.
+> down; anything in the plan that is not needed for the request; and
+> anything the plan builds that the codebase, the standard library, the
+> platform, or a dependency already installed provides — name the existing
+> thing.
 >
 > Return two lists. **Findings:** each with what is wrong, why it matters,
 > the evidence (a file and line, or the sentence of the request or plan), and
@@ -46,7 +49,7 @@ and cannot inherit your excuses.
 
 Merge its findings into the plan through the authority table in `SKILL.md`
 and its questions into the question list, then filter that list as `SKILL.md`
-step 5 describes.
+step 6 describes.
 
 ## 2. The cold implementer check (always, one subagent)
 
@@ -97,12 +100,15 @@ only the user can answer goes to the question list. Then run the check
 again. **It passes when the pass-1 list holds no build-changing gap.** A
 grade is not a pass; a list with only edit-time reads on it is.
 
-## 3. The adversarial review of the plan (offered, sized)
+## 3. The adversarial review of the plan (once, at the end, the user's choice)
 
 An adversarial review assumes the change is broken and tries to prove it from
 several independent angles, by reviewers who share none of the author's
-context, with a separate reviewer that discards false findings. The review
-skill expects a code change. A plan works as one: it is a new file in which
+context, with a separate reviewer that discards false findings. It is the
+most expensive step in this skill. It runs **once**, on the finished plan —
+no open question, no pending spike, no cold implementer gap — and only after
+the user picks quick or full; none is an answer. After the fixes, a second
+run needs a fresh yes. The review skill expects a code change. A plan works as one: it is a new file in which
 every line is an added line.
 
 **The review measures the plan against the user's ask, not against the
@@ -129,8 +135,10 @@ subsystem, a sensitive area, or a total in L or above.
 | One subsystem **and** no sensitive area **and** total at or under M | **Quick** |
 | A second subsystem, **or** a sensitive area, **or** a total of L or larger | **Full** |
 
-One line over the limit makes the plan full-sized. Offer the sized review in
-plain text and let the user decline. If they ask for the other size, run that.
+One line over the limit makes the plan full-sized. The size is the
+recommendation. Offer quick, full, or none in plain text, with what each
+costs, and run exactly what the user chose, once. If they ask for the other
+size, run that.
 
 ### Which to run
 
@@ -186,8 +194,10 @@ design_is_wrong}`.
 5. **Feasibility and Scope Prosecutor** — "Find every claim the plan makes
    about the code that the code contradicts, every ticket whose acceptance
    criteria cannot be observed, every dependency between tickets the plan
-   does not state, and every piece of work in the plan the brief did not ask
-   for."
+   does not state, every piece of work in the plan the brief did not ask
+   for, and every component, helper, or dependency the plan adds where the
+   codebase, the standard library, the platform, or an installed dependency
+   already provides it — name the existing thing."
 
 Then dispatch **one verifier** (fresh, cheaper tier) with every finding, the
 brief, the plan, and the repository path: it returns *confirmed / not

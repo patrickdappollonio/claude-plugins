@@ -64,6 +64,24 @@ turn carries two manifests: `.claude-plugin/plugin.json` and
   When you add a skill, also add it to the root README's `--skill` name table,
   and phrase cross-skill references so they degrade to a name a reader can
   install ("the full `adversarial-review` skill"), never a relative path.
+- **Some skills carry a distilled copy of another skill, and every change to
+  the parent must be checked against each copy.** Because a skill must work
+  alone, several of them ship a shortened version of a sibling skill as a
+  companion file, used when the real one is not installed: `implement-plan`
+  carries `adversarial-review-fallback.md`, `appropriate-comments-fallback.md`,
+  and `code-simplification-fallback.md`; `planning-flow` carries the on-the-spot
+  panel in `plan-review.md` and `communication.md`; `recap` carries
+  `communication.md`; `effective-go` carries `comments.md` and
+  `simplification.md`. These copies do not update themselves. When you change
+  what a skill does — its procedure, its thresholds, when it runs, what it asks
+  — grep `plugins/*/skills/*/` for the skill's name and for the rule you
+  changed, open every digest that hits, and bring it into line in the same
+  PR. The same applies in reverse: a change to a flow that *uses* a digest
+  (when the review runs, what the pass covers) must be reflected in that
+  digest's own text, not only in `SKILL.md`. A digest that describes the old
+  behavior is a silent fork: an `npx skills` user of the standalone skill gets
+  the old rule with no error. This bit us when the review cadence changed and
+  the capacity math still budgeted a panel per fix round.
 - **Skills: extract whatever can be read on demand, but always keep the
   general guideline inline — otherwise the extraction is moot.** The whole
   `SKILL.md` loads into context on every invocation, so keep it under ~500
