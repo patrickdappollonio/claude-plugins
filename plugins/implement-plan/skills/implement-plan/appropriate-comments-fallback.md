@@ -1,7 +1,7 @@
 # Appropriate Comments — using the skill, or running the pass on the spot
 
-The comment pass runs over the merged diff after the last fix round and before
-the decisions log. Its subject is every comment the run added or changed.
+The comment pass runs over the merged diff after the last slice is merged and
+before the one adversarial review. Its subject is every comment the run added or changed.
 Executors write comments under pressure and with the whole session in their
 head, so the diff arrives with the predictable failures: comments that narrate
 what was tried, restate the line below, cite a finding number or a slice name,

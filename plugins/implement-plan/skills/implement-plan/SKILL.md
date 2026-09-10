@@ -10,9 +10,9 @@ description: Use when the user has an agreed plan — a visual plan, a plan-mode
 Turn an **agreed plan** into merged, reviewed, tested, documented code — hands-free where
 possible, and never deciding for the user what is theirs to decide. The
 orchestrator (you) plans the split, dispatches executors, checks their work
-against the plan **thoroughly**, runs an adversarial review, fixes what it
-finds, cleans up the comments and the shape of the code it merged, and keeps
-going until the plan is done.
+against the plan **thoroughly**, cleans up the comments and the shape of the
+code it merged, runs the one adversarial review the user chose, fixes what it
+finds, and keeps going until the plan is done.
 
 The executor discipline in this skill (minimum sufficient change, the four-line
 mini-plan, pause-and-confirm, "done means") is adapted from
@@ -104,11 +104,12 @@ or test layout.
 ## Keep-Going Contract
 
 Default: **do not stop between phases.** Capacity → split → dispatch →
-conformance → adversarial review → fix → iterate → comment and simplification
-pass is one continuous effort.
+conformance → comment and simplification pass → the review question → one
+adversarial review → fix is one continuous effort.
 
 The **only** legitimate stops, each a gate below: (G1) the starting-point
-question, (G2) permission to run the full adversarial panel, (G3) a functional
+question, (G2) the adversarial review question — quick, full, or none, and
+after the fixes whether to run a second — (G3) a functional
 or operational decision the plan leaves to the user **when the next slice cannot
 proceed without it**, (G4) worktree deletion. Not a stop reason: "let me
 check in", "the session is long", "I'll ask before the next slice", "the user
@@ -148,12 +149,12 @@ entry there is settled, by the user or on their behalf, and is never re-asked
 *Size* sizing the slice. Append the decisions log (step 9) to that same file.
 Then:
 
-- **Visual plan** → if no adversarial review of the *plan* has run, **recommend
-  one** before building; a wrong plan built faithfully is the most expensive
-  failure. Run it as `adversarial-review-fallback.md` § *Reviewing a plan*
-  describes (the plan is an all-additions diff; the brief is the user's ask).
-- **Any other plan** → offer a quick plan review; the user may decline.
-- A review already ran → say so and move on.
+- A plan the `planning-flow` skill finished already had its one review;
+  say so and move on. Otherwise ask, bundled into the G1 message, whether the
+  plan was reviewed; if not, offer a plan review there — recommend it for a
+  visual plan or a plan that touches a sensitive area, since a wrong plan
+  built faithfully is the most expensive failure — and run it only on a yes,
+  as `adversarial-review-fallback.md` § *Reviewing a plan* describes.
 
 ### 1. Record the starting point — G1
 
@@ -221,51 +222,15 @@ user: revert it to the plan and park it under *Pending*.
 
 Merge a passing slice into the starting branch; then unblock its dependents.
 
-### 6. Adversarial review
+### 6. Comment and simplification pass
 
-Read `adversarial-review-fallback.md`. Size the merged change:
-
-| Change | Review |
-|---|---|
-| ≤ 300 changed lines **and** ≤ 5 files **and** one subsystem **and** no schema/auth/concurrency/external I/O | **Small → Quick** — run without asking |
-| Anything else — one line over, one file over, or one of those angles touched | **Large → Quick now, then Full after G2** |
-
-The line is hard: "one over" is over. A large change does **not** wait for
-permission before any review runs — run the quick panel immediately (it needs
-no permission), fix what it finds, and **then** stop at **G2** to ask whether
-to run the full panel on the result. That ordering keeps the run hands-free
-and still puts the token-heavy decision in the user's hands. If they decline,
-say in the recap which angles went unreviewed.
-
-Prefer the installed skills — `adversarial-review-quick` for the quick panel,
-`adversarial-review` for the full one — **run as written** — their verifier and fix validator are part of the review;
-reproducing a finding yourself is extra evidence, never a replacement for
-them. Neither installed → run the on-the-spot panel from the fallback file.
-Give every reviewer the plan as the brief, verbatim, plus the announced
-deviations.
-
-### 7. Fix everything it found — with the authority split
-
-Fix every confirmed finding. A fix that is invisible to users → do it, log it.
-A fix that changes user-visible behavior, syntax, defaults, an API, or storage →
-**park it under *Pending* with the recommended fix**, unless the plan already
-decided that behavior. A `design_is_wrong` finding is always the user's.
-Re-run conformance on the fixes, then re-review the fixed diff with a quick
-panel — **every** fix round, including the last small one; a fix nobody
-reviewed is an unreviewed change. The loop ends when a review returns no
-confirmed findings, or after **three** fix rounds — then park what remains
-under *Pending* with the validated fixes as recommendations. **You assess
-every iteration; executors never grade themselves.**
-
-### 8. Comment and simplification pass
-
-The last step that changes code. Before touching anything, run this pre-flight
-and tick each line in your todo list — the pass does not start until all four
-are true:
+The last pass before the review, so the review sees its result. Before
+touching anything, run this pre-flight and tick each line in your todo list —
+the pass does not start until all four are true:
 
 - [ ] Checked the harness skill list for `appropriate-comments-code` and `code-simplification`; recorded which is installed. **An installed skill is the pass** — it is the full procedure, and it is run as written, in its own review-a-diff mode, scoped to the merged change. The fallback file is for the skill that is absent.
 - [ ] For each skill **not** installed, the matching file — `appropriate-comments-fallback.md`, `code-simplification-fallback.md` — read **now**, in full: not at session start, not from memory
-- [ ] `conformance-review.md` and `adversarial-review-fallback.md` re-opened, because both run again on this pass's diff
+- [ ] `conformance-review.md` re-opened, because it runs again on this pass's diff
 - [ ] Scope fixed to the merged change, `git diff <starting-commit>..HEAD`; nothing outside it is opened up
 
 - **Comments first.** Every comment the run added or changed is a finding
@@ -287,14 +252,55 @@ are true:
   a simplification — park it. Log each simplification you made in the
   decisions log, one line each.
 - **It is still a change.** If the pass moved any code line, re-run
-  conformance on the touched files, then a quick adversarial panel on the
-  pass's diff exactly as a fix round gets one; fix or park by the split. A
-  pass that changed comment lines only needs neither. No second pass after
-  that review.
+  conformance on the touched files; fix or park by the split. A pass that
+  changed comment lines only needs no re-check. No second pass after that;
+  the adversarial review in step 7 is what reviews this diff.
 - **The ratio check is not a gate.** A file whose changed region is still half
   comments after the pass goes to *Pending for you* with the ratio, what the
   comments say, and the recommended home; the material moves to the decisions
   log with short pointers left in the code. The run keeps going.
+
+### 7. The one adversarial review — G2
+
+Read `adversarial-review-fallback.md`. The review runs **once**, on the whole
+merged diff (`git diff <starting-commit>..HEAD`), after every slice is merged
+and the pass is done — never per slice, per fix round, or before the pass. It
+is the most expensive step in the run, so the user chooses it. Size it first:
+
+| Change | Recommend |
+|---|---|
+| ≤ 300 changed lines **and** ≤ 5 files **and** one subsystem **and** no schema/auth/concurrency/external I/O | **Quick** — the 8-reviewer panel |
+| Anything else — one line over, one file over, or one of those angles touched | **Full** — the 18-reviewer panel |
+
+The line is hard: "one over" is over. The size sets the recommendation, never
+an automatic run. Stop at **G2** and ask in plain text: **quick, full, or
+none**, with your recommendation, what each costs in plain words (the full
+panel is roughly twice the quick one), and what "none" means (the recap names
+the angles nobody reviewed). Then run exactly what they chose, once.
+
+Prefer the installed skills — `adversarial-review-quick` or
+`adversarial-review` — **run as written**: their verifier and fix validator
+are part of the review, and your own reproduction never replaces them. Full
+chosen but only the quick skill installed: say so, run the quick one, name
+the uncovered angles in the recap. Neither installed → the on-the-spot panel
+from the fallback file. Every reviewer gets the plan as the brief, verbatim,
+plus the announced deviations.
+
+### 8. Fix what it found, then ask before any second review
+
+Fix every confirmed finding. A fix that is invisible to users → do it, log it.
+A fix that changes user-visible behavior, syntax, defaults, an API, or storage →
+**park it under *Pending* with the recommended fix**, unless the plan already
+decided that behavior. A `design_is_wrong` finding is always the user's. Fixes
+obey the comment and simplification rules of step 6 as written, because the
+pass does not run again. Re-run conformance on the fixes; that check is yours.
+
+Then stop at **G2** again: say what was found, fixed, and parked, and ask
+whether to run a second review on the fixed diff. Recommend one only when the
+fixes crossed the small-change line or touched a sensitive angle; otherwise
+recommend none. **No second review without a yes**; a no ends the loop with
+the rest under *Pending*, a yes gets one more sized run and this step again.
+**You assess every fix; executors never grade themselves.**
 
 ### 9. Decisions log
 
@@ -414,9 +420,11 @@ assumptions stated plainly.
 | "They were merged, so I deleted the worktrees" | Merged is not consent. Deletion waits for G4, always. |
 | "I recommended a branch and created it" | Recommending is asking. Creating one unasked moves the merge target and leaves the user with a branch they never chose. |
 | "The user is away, so I skipped the permission question" | Absence does not grant permission. Stop with the closing line; resuming costs them a short reply in their own words. |
-| "It's one file over the threshold, and asking would block for hours, so I ran the quick panel and named the gap" | One over is over. Run the quick panel now, fix, then stop at G2 for the full one — that is the ordering, not a skip. |
+| "It's one file over the threshold, and asking would block for hours, so I ran the quick panel and named the gap" | One over is over, and no panel runs before the G2 answer. Recommend the full one, ask quick / full / none, and wait. |
+| "The quick panel needs no permission, so I'll run it now" | Every panel costs tokens the user has not agreed to spend. One question at G2, then at most one review. |
+| "Reviewing each slice as it merges catches problems early" | It also reviews the same code several times. Conformance is the per-slice check; the panel runs once, on the whole diff, after the cleanup pass. |
 | "I reproduced the findings myself, so the verifier was unnecessary" | Your reproduction is extra evidence. The review skill's verifier and validator run as written. |
-| "The last fix is 17 lines; my own check is enough" | A fix round without a review is an unreviewed change. A quick panel on 17 lines is cheap; skipping it is not. |
+| "The fixes changed code, so they need their own panel" | They need conformance, which is yours. A second panel is the user's to buy: ask, recommend by the size of the fixes, and take no for an answer. |
 | "The plan's example shows it this way, but keeping the old column is nicer" | The plan is the spec. Deviating from it is the user's call, not yours. |
 | "It's a technical choice — storage format, algorithm, retry policy — so it's mine" | Only while its effect stays invisible. The moment it changes what users or operators experience, it is theirs. Trace the consequence first. |
 | "Tests pass and the diff is clean, so it matches the plan" | A faithful build of the wrong thing has no failing tests. Enumerate the plan and check item by item. |
@@ -433,17 +441,17 @@ assumptions stated plainly.
 | "The README is out of scope for this slice" | A document that describes the behavior this slice changes is in scope by definition. Only another slice's files are out. |
 | "A real project needs journeys and containers, I'll add them all" | Encouraged is not required. State the recommendation at G1 and build what the user chose. |
 | "Sonnet wrote it, Sonnet can verify it" | The cheap executor's mistakes are why judgment stays premium. Never cheap on both sides. |
-| "The change is small, I'll skip the adversarial review" | Small changes get the quick panel; nothing gets no panel. |
+| "The change is small, I'll skip the review question" | Small changes get a recommended quick panel. The user still hears the question and picks quick, full, or none. |
 | "Let me pause so the user can see progress" | Not a gate. Keep going. |
 | "I'll put the decisions in a new recap document" | The decisions live at the end of the plan file, where the plan is. A new document is extra cost and a second place to look. |
 | "No usage tool, so I'll estimate usage" | Never invent a usage number. Say you cannot read it, label the estimate unverified, and keep going. |
 | "I can't read usage, so I'll stop and ask for it" | The capacity check is advisory. One line — estimate, usage or "unreadable", reset if known — then the split starts in the same turn. Waiting for numbers is not a gate. |
 | "Usage is high, better pause until they confirm" | Warn with the numbers and name the choices, then continue. The host enforces its own limits, the user asked for the plan to be built, and they can interrupt a live run with Esc whenever they want. Stopping is their move, not yours. |
-| "The review came back clean, so the code is done" | Clean means no defects. The executors' comments still narrate the session and their helpers still carry slice names. Step 8 runs on every plan. |
-| "I read the comment and simplification files at the start, I remember them" | They are read at step 8, fresh, by design — a summary recalled across a long run is what the pass exists to catch in others. Open both files, then start. |
+| "The slices are merged, so the review can start" | The executors' comments still narrate the session and their helpers still carry slice names. Step 6 runs first, on every plan, so the one review sees clean code. |
+| "I read the comment and simplification files at the start, I remember them" | They are read at step 6, fresh, by design — a summary recalled across a long run is what the pass exists to catch in others. Open both files, then start. |
 | "I'll simplify this while I'm in the file" | Scope is the merged diff. A refactor of the code around it is its own change. |
 | "Those two executors wrote the same function twice, I'll merge them" | A merge changes an API surface and crosses two slices. Diff, count callers, park it under *Pending* with the proposal. |
-| "I only shortened the comments, nothing to re-review" | Comment-only changes are the one case that skips the panel. If a single code line moved, the pass's diff gets a quick review like any fix round. |
+| "The pass moved code, so it needs its own panel" | It needs conformance on the touched files. The one panel in step 7 runs after the pass and covers it. |
 
 ## Red Flags — Stop and Re-read the Step
 
@@ -460,10 +468,11 @@ assumptions stated plainly.
 - A user-facing change applied because "the review said so"
 - A new flag, syntax, default, or output format the plan did not specify
 - A technical choice logged as yours whose effect a user or operator would notice
-- A full adversarial panel dispatched without the G2 answer — or a large change that never reached G2
-- A fix round merged without its own quick review
+- Any adversarial panel dispatched before the G2 answer, before every slice is merged, or before the comment and simplification pass
+- A second adversarial panel started without a fresh yes from the user
+- A panel run on one slice, or on one fix round, instead of once on the whole merged diff
 - Skipping the companion files because "I remember this skill"
-- A decisions log or recap written while the step 8 pre-flight still has an unticked line
+- A decisions log or recap written while the step 6 pre-flight still has an unticked line
 - The comment or simplification pass started without `appropriate-comments-fallback.md` and `code-simplification-fallback.md` opened at that step — an earlier read does not count
 - A simplification that touches a file outside the merged diff, modifies a test, or merges two functions
 - A stop that does not end with the resume line, or one that asks the user for a specific keyword instead of a plain-language answer
@@ -473,7 +482,7 @@ assumptions stated plainly.
 Create a todo per item.
 
 - [ ] Read all six companion files (first use in this session)
-- [ ] Plan located; plan review recommended (visual plan) or offered (other) — outcome recorded
+- [ ] Plan located; a plan review offered at G1 only when none has run — outcome recorded
 - [ ] Starting branch + commit recorded; branch recommended once (G1)
 - [ ] Capacity estimated and usage reported in one line (or marked unreadable) without stopping; `/goal` condition handed over
 - [ ] Split stated: slices, order, worktrees, model per role, the trade said out loud
@@ -481,11 +490,11 @@ Create a todo per item.
 - [ ] Every packet self-contained: plan section verbatim, scope, testing and documentation rules, discipline, evidence, stop conditions
 - [ ] Conformance review done by me, item by item — line, test, and document for each; diff measured, every new test recounted — duplicates at 60% or more sent back
 - [ ] Slices merged into the starting branch, no push
-- [ ] Adversarial review sized; large → quick now, G2 asked for the full one; fallback panel if no skill
-- [ ] Every finding fixed or parked by the authority split; every fix round re-reviewed; loop ended clean or at three rounds
-- [ ] Step 8 pre-flight ticked: installed `appropriate-comments-code` / `code-simplification` checked first; the fallback file read fresh at that step only for a skill that is absent; conformance and review files re-opened
+- [ ] Step 6 pre-flight ticked: installed `appropriate-comments-code` / `code-simplification` checked first; the fallback file read fresh at that step only for a skill that is absent; conformance file re-opened
 - [ ] Comment pass run on the merged diff — the installed skill as written, else the fallback: every flagged comment rewritten or deleted, test-file comments left alone, ratio-check files parked
-- [ ] Simplification pass run on the merged diff — the installed skill as written, else the fallback: behavior-preserving, tests unmodified and green, merges parked as proposals; code changes re-checked for conformance and quick-reviewed
+- [ ] Simplification pass run on the merged diff — the installed skill as written, else the fallback: behavior-preserving, tests unmodified and green, merges parked as proposals; code changes re-checked for conformance
+- [ ] G2 asked once, after the pass: change sized, quick / full / none offered in plain text with the cost of each; exactly the chosen review run once on the whole merged diff; fallback panel if no skill
+- [ ] Every finding fixed or parked by the authority split; conformance re-run on the fixes; a second review offered with a recommendation and run only on a yes
 - [ ] Decisions log appended at the end of the plan file
 - [ ] Worktree deletion asked (G4) — nothing removed before the answer
 - [ ] Four-bullet recap delivered

@@ -314,13 +314,15 @@ under TDD with unit tests as the floor, existing tests extended before new
 ones are added, and every related document updated in the same diff —
 journey-style integration/E2E tests and real dependencies via
 testcontainers are recommended, and you size them — then checks every slice
-**against the plan, item by item** on the premium model, docs included, runs an adversarial review sized to the
-change (the `adversarial-review` skills when installed, an on-the-spot panel
-when not), fixes what it finds, and iterates. Before handing off it runs one
-last pass over the merged diff with the `appropriate-comments-code` and
-`code-simplification` skills when installed, or a distilled version of each
-when not: comments that narrate the session are rewritten or removed, and the
-code's shape is simplified without changing behavior. Technical decisions are
+**against the plan, item by item** on the premium model, docs included. Once
+every slice is merged it runs one pass over the merged diff with the
+`appropriate-comments-code` and `code-simplification` skills when installed,
+or a distilled version of each when not: comments that narrate the session
+are rewritten or removed, and the code's shape is simplified without changing
+behavior. Then it asks which adversarial review you want — quick, full, or
+none, sized to the change (the `adversarial-review` skills when installed, an
+on-the-spot panel when not) — runs that one review once, fixes what it finds,
+and asks before any second review. Technical decisions are
 logged at the end of the plan in plain language; functional and operational
 ones are parked for you, never assumed. It estimates capacity before starting, hands
 you a `/goal` condition so the run is hands-free, merges back into the branch
@@ -354,11 +356,12 @@ request over several. Work is written as tickets with a what, a why in
 Simplified Technical English, acceptance criteria, dependencies by title,
 and a size guessed in lines of code rather than time; spikes are labeled and
 the cheap ones are closed on the spot. Every decision is logged with its
-alternative, reason, and drawback. It offers an adversarial review of the
-plan sized to the change, folds the findings in, presents through
-`visual-plan` or plan mode, and closes with the plan, whether it covers the
-ask, and the gotchas — then asks in plain text whether to start building,
-naming `implement-plan` when installed.
+alternative, reason, and drawback. It presents through `visual-plan` or plan
+mode, asks the leftover questions until nothing is open, and only then offers
+one adversarial review of the finished plan — quick, full, or none, sized to
+the change — folds the findings in, asks before any second review, and closes
+with the plan, whether it covers the ask, and the gotchas — then asks in plain
+text whether to start building, naming `implement-plan` when installed.
 
 ```text
 # Claude Code session — type this as a message

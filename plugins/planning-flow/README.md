@@ -40,11 +40,14 @@ message describes the plan, whether it covers the ask, and the gotchas.
 - **Logs every decision** with who made it, the alternative, the reason, the
   drawback, and whether it is reversible, so you remember what you chose and
   why, and can undo it later.
-- **Offers an adversarial review** of the plan, sized to the change (the
-  `adversarial-review` skills when installed, an on-the-spot panel when not),
-  and offers to close the cheap spikes on the spot. Technical findings are
-  folded in and logged; anything that changes what you would experience is
-  asked.
+- **Offers to close the cheap spikes on the spot**, and asks the leftover
+  questions until nothing is open.
+- **Offers one adversarial review of the finished plan**, only then, sized to
+  the change with the cost stated (the `adversarial-review` skills when
+  installed, an on-the-spot panel when not). It runs only if you pick quick
+  or full, and runs once. Technical findings are folded in and logged;
+  anything that changes what you would experience is asked; a second review
+  after the fixes needs your yes.
 - **Presents the plan** through the `visual-plan` skill when installed, the
   harness's plan mode otherwise, or in chat, and closes with the path, what
   the plan does, whether it covers the ask, the gotchas, and the decisions

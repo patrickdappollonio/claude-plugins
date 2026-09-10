@@ -9,9 +9,9 @@ You planned the work (plan mode, a `visual-plan`, a plan file, or a design you
 agreed in chat). This skill is the "now build it" step: the agent splits the
 plan into independent slices, gives each one a git worktree and a cheaper
 executor working under strict TDD, then does the part that usually gets
-skipped — it checks every slice **against the plan, item by item**, runs an
-adversarial review, fixes what the review finds, and iterates until the plan is
-done. Technical decisions are the agent's and get logged at the end of the plan
+skipped — it checks every slice **against the plan, item by item**, cleans up
+the merged code, asks which adversarial review you want (quick, full, or
+none), runs that one review, and fixes what it finds. Technical decisions are the agent's and get logged at the end of the plan
 in plain language; operational and functional decisions are yours and get
 parked with a recommendation, never assumed.
 
@@ -46,12 +46,8 @@ parked with a recommendation, never assumed.
 - **Conformance review** on the premium model: enumerate the plan's promises,
   point at the line, the test, and the document for each, grep the docs for
   stale descriptions, send gaps back.
-- **Adversarial review** sized to the change: the `adversarial-review-quick`
-  skill for small changes, the full `adversarial-review` skill for large ones
-  (asking first — it is token-heavy), or an on-the-spot six-reviewer panel when
-  neither skill is installed.
-- **Cleans up after itself before handing off.** Once the review loop is
-  clean, one last code-changing pass runs over the merged diff: the
+- **Cleans up before the review.** Once every slice is merged, one
+  code-changing pass runs over the merged diff: the
   `appropriate-comments-code` skill (or its distilled version) rewrites or
   deletes every comment that narrates the session, restates its line, cites a
   finding or slice label, or is documentation in a comment's seat; then the
@@ -60,6 +56,13 @@ parked with a recommendation, never assumed.
   existing test must pass unmodified, and a merge of two look-alike functions
   is proposed to you, never made. Its two reference files are read fresh at
   that step, not recalled from the start of the run.
+- **One adversarial review, at the end, on your say-so.** A panel is the most
+  expensive step in the run, so it never starts on its own. After the cleanup
+  pass, the agent sizes the change, recommends the `adversarial-review-quick`
+  skill for small changes or the full `adversarial-review` skill for large
+  ones (an on-the-spot six-reviewer panel when neither is installed), and
+  asks which you want, or none. It runs exactly one, fixes what it finds, and
+  asks again before any second review.
 - **Never deletes a worktree without asking** — the last step before the recap
   is the deletion question.
 - **Ends with four bullets:** what was done, decisions made, pending for you,

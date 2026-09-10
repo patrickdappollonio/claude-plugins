@@ -97,12 +97,15 @@ only the user can answer goes to the question list. Then run the check
 again. **It passes when the pass-1 list holds no build-changing gap.** A
 grade is not a pass; a list with only edit-time reads on it is.
 
-## 3. The adversarial review of the plan (offered, sized)
+## 3. The adversarial review of the plan (once, at the end, the user's choice)
 
 An adversarial review assumes the change is broken and tries to prove it from
 several independent angles, by reviewers who share none of the author's
-context, with a separate reviewer that discards false findings. The review
-skill expects a code change. A plan works as one: it is a new file in which
+context, with a separate reviewer that discards false findings. It is the
+most expensive step in this skill. It runs **once**, on the finished plan —
+no open question, no pending spike, no cold implementer gap — and only after
+the user picks quick or full; none is an answer. After the fixes, a second
+run needs a fresh yes. The review skill expects a code change. A plan works as one: it is a new file in which
 every line is an added line.
 
 **The review measures the plan against the user's ask, not against the
@@ -129,8 +132,10 @@ subsystem, a sensitive area, or a total in L or above.
 | One subsystem **and** no sensitive area **and** total at or under M | **Quick** |
 | A second subsystem, **or** a sensitive area, **or** a total of L or larger | **Full** |
 
-One line over the limit makes the plan full-sized. Offer the sized review in
-plain text and let the user decline. If they ask for the other size, run that.
+One line over the limit makes the plan full-sized. The size is the
+recommendation. Offer quick, full, or none in plain text, with what each
+costs, and run exactly what the user chose, once. If they ask for the other
+size, run that.
 
 ### Which to run
 

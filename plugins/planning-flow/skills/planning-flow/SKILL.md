@@ -257,40 +257,54 @@ adds. Choose the viewer:
 The file stays the source of truth; when a viewer collects comments or
 answers, fold them into the file.
 
-### 9. Offer the review and the cheap spikes
+### 9. Offer the cheap spikes
 
-In the same message that presents the plan, offer two things in plain text.
-The user may decline either.
+In the same message that presents the plan, list every spike ticket a
+subagent could close quickly — a sanity check on an endpoint, whether a
+library supports a call, whether a path exists — and ask in plain text
+whether to run them now. The user may decline. Do not offer the adversarial
+review here: the plan still has open questions, and a review of a plan that
+is about to change is a review paid for twice.
 
-- **An adversarial review of the plan.** Size it with the table in
-  `plan-review.md`. A change inside one subsystem gets the quick review, as
-  long as it does not touch the database schema, sign-in and permissions,
-  work that runs at the same time, or an outside service. Anything else gets
-  the full one. Run the installed `adversarial-review-quick` or
-  `adversarial-review` skill when present. Give it the plan file as the
-  change under review; a new plan file is all added lines, which is what the
-  skill expects. Give it **the user's ask, word for word, as the standard the
-  plan must meet**. Neither installed: run the on-the-spot panel from
-  `plan-review.md`.
-- **The cheap spikes.** List every spike ticket a subagent could close
-  quickly — a sanity check on an endpoint, whether a library supports a
-  call, whether a path exists — and ask whether to run them now.
+### 10. Fold in what came back, then ask the leftovers
 
-### 10. Fold in what came back
+A spike answer folds in as step 7 describes. Recompute the frontier and run
+step 6 until it is empty. The plan is finished when no question is open, no
+spike is pending, and the cold implementer's list holds nothing that would
+change what gets built.
 
-Review findings and spike results go through the authority table. A finding
-whose fix leaves behavior unchanged: apply it and log it as your decision
-with the reason and any drawback. A finding that changes what the user or an
-operator would experience, and any `design_is_wrong` finding: add it to the
-one question list with the reviewer's suggestion as the recommendation, and
-run it through the same filter and frontier as every other question (steps 5
-and 6). A spike answer: fold it in as step 7 describes. Rewrite in place.
-Never write "the review found" anywhere in the plan.
+### 11. The one adversarial review — only when nothing is open
 
-### 11. Ask the leftovers, then close
+An adversarial review is the most expensive thing this skill can do, so it
+runs **once**, on the finished plan, and only when the user picks it. Size it
+with the table in `plan-review.md`: a change inside one subsystem gets the
+quick recommendation, as long as it does not touch the database schema,
+sign-in and permissions, work that runs at the same time, or an outside
+service; anything else gets the full one. Then offer it in plain text —
+**quick, full, or none** — with your recommendation and what each costs in
+plain words (the full panel is roughly twice the quick one). Run exactly
+what they chose, once: the installed `adversarial-review-quick` or
+`adversarial-review` skill when present, given the plan file as the change
+under review and **the user's ask, word for word, as the standard the plan
+must meet**; the on-the-spot panel from `plan-review.md` when neither is
+installed.
 
-Recompute the frontier after step 10 and run step 6 until it is empty. When
-nothing is open and the user says the plan is approved, close as below.
+Findings go through the authority table. A finding whose fix leaves behavior
+unchanged: apply it and log it as your decision with the reason and any
+drawback. A finding that changes what the user or an operator would
+experience, and any `design_is_wrong` finding: add it to the one question
+list with the reviewer's suggestion as the recommendation, and run it
+through the same filter and frontier as every other question (steps 5 and
+6). Rewrite in place. Never write "the review found" anywhere in the plan.
+
+When the fixes are in, ask before any second review: say what was found and
+what changed, and recommend a second run only when a finding changed the
+solution or a ticket's scope; otherwise recommend none. **No second review
+without a yes.** A no ends it.
+
+### 12. Close
+
+When nothing is open and the user says the plan is approved, close as below.
 
 ## Closing
 
@@ -382,6 +396,9 @@ example in `plan-template.md`):
 | "This ticket is 5,000 lines, I should split it" | XXL is a band, not an error. Split only when the user asks. |
 | "I'll leave the resolved spike ticket so the work is visible" | The answer is the work. It lives in decisions and in the tickets it changed. |
 | "The change is small, so I'll skip the zero-context reviewer" | Small changes get the same one reviewer; it is one subagent. Nothing gets no review. |
+| "The plan is solid, I'll run the adversarial review now and ask the leftovers after" | A review of a plan with open questions reviews a plan that will change. It runs once, when nothing is open, and only when the user picks it. |
+| "The quick panel is cheap enough to run without asking" | No panel runs without the user choosing it. Offer quick, full, or none, with the cost of each, and take no. |
+| "The findings changed the plan, so it needs a second review" | Ask. Recommend a second run only when the solution or a ticket's scope changed; a no ends it. |
 | "The technical context names the files; the implementer can read them" | Then the implementer explores, and the plan did not do its job. Every exact string, format, and location goes in the plan. The cold implementer check is how you know. |
 | "The implementer graded it 3 out of 5, that's a pass" | A pass is a list with nothing on it that would change what gets built. Fill those gaps and run it again. |
 | "The implementer wants every file's surrounding text pasted in" | That is what the implementer reads at edit time. A gap is a fact that changes the build: a string, a format, a rule, a location. Verbatim file contents are not. |
@@ -407,6 +424,8 @@ example in `plan-template.md`):
 - A ticket split because it "felt too big" with no user request
 - A *Technical context* section that names a file without saying what is in it, or a format without its exact strings
 - A cold implementer check that was run once and its list not folded in
+- An adversarial review dispatched while a question, a spike, or a cold implementer gap is open, or one the user did not choose
+- A second adversarial review started without a fresh yes
 - A closing message that counts revisions or quotes reviewers
 - The implementation offer made through a question tool
 - Reaching the closing without having read the companion files this session
@@ -425,7 +444,8 @@ Create a todo per item.
 - [ ] Frontier asked in rounds of at most four until empty; delivery shape included without a recommendation; no question answered by the agent
 - [ ] Plan rewritten in place after every round; spikes and dropped tickets folded into decisions
 - [ ] Presented through `visual-plan` (technical audience stated), plan mode, or chat
-- [ ] Adversarial review offered and sized; cheap spikes offered
-- [ ] Results folded in by the authority table; nothing narrated
-- [ ] Leftover questions asked; approval received
+- [ ] Cheap spikes offered at presentation; results folded in; leftover questions asked until nothing is open
+- [ ] One adversarial review offered only then — quick, full, or none, sized with the cost stated — and run once on the user's choice
+- [ ] Findings folded in by the authority table; nothing narrated; a second review offered with a recommendation and run only on a yes
+- [ ] Approval received
 - [ ] Closing in the five-bullet shape; implementation offered in plain text, `implement-plan` named when installed
