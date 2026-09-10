@@ -29,6 +29,12 @@ keep-going contract — is this skill's own.
    which is which.
 3. **Keep going.** Stop only at the named gates, and when you stop, make the
    resume a single word.
+4. **This skill's labels never reach the repository.** Gate IDs (G1–G4),
+   slice and wave names, round and pass numbers, finding numbers, step
+   numbers, ticket titles, and *Pending* mean something to this run and
+   nothing after it, and the plan file that gives them meaning is usually
+   ignored by git. None of them appears in code, comments, test names, docs,
+   or commit messages. The conformance review greps for them; a hit goes back.
 
 ## Read the Companion Files First
 
@@ -43,23 +49,20 @@ each step; six files beside it carry the full procedures:
 - `companion-skills.md` — the skills this one uses when installed (`adversarial-review`, `adversarial-review-quick`, `visual-plan`, `appropriate-comments-code`, `code-simplification`, `use-premium-models-efficiently`, `use-claude-limits-efficiently`), what each adds, and how to install them on Claude Code, Codex, or via `npx skills`
 
 **The first time you use this skill in a session, read all six before doing
-anything else** — before opening the plan, before sizing the work, before
-answering a question about it. The summaries here are reminders for a reader
-who has already seen the full text; they are not a substitute for it. Re-read
-the relevant file at the step that names it. If a file is missing, say so and
-work from the summary — do not pretend the summary was the whole skill.
+anything else** — before opening the plan, sizing the work, or answering a
+question about it. The summaries here remind a reader who has seen the full
+text; they never replace it. Re-read the relevant file at the step that names
+it. A missing file: say so and work from the summary.
 
-Two more files are **not** part of that first read. They belong to the last
-code-changing step, and they are read there, fresh, immediately before the
-pass they describe — never recalled from an earlier read:
+Two more files are **not** part of that first read. They are read fresh at
+the pass they describe, never recalled from an earlier read:
 
 - `appropriate-comments-fallback.md` — the comment pass over the merged diff: the labels, rewrite-or-delete, the ratio check, and how to run the installed `appropriate-comments-code` skill instead
 - `code-simplification-fallback.md` — the behavior-preserving simplification pass: the signals, one change per test run, merges as proposals, and how to run the installed `code-simplification` skill instead
 
 Every companion skill is optional: this skill carries a distilled version of
-each, and uses the real one when it is installed. If the user asks how to
-install one, read `companion-skills.md` and give them the commands for their
-harness — do not install anything yourself mid-run.
+each and uses the real one when installed. If the user asks how to install
+one, `companion-skills.md` has the commands — never install anything mid-run.
 
 ## When to Use
 
@@ -118,11 +121,10 @@ information you hand over in passing, never a gate: an unreadable usage
 report gets one line and the run continues.
 
 **Every stop ends with the same closing.** State the phase, what is done, what
-is pending, the exact question, and that you will keep going as soon as they
-answer. **No keyword**: "go ahead", "approved", "please continue", "yes, the
-first option" all resume the run — read the reply for its meaning, never
-demand a specific word. Carry enough state that such a reply resumes the work
-(`capacity-check.md`).
+is pending, the exact question, and that you will keep going once they answer.
+**No keyword**: "go ahead", "approved", "yes, the first option" all resume the
+run — read the reply for its meaning, never demand a word. Carry enough state
+that such a reply resumes the work (`capacity-check.md`).
 
 **How to ask.** Ask in plain text, in the message itself — not through a
 harness-specific question tool. Give the options, the consequence of each,
@@ -162,21 +164,20 @@ Capture and state: `starting branch`, `starting commit`, clean or dirty tree.
 **Recommend a branch once** if the user is on `main` or a shared branch:
 *create a branch* (name it) / *stay on this branch*, with your recommendation.
 If they stay, that is the answer — no second nag. In the same stop, state the
-**testing depth** you will require (see *Testing*) so they can raise or lower
-it in the same reply. **Everything merges back into the
-starting branch, whatever it is.** Never push, never open a PR, unless asked.
+**testing depth** you will require (see *Testing*) so they can adjust it in
+the same reply. **Everything merges back into the starting branch, whatever
+it is.** Never push, never open a PR, unless asked.
 
 ### 2. Capacity check
 
 Read `capacity-check.md`. Estimate the agent-runs the plan will cost (slices ×
 rounds + conformance + review + fixes) and try once to read real usage with
 the host's usage command. Report both in one line and **keep going**: this
-step is informational. If usage cannot be read, say so and label the
-estimate unverified; if the estimate looks like it will not fit, say so
-politely with the numbers and name what the user can do (let it run, tell
-you to stop after this slice, wait for the reset) while you proceed. Never invent a usage figure,
-and never stop to ask the user for one — the split starts in the same turn.
-Then suggest `/goal` with the condition template.
+step is informational. Usage unreadable: say so, label the estimate
+unverified. Estimate too big: say so with the numbers and name what the user
+can do (let it run, stop after this slice, wait for the reset) while you
+proceed. Never invent a usage figure, never stop to ask for one — the split
+starts in the same turn. Then suggest `/goal` with the condition template.
 
 ### 3. Split the work
 
@@ -385,8 +386,7 @@ The floor has two parts, and both are mandatory on every slice.
   real** (third-party services, the clock, external networks); everything
   else runs from the real codebase.
 - **Encouraged, optional — real dependencies.** For databases, queues, caches
-  and similar, recommend testcontainers (or the repo's equivalent) over fakes;
-  the user chooses.
+  and similar, recommend testcontainers (or the repo's equivalent); the user chooses.
 - No new test infrastructure for one task; test the behavior the plan
   changes, do not backfill unrelated coverage.
 
@@ -441,6 +441,7 @@ assumptions stated plainly.
 | "The README is out of scope for this slice" | A document that describes the behavior this slice changes is in scope by definition. Only another slice's files are out. |
 | "A real project needs journeys and containers, I'll add them all" | Encouraged is not required. State the recommendation at G1 and build what the user chose. |
 | "Sonnet wrote it, Sonnet can verify it" | The cheap executor's mistakes are why judgment stays premium. Never cheap on both sides. |
+| "A `// G2: parked` note helps the next person find the decision" | The next person has no G2. The plan is not in the repository. Write what the code does, or nothing; the decision lives in the decisions log. |
 | "The change is small, I'll skip the review question" | Small changes get a recommended quick panel. The user still hears the question and picks quick, full, or none. |
 | "Let me pause so the user can see progress" | Not a gate. Keep going. |
 | "I'll put the decisions in a new recap document" | The decisions live at the end of the plan file, where the plan is. A new document is extra cost and a second place to look. |
@@ -471,6 +472,7 @@ assumptions stated plainly.
 - Any adversarial panel dispatched before the G2 answer, before every slice is merged, or before the comment and simplification pass
 - A second adversarial panel started without a fresh yes from the user
 - A panel run on one slice, or on one fix round, instead of once on the whole merged diff
+- A gate ID, slice or wave name, round or pass number, finding number, step number, or ticket title anywhere in the diff or a commit message
 - Skipping the companion files because "I remember this skill"
 - A decisions log or recap written while the step 6 pre-flight still has an unticked line
 - The comment or simplification pass started without `appropriate-comments-fallback.md` and `code-simplification-fallback.md` opened at that step — an earlier read does not count
@@ -489,6 +491,7 @@ Create a todo per item.
 - [ ] Testing depth stated at G1 (TDD unit floor + test-map floor + docs-in-the-same-diff floor + what the user chose) and copied into every packet
 - [ ] Every packet self-contained: plan section verbatim, scope, testing and documentation rules, discipline, evidence, stop conditions
 - [ ] Conformance review done by me, item by item — line, test, and document for each; diff measured, every new test recounted — duplicates at 60% or more sent back
+- [ ] Diff and commit messages grepped for this skill's labels — gate IDs, slice and wave names, round, pass, finding, and step numbers, ticket titles — every hit sent back
 - [ ] Slices merged into the starting branch, no push
 - [ ] Step 6 pre-flight ticked: installed `appropriate-comments-code` / `code-simplification` checked first; the fallback file read fresh at that step only for a skill that is absent; conformance file re-opened
 - [ ] Comment pass run on the merged diff — the installed skill as written, else the fallback: every flagged comment rewritten or deleted, test-file comments left alone, ratio-check files parked

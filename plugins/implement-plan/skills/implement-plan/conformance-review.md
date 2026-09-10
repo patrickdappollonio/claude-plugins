@@ -31,6 +31,10 @@ review skill, on every slice, every iteration.
      test on the same surface, whatever it asserts at the end. A setup
      block copied from another test is the strongest sign; look for it
      first. Quote both and the count;
+   - **tainted** — the diff or a commit message carries a label from this
+     run (a gate ID, slice or wave name, round, pass, finding, or step
+     number, a ticket title). Quote the line; it goes back whatever else is
+     right;
    - **undocumented** — present and tested, but a document that describes
      this surface (README, `docs/`, help text, CHANGELOG, spec, docstring)
      still describes the old behavior or omits the new one. Do not take the
@@ -45,6 +49,14 @@ review skill, on every slice, every iteration.
 5. **Hunt stale docs.** Grep the repository's documentation for the old
    name, flag, default, message, or shape of everything the slice changed. Any
    hit outside the diff is an *undocumented* item, whatever the report said.
+5a. **Hunt leaked labels.** Grep the added lines of the diff and the commit
+   messages (`git log <start>..<slice> --format=%B`) for this skill's own
+   vocabulary: `\bG[1-4]\b`, `slice`, `wave`, `round \d`, `pass \d`,
+   `finding`, `\bF\d+\b`, `step \d`, `Pending`, and every ticket title from
+   the plan. A hit that is not a domain word the code already used is
+   *tainted*: quote the line and send it back for removal, whatever else the
+   slice got right. The plan file is usually ignored by git, so the label
+   points a future reader at nothing.
 6. **Chase what a missing item took with it.** A dropped element usually
    orphans its data — it gets rendered somewhere wrong rather than nowhere.
    Find where the value went.
@@ -100,6 +112,7 @@ list, if any).
 | "The extra flag is harmless" | Harmless is the user's call. It is an unannounced deviation until they say so. |
 | "The docs can be tidied in a later pass" | There is no later pass. An item whose document still describes the old behavior is *undocumented* and goes back to the executor with the rest. |
 | "The executor said no docs mention it" | A report is a lead. Run the grep; it takes seconds. |
+| "The `slice-3` comment is harmless, the code is right" | The code is right and the comment points at a plan nobody will have. Grep for the labels; a hit goes back on its own. |
 | "The new test file is well written, no reason to send it back" | Well written twice is still twice. Count the steps; at 60% the case goes into the existing test and the copy goes. |
 | "The executor said no existing test covers this" | A lead, not a fact. It grepped for the feature name; grep for the command or function and recount. |
 | "The executor's count says 56%, under the line" | Its count is a claim. Redo it with setup and actions only; the two counts either agree or the higher one wins. |

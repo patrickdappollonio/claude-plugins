@@ -208,6 +208,11 @@ Include verbatim:
 >   diff, or the evidence names the search that found none
 > - Every touched file is necessary and the diff contains nothing unrelated
 > - No debug code, backup copies, dead paths, or scratch files remain
+> - Nothing in the diff or the commit message carries a label from this run:
+>   no gate ID (G1–G4), slice or wave name, round or pass number, finding
+>   number, step number, or ticket title. The plan that gives those meaning is
+>   not in the repository, so a reader of the code would find a pointer to
+>   nothing. Write what the code does, or write nothing.
 > - Assumptions, limitations, and unverified runtime behavior are stated plainly
 
 ## Evidence to return
