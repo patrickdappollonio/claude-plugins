@@ -36,7 +36,11 @@ of it belongs in the plan or in the message that delivers it.
 5. **The plan is a document, and it plans the simplest thing that works.**
    This skill produces one markdown file and nothing else: no prototype, no
    mockup, no scaffold, no demo, no code — a spike may run a throwaway probe,
-   deleted before the plan is presented. And the solution it describes sits
+   deleted before the plan is presented. Inside that file, use everything
+   the viewer can render: Mermaid diagrams, diff and migration fences, API
+   cards, file trees, question fences, a summary card. A picture of the
+   design belongs in the plan; a working copy of it does not. And the
+   solution it describes sits
    on the lowest rung of the ladder in `plan-template.md` that answers the
    ask: not needed → cut it; the codebase already has it → reuse it; the
    standard library or the platform has it → use it; an installed dependency
@@ -111,8 +115,9 @@ The plan is one markdown file, and the file is the single source of truth.
 Viewers (plan mode, a visual plan) show the file's content; they never hold
 content the file lacks. The file is also the only thing this skill writes:
 a request for a plan is never a request for a working example, a page that
-shows the idea, or a starting scaffold, however small. Describe; diagram if
-it helps; do not build.
+shows the idea, or a starting scaffold, however small. Describe, and draw
+with every fence the `visual-plan` viewer renders — diagrams, diffs,
+migration and API cards, file trees, question fences — but do not build.
 
 - **The session started in plan mode** (the harness told you writes are limited
   to its own plan file): the harness plan file *is* the plan. Write nothing
@@ -437,7 +442,7 @@ example in `plan-template.md`):
 | "I'll suggest they install the visual plan, it's better" | Never suggest installing a companion skill. Use what is installed; give install lines only when asked. |
 | "I'll use the question tool for the implement offer" | The offer is plain text so the user can answer with any skill they have. |
 | "I remember this skill, no need to open the companion files" | The summaries are reminders. Read the files. |
-| "A quick mockup will make the plan clearer" | The plan is a markdown file. A mockup is an implementation nobody asked for, and it decides things the user has not been asked. Describe it; draw a diagram if you must. |
+| "A quick mockup will make the plan clearer" | The plan is a markdown file. A mockup is an implementation nobody asked for, and it decides things the user has not been asked. Draw it instead: a Mermaid diagram, a diff fence, a migration or API card — everything the viewer renders is fair game. |
 | "A small abstraction now will save work later" | Later is not in the ask. The lowest rung that answers today's ask is the plan; the higher rung is a decisions entry, rejected, with the reason. |
 | "The plan is already lean, step 4 would find nothing" | Then it costs one read and confirms it. It runs on every draft; the plans that "were already lean" are where the mockups came from. |
 | "The framework's component is nicer than the native one" | Nicer is a functional decision, and those are the user's. The native one is the default; the component is a question, with its cost. |
