@@ -32,7 +32,11 @@ documentation does not live above a function.
 
 ## The pass
 
-For every comment the diff adds or changes, in order of length, longest first:
+For every comment the diff adds or changes, in order of length, longest first.
+A comment is the contiguous run of comment lines, so a run the diff appended
+to is in scope as a whole, with its full line count, never as the appended
+lines alone, and a slice's "add a note" instruction does not shield the rest
+of the run:
 
 1. **Classify** it with one label, or pass it:
    - `restates` — cover the comment with your hand and read the code; if
@@ -45,7 +49,14 @@ For every comment the diff adds or changes, in order of length, longest first:
      line above a statement inside a body, with no constraint, invariant, or
      contract in it (a rule is a caller obligation or a guarantee; rationale,
      precedent, a comparison with no neighbour in the file, and the body restated
-     are not rules, while a sibling difference in the two-line form below is, and a prose comment is never a "list of rules"); or on the wrong subject — about the feature, route,
+     are not rules, while a sibling difference in the two-line form below is, and a prose comment is never a "list of rules"; a bulleted or tabular
+     comment earns the exemption only when no row carries a gloss after its
+     outcome — a dash or parenthesis opening an explanation, a clause
+     starting with "because", "since", "so that", "which", or "unlike", a
+     second sentence — and at least one row's
+     condition and outcome are not both in the body below; a table whose
+     every row the body carries is `restates`, and the counts go in the
+     ledger); or on the wrong subject — about the feature, route,
      policy, or business meaning while the code is a call, wrapper, branch, or
      registration; or the only commented member of a list whose siblings are
      bare.
@@ -134,5 +145,10 @@ ratio and a summary of what the comments said.
 
 In the recap's *What was done*, one line: how many comments were rewritten,
 how many deleted, that test-file comments were left alone, and where relocated
-material went. Each ratio-check file goes under *Pending for you* with the
-recommended home.
+material went. Under it, the long-comment ledger: one line per comment of
+three or more lines left in the diff (whole comments), with location, line
+count, shape, the row and body-match counts for any list or table, and the
+verdict; or the line "no comment over two lines in the diff". Every verdict
+in the ledger is already carried out in the diff: a "deleted" with the lines
+still present is a defect the conformance review reports. Each ratio-check
+file goes under *Pending for you* with the recommended home.

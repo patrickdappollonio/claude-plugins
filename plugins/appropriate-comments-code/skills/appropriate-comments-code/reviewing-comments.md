@@ -16,6 +16,12 @@ restatements are findings, length and history are not. For each one:
    (past tense, journey, process), `documents` (true, but too long or about the
    feature rather than the line), `unverified` (names something you have not
    confirmed), `counts` (a tally of things that live elsewhere), `stale` (no longer matches the code beside it).
+   A bulleted or tabular comment is not passed on its shape or on the
+   author's exemption claim: run tenet 1's row test and body-match test
+   yourself and write the counts into the finding. A row glossed after its
+   outcome makes the block prose (`documents`); a table whose every row the
+   body carries is `restates`. The author's ledger entry is a claim to
+   check, never the check.
 2. **Rewrite or delete — never keep as-is.** A flagged comment has exactly two
    exits. Rewrite when there is one mechanical fact about *these lines* the
    reader cannot get from the code — most often, why the line differs from its
@@ -31,6 +37,15 @@ restatements are findings, length and history are not. For each one:
 
 Auditing comments across a codebase, or across a large change, has failure modes
 of its own.
+
+**List whole comments, not the author's lines.** A comment is the contiguous
+run of comment lines, so a diff that appends a paragraph to an existing block
+puts the whole run in scope: the lines above the hunk are part of the comment
+being reviewed, and the review's ledger lists the run once, with its full
+line count. "Only the new paragraph is in the diff" and "the task only asked
+for a note" are how a fourteen-line restatement survives with a two-line
+note under it. A ledger verdict of "deleted" with the lines still in the
+file is a finding on its own.
 
 **Measure the ratio after the pass.** Run the normal pass on each file in
 scope, then count that file's comment lines against its code lines as
@@ -67,6 +82,16 @@ changes nothing: it is a comment under the limit.
 caller obligations in the block. Usually two survive. A prose comment still
 over four lines after that is not kept under the exemption; it goes to the user
 with a candidate home, or to the handoff when nobody can be asked.
+
+**"It is a decision table" is the claim to distrust next.** Count before
+agreeing: rows, rows with a gloss after the outcome, rows whose condition and
+outcome both sit in the body below. Glossed rows make it prose. A full
+body-match makes it the body restated, however clean the rows are. Both
+counts go in the ledger next to the verdict, and a table kept without them
+was kept on shape. For each row the author counted as unmatched, check that
+the ledger names the schema, config, or other function that carries it; a
+row called "partially shown" or "reached by an early return" is matched, and
+a count loosened that way is a finding.
 
 **Do not record why you kept something.** A note explaining that a comment was
 left long, or which fact forced it, is a comment about the comment. It belongs in

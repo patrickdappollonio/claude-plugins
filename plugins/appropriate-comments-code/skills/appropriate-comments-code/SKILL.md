@@ -30,10 +30,11 @@ this skill's directory:
   claims, fixing code before commenting it, reviewing comments in a diff, and
   auditing in bulk. Re-read it before any review or sweep.
 - `length-and-doc-comments.md` — the worked examples behind tenets 1 and 7
-  (an eight-line "list of rules" and its two-line rewrite; a comment that
-  names its own body) and the doc-comment syntaxes and section conventions
-  per language. Re-read it before keeping any comment over two lines or
-  writing a doc comment on a public item.
+  (an eight-line "list of rules" and its two-line rewrite; a bulleted
+  "decision table" that fails the row test and the body-match test, next to
+  one that passes; a comment that names its own body) and the doc-comment
+  syntaxes and section conventions per language. Re-read it before keeping
+  any comment over two lines or writing a doc comment on a public item.
 
 The summaries below are reminders of text you have already read, not a
 substitute.
@@ -64,6 +65,14 @@ homes, and you choose one on purpose:
 The standing constraint stays in the file. The deliberation that led to it,
 the alternatives, and the argument for the change go to the handoff by
 default. Tell the user; do not leave it in the file for them to find.
+
+**A comment is the whole contiguous run of comment lines**, from the first
+comment line to the line before the next non-comment line, blank comment
+lines included. A paragraph you add to a block is not a second comment: the
+block is one comment, its line count is the run's, and it is judged as one.
+Every comment of three or more lines in your change ends up in the ledger
+(see "The long-comment ledger") with a verdict, and the verdict is carried
+out in the file before you finish.
 
 This skill is language-agnostic. Apply it with whatever comment syntax and
 documentation convention the project already uses.
@@ -152,12 +161,35 @@ The long version's content is not worthless. The measurement that chose full
 jitter belongs in a commit message or a design note. The reader of this function
 needs to know the ceiling is not arbitrary and the jitter is not decorative.
 
-**Where the limit genuinely does not apply:** a comment written as a decision
-table or a state machine, where the mapping *is* the contract and prose cannot
-replace it, or as a list of preconditions, one rule per line. The exemption is
-about shape. Prose does not qualify, however many rules it contains: rewrite it
-as the list, or shrink it. The exemption never covers *why*; reasons go to the
-doc or the handoff.
+**Where the limit genuinely does not apply:** a decision table, a state
+machine, or a list of preconditions, one rule per line. Bullet markers and
+aligned columns are not the exemption. The exemption is earned by two tests,
+run on every row **before** the exemption is claimed, with the counts written
+in the ledger (see "The long-comment ledger" below):
+
+1. **The row test.** A row is a condition and its outcome, and then the row
+   ends. Anything after the outcome is a gloss: a dash or parenthesis opening
+   an explanation, a clause starting with "because", "since", "so that",
+   "which", or "unlike", a second sentence. Read each row and stop at the
+   first gloss. One glossed row anywhere and the block is prose wearing
+   bullets. It is then measured by the four-line question (the paragraph
+   "A prose comment still over four lines" below), after the glosses are
+   cut: they are rationale and the body restated, which the list below
+   already says are not rules.
+2. **The body-match test.** For each row, find the line in the body that
+   carries the row's condition and the line that carries its outcome: the
+   `if` or `case`, the log message and its level, the return value. Count the
+   rows with both. When every row has both, the table is the body restated,
+   fails the cover test row by row, and is deleted whatever its shape. The
+   exemption holds only for a table with at least one row the body cannot
+   show, because the mapping lives in data, is spread across files, or is
+   hidden by the code's shape. An unmatched row is named in the ledger with
+   the place outside the body that carries it (a schema, a config file,
+   another function). A row you cannot point to elsewhere is matched: a
+   branch that returns early, a condition tested in two places, and an
+   outcome spelled by a log message are all full matches.
+
+The exemption never covers *why*; reasons go to the doc or the handoff.
 
 **What counts as a rule.** A rule is something the caller must do or hold, or
 something the caller can rely on: a lock to take, an ordering to keep, what a
@@ -501,7 +533,45 @@ added comment lines:  4      added code lines: 20      ratio: 20%  → fine
 Two shapes legitimately run hot and still get the question: a file that is
 mostly a decision table or state machine (tenet 1's exemption), and a public
 interface whose every method carries a doc comment. Ask anyway; the user may
-prefer a reference page, and the question costs one message.
+prefer a reference page, and the question costs one message. The exemption
+lifts the two-line limit and nothing else: a table never waives the ratio
+question.
+
+## The long-comment ledger
+
+Before finishing, list every comment of three or more lines in the region you
+added or changed. List **whole comments**, as the Overview defines them: the
+contiguous run of comment lines. Touching one line of a run makes all of it
+yours, so a paragraph you appended to a twelve-line block puts a fifteen-line
+comment in the ledger, judged like the lines you wrote. The ledger goes in
+your final message, and in the PR description when there is one. One line
+per comment:
+
+```text
+net/retry.go:12   14 lines  list   rows 5  glossed 5  body-match 5/5  → deleted; one constraint kept as 2 lines
+store/claims.go:8  6 lines  state machine  rows 3  glossed 0  body-match 0/3  → kept; rows carried by the claims table CHECK constraint
+api/token.go:30    3 lines  prose  constraint: yes                    → kept
+sync/push.go:41    9 lines  prose                                     → user asked; candidate home: package doc
+```
+
+The fields: location, line count, shape (prose, list, table, state machine,
+doc sections), and for a list or table the row count, the rows failing the
+row test, and the body-match count; then the verdict (kept, rewritten to N
+lines, deleted, or sent to the user with a candidate home). A list entry is
+complete only with both counts: a row test without a body-match is half a
+test, and a table whose entry lacks either count is prose, measured by the
+four-line question. When nothing in the change is over two lines, the ledger
+is the one line "no comment over two lines in the change".
+
+**The verdict is an action, not a recommendation.** A ledger line that says
+"deleted" describes the file as you leave it. Writing the verdict and then
+leaving the lines in place because the task said "add a note", "just
+append", or "extend the comment" is the same failure as never running the
+tests. The task's wording sets what you add; the skill sets what the comment
+you touched may keep, and no task wording narrows that. If the verdict is
+"send to the user", the four-line rule applies as written: one or two lines
+stay in the code, the rest goes to the handoff with the question, and the
+block does not stay in the file while you wait.
 
 ## A new member matches its siblings
 
@@ -576,6 +646,12 @@ Watch especially for a comment that describes **one** of something when your
 change made it **two** — one direction, one caller, one status, one supported
 mode. Those read as still-true and are not.
 
+Adding to a comment is editing it. The lines above your addition are not
+"existing" and not somebody else's: the whole comment is yours, it goes in
+the ledger as one entry, and it is measured as a whole. Auditing only the
+paragraph you wrote is how a fourteen-line restatement ships with a two-line
+note under it.
+
 ## Reviewing comments, in brief
 
 Read `reviewing-comments.md` before reviewing a diff or auditing in bulk. The
@@ -649,6 +725,15 @@ function guarantees. Never propose them as the home for a comment's material.
 | "The sweep covers the whole package, tests included" | Sweeps skip test files. Say you skipped them. |
 | "Every one of these reasons has to sit next to its check" | Write it the skill's way first. If the change is still half comments, it is a document; ask the user whether the reasons go in a doc with pointers left in code. |
 | "I'll shorten each comment so the ratio drops under half" | Trimming to pass the count hides the signal. The material is still documentation; ask where it goes. |
+| "It has bullets, so it is a decision table" | Bullets are markup. A row with a gloss after its outcome is a sentence, and a row the body already states is the body restated. Run the row test and the body-match test and put the counts in the ledger; the shape claim without the counts is prose. |
+| "The mapping is the contract; prose cannot replace it" | The body already replaced it: each row is an `if` and a log message a few lines down. Name the row the body cannot show, or the table is the cover test failed five times over. |
+| "The table was already there; I only added the paragraph" | You touched the comment, so all of it is yours and all of it is in the ledger. Whole comments are listed, never your lines. |
+| "My note is a separate comment; the block above it is existing code" | A comment is the contiguous run of comment lines. Your note and the block are one comment with one line count, and the run is in the ledger once, whole. |
+| "The user asked me to add a note, not to rewrite the existing comment" | The ask sets what you add. The skill sets what the comment you touched may keep, and "add a note" never keeps a body restated. Carry out the verdict; say in the handoff what left the file and why. |
+| "I ran the tests and reported the verdict; the rewrite is the user's call" | The verdict describes the file you leave behind. A "deleted" in the ledger with the lines still in place is a failed checklist. Delete, or move the material to the handoff with the question; either way the lines go. |
+| "One row is only partially in the body, so the table earns the exemption" | Partially is matched. Name the schema, config, or other function that carries the row instead; if there is none, the count is full and the table goes. |
+| "The rows are clean now that the glosses are gone, so it is a table" | Clean rows are half the test. Run the body-match on the cleaned rows: five `if`s and five log messages below make it the body restated, and it is deleted. |
+| "The ratio is over half, but it is a table, so the exemption covers it" | The exemption lifts the two-line limit. The ratio section says to ask anyway, and it says so twice. |
 | "Each sentence is a separate rule the caller depends on" | Most of them are reasons, precedents, counterfactual comparisons, or the body restated. Underline the caller obligations; what is left is the comment. If it is still over four lines of prose, ask where it goes. |
 | "Never drop a rule, so it has to stay this long" | The rule against dropping protects obligations, not prose. Rationale is not a rule. Two rules with one principle compress into that principle. |
 | "It can go in CLAUDE.md" | CLAUDE.md instructs agents; a reader of the code never looks there. Documentation goes to the package doc, API doc, README, or ADR. |
@@ -669,6 +754,25 @@ Any of these means stop and rewrite:
   the caller obligations; rationale, precedent, counterfactual comparison, and
   the body restated are not rules, and what remains over four lines is a question for
   the user
+- **A bulleted or tabular comment kept under the exemption without its row
+  count, glossed count, and body-match count in the ledger** — the exemption
+  was claimed on shape, which is not a test
+- **A row with a dash, a parenthesis, or a "because" after its outcome** —
+  that row is a sentence, and the block is prose
+- **Every row of the table has an `if` and a log message or return in the
+  body below it** — the table is the body restated
+- **"Kept unchanged" or "existing" about a comment you appended to** — it is
+  one comment, and you own all of it
+- **Your note listed in the ledger on its own, with the block above it
+  missing** — the contiguous run is one comment, and the ledger lists the run
+- **A ledger verdict the file does not show** — "deleted" or "send to the
+  user" with the lines still in place, however the task was worded
+- **A list entry with a row count and no body-match count** — the second
+  test was skipped, and the exemption was not earned
+- **An "unmatched" row with no schema, config, or other function named
+  for it** — the count was loosened to keep the table
+- **A ratio at half or more excused because the comment is a table** — the
+  table lifts the line limit, never the ratio question
 - **It names a field the body reads or a helper the body calls** — that part
   is the body restated, and a rename away from wrong
 - **A doc-comment marker on a private item is your reason for the length** —
@@ -725,6 +829,17 @@ Any of these means stop and rewrite:
 - [ ] No prose comment over four lines was kept under an exemption claim; each
       one was shown to the user with a candidate home, or moved to the handoff
       and said so
+- [ ] Every table or list kept under the exemption passed the row test on
+      every row and has at least one row the body does not carry, and both
+      counts are in the ledger
+- [ ] The long-comment ledger is in the final message: every comment of three
+      or more lines in the changed region, listed as whole contiguous runs
+      including the ones you only appended to, with shape, both counts for
+      any list, and verdict; or the one line "no comment over two lines in
+      the change"
+- [ ] Every ledger verdict matches the file: nothing marked deleted or sent
+      to the user is still in place, whatever the task's wording asked you
+      to add
 - [ ] Every identifier a comment names is one the body below does not use: a
       lock to hold, a neighbour, another file, an external system
 - [ ] Every comment describes the code as it is now; none narrates a previous

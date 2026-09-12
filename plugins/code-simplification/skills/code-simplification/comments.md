@@ -14,11 +14,21 @@ not, about the code as it is now, in as few lines as that takes.** The full
   not by a "don't remove this" comment.
 - **Two lines above a declaration.** More than that is documentation and belongs
   in a doc, a package comment, or the commit message. The exception is a
-  decision table, state machine, or one-rule-per-line list the comment *is*;
-  prose never qualifies. A rule is a caller obligation or a guarantee;
-  rationale, precedent, a comparison with no neighbour in the file, and the
-  body restated are not rules and go first. A prose comment still over four lines is shown to the user with a
-  candidate home, never kept under an exemption claim.
+  decision table, state machine, or one-rule-per-line list the comment *is*,
+  and bullets do not make it one: a row is a condition and its outcome and
+  then it ends (anything after the outcome is a gloss: a dash or parenthesis
+  opening an explanation, a clause starting with "because", "since", "so
+  that", "which", or "unlike", a second sentence; one glossed row makes the
+  block prose), and a row whose condition and outcome both sit in the body below is
+  the body restated (a table whose every row matches is deleted). A rule is a
+  caller obligation or a guarantee; rationale, precedent, a comparison with no
+  neighbour in the file, and the body restated are not rules and go first. A
+  prose comment still over four lines is shown to the user with a candidate
+  home, never kept under an exemption claim. List every comment of three or
+  more lines in the change as a whole comment, meaning the contiguous run of
+  comment lines, with shape, both counts, and verdict; appending a note to a
+  block makes the run yours, whatever the task asked you to add, and the
+  verdict is carried out in the file, never only reported.
 - **A doc comment on a published item is documentation.** Where the
   language's doc generator renders it (Rust `///`, a docstring, Javadoc, a Go
   exported identifier), keep a two-line summary plus the convention sections
