@@ -13,6 +13,11 @@ paragraph being rewritten, until you are reading a plan in diffs. This skill
 makes both impossible by rule: the plan is rewritten in place on every
 revision, the only memory it keeps is a decisions section, and the closing
 message describes the plan, whether it covers the ask, and the gotchas.
+Every stop along the way — each round of questions, the presentation, the
+review offer — opens with where the flow is and restates every question that
+is still open, in full, so the last message on your screen is always enough
+to answer from, even when a goal loop has re-prompted the agent several times
+while you were away.
 
 ## What it does
 

@@ -1,4 +1,4 @@
-# Capacity Check, `/goal`, and the Resume Line
+# Capacity Check, `/goal`, the Resume Block, and Goal Loops
 
 Distilled from the `use-claude-limits-efficiently` skill; if it is installed,
 read it too — it owns the pause-and-resume mechanics for hitting the cap
@@ -78,15 +78,26 @@ session working until it is. Hand the user a ready-to-paste condition at
 kickoff. Template:
 
 ```
-/goal Every item in <plan file> is implemented and merged into <starting branch>;
-the conformance review passed item by item; the adversarial review ran and every
+/goal Every item in <plan file> is implemented and merged into <starting branch>,
+or is waiting on a decision or an input only the user can provide; the
+conformance review passed item by item; the adversarial review ran and every
 confirmed finding is fixed and re-verified or parked as a user decision; the
 decisions log is appended to the plan; the worktree-deletion question was asked;
-and the four-bullet recap (done / decisions / pending / next) was delivered.
+and the resume block (where we are / done / pending / needed from you, with
+every command and question written out in full) was delivered.
 ```
 
+The "or is waiting on the user" clause is not optional. The goal evaluator
+judges the condition literally: "every item implemented" can never hold while
+one item needs a file from the user's laptop, so the evaluator rejects every
+stop, the harness re-prompts, and the user comes back to a wall of
+"blocked" one-liners. A condition that counts a delivered resume block as
+met gives the loop a legal exit. If the user wrote their own condition
+without that clause, say so once, in the first message after the goal is
+set, and offer the wording above.
+
 The gates that need the user (G1–G4 in `SKILL.md`) still pause the loop — that
-is by design, and the closing line below is what resumes it.
+is by design, and the resume block below is what resumes it.
 
 ## The resume line — when there is no `/goal`, or at any gate
 
@@ -94,12 +105,26 @@ Every stop ends the same way, so resuming costs the user a short reply in
 their own words:
 
 ```
-**Where we are:** phase <n> of 10 — <one line>.
+**Where we are:** phase <n> of 11 — <one line>. <k> of <m> slices merged (<p>%).
 **Done:** <slices merged, reviews run>.
 **Pending:** <worktrees alive, parked decisions>.
-**Needed from you:** <the exact question, with options and your recommendation>.
+**Needed from you:** <every open question, with options and your recommendation;
+every command or file you need, written out in full>.
 Say the word and I keep going.
 ```
+
+The progress figure is `k / m` where `m` is the number of slices in the
+split and `k` the number merged into the starting branch, rounded to a whole
+percent; before the split, write "not yet split". It counts slices, never
+time or lines. A user who comes back at a random moment reads that one
+figure and knows whether to wait or walk away.
+
+**Needed from you** is complete on its own, every time. The command the
+user must run appears in a code block; the question they must answer
+appears with its options and your pick; the file they must send is named.
+Never "the two commands from my last message", "as discussed above", or
+"see the earlier recap": the reader's screen holds the last message and
+nothing else. Repeating text you wrote an hour ago is the intended cost.
 
 There is no keyword. "Go ahead", "approved", "please continue", "yes, option
 2", "looks good" — any plain-language reply that answers the question or
@@ -109,6 +134,45 @@ reply alone: the
 starting branch and commit, the slice list with status, worktree paths, the
 review's outstanding findings, and the next action. Do not rely on
 conversation momentum — a resumed session may have been summarized.
+
+## Under a goal loop, every stop is the last message
+
+You are in a goal loop when any of these has appeared in the conversation:
+the user said they set a goal; a harness message beginning `A session-scoped
+Stop hook is now active with condition:` (Claude Code); a system prompt that
+carries an `<objective>` block and says `Continue working toward the active
+thread goal` (Codex); or a message beginning `Stop hook feedback:` or `Goal
+check-in:`. Once seen, assume the loop is on until the harness reports the
+goal cleared or paused. Neither harness tells you which stop the evaluator
+will accept, so **every stop is written as if it is the one the user will
+read**: the full resume block, never a shortened one.
+
+Between stops, keep chat to one line: the progress figure and the next
+action ("4 of 6 slices merged (67%), phase 5 of 11; landing slice E next").
+A paragraph written mid-run under a loop is never seen; the block at the
+stop is.
+
+When the harness re-prompts and nothing has changed since your last stop —
+the same blocker, the same open questions — send the **same resume block
+again, word for word**, with one line above it saying the goal check asked
+you to continue and the blocker is unchanged. Do not write a shorter
+version: a run of shrinking "still blocked" replies buries the one message
+that held the commands, and the last thing on screen is the one the user
+reads. Identical repeats are the signal that nothing moved. If the goal
+condition cannot be met without the user, say so in that line and name the
+way out: `/goal clear` on Claude Code, or a reply that supplies the input.
+(Claude Code's own instruction forbids suggesting `/goal clear` only after
+success; a blocked run is not success.)
+
+On Codex, the loop also punishes status restatements as "no progress" and
+lets you mark the goal `blocked` through `update_goal` once the same blocker
+has repeated for three consecutive turns. Do that at the third repeat, with
+the resume block as the reason, so the loop ends cleanly instead of running
+its budget down.
+
+Claude Code force-ends the turn after nine rejected stops in a row and shows
+the user "Goal paused". Nine identical full blocks is noisy; nine different
+one-liners is the failure this section exists to prevent.
 
 ## If the cap is hit mid-run
 
