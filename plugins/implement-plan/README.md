@@ -26,6 +26,13 @@ parked with a recommendation, never assumed.
   when the host can show it, warns politely if the work will not fit, and
   hands you a ready-to-paste `/goal` condition (Claude Code and Codex) so the
   run is hands-free. The check is informational: it never pauses the run.
+- **Every stop is readable on its own.** A stop opens with where the run is
+  and how many slices are merged (as a percentage), and restates everything
+  it needs from you — each question with options and a recommendation, each
+  command in full — even if it asked an hour ago. Under a goal loop, where the
+  harness may re-prompt several times before you return, a stop with nothing
+  new repeats the same block word for word instead of shrinking into a run of
+  "still blocked" one-liners that bury the message that had the commands.
 - **Splits and dispatches** — one worktree and one executor per independent
   slice, cheap models for execution, the premium model for every judgment,
   with the trade stated out loud.

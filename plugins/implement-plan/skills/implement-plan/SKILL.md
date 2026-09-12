@@ -7,18 +7,18 @@ description: Use when the user has an agreed plan — a visual plan, a plan-mode
 
 ## Overview
 
-Turn an **agreed plan** into merged, reviewed, tested, documented code — hands-free where
-possible, and never deciding for the user what is theirs to decide. The
+Turn an **agreed plan** into merged, reviewed, tested, documented code —
+hands-free where possible, never deciding for the user what is theirs. The
 orchestrator (you) plans the split, dispatches executors, checks their work
-against the plan **thoroughly**, cleans up the comments and the shape of the
-code it merged, runs the one adversarial review the user chose, fixes what it
-finds, and keeps going until the plan is done.
+against the plan **thoroughly**, cleans up the comments and shape of the code
+it merged, runs the one adversarial review the user chose, fixes what it finds,
+and keeps going until the plan is done.
 
-The executor discipline in this skill (minimum sufficient change, the four-line
-mini-plan, pause-and-confirm, "done means") is adapted from
-[@voxyz_ai](https://x.com/voxyz_ai). The orchestration around it — worktrees,
-conformance review, adversarial review, model routing, capacity, the
-keep-going contract — is this skill's own.
+The executor discipline (minimum sufficient change, the four-line mini-plan,
+pause-and-confirm, "done means") is adapted from
+[@voxyz_ai](https://x.com/voxyz_ai); the orchestration around it — worktrees,
+conformance, adversarial review, model routing, capacity, keep-going — is this
+skill's own.
 
 **Three rules bind everything below:**
 
@@ -27,8 +27,8 @@ keep-going contract — is this skill's own.
 2. **Technical direction is yours; operational and functional direction is the
    user's.** Never assume for them. The table under *Two Authorities* decides
    which is which.
-3. **Keep going.** Stop only at the named gates, and when you stop, make the
-   resume a single word.
+3. **Keep going.** Stop only at the named gates; a stop is a single word to
+   resume and complete on its own — under a goal loop it is all the user sees.
 4. **This skill's labels never reach the repository.** Gate IDs (G1–G4),
    slice and wave names, round, pass, finding, and step numbers, ticket
    titles, and *Pending* mean nothing after this run, and the plan file that
@@ -44,14 +44,14 @@ each step; six files beside it carry the full procedures:
 - `conformance-review.md` — the thorough plan-vs-work check, item by item
 - `adversarial-review-fallback.md` — how to run the installed review skills, the plan-as-diff variant, and the on-the-spot panel when no skill is installed
 - `model-routing.md` — which model executes, which judges, and the trade you must state
-- `capacity-check.md` — the back-of-the-napkin estimate, the advisory usage check, `/goal`, and the resume line
+- `capacity-check.md` — the back-of-the-napkin estimate, the advisory usage check, `/goal`, the resume block, and how to stop under a goal loop
 - `companion-skills.md` — the skills this one uses when installed (`adversarial-review`, `adversarial-review-quick`, `visual-plan`, `appropriate-comments-code`, `code-simplification`, `use-premium-models-efficiently`, `use-claude-limits-efficiently`), what each adds, and how to install them on Claude Code, Codex, or via `npx skills`
 
 **The first time you use this skill in a session, read all six before doing
 anything else** — before opening the plan, sizing the work, or answering a
 question about it. The summaries here remind a reader who has seen the full
 text; they never replace it. Re-read the relevant file at the step that names
-it. A missing file: say so and work from the summary.
+it; a missing file: say so and work from the summary.
 
 Two more files are **not** part of that first read. They are read fresh at
 the pass they describe, never recalled from an earlier read:
@@ -59,9 +59,9 @@ the pass they describe, never recalled from an earlier read:
 - `appropriate-comments-fallback.md` — the comment pass over the merged diff: the labels, rewrite-or-delete, the ratio check, and how to run the installed `appropriate-comments-code` skill instead
 - `code-simplification-fallback.md` — the behavior-preserving simplification pass: the signals, one change per test run, merges as proposals, and how to run the installed `code-simplification` skill instead
 
-Every companion skill is optional: this skill carries a distilled version of
-each and uses the real one when installed. If the user asks how to install
-one, `companion-skills.md` has the commands — never install anything mid-run.
+Every companion skill is optional: a distilled version ships here, the real
+one is used when installed; install commands are in `companion-skills.md`
+for when the user asks — never install anything mid-run.
 
 ## When to Use
 
@@ -83,52 +83,57 @@ one, `companion-skills.md` has the commands — never install anything mid-run.
 **The tell:** if a reasonable user could say "I didn't want that", it is theirs.
 "The user pre-authorized fixing whatever the review finds" covers *how* to fix
 defects, never *whether* to change what the product does. Log every technical
-decision at the end of the plan (see *Decisions log*); park every functional
-one under *Pending for you* and build the rest.
+decision at the end of the plan; park every functional one under *Pending for
+you* and build the rest.
 
 **A technical decision that changes what users or operators experience is no
-longer technical — it is the user's.** The category of the choice does not
-decide who owns it; its consequence does. Before you make any technical call,
-trace its effect: does it change output, ordering, timing, defaults, error
-behavior, what gets stored or where, how the thing is deployed, configured,
-monitored, or paid for? If yes, park it with your recommendation, even though
-the choice started life as "just an implementation detail". Examples that
-cross the line: a storage format change that makes old files unreadable; a
-faster algorithm that changes the order of tied results; a retry policy that
+longer technical — it is the user's.** The consequence decides who owns it,
+not the category. Before any technical call, trace its effect: does it change
+output, ordering, timing, defaults, error behavior, what gets stored or where,
+how the thing is deployed, configured, monitored, or paid for? If yes, park it
+with your recommendation, even though it started life as "just an
+implementation detail". Across the line: a storage format that makes old files
+unreadable; a faster algorithm that reorders tied results; a retry policy that
 changes how long a failure takes to surface; a dependency that adds a runtime
-requirement or a cost; a cache that changes when data looks fresh. Examples
-that stay yours: the same behavior with a different internal structure, name,
-or test layout.
+requirement or a cost; a cache that changes when data looks fresh. Still
+yours: the same behavior with a different internal structure, name, or test
+layout.
 
 ## Keep-Going Contract
 
 Default: **do not stop between phases.** Capacity → split → dispatch →
-conformance → comment and simplification pass → the review question → one
+conformance → comment and simplification pass → review question → one
 adversarial review → fix is one continuous effort.
 
 The **only** legitimate stops, each a gate below: (G1) the starting-point
-question, (G2) the adversarial review question — quick, full, or none, and
-after the fixes whether to run a second — (G3) a functional
-or operational decision the plan leaves to the user, or a simpler path than
-the plan prescribes, **when the next slice cannot proceed without it**, (G4)
-worktree deletion. Not a stop reason: "let me
-check in", "the session is long", "I'll ask before the next slice", "the user
-should see progress first", "I need the usage numbers first". Capacity is
-information you hand over in passing, never a gate: an unreadable usage
-report gets one line and the run continues.
+question, (G2) the adversarial review question — quick, full, or none, and after
+the fixes whether to run a second — (G3) a functional or operational decision
+the plan leaves to the user, or a simpler path than the plan prescribes, **when
+the next slice cannot proceed without it**, (G4) worktree deletion. Not a stop
+reason: "let me check in", "the session is long", "I'll ask before the next
+slice", "the user should see progress first", "I need the usage numbers first"
+— capacity is information handed over in passing, never a gate.
 
-**Every stop ends with the same closing.** State the phase, what is done, what
-is pending, the exact question, and that you will keep going once they answer.
-**No keyword**: "go ahead", "approved", "yes, the first option" all resume the
-run — read the reply for its meaning, never demand a word. Carry enough state
-that such a reply resumes the work (`capacity-check.md`).
+**Every stop ends with the same resume block** (`capacity-check.md`): phase
+and progress figure (slices merged of slices total, as a percentage), done,
+pending, and everything needed from the user — each question with options
+and your pick, each command in a code block, **re-pasted at every stop, never
+"see my earlier message"**: the user's screen holds the last message only.
+**No keyword**: "go ahead", "approved", "yes, the first option" all resume
+the run — read the reply for its meaning, never demand a word. **Under a
+goal loop, every stop is the last message.** A goal is on when the user said
+so or the conversation holds `A session-scoped Stop hook is now active`,
+`Stop hook feedback:`, `Goal check-in:`, or a Codex `<objective>` block. No
+harness says which stop is final, so each carries the full block; between
+stops, one line of progress and next action; a re-prompt with nothing changed
+gets the identical block again, never a shorter one.
 
 **How to ask.** In plain text, in the message itself — never a harness
 question tool, which not every harness has. Give the options, the consequence
-of each, and your recommendation, then stop. Bundle every open question into
+of each, and your recommendation, then stop; bundle every open question into
 one stop, so one reply resumes the run. When `/goal` is available (Claude
-Code, Codex), hand the user a ready-to-paste goal condition at kickoff
-(template in `capacity-check.md`); the gates still pause the loop by design.
+Code, Codex), hand over a ready-to-paste condition at kickoff (template in
+`capacity-check.md`); the gates still pause the loop by design.
 
 ## The Process
 
@@ -156,22 +161,21 @@ Then:
 
 Capture and state: `starting branch`, `starting commit`, clean or dirty tree.
 **Recommend a branch once** if the user is on `main` or a shared branch:
-*create a branch* (name it) / *stay on this branch*, with your recommendation.
-If they stay, that is the answer — no second nag. In the same stop, state the
-**testing depth** you will require (see *Testing*) so they can adjust it in
-the same reply. **Everything merges back into the starting branch, whatever
-it is.** Never push, never open a PR, unless asked.
+*create a branch* (name it) / *stay on this branch*, with your recommendation;
+if they stay, that is the answer — no second nag. In the same stop, state the
+**testing depth** you will require (see *Testing*) so they can adjust it in the
+same reply. **Everything merges back into the starting branch, whatever it
+is.** Never push, never open a PR, unless asked.
 
 ### 2. Capacity check
 
-Read `capacity-check.md`. Estimate the agent-runs the plan will cost (slices ×
-rounds + conformance + review + fixes) and try once to read real usage with
-the host's usage command. Report both in one line and **keep going**: this
-step is informational. Usage unreadable: say so, label the estimate
-unverified. Estimate too big: say so with the numbers and name what the user
-can do (let it run, stop after this slice, wait for the reset) while you
-proceed. Never invent a usage figure, never stop to ask for one — the split
-starts in the same turn. Then suggest `/goal` with the condition template.
+Read `capacity-check.md`. Estimate the agent-runs (slices × rounds +
+conformance + review + fixes), try once to read real usage with the host's
+usage command, report both in one line and **keep going**: unreadable usage
+is said so and the estimate labeled unverified; an estimate too big is said
+with the numbers and the user's options (let it run, stop after this slice,
+wait for the reset) while you proceed. Never invent a usage figure, never stop
+to ask for one. Then suggest `/goal` with the condition template.
 
 ### 3. Split the work
 
@@ -185,8 +189,7 @@ prerequisite merges. Keep coupled or tiny work local. Default throttle: at most
 git worktree add ../<repo>-<slice> -b <slice-branch> <starting-commit>
 ```
 
-State the split to the user in one paragraph: slices, order, model per role
-(next step), and the trade that implies.
+State the split in one paragraph: slices, order, model per role, the trade.
 
 ### 4. Dispatch executors
 
@@ -205,9 +208,9 @@ message.
 **A simpler path is reported, never taken.** When an executor stops because
 the plan prescribes a rung above what already exists (codebase, standard
 library, platform, installed dependency), or you see it yourself, build
-neither path: stop at **G3** for that slice with both paths, their cost, and
-your recommendation. Independent slices keep going. An executor that
-over-built *beyond* the plan is simply sent back.
+neither: stop at **G3** for that slice with both paths, their cost, and your
+recommendation; independent slices keep going. An executor that over-built
+*beyond* the plan is simply sent back.
 
 ### 5. Conformance review — thorough, not a skim
 
@@ -218,17 +221,15 @@ the document that describes it — or the search that showed no document does.
 Record *missing*, *different*, *extra*, *undocumented*, *duplicated*
 (a new test where an existing test on the same command or function already performs 60% or more of the new test's setup and action steps), and
 *undecided-but-decided*. Any of the first five → back to step 4 with a
-corrected packet that quotes the gap. An
-"undecided-but-decided" item is a functional decision the executor made for the
-user: revert it to the plan and park it under *Pending*.
-
-Merge a passing slice into the starting branch; then unblock its dependents.
+corrected packet that quotes the gap; an "undecided-but-decided" item is a
+functional decision the executor made for the user — revert it to the plan and
+park it under *Pending*. Merge a passing slice into the starting branch; then
+unblock its dependents.
 
 ### 6. Comment and simplification pass
 
-The last pass before the review, so the review sees its result. Before
-touching anything, run this pre-flight and tick each line in your todo list —
-the pass does not start until all four are true:
+The last pass before the review, so the review sees its result. Run this
+pre-flight first and tick each line in your todo list — all four must be true:
 
 - [ ] Checked the harness skill list for `appropriate-comments-code` and `code-simplification`; recorded which is installed. **An installed skill is the pass** — it is the full procedure, and it is run as written, in its own review-a-diff mode, scoped to the merged change. The fallback file is for the skill that is absent.
 - [ ] For each skill **not** installed, the matching file — `appropriate-comments-fallback.md`, `code-simplification-fallback.md` — read **now**, in full: not at session start, not from memory
@@ -276,21 +277,20 @@ is the most expensive step in the run, so the user chooses it. Size it first:
 
 The line is hard: "one over" is over. The size sets the recommendation, never
 an automatic run. Stop at **G2** and ask in plain text: **quick, full, or
-none**, with your recommendation, what each costs in plain words (the full
-panel is roughly twice the quick one), and what "none" means (the recap names
-the angles nobody reviewed). Then run exactly what they chose, once.
+none**, with your recommendation, the cost of each in plain words (full is
+roughly twice quick), and what "none" means (the recap names the angles nobody
+reviewed). Then run exactly what they chose, once.
 
-Prefer the installed skills — `adversarial-review-quick` or
-`adversarial-review` — **run as written**: their verifier and fix validator
-are part of the review, and your own reproduction never replaces them. Full
-chosen but only the quick skill installed: say so, run the quick one, name
-the uncovered angles in the recap. Neither installed → the on-the-spot panel
-from the fallback file. Every reviewer gets the plan as the brief, verbatim,
-plus the announced deviations.
+Prefer the installed skills — `adversarial-review-quick` or `adversarial-review`
+— **run as written**: their verifier and fix validator are part of the review,
+and your own reproduction never replaces them. Full chosen but only the quick
+skill installed: say so, run the quick one, name the uncovered angles in the
+recap. Neither installed → the on-the-spot panel from the fallback file. Every
+reviewer gets the plan as the brief, verbatim, plus the announced deviations.
 
 ### 8. Fix what it found, then ask before any second review
 
-Fix every confirmed finding. A fix that is invisible to users → do it, log it.
+Fix every confirmed finding. A fix invisible to users → do it, log it.
 A fix that changes user-visible behavior, syntax, defaults, an API, or storage →
 **park it under *Pending* with the recommended fix**, unless the plan already
 decided that behavior. A `design_is_wrong` finding is always the user's. Fixes
@@ -298,11 +298,11 @@ obey the comment and simplification rules of step 6 as written, because the
 pass does not run again. Re-run conformance on the fixes; that check is yours.
 
 Then stop at **G2** again: say what was found, fixed, and parked, and ask
-whether to run a second review on the fixed diff. Recommend one only when the
-fixes crossed the small-change line or touched a sensitive angle; otherwise
-recommend none. **No second review without a yes**; a no ends the loop with
-the rest under *Pending*, a yes gets one more sized run and this step again.
-**You assess every fix; executors never grade themselves.**
+whether to run a second review on the fixed diff; recommend one only when the
+fixes crossed the small-change line or touched a sensitive angle. **No second
+review without a yes**; a no ends the loop with the rest under *Pending*, a
+yes gets one more sized run and this step again. **You assess every fix;
+executors never grade themselves.**
 
 ### 9. Decisions log
 
@@ -326,14 +326,13 @@ Exactly these four bullets, short:
 
 - **What was done**
 - **What were the decisions you made** (technical, with the reason)
-- **What's pending for me to decide on** (functional/operational, each with your recommendation)
+- **What's pending for me to decide on** (functional/operational, each with your recommendation; any command or file still needed, in full)
 - **What's next**
 
 ## Testing and documentation — the floor is TDD plus current docs; the rest is the user's to size
 
 **The user decides how much testing is enough.** The skill sets a floor,
 recommends more where it pays, and never demands the full stack up front.
-The floor has two parts, and both are mandatory on every slice.
 
 - **Floor — always required: TDD with unit tests.** For every behavior the
   slice changes: a failing test first, watched to fail, then the minimum code,
@@ -387,9 +386,9 @@ The floor has two parts, and both are mandatory on every slice.
   real** (third-party services, the clock, external networks); everything
   else runs from the real codebase.
 - **Encouraged, optional — real dependencies.** For databases, queues, caches
-  and similar, recommend testcontainers (or the repo's equivalent); the user chooses.
-- No new test infrastructure for one task; test the behavior the plan
-  changes, do not backfill unrelated coverage.
+  and similar, recommend testcontainers (or the repo's equivalent); the user
+  chooses. No new test infrastructure for one task; test the behavior the
+  plan changes, do not backfill unrelated coverage.
 
 State the depth at G1 in one line — *"Testing: TDD with unit tests and docs
 updated in the same diff; a case where an existing test already performs
@@ -410,10 +409,10 @@ platform, installed dependency, one line, then the minimum — tests included;
 fix at the root; remove what you replace; never cut trust-boundary
 validation, data-loss handling, security, or accessibility. Stop and report instead of
 improvising when scope grows, a dependency is needed, a public surface changes,
-or data would be lost. Done means: behavior works, every document that
-describes the changed behavior is updated in the same diff, exact commands and
-results reported, nothing unrelated in the diff, no debug or scratch left,
-assumptions stated plainly.
+or data would be lost. Done means: behavior works, every document describing
+the changed behavior updated in the same diff, exact commands and results
+reported, nothing unrelated in the diff, no debug or scratch left, assumptions
+stated plainly.
 
 ## Rationalizations — Observed, and Wrong
 
@@ -422,7 +421,8 @@ assumptions stated plainly.
 | "The user pre-authorized fixing whatever the review found" | That authorizes *fixing defects*. A fix that changes what users see or type is a functional decision. Park it. |
 | "They were merged, so I deleted the worktrees" | Merged is not consent. Deletion waits for G4, always. |
 | "I recommended a branch and created it" | Recommending is asking. Creating one unasked moves the merge target and leaves the user with a branch they never chose. |
-| "The user is away, so I skipped the permission question" | Absence does not grant permission. Stop with the closing line; resuming costs them a short reply in their own words. |
+| "The user is away, so I skipped the permission question" | Absence does not grant permission. Stop with the resume block; resuming costs them a short reply in their own words. |
+| "I gave the commands an hour ago; a pointer to that message is enough" or "the goal check keeps rejecting, so one line will do" | The user's screen holds the last message, and nine one-liners bury the one that had the commands. Paste the commands again at every stop; answer a re-prompt with the same full block, word for word, plus a line saying nothing changed. |
 | "It's one file over the threshold, and asking would block for hours, so I ran the quick panel and named the gap" | One over is over, and no panel runs before the G2 answer. Recommend the full one, ask quick / full / none, and wait. |
 | "The quick panel needs no permission, so I'll run it now" | Every panel costs tokens the user has not agreed to spend. One question at G2, then at most one review. |
 | "Reviewing each slice as it merges catches problems early" | It also reviews the same code several times. Conformance is the per-slice check; the panel runs once, on the whole diff, after the cleanup pass. |
@@ -474,7 +474,8 @@ assumptions stated plainly.
 - A decisions log or recap written while the step 6 pre-flight still has an unticked line
 - The comment or simplification pass started without `appropriate-comments-fallback.md` and `code-simplification-fallback.md` opened at that step — an earlier read does not count
 - A simplification that touches a file outside the merged diff, modifies a test, or merges two functions
-- A stop that does not end with the resume line, or one that asks the user for a specific keyword instead of a plain-language answer
+- A stop that does not end with the resume block, or one that asks the user for a specific keyword instead of a plain-language answer
+- A stop whose *Needed from you* points at an earlier message instead of restating the command, question, or file, or a reply to `Stop hook feedback:` shorter than the stop before it
 
 ## Checklist
 
@@ -483,7 +484,7 @@ Create a todo per item.
 - [ ] Read all six companion files (first use in this session)
 - [ ] Plan located; a plan review offered at G1 only when none has run — outcome recorded
 - [ ] Starting branch + commit recorded; branch recommended once (G1)
-- [ ] Capacity estimated and usage reported in one line (or marked unreadable) without stopping; `/goal` condition handed over
+- [ ] Capacity estimated and usage reported in one line (or marked unreadable) without stopping; `/goal` condition with the waiting-on-the-user clause handed over; every stop carries the full resume block with the progress figure and every needed command re-pasted, and under a goal loop a re-prompt gets the identical block
 - [ ] Split stated: slices, order, worktrees, model per role, the trade said out loud
 - [ ] Testing depth stated at G1 (TDD unit floor + test-map floor + docs-in-the-same-diff floor + what the user chose) and copied into every packet
 - [ ] Every packet self-contained: plan section verbatim, scope, testing and documentation rules, discipline, evidence, stop conditions

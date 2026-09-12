@@ -131,6 +131,52 @@ the decisions the user should know about, as a checklist with what each one
 unblocks, and keep the dependent tickets in the plan with the prerequisite
 named in *Depends on*.
 
+## Every stop carries every open question, in full
+
+A round is a stop: the run waits for the user. The user may not be at the
+keyboard, and under a goal loop (see below) the harness may re-prompt you
+several times before they return. Whatever message is last on their screen
+is the one they answer from. So every stop restates **every** question that
+is still open — the ones asked this round and the ones from earlier rounds
+that went unanswered — each with its four parts (the decision, why it is
+theirs, the options with consequences, your recommendation), plus any
+command they must run or file they must send, written out in full. Never
+"the question from round two", "as asked above", or "the two commands in my
+earlier message". Repeating text you wrote before is the intended cost; the
+reader has the last message and nothing else.
+
+Open each stop with one line of position: `Step <n> of 13; <k> questions
+open; <what happens once they are answered>`. Steps are the numbered steps
+in `SKILL.md`; `k` counts open questions across all rounds. A user who comes
+back at a random moment reads that line and knows whether the plan is close.
+
+### Under a goal loop
+
+You are in a goal loop when the user said they set one, or the conversation
+holds a harness message beginning `A session-scoped Stop hook is now active
+with condition:` (Claude Code), a system prompt with an `<objective>` block
+that says `Continue working toward the active thread goal` (Codex), or a
+message beginning `Stop hook feedback:` or `Goal check-in:`. Assume the loop
+is on until the harness reports the goal cleared or paused. Neither harness
+tells you which stop will be the one the user reads, so every stop is
+written as if it is the last: the position line and every open question in
+full, never a shortened version.
+
+Between stops, keep chat to one line: the position and the next action.
+Paragraphs written mid-run under a loop are never seen.
+
+When the harness re-prompts and nothing has changed — the same questions are
+still open — send the **same message again, word for word**, with one line
+above it saying the goal check asked you to continue and the questions are
+unchanged. A run of shrinking "still waiting on your answers" replies buries
+the one message that held the questions. If the goal condition cannot be met
+without the user's answers, say so in that line and name the way out:
+`/goal clear` on Claude Code, or a reply that answers. On Codex, mark the
+goal `blocked` through `update_goal` at the third identical repeat, with the
+questions as the reason. Claude Code force-ends the turn after nine rejected
+stops; nine identical full messages is noisy, nine different one-liners is
+the failure this section prevents.
+
 ## Never answer your own question
 
 A question put to the user is answered by the user. Do not fill in a likely
@@ -150,3 +196,5 @@ question the decisions section already answers: that was never a question.
   is empty
 - A round "answered" by the agent so it could keep going
 - Six questions in one prompt because "they are all related"
+- A stop that points at an earlier round instead of restating its open questions
+- A reply to a goal re-prompt that is shorter than the stop before it

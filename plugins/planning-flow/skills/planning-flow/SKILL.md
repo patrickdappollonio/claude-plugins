@@ -10,7 +10,7 @@ description: Use when the user asks for a plan for a coding change — "plan thi
 Turn a request into **one plan**: the current, complete answer to the user's
 ask, with the decisions that shaped it and the caveats that remain. The
 process behind it — parallel exploration, a zero-context review, rounds of
-questions, spikes, an adversarial review — exists to make the plan right. None
+questions, spikes, an adversarial review — exists to make the plan right; none
 of it belongs in the plan or in the message that delivers it.
 
 **Five rules bind everything below:**
@@ -39,14 +39,13 @@ of it belongs in the plan or in the message that delivers it.
    deleted before the plan is presented. Inside that file, use everything
    the viewer can render: Mermaid diagrams, diff and migration fences, API
    cards, file trees, question fences, a summary card. A picture of the
-   design belongs in the plan; a working copy of it does not. And the
-   solution it describes sits
-   on the lowest rung of the ladder in `plan-template.md` that answers the
-   ask: not needed → cut it; the codebase already has it → reuse it; the
-   standard library or the platform has it → use it; an installed dependency
-   has it → use it; otherwise the minimum that works. A higher rung is a
-   decisions entry, rejected, with the reason. Never cut: validation at a
-   trust boundary, data-loss handling, security, accessibility.
+   design belongs in the plan; a working copy does not. The solution sits on
+   the lowest rung of the ladder in `plan-template.md` that answers the ask:
+   not needed → cut it; the codebase has it → reuse it; the standard library
+   or platform has it → use it; an installed dependency has it → use it;
+   otherwise the minimum that works. A higher rung is a decisions entry,
+   rejected, with the reason. Never cut: validation at a trust boundary,
+   data-loss handling, security, accessibility.
 
 ## Read the Companion Files First
 
@@ -55,7 +54,7 @@ each step; six files beside it carry the full procedures:
 
 - `plan-template.md` — the plan file skeleton, the ticket format, the decisions entry format, the size bands, and the timeless-prose rule with examples
 - `communication.md` — how to write for a reader who has not seen the code: the identifier rule, Simplified Technical English (ASD-STE100), outcome-first messages
-- `interviewing.md` — the design tree, the frontier, rounds, the shape of a question, fog, out of scope, and the rule never to answer your own question
+- `interviewing.md` — the design tree, the frontier, rounds, the shape of a question, fog, out of scope, the rule never to answer your own question, and how every stop restates every open question — including under a goal loop
 - `plan-review.md` — the zero-context reviewer, the adversarial review of a plan (installed skills or an on-the-spot panel), the sizing rule, and how to run a spike
 - `model-routing.md` — which tier explores, which tier reviews, the model names, and what to do when the harness cannot choose
 - `companion-skills.md` — what `visual-plan`, `adversarial-review`, `adversarial-review-quick`, and `implement-plan` add when installed, and the install lines to give only when asked
@@ -74,15 +73,12 @@ suggest installing anything unless the user asks.
 ## When to Use
 
 - The user asks for a plan, a design, an approach, or "how would we do X"
-  for a coding change, and no plan exists yet.
-- The user invokes `/planning-flow` with their ask and context.
+  for a coding change, and no plan exists yet — or invokes `/planning-flow`.
 
-**When NOT to use:**
-
-- A plan already exists and the user wants it built. That is implementation;
-  point at the `implement-plan` skill if installed, or the harness's own
-  execution, and stop.
-- The user asked a question, not for a plan. Answer it.
+**When NOT to use:** a plan already exists and the user wants it built — that
+is implementation; point at the `implement-plan` skill if installed, or the
+harness's own execution, and stop. Or the user asked a question, not for a
+plan: answer it.
 
 ## Two Authorities
 
@@ -121,7 +117,7 @@ migration and API cards, file trees, question fences — but do not build.
 
 - **The session started in plan mode** (the harness told you writes are limited
   to its own plan file): the harness plan file *is* the plan. Write nothing
-  else. Everything below still applies to its content.
+  else; everything below still applies to its content.
 - **Otherwise, inside a git repository:** write to `.plans/<task-name>.md`
   under the repo root. If `.plans/` already exists and holds files that are
   not plans from this skill, use `.planning-flow/` instead. Keep the folder
@@ -145,13 +141,20 @@ this change.
 ## The Process
 
 Do every step in order. Read the named file at its step. Between steps, keep
-chat to one-line status notes; the plan is where the tokens go.
+chat to one-line status notes; the plan is where the tokens go. **Every stop
+is complete on its own** (`interviewing.md`): it opens with `Step <n> of 13;
+<k> questions open` and restates every open question in full — four parts,
+from every round — plus any command or file you need; never a pointer to an
+earlier message. **Under a goal loop** (the user said so, or the conversation
+holds `A session-scoped Stop hook is now active`, `Stop hook feedback:`, `Goal
+check-in:`, or a Codex `<objective>` block) every stop is the last message the
+user reads; a re-prompt with nothing changed gets it again, identical.
 
 ### 1. Acknowledge, then capture the ask
 
 Reply with one short sentence that acknowledges the request and says you are
 exploring. Then copy the user's ask **verbatim** into the plan file's *The
-ask* section — the words they typed, not your paraphrase. The reviewer in
+ask* section — the words they typed, not your paraphrase; the reviewer in
 step 5 and the final self-check both measure against these words.
 
 ### 2. Explore in parallel
@@ -211,14 +214,14 @@ history, reassurance, or a list of what you already checked.
   sections only, and no repository access at first. Its charter: restate the
   challenge, grade whether it could start implementing from this text alone,
   and list every exact string, format, path, convention, command, and
-  location it would still have to go and find. Then it opens the repository
-  and reports what the text got wrong. Every item on its list that would
-  change what gets built is a gap in *Technical context*; fill each one with
-  the exact value, and run the check again until the list holds nothing of
-  that kind. An implementer still opens the file it edits; the surrounding
-  text of an insertion point is not a gap.
+  location it would still have to go and find; then open the repository and
+  report what the text got wrong. Every item on its list that would change
+  what gets built is a gap in *Technical context*; fill each with the exact
+  value and run the check again until the list holds nothing of that kind.
+  An implementer still opens the file it edits; the surrounding text of an
+  insertion point is not a gap.
 
-The reviewer finds what the plan gets wrong. The implementer finds what the
+The reviewer finds what the plan gets wrong; the implementer finds what the
 plan leaves out. A plan that passes only the first is correct and
 unimplementable.
 
@@ -260,8 +263,7 @@ small ticket:** one pull request for everything, or several. State the trade
 in one neutral line each — one PR is a single review and a single merge;
 several are smaller reviews and more coordination — and **give no
 recommendation**. Large tickets and large PRs are legitimate; writing code is
-cheap now and the user decides how they want to review it. Never nudge
-toward splitting.
+cheap now and the user decides how to review it. Never nudge toward splitting.
 
 ### 8. Rewrite the plan in place
 
@@ -270,9 +272,9 @@ affected sections so the file reads as one plan written today. Record each
 user answer as a decision (theirs), each technical choice you made as a
 decision (yours, with drawback), and delete the answered question. A resolved
 spike disappears as a ticket: its answer goes into the decisions section and
-into the tickets it affected. A ticket a review removed disappears; the
-reason it went lives in the decisions section. Re-read the changed sections
-against the timeless-prose rule in `plan-template.md` before moving on.
+the tickets it affected. A ticket a review removed disappears; the reason
+lives in the decisions section. Re-read the changed sections against the
+timeless-prose rule in `plan-template.md` before moving on.
 
 ### 9. Present the plan
 
@@ -289,17 +291,15 @@ adds. Choose the viewer:
 - **Neither:** give the path and a summary in chat, in the shape under
   *Closing*.
 
-The file stays the source of truth; when a viewer collects comments or
-answers, fold them into the file.
+The file stays the source of truth; a viewer's comments are folded into it.
 
 ### 10. Offer the cheap spikes
 
 In the same message that presents the plan, list every spike ticket a
 subagent could close quickly — a sanity check on an endpoint, whether a
 library supports a call, whether a path exists — and ask in plain text
-whether to run them now. The user may decline. Do not offer the adversarial
-review here: the plan still has open questions, and a review of a plan that
-is about to change is a review paid for twice.
+whether to run them now; the user may decline. Not the adversarial review:
+a review of a plan that still has open questions is paid for twice.
 
 ### 11. Fold in what came back, then ask the leftovers
 
@@ -317,14 +317,13 @@ runs **once**, on the finished plan, and only when the user picks it. Size it
 with the table in `plan-review.md`: a change inside one subsystem gets the
 quick recommendation, as long as it does not touch the database schema,
 sign-in and permissions, work that runs at the same time, or an outside
-service; anything else gets the full one. Then offer it in plain text —
-**quick, full, or none** — with your recommendation and what each costs in
-plain words (the full panel is roughly twice the quick one). Run exactly
-what they chose, once: the installed `adversarial-review-quick` or
-`adversarial-review` skill when present, given the plan file as the change
-under review and **the user's ask, word for word, as the standard the plan
-must meet**; the on-the-spot panel from `plan-review.md` when neither is
-installed.
+service; anything else gets the full one. Offer it in plain text — **quick,
+full, or none** — with your recommendation and the cost of each in plain
+words (full is roughly twice quick). Run exactly what they chose, once: the
+installed `adversarial-review-quick` or `adversarial-review` skill when
+present, given the plan file as the change under review and **the user's
+ask, word for word, as the standard the plan must meet**; the on-the-spot
+panel from `plan-review.md` when neither is installed.
 
 Findings go through the authority table. A finding whose fix leaves behavior
 unchanged: apply it and log it as your decision with the reason and any
@@ -353,17 +352,18 @@ The closing message is the plan, not its history. Exactly this shape, short:
 - **Does it cover the ask** — one line, measured against the verbatim ask.
 - **Gotchas and caveats** — the ones that survived, each a line.
 - **Decisions you should know about** — the ones you made on the user's
-  behalf that they might want to reverse, each with a line of reason.
+  behalf that they might want to reverse, each with a line of reason, and
+  every manual step only they can do, written out in full, never as a
+  pointer back.
 
 Never: how many revisions there were, what reviewers said, what changed since
 the draft.
 
 Then ask, **in plain text in the same message, never through a question
-tool**: whether they want to start implementing. When the `implement-plan`
-skill is installed, say it will pick this file up and name it as the
-recommended next step. When it is not, say the plan file is ready for
-whichever implementation step they prefer. Plain text lets them answer with
-any skill or command they have.
+tool**, whether they want to start implementing: name `implement-plan` as
+the recommended next step when it is installed, otherwise say the file is
+ready for whichever implementation step they prefer. Plain text lets them
+answer with any skill or command they have.
 
 ## Tickets
 
@@ -426,6 +426,7 @@ example in `plan-template.md`):
 | "Three questions in one prompt is faster than six rounds" | Three related questions in one round is the design. Six unrelated ones is a wall. Group by theme, four at most. |
 | "I'll ask the default and the table in the same round to save a trip" | The default depends on the table. A question whose prerequisite is open belongs to the next round. |
 | "The user is away, so I'll take my recommendation as their answer" | A question put to the user is answered by the user. The question stays open in the plan until they answer it. |
+| "I asked that in round two; a pointer is enough" or "the goal check keeps rejecting, one line will do" | The user's screen holds the last message. Restate every open question at every stop; answer a re-prompt with the same full message, word for word. |
 | "I can't phrase it sharply yet, so I'll skip it" | Write the unclear area under *Not yet specified*. Turn it into a real question once the questions ahead of it are answered. |
 | "The user answered something close to this earlier" | Close enough is decided. Decide it in their direction and log it as following from their answer. |
 | "This decision is technical, so it's mine" | Only while its effect stays invisible. Trace the consequence first. |
@@ -461,6 +462,7 @@ example in `plan-template.md`):
 - A question on the list that a subagent could answer from the codebase
 - Two questions in one round where the second depends on the first
 - A question the agent answered itself to keep going
+- A stop that points at an earlier round instead of restating its open questions, or a goal re-prompt answered with less than the stop before it
 - A recommendation attached to the one-pull-request-or-several question
 - A ticket split because it "felt too big" with no user request
 - A *Technical context* section that names a file without saying what is in it, or a format without its exact strings
@@ -487,7 +489,7 @@ Create a todo per item.
 - [ ] Zero-context reviewer run on the most capable tier with only the ask, the plan, and the codebase
 - [ ] Cold implementer check run on a different model family where possible; every gap that would change what gets built filled with the exact value; re-run until none of that kind remain
 - [ ] One question list from every source, arranged as a design tree, then filtered: decided, answerable by code, technical
-- [ ] Frontier asked in rounds of at most four until empty; delivery shape included without a recommendation; no question answered by the agent
+- [ ] Frontier asked in rounds of at most four until empty; delivery shape included without a recommendation; no question answered by the agent; every stop opens with its position line and restates every open question in full
 - [ ] Plan rewritten in place after every round; spikes and dropped tickets folded into decisions
 - [ ] Presented through `visual-plan` (technical audience stated), plan mode, or chat
 - [ ] Cheap spikes offered at presentation; results folded in; leftover questions asked until nothing is open

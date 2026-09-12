@@ -1,6 +1,6 @@
 {
   "name": "planning-flow",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "description": "Build one clean coding plan: explore in parallel, review the draft against the ask, batch the questions, write tickets and resolve spikes, log every decision, then hand off to implementation.",
   "author": { "name": "Patrick D'appollonio", "email": "patrickdappollonio@gmail.com" },
   "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/planning-flow",
