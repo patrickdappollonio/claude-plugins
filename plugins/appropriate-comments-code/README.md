@@ -20,10 +20,20 @@ not belong in the code.
   number and still be wrong for the spot it occupies: twenty lines above a
   function is documentation, and nobody reads it on the way to the code. The
   exemption is a decision table, a state machine, or a one-rule-per-line list,
-  where the mapping *is* the contract; prose never qualifies. A rule is a
+  and bullets do not grant it: every row must be a condition and its outcome
+  with nothing added after it (no reason, no comparison, no second
+  sentence), and at least one row must map something the
+  body below cannot show, or the table is the body restated. A rule is a
   caller obligation or a guarantee, not rationale, precedent, or the body
   restated, and a prose comment still over four lines is shown to you with a
   candidate home rather than kept.
+- **Every long comment is accounted for at the end.** The skill closes with
+  a ledger in its final message: one line per comment of three or more lines
+  in the change, listed as whole contiguous runs of comment lines even when
+  it only appended to them, with the shape, both counts for any table, and
+  the verdict. An exemption that is not in the ledger with its counts was
+  never earned, and a verdict is carried out in the file, not left as a
+  suggestion because the task only asked for a note.
 - **Doc comments on public items are documentation.** Where the doc generator
   renders them (Rust `///`, docstrings, Javadoc, Go exported identifiers), they
   keep a two-line summary plus the convention sections that state contracts;

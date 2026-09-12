@@ -65,8 +65,21 @@ func Retry(ctx context.Context, fn func() error) error {
 ```
 
 The one legitimate exemption is a decision table, a state machine, or a
-one-rule-per-line list, where the mapping *is* the contract — and then the
-comment has that shape. Prose never qualifies, however many rules it holds.
+one-rule-per-line list, and bullets do not grant it; two tests do, run on
+every row before the exemption is claimed. The row test: a row is a
+condition and its outcome, and then it ends; anything after the outcome is
+a gloss (a dash or parenthesis opening an explanation, a clause starting
+with "because", "since", "so that", "which", or "unlike", a second sentence)
+and one glossed row makes the block prose, however many rules it holds. The body-match test: a row whose condition and outcome both sit in
+the body below (the `if`, the log message and level, the return) is the body
+restated, and a table whose every row matches is deleted whatever its shape.
+Before finishing, list every comment of three or more lines in the change as
+a whole comment, meaning the contiguous run of comment lines (appending a
+note to a block makes the run yours, and "the task only asked for a note"
+changes nothing), with its shape, the row and body-match counts for any
+list, and the verdict; a table kept without both counts was kept on shape,
+and a verdict of "deleted" with the lines still in the file is a failed
+pass.
 
 **A rule is a caller obligation or a guarantee**: a lock to hold, an
 ordering to keep, what a return means on error. Rationale ("because a
@@ -280,6 +293,7 @@ wrong subject is not a nit. Don't sweep comments outside the change.
 
 - [ ] Every exported identifier has a doc comment: sentence, starts with the name, ends with a period, written for the caller
 - [ ] Every comment above a declaration is one or two lines (or a table or one-rule-per-line list); no prose over four lines kept under an exemption claim
+- [ ] Every table or list kept under the exemption has no row glossed after its outcome and at least one row the body does not carry, and every comment of three or more lines in the change is listed whole, with counts and verdict
 - [ ] No comment names a field the body reads or a helper the body calls
 - [ ] Every comment is present tense and survives the cover test and the subject test
 - [ ] No comment narrates a previous attempt, a past bug, or this edit; any fixed regression is pinned by a test named after the invariant

@@ -38,6 +38,75 @@ and "returns the kept orders" are the body and the signature, a few lines
 below. The argument for manual callers goes to the PR description. Five
 identifiers left with them.
 
+## A bulleted "decision table" that is the body restated
+
+Tenet 1 exempts a decision table only after two tests: the row test (a row is
+a condition and an outcome, and then it ends; anything after the outcome, a
+reason, a comparison, a second sentence, is a gloss, and one gloss anywhere
+makes the block prose) and the body-match test (a row whose condition and
+outcome both sit in the body below is the body restated).
+This block was kept under the exemption because it has bullets.
+
+```go
+// Bad — five rows, every one glossed after its outcome, every one an if-and-return below
+// classify maps a failed fetch to a retry decision:
+//
+//   - the context is done: giveUp — the caller has stopped waiting;
+//   - a 429 with Retry-After: waitFor(header) — the server named the delay;
+//   - a 5xx or a timeout: backoff — the usual transient case;
+//   - any other 4xx: giveUp — retrying a client error changes nothing;
+//   - a refused connection: backoff — the upstream is restarting.
+func classify(err error, resp *http.Response) decision {
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return giveUp
+	}
+	if resp != nil && resp.StatusCode == http.StatusTooManyRequests && resp.Header.Get("Retry-After") != "" {
+		return waitFor(resp.Header.Get("Retry-After"))
+	}
+	if resp != nil && resp.StatusCode >= 500 || isTimeout(err) {
+		return backoff
+	}
+	if resp != nil && resp.StatusCode >= 400 {
+		return giveUp
+	}
+	return backoff
+}
+
+// Good — the one fact the body's shape hides: the order is deliberate
+// classify checks Retry-After before the status class: a 429 that names a
+// delay waits that delay even when the client would back off sooner.
+func classify(err error, resp *http.Response) decision {
+```
+
+Row test: five rows, five glossed, so the block is prose and the glosses go
+first. Body-match, run on the cleaned rows and never skipped because the rows
+are clean: every row's condition is an `if` and its outcome a `return` a few
+lines down, five of five, so what is left after the glosses restates the body
+and goes too. Had the task been "add a note about the ordering to this
+comment", the outcome is the same: the note is added, and the block it was
+added to is one comment with the note, judged whole. The ledger line reads `rows 5  glossed 5
+body-match 5/5 → deleted; one constraint kept as 2 lines`. The constraint
+that survived is the ordering, which the body has but does not announce.
+
+The same tests pass a table the body cannot show:
+
+```go
+// Good — no glosses, and the body cannot show this: the constraint lives in the schema
+// Transitions the claims table accepts; anything else is rejected by its
+// CHECK constraint, not by this code:
+//
+//   pending  → claimed, cancelled
+//   claimed  → done, failed, pending
+//   failed   → pending
+func (s *Store) Transition(ctx context.Context, id string, to State) error {
+```
+
+Row test: three rows, none glossed. Body-match: zero of three, because the
+mapping is enforced by the database. The ledger line reads `rows 3  glossed 0
+body-match 0/3 → kept; rows carried by the claims table CHECK constraint`.
+The unmatched rows are named with the place that carries them; an unmatched
+row with no such place is a loosened count.
+
 ## A comment that names its own body
 
 Tenet 7 keeps the lock a caller must hold, the neighbour a comment differs
