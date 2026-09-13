@@ -3,7 +3,9 @@
 Simplifying code includes the comments attached to it. Apply the same rule
 throughout: **a comment earns its place by carrying information the code does
 not, about the code as it is now, in as few lines as that takes.** The full
-`appropriate-comments-code` skill covers this in depth; the short form:
+`appropriate-comments-code` skill covers this in depth: when it is in your
+harness's skill list, run it as written; when it is not, this file is the
+rule. The short form:
 
 - **Cover test.** Hide the comment and read the code. Lost nothing? Delete it.
   `// open the connection` above `connection.open()` fails this every time.
@@ -12,6 +14,21 @@ not, about the code as it is now, in as few lines as that takes.** The full
   standing constraint: "Streams because payloads are unbounded; the caller must
   close the reader." A regression is pinned by a test named after the invariant,
   not by a "don't remove this" comment.
+- **A comment enforces nothing.** A comment addressed to a future editor
+  ("never send X", "always go through Y", "keep both", "keep in step with
+  Z", "needs review before changing") is a promise nothing checks, at ten
+  lines or at two. It becomes an assertion in the existing test that
+  already runs the code (a new test function only when no existing test on
+  that function performs 60% or more of the setup and action steps; a
+  "different invariant" is an assertion, not a step, and a different
+  fixture value is an argument, not a step), the why goes above
+  that assertion where test files allow length, and one line of fact stays
+  in the code. A process step goes to CONTRIBUTING, never a comment. The
+  test is written in this pass, not noted as a follow-up, and nothing
+  waits on a pending decision.
+- **The language's norm is short.** Go and Rust code keeps non-doc comments
+  to one or two lines; the long shape is the doc comment on a published
+  item. Over three lines there is foreign before any rule applies.
 - **Two lines above a declaration.** More than that is documentation and belongs
   in a doc, a package comment, or the commit message. The exception is a
   decision table, state machine, or one-rule-per-line list the comment *is*,

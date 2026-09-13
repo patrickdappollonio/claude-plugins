@@ -3,7 +3,19 @@
 Read this file on first use of the skill in a session, and again before
 adding, changing, or reviewing any comment or doc comment. `SKILL.md`
 carries the summary; this file is the specification. It condenses the
-standalone `appropriate-comments-code` skill for Go.
+standalone `appropriate-comments-code` skill for Go: when that skill is in
+your harness's skill list, run it as written and treat this file as the
+Go-specific notes; when it is not, this file is the whole rule.
+
+## The Go norm is short
+
+Go's own code, the standard library first, keeps comments to one or two
+lines. The one long shape Go has is documentation: the package comment in
+`doc.go` and the doc comment on an exported identifier, written as
+paragraphs. Outside that, a `//` block over three lines is foreign to the
+language before any rule below is applied, so the four-line question
+below is asked at three in Go, and a keep has to say which fact could not
+fit.
 
 ## The rule
 
@@ -110,6 +122,38 @@ func (c *Client) Fetch(ctx context.Context, url string) (io.ReadCloser, error) {
 **A regression is pinned by a test, not a comment.** "Don't remove this
 check, it caused a double refund" guards nothing; `TestRefundIsNotAppliedTwice`
 does. Name the test after the invariant, never the incident.
+
+**A comment enforces nothing: the editor test.** Ask who the comment is
+addressed to. A caller ("callers must hold mu", "the caller must Close
+the reader") stays. A future editor ("never marshal the record directly",
+"always go through the builder", "keep both", "keep in step with the
+signup service", "restoring this needs privacy review") is a promise
+nothing checks, at ten lines or at two, present-tense or not, incident or
+none. The verdict is written in this pass, not noted as a follow-up:
+
+1. An assertion that fails when the rule is broken (or a type, a
+   validation, a vet check, a lint rule).
+2. Placed in the existing test on the same function when it already
+   performs 60% or more of the setup and action steps the assertion needs
+   (assertions are not steps): a row in its table or a check in its body,
+   never a second `Test…` function that builds the same fixture and makes
+   the same call. "It asserts a different invariant" describes the
+   assertion, not the steps, and "it needs a different fixture" describes
+   an argument: an erroring job instead of a succeeding one is the same
+   step with a different value, so it is a row, not a function. A new
+   `Test…` only when nothing performs the steps, named after the
+   invariant, with the count in the ledger.
+3. The why above the assertion in the test file, where length and history
+   are allowed, or in the package doc.
+4. One line of fact in the code: "the portal never receives the SSN", not
+   "never add the SSN to CustomerView".
+
+A process step (a review, a sign-off) cannot be tested and goes to
+CONTRIBUTING or CODEOWNERS; the comment drops it. A "keep in step with"
+is enforced by one shared constant or a test that reads both; when neither
+is possible, one line names the other place and the ledger says the
+coupling is unenforced. Nothing waits on a pending decision: the lines
+leave now and the question goes to the handoff.
 
 ### 3. The cover test
 
@@ -259,6 +303,11 @@ wrong subject is not a nit. Don't sweep comments outside the change.
 |---|---|
 | "The history explains why I changed it" | The reader sees today's code. State the constraint; the story goes in the commit. |
 | "A comment warns the next person not to undo the fix" | Nothing checks a comment. Write the test. |
+| "It explains what we withhold and why; that's a real constraint" | It stops nobody. Assertion in the existing test, why above it, one line of fact in the code. |
+| "No bug was fixed, so the test rule doesn't apply" / "writing a test is out of scope for a comment pass" | The trigger is the audience, not an incident, and the assertion is the verdict. A follow-up note is a verdict not carried out. |
+| "A separate `Test…` reads better for the negative case" | Same fixture, same call, one more check: a row or an `if` in the existing test. Count the steps; at 60% it goes there. |
+| "It's a forward-looking gate, not history" | A gate nothing closes is a comment. Process to CONTRIBUTING; code rules to a test. |
+| "The policy may change next week, so wait" | Either outcome removes the lines. Carry out the verdict; the question goes to the handoff. |
 | "It's all true and relevant" | That is the bar for documentation. The bar for a comment is *and it fits in two lines*. |
 | "The comment documents what the function does" | Doc comments say what the caller cannot see: errors, side effects, preconditions — not a prose copy of the body. |
 | "It explains what this endpoint is" | Wrong subject. Comment why the line differs from its neighbours; describe the feature in the package doc. |
@@ -275,6 +324,10 @@ wrong subject is not a nit. Don't sweep comments outside the change.
 ## Red flags in your draft
 
 - More than two or three lines and none states a constraint, invariant, or contract
+- A non-doc `//` block over three lines: foreign to Go before any other rule
+- "never", "always", "do not", "keep both", "keep in step", "needs review before" with no test, type, vet check, or lint that fails when ignored
+- A new `Test…` function that builds the same fixture and calls the same function as an existing one, written to back a comment
+- A test noted as a follow-up, or a verdict held for a pending decision
 - "used to", "previously", "we tried", "no longer", "originally", "instead of the old"
 - "per review", "as discussed", "from the audit", "flagged by", "for context", "background:"
 - "in this stage", "phase 2", "wave 4", "task 17", "pass 2", `F7`
@@ -297,6 +350,7 @@ wrong subject is not a nit. Don't sweep comments outside the change.
 - [ ] No comment names a field the body reads or a helper the body calls
 - [ ] Every comment is present tense and survives the cover test and the subject test
 - [ ] No comment narrates a previous attempt, a past bug, or this edit; any fixed regression is pinned by a test named after the invariant
+- [ ] Every comment addressed to a future editor is now an assertion in the existing test that runs the code (a new `Test…` only when none performs the steps, with the count), the why sits above the assertion, and one line of fact stays in the code; nothing was deferred or left as a follow-up
 - [ ] No session-scoped identifiers; tracker IDs only if the repo already uses them
 - [ ] No count of tests, callers, fields, cases, or steps that live elsewhere; every number left is a constraint this code enforces, as a named constant
 - [ ] Every name, path, test, and number a comment mentions was confirmed

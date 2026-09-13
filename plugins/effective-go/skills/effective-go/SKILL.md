@@ -261,7 +261,13 @@ nothing, delete it. Subject test: the comment is about *these lines*
 tense only; no "used to", "per review", finding numbers, pass labels, task
 IDs, phase names. No counts of things that live elsewhere ("the 7 tests",
 "both fields") — name the set so the comment grows with it. A regression is pinned by a test named after the
-invariant, not by a warning comment. Verify every name a comment
+invariant, not by a warning comment, and so is every comment addressed to
+a future editor ("never", "always", "keep in step", "needs review before"):
+a comment enforces nothing, so the rule becomes an assertion in the
+existing test that already runs the code (a new `Test…` only when none
+performs the steps), the why goes above the assertion, and one line of
+fact stays in the code. Go's own code keeps non-doc comments to one or
+two lines; over three is foreign. Verify every name a comment
 mentions. Never touch `//go:build`, `//go:generate`, `//nolint` directives.
 
 ## Simplification (summary — full text in `simplification.md`)
@@ -347,6 +353,7 @@ to a hand-rolled loop.
 - "It builds" reported without the `vet`/`test -race` output
 - A comment that says "used to", "per review", names a finding or pass number, or is longer than the code beneath it
 - A comment that counts tests, callers, fields, or cases that live elsewhere ("the 7 tests", "both", "all three")
+- A comment telling a future editor "never", "always", or "keep in step" with no test that fails when ignored, or a new `Test…` written to back it when an existing test already runs the code
 - A refactor that needed a test edited to pass, or that touched code outside the request
 - A new `_test.go` beside an existing one for the same source file, with no build tag and no separate tier
 - A new `Test…` function that repeats 60% or more of the setup and action steps an existing test on the same function already performs
@@ -368,7 +375,7 @@ to a hand-rolled loop.
 - [ ] Errors compared with `errors.Is`/`errors.As`
 - [ ] Receivers consistent per type; zero value useful; no copied mutexes
 - [ ] Goroutines have owners and exits; `ctx` forwarded, never stored
-- [ ] Doc comment on every exported identifier, sentence form, ends with a period; every comment passes the cover and subject tests; no history, no session IDs, no counts of things that live elsewhere; no prose over four lines kept as "rules"; no field or helper from the body named
+- [ ] Doc comment on every exported identifier, sentence form, ends with a period; every comment passes the cover and subject tests; no history, no session IDs, no counts of things that live elsewhere; no prose over four lines kept as "rules"; no field or helper from the body named; every editor-addressed rule is an assertion in the existing test, with one line of fact left in the code
 - [ ] Any reshaping of existing code: one change at a time, pinned by a pre-existing test, complexity reported for splits, merges proposed first
 - [ ] Tests: table-driven, `t.Context()`, got-before-want messages, `errors.Is` assertions, `Fn`-field mocks that fail loudly, `t.Parallel()` where safe
 - [ ] Interface changed → every implementation and every mock updated

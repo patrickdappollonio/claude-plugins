@@ -84,6 +84,23 @@ of the run:
      calls. Each name is a rename away from wrong; say it in words or drop it.
      The lock a caller must hold, the neighbour a comment differs from, and
      things in other files stay.
+   - `enforces` — addressed to a future editor rather than a caller: "never
+     send X", "always go through Y", "do not lower this", "keep both",
+     "keep in step with Z", "needs review before changing", with nothing
+     that fails when it is ignored. Present tense, a real constraint, and
+     no incident yet change nothing: a comment enforces nothing, at ten
+     lines or two. Not closed by a shorter comment. Closed by an assertion
+     in the test that already runs the code (or a type, validation, or
+     lint), the why written above that assertion where test files allow
+     length, and one line of fact left in the code ("the portal never
+     receives the SSN", not "never add the SSN"). The assertion goes into
+     the existing test that performs 60% or more of its setup and action
+     steps (assertions are not steps, and a different argument to the
+     same call is the same step), whatever that test's name; a new
+     test function only when none does, named after the invariant, with the
+     count in the ledger. The conformance recount in `conformance-review.md`
+     applies to it. A process step ("privacy sign-off") cannot be tested and
+     goes to CONTRIBUTING or the PR template, never a comment.
    - `stale` — no longer matches the code beside it, including a comment that
      describes *one* of something the run made two.
 2. **Rewrite or delete — never keep as-is, never merely shorten.** Rewrite when
@@ -131,8 +148,14 @@ ratio and a summary of what the comments said.
 
 ## What the pass never does
 
-- Touches a non-comment line. Verify mechanically before finishing: the diff
+- Touches a non-comment line outside a test file. The one non-comment change
+  the pass makes is the assertion an `enforces` finding needs, in a test
+  file. Verify mechanically before finishing: outside test files the diff
   of the pass changes comment lines only, and no functional directive moved.
+- Waits. A comment whose fate hangs on a pending decision (a product call,
+  a review that has not happened) leaves the file now; the question goes
+  under *Pending for you*. A test noted as a follow-up instead of written is
+  a verdict not carried out.
   A comment that is really a rename request or a split request (`// n is the
   retry count`, `// convert to cents`) is handed to the simplification pass in
   `code-simplification-fallback.md`, not fixed here.
@@ -148,7 +171,9 @@ how many deleted, that test-file comments were left alone, and where relocated
 material went. Under it, the long-comment ledger: one line per comment of
 three or more lines left in the diff (whole comments), with location, line
 count, shape, the row and body-match counts for any list or table, and the
-verdict; or the line "no comment over two lines in the diff". Every verdict
+verdict; an `enforces` verdict reads "enforced by" and names the test the
+assertion went into, or the new test with its step count; or the line "no
+comment over two lines in the diff". Every verdict
 in the ledger is already carried out in the diff: a "deleted" with the lines
 still present is a defect the conformance review reports. Each ratio-check
 file goes under *Pending for you* with the recommended home.

@@ -308,8 +308,10 @@ name a field the body reads or a helper it calls; no
 session-scoped identifiers (finding numbers, pass labels, task IDs, phase
 names); no counts of things that live elsewhere ("the 7 tests", "both
 fields") — name the set so the comment grows with it; verify anything a
-comment names. **Read `comments.md` before writing or
-rewriting a comment.** The standalone `appropriate-comments-code` skill is the
+comment names. A comment telling a future editor what to do ("never",
+"always", "keep in step") enforces nothing: it becomes an assertion in the
+existing test that runs the code, with one line of fact left behind. **Read
+`comments.md` before writing or rewriting a comment.** The standalone `appropriate-comments-code` skill is the
 full treatment.
 
 ## Core Pattern Example
@@ -386,6 +388,7 @@ Same errors, same behavior, same edge cases — only the shape changed.
 - A comment you wrote says "used to", "per review", names a finding or pass number, or is longer than two lines above a declaration
 - A comment you kept over four lines because "every sentence is a rule", or one that names fields the body reads or helpers it calls
 - A comment you wrote or kept counts tests, callers, fields, or cases that live elsewhere ("the 7 tests", "both", "all three")
+- A comment you kept tells a future editor "never", "always", or "keep in step" with no test that fails when ignored
 - You are about to edit on the strength of a subagent's finding you have not opened and confirmed yourself
 - You fanned out subagents without asking the user how many, or used a premium model to grep
 
@@ -402,7 +405,7 @@ After completing a simplification pass:
 - [ ] Any function merge was proposed with the diff and caller count before being made, and every caller was updated
 - [ ] Every finding that became a change was reproduced by the model running this skill — location opened, numbers recounted, pairs re-diffed, tests re-run
 - [ ] Subagent fan-out and model tiers matched what the user agreed to; finding went to cheap models or grep, judgment to premium
-- [ ] Comments on touched lines survive the cover test, are present-tense, fit in two lines above a declaration, name no field or helper from the body, cite nothing session-scoped, and count nothing that lives elsewhere
+- [ ] Comments on touched lines survive the cover test, are present-tense, fit in two lines above a declaration, name no field or helper from the body, cite nothing session-scoped, count nothing that lives elsewhere, and instruct no future editor without a test behind it
 - [ ] Build succeeds with no new warnings; linter/formatter passes
 - [ ] Each simplification was applied and tested as its own incremental change
 - [ ] The diff is clean — no unrelated changes mixed in

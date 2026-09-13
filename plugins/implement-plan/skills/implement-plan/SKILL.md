@@ -240,9 +240,14 @@ pre-flight first and tick each line in your todo list — all four must be true:
   until it passes: it restates the line, narrates how the code got here, is
   documentation in a comment's seat, cites a finding number, slice, wave, or
   pass label, counts things that live elsewhere, names something that does not
-  exist, or is stale. Rewrite or delete — never keep as-is, never merely
-  shorten; relocate accurate documentation and say where it went. Existing
-  comments in test files are left alone. The pass changes comment lines only.
+  exist, tells a future editor what to do or not do with nothing that fails
+  when ignored, or is stale. Rewrite or delete — never keep as-is, never
+  merely shorten; relocate accurate documentation and say where it went. An
+  editor-addressed comment becomes an assertion in the existing test that
+  already runs the code (a new test only when none does, under the 60% step
+  rule), with the why above the assertion and one line of fact in the code.
+  Existing comments in test files are left alone. Outside test files the
+  pass changes comment lines only.
 - **Then shape.** Behavior-preserving only, one change per test run, every
   existing test passing **unmodified**; a test that needs a tweak means the
   behavior changed — revert. Flatten nesting, name generic things, remove dead
@@ -256,7 +261,8 @@ pre-flight first and tick each line in your todo list — all four must be true:
   decisions log, one line each.
 - **It is still a change.** If the pass moved any code line, re-run
   conformance on the touched files; fix or park by the split. A pass that
-  changed comment lines only needs no re-check. No second pass after that;
+  changed comment lines only, plus assertions in test files, needs no
+  re-check beyond the new-test recount. No second pass after that;
   the adversarial review in step 7 is what reviews this diff.
 - **The ratio check is not a gate.** A file whose changed region is still half
   comments after the pass goes to *Pending for you* with the ratio, what the
