@@ -15,7 +15,18 @@ restatements are findings, length and history are not. For each one:
 1. **Classify** it with one label: `restates` (fails the cover test), `narrates`
    (past tense, journey, process), `documents` (true, but too long or about the
    feature rather than the line), `unverified` (names something you have not
-   confirmed), `counts` (a tally of things that live elsewhere), `stale` (no longer matches the code beside it).
+   confirmed), `counts` (a tally of things that live elsewhere), `enforces`
+   (addressed to a future editor: "never", "always", "do not", "keep in
+   step", "needs review before", with nothing that fails when ignored),
+   `stale` (no longer matches the code beside it).
+   An `enforces` finding is not closed by a shorter comment. It is closed by
+   an assertion in the test that already runs the code (or a type,
+   validation, or lint), the why above that assertion, and one line of
+   fact in the code; a process step goes to CONTRIBUTING or a PR template.
+   Recount any new test function the author wrote for it: if an existing
+   test on the same function performs 60% or more of its setup and action
+   steps (assertions are not steps, and a different argument to the same
+   call is the same step), the assertion moves there and the copy goes.
    A bulleted or tabular comment is not passed on its shape or on the
    author's exemption claim: run tenet 1's row test and body-match test
    yourself and write the counts into the finding. A row glossed after its
@@ -49,7 +60,7 @@ file is a finding on its own.
 
 **Measure the ratio after the pass.** Run the normal pass on each file in
 scope, then count that file's comment lines against its code lines as
-`SKILL.md`'s ratio check describes, over the whole file when auditing. A file still at half or more is a document with code in it: report
+`ratio-and-ledger.md` describes, over the whole file when auditing. A file still at half or more is a document with code in it: report
 it to the user with what its comments say and ask whether that material moves
 to a doc, rather than cutting further.
 
@@ -82,6 +93,17 @@ changes nothing: it is a comment under the limit.
 caller obligations in the block. Usually two survive. A prose comment still
 over four lines after that is not kept under the exemption; it goes to the user
 with a candidate home, or to the handoff when nobody can be asked.
+
+**"It is a real constraint, so it stays" is the claim to check for audience.**
+Read the comment and ask who it is talking to. A caller obligation ("callers
+must hold mu") stays. An instruction to whoever edits the code next ("never
+marshal the record directly", "keep both", "restoring this needs privacy
+review") is `enforces`, whether it is ten lines or two, present-tense or
+not, and whether or not anything has gone wrong yet. Check the ledger's
+"enforced by" against the test file: the assertion exists, it sits in the
+existing test when one performs the steps, and the report does not carry
+the test as a follow-up. A verdict held back for a pending decision is a
+finding: the lines leave now and the question goes to the handoff.
 
 **"It is a decision table" is the claim to distrust next.** Count before
 agreeing: rows, rows with a gloss after the outcome, rows whose condition and
@@ -174,4 +196,12 @@ when you fix a bug". This skill says the same thing narrowly: comment the
 *workaround* — the external defect, its link, and its exit condition — because
 that is a standing constraint. Do not comment the *incident*: what broke, who
 found it, what you tried. The regression itself is pinned by a test.
+
+**The test behind an editor-addressed comment is written in the comment
+pass.** It is the verdict, not a separate task, so "the task was the
+comment review" does not defer it. Add the assertion to the test that
+already performs the setup and the call; write a new test function only
+when no existing test on that function does, and say so with the step
+count. The reasoning the comment carried goes above the assertion, where
+test files allow length.
 
