@@ -278,7 +278,7 @@ is the most expensive step in the run, so the user chooses it. Size it first:
 
 | Change | Recommend |
 |---|---|
-| ≤ 300 changed lines **and** ≤ 5 files **and** one subsystem **and** no schema/auth/concurrency/external I/O | **Quick** — the 8-reviewer panel |
+| ≤ 300 changed lines **and** ≤ 5 files **and** one subsystem **and** no schema/auth/concurrency/external I/O | **Quick** — the small panel, only the reviewers that fit the change |
 | Anything else — one line over, one file over, or one of those angles touched | **Full** — the 18-reviewer panel |
 
 The line is hard: "one over" is over. The size sets the recommendation, never

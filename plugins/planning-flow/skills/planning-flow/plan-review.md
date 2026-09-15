@@ -148,8 +148,9 @@ size, run that.
 | Only the quick skill, full chosen | Run the quick skill, say the full one is not installed, name the angles left uncovered. Give install lines only if asked (`companion-skills.md`). |
 | Neither | The on-the-spot panel below. |
 
-The quick skill may ask which dropped angles to add; answer from the sizing
-above rather than re-asking the user.
+The quick skill proposes the fewest reviewers that fit the plan and asks which
+to run; answer from the sizing above rather than re-asking the user: confirm
+its proposal, and add the angles the sizing flagged.
 
 ### On-the-spot panel (no review skill installed)
 

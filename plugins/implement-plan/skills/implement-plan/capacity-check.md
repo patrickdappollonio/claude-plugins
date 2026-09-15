@@ -13,7 +13,7 @@ Count agent-runs before you start. Each is one subagent dispatch:
 executors   = slices × expected rounds (assume 2: build + one fix round)
 conformance = 0 agent-runs (you do it) — but budget your own reading
 review      = none: 0 (the user's choice at G2)
-              quick: 8 reviewers + 1 verifier + 1 validator ≈ 10
+              quick: the reviewers that fit the change (often 4–8) + 1 verifier + 1 validator ≈ 6–10
               full:  18 + 2 ≈ 20
               fallback panel: 6 + 2 ≈ 8
               runs once, after the cleanup pass; a second run only on a yes

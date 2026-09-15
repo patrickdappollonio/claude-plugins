@@ -11,16 +11,16 @@ This plugin ships **two skills** — the same method at two sizes. Pick by how m
 **`adversarial-review`** — all **18 reviewers**, plus the verifier and the fix validator. Everything below describes this one.
 
 > [!WARNING]
-> **This is token-intensive.** Twenty agents each read the diff and the code around it, in parallel. That breadth is the value, but it is not free, and most changes don't need it. For a cheaper pass, run [the quick panel](#the-quick-panel) instead — it keeps the eight highest-yield reviewers and both verification gates.
+> **This is token-intensive.** Twenty agents each read the diff and the code around it, in parallel. That breadth is the value, but it is not free, and most changes don't need it. For a cheaper pass, run [the quick panel](#the-quick-panel) instead — it runs only the reviewers that fit the change and keeps both verification gates.
 
 ## The quick panel
 
-**`adversarial-review-quick`** — **8 reviewers**, same brief, same scope rule, same standalone False-Positive Filter and Solution Validator. Ask for *"a smaller adversarial review"* and your agent picks this one.
+**`adversarial-review-quick`** — **as few reviewers as the change strictly needs**, same brief, same scope rule, same standalone False-Positive Filter and Solution Validator. Ask for *"a smaller adversarial review"* and your agent picks this one.
 
-The eight are the two design charters (which no bug hunt substitutes for) plus the six that historically produced the most confirmed high- and medium-severity findings: **Spec Conformance Auditor**, **Premise Auditor**, **Test Skeptic**, **Assumption Hunter**, **Observability Auditor**, **Incomplete-Fix Prosecutor**, **Data Integrity Prosecutor**, **API Contract Pedant**.
+It starts from an empty roster and adds a reviewer only when it can point at that reviewer's trigger in the diff or the brief: a test was added, an error is swallowed, a query changed, an existing caller's contract moved. The Premise Auditor is always proposed, because a design can be wrong with or without a brief. Then, **before anything runs, it shows you the proposal and the full roster of 18**, each left-off reviewer with the reason it is off, and you add or drop whatever you like. It runs exactly what you confirm.
 
 > [!NOTE]
-> **It is narrower, and it says so.** Dropping ten angles means input attacks, authorization, concurrency, failure injection, resource exhaustion, rollback safety, maintainability, scope creep, AI-slop and fact-checking go unexamined — so a clean quick report is not a clean bill of health. When the change touches one of those angles, the skill stops and asks which missing reviewers you want; pick some and it escalates to [the full panel](#the-full-panel) running just those plus the quick eight, decline and it runs quick and names the gap in the report.
+> **It is narrower, and it says so.** A four-reviewer run examines four angles, and the report's close names every reviewer that did not run — so a clean quick report only means those angles found nothing — it is not proof the change is safe. When a change deserves breadth, run [the full panel](#the-full-panel) instead; the quick skill offers that at the end too.
 
 ## What the reviewers are — and aren't — told
 
@@ -38,28 +38,28 @@ So the brief is allowed to tell reviewers what's in bounds, and never allowed to
 
 ## The reviewer panel
 
-Each reviewer attacks from one narrow angle. **✓ marks the eight that the quick panel also runs.**
+Each reviewer attacks from one narrow angle. The full panel runs all of them; the quick panel proposes the ones the change triggers and lets you edit the list.
 
-| | Reviewer | Attacks |
-|---|---|---|
-| ✓ | **Spec Conformance Auditor** | was the *approved* thing actually built? Dropped elements, silent deviations, and where the missing element's data ended up instead |
-| ✓ | **Premise Auditor** | was the approved thing *worth* building? A perfect implementation of this design — what still goes wrong? |
-| ✓ | **Test Skeptic** | the bug the tests would quietly let through |
-| ✓ | **Assumption Hunter** | unstated invariants that nothing enforces |
-| ✓ | **Observability Auditor** | silent failures, useless logs, missing signals |
-| ✓ | **Incomplete-Fix Prosecutor** | symptomatic patches; the same bug left unfixed elsewhere (doing *too little*) |
-| ✓ | **Data Integrity Prosecutor** | wrong queries, lost records, broken transactions |
-| ✓ | **API Contract Pedant** | where the promise and the implementation diverge |
-| | **Failure Injection Adversary** | every dependency times out or returns garbage |
-| | **Rollback & Change-Safety Adversary** | can we kill this in five minutes? |
-| | **Concurrency & State Saboteur** | races, deadlocks, lost updates, ordering bugs |
-| | **Input Attacker** | malformed, oversized, injection, and boundary inputs |
-| | **Authorization Attacker** | what a valid-but-unauthorized user can reach |
-| | **Resource Exhaustion Adversary** | unbounded growth, leaks, quadratic blowups |
-| | **Maintainability Cynic** | what the next reader will misread |
-| | **Karpathy Minimalist** | speculative complexity and scope creep (doing *too much*) |
-| | **AI Anti-Slop Critic** | plausible-but-hollow generated code, hallucinated APIs |
-| | **Fact-Checker** | every factual claim verified against primary sources via web search |
+| Reviewer | Attacks |
+|---|---|
+| **Spec Conformance Auditor** | was the *approved* thing actually built? Dropped elements, silent deviations, and where the missing element's data ended up instead |
+| **Premise Auditor** | was the approved thing *worth* building? A perfect implementation of this design — what still goes wrong? |
+| **Test Skeptic** | the bug the tests would quietly let through |
+| **Assumption Hunter** | unstated invariants that nothing enforces |
+| **Observability Auditor** | silent failures, useless logs, missing signals |
+| **Incomplete-Fix Prosecutor** | symptomatic patches; the same bug left unfixed elsewhere (doing *too little*) |
+| **Data Integrity Prosecutor** | wrong queries, lost records, broken transactions |
+| **API Contract Pedant** | where the promise and the implementation diverge |
+| **Failure Injection Adversary** | every dependency times out or returns garbage |
+| **Rollback & Change-Safety Adversary** | can we kill this in five minutes? |
+| **Concurrency & State Saboteur** | races, deadlocks, lost updates, ordering bugs |
+| **Input Attacker** | malformed, oversized, injection, and boundary inputs |
+| **Authorization Attacker** | what a valid-but-unauthorized user can reach |
+| **Resource Exhaustion Adversary** | unbounded growth, leaks, quadratic blowups |
+| **Maintainability Cynic** | what the next reader will misread |
+| **Karpathy Minimalist** | speculative complexity and scope creep (doing *too much*) |
+| **AI Anti-Slop Critic** | plausible-but-hollow generated code, hallucinated APIs |
+| **Fact-Checker** | every factual claim verified against primary sources via web search |
 
 A standalone **False-Positive Filter** runs last and gates everything before it reaches you — in both panels.
 
@@ -132,6 +132,6 @@ If you approved a plan or a mock, point at it — *"review this against the plan
 
 - **It reports, it doesn't rewrite.** Every finding is verified and every proposed fix is validated by a separate agent, and then it stops and hands you the choice: explain, apply, or triage.
 - **A problem with the plan is never fixed silently.** When the finding is that the agreed design was wrong, the fix necessarily changes what you approved — so it comes to you as a decision with its cost attached, and a fourth choice appears: revise the design. Deciding to live with it is a valid answer too.
-- **Token-heavy by design.** It runs many agents in parallel. In Claude Code each reviewer uses the cheaper `sonnet` model to keep cost sane — the value is in the panel's breadth, not any single agent's horsepower. The quick panel trades ten of those angles for roughly half the agents; it never trades away the two verification gates, which is where the trust comes from.
-- **The Fact-Checker needs web access** (web search / fetch) to ground claims against real documentation. It is a full-panel reviewer only, so the quick panel never needs the network.
+- **Token-heavy by design.** It runs many agents in parallel. In Claude Code each reviewer uses the cheaper `sonnet` model to keep cost sane — the value is in the panel's breadth, not any single agent's horsepower. The quick panel runs only the reviewers the change triggers, plus any you add; it never trades away the two verification gates, which is where the trust comes from.
+- **The Fact-Checker needs web access** (web search / fetch) to ground claims against real documentation. The quick panel only needs the network when the Fact-Checker is on its roster.
 - **`gh` CLI is optional** — it's only needed to review GitHub PRs directly; local diffs work without it.
