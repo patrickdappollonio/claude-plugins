@@ -68,7 +68,9 @@ homes, and you choose one on purpose:
 2. **A document**: package doc, README, ADR, or API doc, if editing it is in
    scope. Never CLAUDE.md or AGENTS.md: those instruct agents, and no reader
    of the code looks there.
-3. **The handoff**: the PR description, or your final message to the user.
+3. **The handoff**: your final message to the user. If you are writing a
+   PR description as part of the same task, it can go there too; never edit
+   an existing PR description for a comment pass.
 
 The standing constraint stays in the file. The deliberation that led to it,
 the alternatives, and the argument for the change go to the handoff by
@@ -376,8 +378,8 @@ runs including the ones you only appended to, one line each: location, line
 count, shape, both counts for any list or table, and the verdict (kept,
 rewritten to N lines, deleted, sent to the user with a candidate home, or
 "enforced by" naming the test the assertion went into). It goes in the final
-message and the PR description; when nothing is over two lines, it is the
-one line "no comment over two lines in the change".
+message only, never in a PR description or commit message; when nothing is
+over two lines, it is the one line "no comment over two lines in the change".
 
 **The verdict is an action.** "Deleted" with the lines still in place,
 "enforced by" with the assertion left as a follow-up, or "send to the user"
@@ -608,5 +610,7 @@ Any of these means stop and rewrite:
       exist; comments near every line you changed were re-read, including
       any that described **one** of something your change made two
 - [ ] Every comment flagged in review was rewritten or deleted, never kept
-      as-is; reasoning that shaped the change went to the PR description or
-      the final message; context you removed landed somewhere durable
+      as-is; reasoning that shaped the change went to the final message;
+      context you removed landed somewhere durable
+- [ ] The ledger is in the final message only; no PR description was
+      edited for the comment pass

@@ -55,8 +55,9 @@ added or changed. List **whole comments**, as `SKILL.md` defines them: the
 contiguous run of comment lines. Touching one line of a run makes all of it
 yours, so a paragraph you appended to a twelve-line block puts a fifteen-line
 comment in the ledger, judged like the lines you wrote. The ledger goes in
-your final message, and in the PR description when there is one. One line
-per comment:
+your final message and nowhere else: never into a PR description, a commit
+message, or a file in the repo. A comment pass is not a reason to touch a
+PR description. One line per comment:
 
 ```text
 net/retry.go:12    14 lines  list   rows 5  glossed 5  body-match 5/5  → deleted; one constraint kept as 2 lines
