@@ -291,15 +291,52 @@ button { font: inherit; cursor: pointer; }
 .markdown-body a { color: var(--accent); text-decoration: none; border-bottom: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); }
 .markdown-body a:hover { border-bottom-color: var(--accent); }
 .markdown-body img { max-width: 100%; }
-/* Notion quote block: a sharp neutral bar, no accent rail, no rounded card. */
+/* Quote block: a soft full-width band on the secondary surface with a large
+   muted quotation mark hanging in the gutter — no bar, no accent, no card
+   chrome. A quote nested inside a quote becomes an inset panel a step smaller
+   than its parent; depth alternates between the page surface and the band
+   tint so every panel stays visible against the one holding it. Font sizes
+   below the top level are relative (em), so the step-down compounds with depth
+   without a rule per level. */
 .markdown-body blockquote {
-  margin: 1em 0;
-  padding: 2px 0 2px 18px;
-  border-left: 3px solid var(--line-strong);
-  color: var(--ink-soft);
+  position: relative;
+  margin: 1.4em 0;
+  padding: 18px 22px 18px 56px;
+  background: var(--surface-2);
+  border: none;
+  border-radius: 6px;
+  font-size: 1.05rem;
+  line-height: 1.65;
+  color: var(--ink);
+}
+/* ::after, not ::before — the "changed since last review" rail draws its bar
+   in ::before on the same element and would replace the mark. */
+.markdown-body blockquote::after {
+  content: "\201C";
+  position: absolute; left: 18px; top: 6px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 3.2rem; line-height: 1; font-weight: 600;
+  color: var(--line-strong);
+  pointer-events: none;
 }
 .markdown-body blockquote > :first-child { margin-top: 0; }
 .markdown-body blockquote > :last-child { margin-bottom: 0; }
+.markdown-body blockquote > p, .markdown-body blockquote > ul, .markdown-body blockquote > ol { margin: 0.5em 0; }
+.markdown-body blockquote blockquote {
+  margin: 0.9em 0;
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-size: 0.94em;
+  color: var(--ink-soft);
+}
+.markdown-body blockquote blockquote::after { content: none; }
+.markdown-body blockquote blockquote strong { color: var(--ink); }
+/* Alternate the fill on odd depths so a panel never sits on its own colour. */
+.markdown-body blockquote blockquote blockquote { background: var(--surface-2); }
+.markdown-body blockquote blockquote blockquote blockquote { background: var(--surface); }
+.markdown-body blockquote blockquote blockquote blockquote blockquote { background: var(--surface-2); }
 /* Scope to top-level GFM tables only — never nested diff/OpenAPI tables. */
 .markdown-body > table { border-collapse: collapse; width: 100%; display: block; overflow-x: auto; margin: 1.4em 0; }
 .markdown-body > table th, .markdown-body > table td { border: 1px solid var(--line); padding: 7px 12px; text-align: left; }
@@ -1008,7 +1045,7 @@ body:has(.update-banner) #app { padding-top: 37px; }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .component-block, .question-block, .admonition, .callout, .filetree-block,
   .migration-block, .diff-block, .api-block, .openapi-block,
-  pre, table, figure, .oa-op { break-inside: avoid; }
+  pre, table, figure, blockquote, .oa-op { break-inside: avoid; }
   h1, h2, h3, h4 { break-after: avoid; }
   .component-block:hover { box-shadow: none; }
   a { color: inherit; text-decoration: none; border: none; }
