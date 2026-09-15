@@ -32,7 +32,7 @@ a comma-separated list installs nothing.
 | Skill (`--skill`) | Plugin (`/plugin install`, `codex plugin add`) | What it adds when installed | Distilled here in |
 |---|---|---|---|
 | `adversarial-review` | `adversarial-review` | The full 18-reviewer hostile panel with a standalone verifier and fix validator — recommended for large changes; runs once, when the user picks it at G2 | `adversarial-review-fallback.md` |
-| `adversarial-review-quick` | `adversarial-review` | The 8-reviewer panel with the same verifier and validator — recommended for small changes; runs once, when the user picks it at G2 | `adversarial-review-fallback.md` |
+| `adversarial-review-quick` | `adversarial-review` | The small panel — it proposes the fewest reviewers that fit the change, lets the user add or drop any, and keeps the same verifier and validator — recommended for small changes; runs once, when the user picks it at G2 | `adversarial-review-fallback.md` |
 | `visual-plan` | `visual-docs` | Renders the plan in the browser with diagrams and a comment loop; the decisions log appended at the end live-reloads there, and `question` fences collect the user's answers as comments | step 0 and step 6 of `SKILL.md` |
 | `appropriate-comments-code` | `appropriate-comments-code` | The full comment discipline — seven tenets, the review-a-diff procedure with labels, the ratio check, and the test-file rules — run over the merged diff at step 6 | `appropriate-comments-fallback.md` |
 | `code-simplification` | `code-simplification` | The full behavior-preserving simplification procedure — evidence gathering on the cheap tier, cyclomatic counting and splitting, the equivalent-functions merge proposal — run over the merged diff at step 6 | `code-simplification-fallback.md` |

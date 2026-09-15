@@ -112,11 +112,11 @@ clickable `file:line` under each finding.
 
 Eighteen reviewers plus two gate agents is a lot of tokens, and most changes
 don't need all of it — so the plugin also ships a **quick panel**
-(`adversarial-review-quick`): the eight highest-yield angles, including both
-design charters, with the same verifier and the same fix validator. Ask for *"a
-smaller adversarial review"* and your agent runs that one instead. It says up
-front which angles it isn't covering, so a clean report never reads as a clean
-bill of health.
+(`adversarial-review-quick`): it proposes the fewest reviewers that fit the
+change, shows you the full roster so you can add or drop any, and keeps the same
+verifier and the same fix validator. Ask for *"a smaller adversarial review"*
+and your agent runs that one instead. It names every reviewer that did not run,
+so a clean report never reads as a clean bill of health.
 
 ```text
 # Claude Code session — type this as a message

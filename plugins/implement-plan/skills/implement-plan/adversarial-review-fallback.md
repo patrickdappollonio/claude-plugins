@@ -40,8 +40,9 @@ them.
 Check what is installed by looking at the skill list your harness gives you:
 the quick panel is the `adversarial-review-quick` skill, the full panel is the
 `adversarial-review` skill, and both ship in the `adversarial-review` plugin —
-install commands are in `companion-skills.md`. The quick skill may itself ask which dropped angles to add — answer from the
-sizing and the user's G2 choice rather than re-asking the user.
+install commands are in `companion-skills.md`. The quick skill proposes the fewest reviewers that fit the change and asks
+which to run — answer from the sizing and the user's G2 choice rather than
+re-asking the user: confirm its proposal, and add the angles the sizing flagged.
 
 ## What to hand the review
 
