@@ -1,220 +1,60 @@
 # CLAUDE.md — patrickdappollonio/claude-plugins
 
-A plugin marketplace for **both Claude Code and the Codex CLI**. Two root
-manifests list the plugins under `plugins/`: `.claude-plugin/marketplace.json`
-(Claude Code) and `.agents/plugins/marketplace.json` (Codex). Each plugin in
-turn carries two manifests: `.claude-plugin/plugin.json` and
-`.codex-plugin/plugin.json`.
+A plugin marketplace for **both Claude Code and the Codex CLI**. Two root manifests list the plugins under `plugins/`: `.claude-plugin/marketplace.json` (Claude Code) and `.agents/plugins/marketplace.json` (Codex). Each plugin in turn carries two manifests: `.claude-plugin/plugin.json` and `.codex-plugin/plugin.json`.
 
 ## Hard rules
 
-- **Never add Claude/AI attribution** to commits or PRs — no `Co-Authored-By:
-  Claude`, no "Generated with Claude Code". This is a standing, non-negotiable
-  constraint from the repo owner.
+- **Never add Claude/AI attribution** to commits or PRs — no `Co-Authored-By: Claude`, no "Generated with Claude Code". This is a standing, non-negotiable constraint from the repo owner.
 - **Commit/push only when asked.** Work on a branch, not `main`.
-- **Bump the plugin's version on every meaningful change**, in its
-  `plugins/<name>/.claude-plugin/plugin.json`, following
-  [semver](https://semver.org/): **patch** for fixes and doc/wording tweaks,
-  **minor** for new backwards-compatible capability (a new command, fence, or
-  skill behavior), **major** for breaking changes (removed/renamed commands,
-  changed file formats or defaults users rely on). Pure repo chores that don't
-  touch a plugin (root README, CI) don't need a bump. The version lives **only** in that
-  `plugin.json` — there are no git tags, GitHub releases, or per-plugin
-  versions in `marketplace.json` to check or update, so don't go looking. The matching
-  `plugins/<name>/.codex-plugin/plugin.json` repeats that version for Codex and must
-  be updated in the same change.
-- **Every plugin ships four files, and a new plugin is not done until all
-  four exist.** Codex and Claude Code never read each other's files, so a
-  plugin missing any one of these is silently absent from that tool's
-  marketplace — nothing fails, it just never shows up:
+- **Never hard-wrap Markdown.** Every paragraph, heading, list item, and table row sits on one source line, however long; the editor wraps it for display. Do not break prose at 80 columns or any other width, and do not "fix" a long line by splitting it. This keeps diffs to the words that changed, and it keeps a line number pointing at a whole thought. `npm run lint:markdown` (`scripts/lint-markdown-wrap.mjs`) fails on any paragraph or heading that spans more than one line; CI runs it on every `.md` change. Code blocks, front matter, and tables are not checked, and a GitHub admonition may keep its `> [!NOTE]` marker on its own line above one line of text.
+- **Bump the plugin's version on every meaningful change**, in its `plugins/<name>/.claude-plugin/plugin.json`, following [semver](https://semver.org/): **patch** for fixes and doc/wording tweaks, **minor** for new backwards-compatible capability (a new command, fence, or skill behavior), **major** for breaking changes (removed/renamed commands, changed file formats or defaults users rely on). Pure repo chores that don't touch a plugin (root README, CI) don't need a bump. The version lives **only** in that `plugin.json` — there are no git tags, GitHub releases, or per-plugin versions in `marketplace.json` to check or update, so don't go looking. The matching `plugins/<name>/.codex-plugin/plugin.json` repeats that version for Codex and must be updated in the same change.
+- **Every plugin ships four files, and a new plugin is not done until all four exist.** Codex and Claude Code never read each other's files, so a plugin missing any one of these is silently absent from that tool's marketplace — nothing fails, it just never shows up:
   1. `plugins/<name>/.claude-plugin/plugin.json` — the Claude Code manifest.
-  2. `plugins/<name>/.codex-plugin/plugin.json` — the Codex manifest. Same
-     `name`, `version`, `description`, `author`, `homepage`, `license`, and
-     `keywords`, plus `"skills": "./skills/"` and an `interface` block
-     (`displayName`, `shortDescription`, `longDescription`, `developerName`,
-     `category`, `capabilities`, `defaultPrompt`). Copy a sibling plugin's
-     file and edit it.
-  3. An entry in `.claude-plugin/marketplace.json` (name, `source`,
-     description, category, keywords, author, homepage, license).
-  4. An entry in `.agents/plugins/marketplace.json` (name, `source`
-     `{"source":"local","path":"./plugins/<name>"}`, the standard `policy`
-     block, and a `category` matching the Codex manifest's
-     `interface.category`).
-  Keep the two marketplace files listing the **same plugins in the same
-  order**. Before finishing any change that adds, renames, or removes a plugin,
-  run this and expect no output:
+  2. `plugins/<name>/.codex-plugin/plugin.json` — the Codex manifest. Same `name`, `version`, `description`, `author`, `homepage`, `license`, and `keywords`, plus `"skills": "./skills/"` and an `interface` block (`displayName`, `shortDescription`, `longDescription`, `developerName`, `category`, `capabilities`, `defaultPrompt`). Copy a sibling plugin's file and edit it.
+  3. An entry in `.claude-plugin/marketplace.json` (name, `source`, description, category, keywords, author, homepage, license).
+  4. An entry in `.agents/plugins/marketplace.json` (name, `source` `{"source":"local","path":"./plugins/<name>"}`, the standard `policy` block, and a `category` matching the Codex manifest's `interface.category`). Keep the two marketplace files listing the **same plugins in the same order**. Before finishing any change that adds, renames, or removes a plugin, run this and expect no output:
   ```bash
   diff <(jq -r '.plugins[].name' .claude-plugin/marketplace.json) \
        <(jq -r '.plugins[].name' .agents/plugins/marketplace.json)
   ```
-  This rule exists because the three plugins added right after the Codex
-  marketplace landed (`implement-plan`, `planning-flow`, `recap`) each got a
-  Codex manifest but no Codex marketplace entry, so Codex users never saw them.
-- **All install paths must stay equivalent: Claude Code marketplace, Codex marketplace,
-  and `npx skills`.** Claude Code and Codex install a whole plugin (every skill under
-  `plugins/<name>/skills/`); `npx skills add … --skill <name>` installs **one
-  skill directory and nothing above it**. So a skill must be **self-contained**:
-  everything it needs lives inside its own `skills/<skill>/` directory, and
-  nothing in `SKILL.md` may reach outside it — no `../` paths, no "see the other
-  skill's file", no reliance on a sibling skill being present, and no symlinks
-  (a symlink out of the directory arrives as a plain text file on a Windows
-  checkout with `core.symlinks=false` — a silent, broken install). Duplicating
-  shared prose or code into each skill is the correct trade-off, as visual-docs
-  does with the renderer. A plugin may hold several skills; each must work alone.
-  When you add a skill, also add it to the root README's `--skill` name table,
-  and phrase cross-skill references so they degrade to a name a reader can
-  install ("the full `adversarial-review` skill"), never a relative path.
-- **Some skills carry a distilled copy of another skill, and every change to
-  the parent must be checked against each copy.** Because a skill must work
-  alone, several of them ship a shortened version of a sibling skill as a
-  companion file, used when the real one is not installed: `implement-plan`
-  carries `adversarial-review-fallback.md`, `appropriate-comments-fallback.md`,
-  and `code-simplification-fallback.md`; `planning-flow` carries the on-the-spot
-  panel in `plan-review.md` and `communication.md`; `recap` carries
-  `communication.md`; `effective-go` carries `comments.md` and
-  `simplification.md`. These copies do not update themselves. When you change
-  what a skill does — its procedure, its thresholds, when it runs, what it asks
-  — grep `plugins/*/skills/*/` for the skill's name and for the rule you
-  changed, open every digest that hits, and bring it into line in the same
-  PR. The same applies in reverse: a change to a flow that *uses* a digest
-  (when the review runs, what the pass covers) must be reflected in that
-  digest's own text, not only in `SKILL.md`. A digest that describes the old
-  behavior is a silent fork: an `npx skills` user of the standalone skill gets
-  the old rule with no error. This bit us when the review cadence changed and
-  the capacity math still budgeted a panel per fix round.
-- **Skills: extract whatever can be read on demand, but always keep the
-  general guideline inline — otherwise the extraction is moot.** The whole
-  `SKILL.md` loads into context on every invocation, so keep it under ~500
-  lines. It holds what steers behavior on *every* pass — principles, the
-  process outline, decision tables, rationalizations, red flags, the checklist
-  — plus a short, self-sufficient summary of every extracted topic (the rule,
-  the threshold, the one-line procedure). The comprehensive version — full
-  procedures, routing tables, handoff templates, digests of other skills — goes
-  in a `.md` file **in the same skill directory**, and the summary says exactly
-  when to read it ("read `cyclomatic-complexity.md` before splitting a
-  function"). An agent that never opens the side file must still do the right
-  thing from the summary alone. Load-bearing discipline rules stay inline in
-  full — an agent under pressure will skip a side file. Reference sibling
-  files by bare filename, never a path, so every install path ships them.
-  And the skill must **insist that the agent read every companion file on
-  first use in a session, before any other step** — a dedicated section near
-  the top listing the files, plus a red flag and a checklist item — and re-read
-  the named file at its step. Summaries are reminders of text already read,
-  never a substitute. `code-simplification` is the worked example.
-- **Skill frontmatter must parse as YAML and fit the Agent Skills limits.**
-  Keep `name` and `description` as non-empty strings. `name` is lowercase
-  letters, digits, and single hyphens, at most 64 characters; `description`
-  is at most **1024 characters** (the spec's hard cap — an over-limit skill is
-  silently skipped by some agents) with the key use case in the first
-  sentence, because Claude Code truncates the listing text at 1536
-  characters. Quote or fold descriptions containing `: ` rather than leaving
-  them as plain YAML scalars. Keep the `SKILL.md` body under 500 lines. After
-  adding or editing a skill, run `npm run lint:skills`, which enforces the
-  name and description limits; CI runs the same check for every directory
-  under `plugins/*/skills/`.
-- The visual-docs server has **no authentication**. `--host` / `0.0.0.0` binding
-  must stay opt-in and documented as trusted-network-only.
-- **Agents must never have to write code — not even a small script — to operate
-  visual-docs.** Every operation an agent performs (resolve a directory, serve,
-  read comments, set status, lint, stop) must be a first-class `node
-  visual-docs-server.js --<command>` / `visual-docs-lint.js` invocation that
-  prints **ready-to-read, formatted text** (never JSON the agent must parse, and
-  never something it has to `curl`/`jq`/`python`/`node -e` to consume). Keep these
-  commands **OS-agnostic as much as possible**: do the platform-specific work
-  (temp dirs via `os.tmpdir()`, backgrounding via detached `spawn`, HTTP via
-  `fetch`) *inside* the Node CLI, so the skill only ever runs `node <script>
-  <args>` — no `nohup`/`&`, no `/tmp` paths, no shell-only constructs. When you
-  add an agent-facing capability, add a `--command` for it; don't make the agent
-  improvise glue.
+  This rule exists because the three plugins added right after the Codex marketplace landed (`implement-plan`, `planning-flow`, `recap`) each got a Codex manifest but no Codex marketplace entry, so Codex users never saw them.
+- **All install paths must stay equivalent: Claude Code marketplace, Codex marketplace, and `npx skills`.** Claude Code and Codex install a whole plugin (every skill under `plugins/<name>/skills/`); `npx skills add … --skill <name>` installs **one skill directory and nothing above it**. So a skill must be **self-contained**: everything it needs lives inside its own `skills/<skill>/` directory, and nothing in `SKILL.md` may reach outside it — no `../` paths, no "see the other skill's file", no reliance on a sibling skill being present, and no symlinks (a symlink out of the directory arrives as a plain text file on a Windows checkout with `core.symlinks=false` — a silent, broken install). Duplicating shared prose or code into each skill is the correct trade-off, as visual-docs does with the renderer. A plugin may hold several skills; each must work alone. When you add a skill, also add it to the root README's `--skill` name table, and phrase cross-skill references so they degrade to a name a reader can install ("the full `adversarial-review` skill"), never a relative path.
+- **Some skills carry a distilled copy of another skill, and every change to the parent must be checked against each copy.** Because a skill must work alone, several of them ship a shortened version of a sibling skill as a companion file, used when the real one is not installed: `implement-plan` carries `adversarial-review-fallback.md`, `appropriate-comments-fallback.md`, and `code-simplification-fallback.md`; `planning-flow` carries the on-the-spot panel in `plan-review.md` and `communication.md`; `recap` carries `communication.md`; `effective-go` carries `comments.md` and `simplification.md`. These copies do not update themselves. When you change what a skill does — its procedure, its thresholds, when it runs, what it asks — grep `plugins/*/skills/*/` for the skill's name and for the rule you changed, open every digest that hits, and bring it into line in the same PR. The same applies in reverse: a change to a flow that *uses* a digest (when the review runs, what the pass covers) must be reflected in that digest's own text, not only in `SKILL.md`. A digest that describes the old behavior is a silent fork: an `npx skills` user of the standalone skill gets the old rule with no error. This bit us when the review cadence changed and the capacity math still budgeted a panel per fix round.
+- **Skills: extract whatever can be read on demand, but always keep the general guideline inline — otherwise the extraction is moot.** The whole `SKILL.md` loads into context on every invocation, so keep it under ~500 lines. It holds what steers behavior on *every* pass — principles, the process outline, decision tables, rationalizations, red flags, the checklist — plus a short, self-sufficient summary of every extracted topic (the rule, the threshold, the one-line procedure). The comprehensive version — full procedures, routing tables, handoff templates, digests of other skills — goes in a `.md` file **in the same skill directory**, and the summary says exactly when to read it ("read `cyclomatic-complexity.md` before splitting a function"). An agent that never opens the side file must still do the right thing from the summary alone. Load-bearing discipline rules stay inline in full — an agent under pressure will skip a side file. Reference sibling files by bare filename, never a path, so every install path ships them. And the skill must **insist that the agent read every companion file on first use in a session, before any other step** — a dedicated section near the top listing the files, plus a red flag and a checklist item — and re-read the named file at its step. Summaries are reminders of text already read, never a substitute. `code-simplification` is the worked example.
+- **Skill frontmatter must parse as YAML and fit the Agent Skills limits.** Keep `name` and `description` as non-empty strings. `name` is lowercase letters, digits, and single hyphens, at most 64 characters; `description` is at most **1024 characters** (the spec's hard cap — an over-limit skill is silently skipped by some agents) with the key use case in the first sentence, because Claude Code truncates the listing text at 1536 characters. Quote or fold descriptions containing `: ` rather than leaving them as plain YAML scalars. Keep the `SKILL.md` body under 500 lines. After adding or editing a skill, run `npm run lint:skills`, which enforces the name and description limits; CI runs the same check for every directory under `plugins/*/skills/`.
+- The visual-docs server has **no authentication**. `--host` / `0.0.0.0` binding must stay opt-in and documented as trusted-network-only.
+- **Agents must never have to write code — not even a small script — to operate visual-docs.** Every operation an agent performs (resolve a directory, serve, read comments, set status, lint, stop) must be a first-class `node visual-docs-server.js --<command>` / `visual-docs-lint.js` invocation that prints **ready-to-read, formatted text** (never JSON the agent must parse, and never something it has to `curl`/`jq`/`python`/`node -e` to consume). Keep these commands **OS-agnostic as much as possible**: do the platform-specific work (temp dirs via `os.tmpdir()`, backgrounding via detached `spawn`, HTTP via `fetch`) *inside* the Node CLI, so the skill only ever runs `node <script> <args>` — no `nohup`/`&`, no `/tmp` paths, no shell-only constructs. When you add an agent-facing capability, add a `--command` for it; don't make the agent improvise glue.
 
 ## visual-docs architecture
 
 A zero-dependency reader you serve locally. Nothing is remote.
 
-**Where the code lives — read this before editing anything under
-`plugins/visual-docs/`.** The canonical renderer is `extras/visual-docs/`
-(`server/` + `shared/`), which sits outside every plugin so it is never itself
-installed and never has to be chosen between. Each skill that needs it carries a
-**real, committed copy** at `plugins/visual-docs/skills/<skill>/{server,shared}`.
-That duplication is deliberate: `npx skills` installs a skill directory and
-nothing above it, and a symlink out of that directory arrives as a plain text
-file on a Windows checkout (`core.symlinks=false`) — a silent, broken install.
+**Where the code lives — read this before editing anything under `plugins/visual-docs/`.** The canonical renderer is `extras/visual-docs/` (`server/` + `shared/`), which sits outside every plugin so it is never itself installed and never has to be chosen between. Each skill that needs it carries a **real, committed copy** at `plugins/visual-docs/skills/<skill>/{server,shared}`. That duplication is deliberate: `npx skills` installs a skill directory and nothing above it, and a symlink out of that directory arrives as a plain text file on a Windows checkout (`core.symlinks=false`) — a silent, broken install.
 
-- **Always edit `extras/visual-docs/`, never a copy**, then run
-  `node scripts/sync-visual-docs.mjs --write`. Verify with
-  `node scripts/sync-visual-docs.mjs` (no flag) — CI runs it and fails on drift.
-- The copies are marked `linguist-generated` in `.gitattributes`; they still must
-  be committed.
+- **Always edit `extras/visual-docs/`, never a copy**, then run `node scripts/sync-visual-docs.mjs --write`. Verify with `node scripts/sync-visual-docs.mjs` (no flag) — CI runs it and fails on drift.
+- The copies are marked `linguist-generated` in `.gitattributes`; they still must be committed.
 
-- **Server** (`server/`): plain `node:http`, no framework. `bin/…-server.js`
-  self-manages via a lock file (`.visual-docs/server.json`) — supports
-  `--restart`, `--stop`, bare `--host`. `lib/server.js` holds routing, SSE live
-  reload, the single access gate (`resolveServable`: safeJoin + hidden-segment
-  check + realpath + ext allowlist), image magic-byte sniffing, and the comments
-  API. Only markdown + content-sniffed images are served.
-- **Viewer** (`server/assets/`): **Preact 10 + htm, vendored, no build step**
-  (`app.js` is loaded directly). Globals: `window.preact`, `window.preactHooks`,
-  `window.htm`. The document body is a "Preact-owns-the-element-but-we-manage-it-
-  imperatively" escape hatch — the `<article id="content">` is empty in the vdom
-  and hydrated via `innerHTML` + hydrate passes in effects.
-- **Vendored deps** (`server/assets/vendor/`) are pinned with **Subresource
-  Integrity** and an SBOM. Regenerate with `node server/scripts/update-vendor.mjs`;
-  verify with `--verify` (CI runs this — deps must be committed).
+- **Server** (`server/`): plain `node:http`, no framework. `bin/…-server.js` self-manages via a lock file (`.visual-docs/server.json`) — supports `--restart`, `--stop`, bare `--host`. `lib/server.js` holds routing, SSE live reload, the single access gate (`resolveServable`: safeJoin + hidden-segment check + realpath + ext allowlist), image magic-byte sniffing, and the comments API. Only markdown + content-sniffed images are served.
+- **Viewer** (`server/assets/`): **Preact 10 + htm, vendored, no build step** (`app.js` is loaded directly). Globals: `window.preact`, `window.preactHooks`, `window.htm`. The document body is a "Preact-owns-the-element-but-we-manage-it- imperatively" escape hatch — the `<article id="content">` is empty in the vdom and hydrated via `innerHTML` + hydrate passes in effects.
+- **Vendored deps** (`server/assets/vendor/`) are pinned with **Subresource Integrity** and an SBOM. Regenerate with `node server/scripts/update-vendor.mjs`; verify with `--verify` (CI runs this — deps must be committed).
 
 ### Fences & components (all rendered client-side, then DOMPurify-sanitized)
 
-`tldr`/`summary` (prominent top-of-doc summary card; markdown body),
-`mermaid`, `nomnoml`, `diff`/`patch`, `migration` (up/down + unified/side-by-side
-toggle), `api`/`http`, `openapi`/`swagger`, `filetree`/`files` (tree-table with
-A/M/D/R + notes), `question`/`ask` (interactive; answers post as comments),
-GitHub admonitions (`> [!NOTE]` …). Authoring reference:
-`extras/visual-docs/shared/authoring-guide.md`; quality bar:
-`extras/visual-docs/shared/document-quality.md`.
+`tldr`/`summary` (prominent top-of-doc summary card; markdown body), `mermaid`, `nomnoml`, `diff`/`patch`, `migration` (up/down + unified/side-by-side toggle), `api`/`http`, `openapi`/`swagger`, `filetree`/`files` (tree-table with A/M/D/R + notes), `question`/`ask` (interactive; answers post as comments), GitHub admonitions (`> [!NOTE]` …). Authoring reference: `extras/visual-docs/shared/authoring-guide.md`; quality bar: `extras/visual-docs/shared/document-quality.md`.
 
-**When you add a new fence/component, also:** register it in the gutter
-`COMPONENTS` list (if commentable), document it in `authoring-guide.md` + the
-README fence table, and **add a rule for it to the linter**
-(`extras/visual-docs/server/bin/visual-docs-lint.js`) — at minimum recognize its language(s) and
-validate its shape, so `visual-docs-lint` covers every component.
+**When you add a new fence/component, also:** register it in the gutter `COMPONENTS` list (if commentable), document it in `authoring-guide.md` + the README fence table, and **add a rule for it to the linter** (`extras/visual-docs/server/bin/visual-docs-lint.js`) — at minimum recognize its language(s) and validate its shape, so `visual-docs-lint` covers every component.
 
 ### Comments
 
-Stored in `<served-dir>/.visual-docs/comments.json`. **Agents use the `node` CLI
-— never JSON:** `visual-docs-server.js --comments <dir>` prints the digest,
-`--status <dir> <id[,…]> <state>` sets lifecycle state (plain-text confirmation).
-Those wrap the HTTP API, which exists for the browser client / direct use: `GET
-/agent/comments.md` (same markdown digest), `POST /api/comments/status`
-(`{id|ids, status}`), `GET /api/comments` (raw JSON, browser only). Lifecycle
-`status`: **new → acknowledged → resolved** (legacy `resolved:true` still
-honored); hand-editing the JSON still works but the CLI/endpoint is supported.
-Each status change appends `{status, at}` to the comment's `history` array
-(server-side, capped at 20) — the viewer renders it as lifecycle microcopy
-("agent is working on this · 2m ago"); older files without `history` still work.
-Rule of thumb: **don't serve JSON to the agent — format it** (markdown digest,
-`--docdir`/`--serve`/`--status` all print ready-to-read text).
-Anchors: text (quote+prefix/suffix), component (type+stable-id+hint), or section
-(heading). A best-effort `line` is resolved (client + server) by normalizing the
-rendered quote and raw markdown to bare alphanumerics before matching, so
-`path:line` survives bold/`code`/[links]/smart-quotes/soft-wraps.
-The **gutter comment button** (Notion-style) is the single add-a-comment
-affordance — it follows the hovered block into the right margin for every block
-type (headings, paragraphs, lists, code, components).
+Stored in `<served-dir>/.visual-docs/comments.json`. **Agents use the `node` CLI — never JSON:** `visual-docs-server.js --comments <dir>` prints the digest, `--status <dir> <id[,…]> <state>` sets lifecycle state (plain-text confirmation). Those wrap the HTTP API, which exists for the browser client / direct use: `GET /agent/comments.md` (same markdown digest), `POST /api/comments/status` (`{id|ids, status}`), `GET /api/comments` (raw JSON, browser only). Lifecycle `status`: **new → acknowledged → resolved** (legacy `resolved:true` still honored); hand-editing the JSON still works but the CLI/endpoint is supported. Each status change appends `{status, at}` to the comment's `history` array (server-side, capped at 20) — the viewer renders it as lifecycle microcopy ("agent is working on this · 2m ago"); older files without `history` still work. Rule of thumb: **don't serve JSON to the agent — format it** (markdown digest, `--docdir`/`--serve`/`--status` all print ready-to-read text). Anchors: text (quote+prefix/suffix), component (type+stable-id+hint), or section (heading). A best-effort `line` is resolved (client + server) by normalizing the rendered quote and raw markdown to bare alphanumerics before matching, so `path:line` survives bold/`code`/[links]/smart-quotes/soft-wraps. The **gutter comment button** (Notion-style) is the single add-a-comment affordance — it follows the hovered block into the right margin for every block type (headings, paragraphs, lists, code, components).
 
 ## Gotchas (things that have bitten us)
 
-- **DOMPurify's mXSS guard strips an attribute value that looks like it closes a
-  comment/tag** (matches `/((--!?|])>)|<\/(style|title)/i` — e.g. mermaid's
-  `-->`). Fence sources are therefore **base64-encoded** into `data-*` attrs
-  (`blockAttrs`/`encodeSrc`). Don't put raw source in a data attribute.
-- DOMPurify keeps inline `<svg>`, `<form>`/`<input>`, and `style` — verified.
-  Icons are inline SVG (`ICON` map), never emoji (emoji render inconsistently).
-- **`[hidden]` must win**: several affordances are `display:inline-flex` but
-  toggled via the `hidden` attribute, so `[hidden]{display:none!important}` is in
-  the reset. Don't remove it.
-- **Scope top-level table CSS as `.markdown-body > table`** — a bare
-  `.markdown-body table` clobbers diff2html's nested tables.
-- Effects that render into `#content` guard stale async work with a `cancelled`
-  flag; the SSE handlers re-check `currentRef` before `setDoc`.
+- **DOMPurify's mXSS guard strips an attribute value that looks like it closes a comment/tag** (matches `/((--!?|])>)|<\/(style|title)/i` — e.g. mermaid's `-->`). Fence sources are therefore **base64-encoded** into `data-*` attrs (`blockAttrs`/`encodeSrc`). Don't put raw source in a data attribute.
+- DOMPurify keeps inline `<svg>`, `<form>`/`<input>`, and `style` — verified. Icons are inline SVG (`ICON` map), never emoji (emoji render inconsistently).
+- **`[hidden]` must win**: several affordances are `display:inline-flex` but toggled via the `hidden` attribute, so `[hidden]{display:none!important}` is in the reset. Don't remove it.
+- **Scope top-level table CSS as `.markdown-body > table`** — a bare `.markdown-body table` clobbers diff2html's nested tables.
+- Effects that render into `#content` guard stale async work with a `cancelled` flag; the SSE handlers re-check `currentRef` before `setDoc`.
 
 ## Running & testing
 
@@ -224,7 +64,4 @@ node extras/visual-docs/server/bin/visual-docs-server.js <dir>
 node extras/visual-docs/server/scripts/update-vendor.mjs --verify   # deps intact?
 ```
 
-Headless verification uses `playwright-core` + a system Chromium (see prior test
-scripts): load a doc, `waitUntil:'load'` (never `networkidle` — SSE keeps the
-connection open), then assert rendered SVGs/blocks and screenshot. Always test
-with external requests blocked to prove it works fully offline.
+Headless verification uses `playwright-core` + a system Chromium (see prior test scripts): load a doc, `waitUntil:'load'` (never `networkidle` — SSE keeps the connection open), then assert rendered SVGs/blocks and screenshot. Always test with external requests blocked to prove it works fully offline.

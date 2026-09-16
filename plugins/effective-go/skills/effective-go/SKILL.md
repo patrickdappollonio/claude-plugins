@@ -7,24 +7,15 @@ description: Use when writing, editing, or reviewing Go code — any .go file, g
 
 ## Overview
 
-Write Go the way the Go community writes it, with a few house preferences
-that win when the sources disagree. The sources, in the order they are
-consulted: this skill's house rules, then *Effective Go*, the Google Go
-Style Guide, the Go Proverbs, and the Gruntwork style guide.
+Write Go the way the Go community writes it, with a few house preferences that win when the sources disagree. The sources, in the order they are consulted: this skill's house rules, then *Effective Go*, the Google Go Style Guide, the Go Proverbs, and the Gruntwork style guide.
 
-When two rules conflict, resolve in this order — **clarity, simplicity,
-concision, maintainability, consistency**. Clarity to a reader who did not
-write the code beats every other consideration. Consistency with the
-surrounding package is real, but it never justifies spreading a mistake.
+When two rules conflict, resolve in this order — **clarity, simplicity, concision, maintainability, consistency**. Clarity to a reader who did not write the code beats every other consideration. Consistency with the surrounding package is real, but it never justifies spreading a mistake.
 
-This skill is a specification, not advice. "The code compiles and the tests
-pass" does not make it done; it is done when the checklist at the end is
-true.
+This skill is a specification, not advice. "The code compiles and the tests pass" does not make it done; it is done when the checklist at the end is true.
 
 ## Read the Companion Files First
 
-`SKILL.md` carries the rules and a short summary of each topic; five files
-beside it carry the full text:
+`SKILL.md` carries the rules and a short summary of each topic; five files beside it carry the full text:
 
 - `errors.md` — how to construct, wrap, check and handle errors
 - `testing.md` — table tests, assertions, the `Fn`-field mock pattern
@@ -32,45 +23,19 @@ beside it carry the full text:
 - `comments.md` — doc comments and inline comments: what earns a line, what never does
 - `simplification.md` — reshaping working code without changing behavior: nesting, splits, merges, dead code
 
-**The first time you use this skill in a session, read all five before
-doing anything else** — before opening the target code, before writing a
-line, before answering a question. The summaries below are reminders of
-text you have already read, not a substitute for it. Re-read the named
-file at the step that names it. If a file is missing, say so; do not
-proceed as if the summary were the whole skill.
+**The first time you use this skill in a session, read all five before doing anything else** — before opening the target code, before writing a line, before answering a question. The summaries below are reminders of text you have already read, not a substitute for it. Re-read the named file at the step that names it. If a file is missing, say so; do not proceed as if the summary were the whole skill.
 
 ## Companion: JetBrains' `use-modern-go`
 
-This skill covers idiom and discipline; it does not know what changed in
-the Go release you are targeting. JetBrains ships a skill for exactly that:
-`use-modern-go` (plugin `modern-go-guidelines`, from
-`github.com/JetBrains/go-modern-guidelines`) runs a CLI that lists
-version-specific guidelines for the Go in `go.mod` — newer than any
-model's knowledge cutoff. It is not distilled here on purpose; it is used
-live.
+This skill covers idiom and discipline; it does not know what changed in the Go release you are targeting. JetBrains ships a skill for exactly that: `use-modern-go` (plugin `modern-go-guidelines`, from `github.com/JetBrains/go-modern-guidelines`) runs a CLI that lists version-specific guidelines for the Go in `go.mod` — newer than any model's knowledge cutoff. It is not distilled here on purpose; it is used live.
 
-**At step 2 of the process, check whether `use-modern-go` is among your
-available skills.**
+**At step 2 of the process, check whether `use-modern-go` is among your available skills.**
 
-- **Installed** → invoke it, run its `list` for the file you are about to
-  edit, and treat its output as authoritative for *which language and
-  library features to use* (`for range n`, `slices`/`maps`, `min`/`max`,
-  `sync.WaitGroup.Go`, `testing/synctest`, and whatever it adds later).
-  The house rules in this skill still govern error wording, mocks, comments
-  and process; where the two disagree on an idiom, `use-modern-go` wins
-  because it knows the toolchain.
-- **Not installed** → tell the user once per session, in one short
-  paragraph at the end of your first Go reply, that `use-modern-go` would
-  let you use Go features newer than your training data, with the install
-  commands:
-  - Claude Code: `/plugin marketplace add JetBrains/go-modern-guidelines`
-    then `/plugin install modern-go-guidelines@goland-claude-marketplace`
-  - Codex: `codex plugin marketplace add JetBrains/go-modern-guidelines`
-    then `codex plugin add modern-go-guidelines@goland-codex-marketplace`
-  - Other agents: see the repository README.
-  It needs a Go toolchain on `PATH` (it `go install`s a small CLI on first
-  use). Then carry on with this skill; do not block on the answer, and do
-  not repeat the recommendation later in the session.
+- **Installed** → invoke it, run its `list` for the file you are about to edit, and treat its output as authoritative for *which language and library features to use* (`for range n`, `slices`/`maps`, `min`/`max`, `sync.WaitGroup.Go`, `testing/synctest`, and whatever it adds later). The house rules in this skill still govern error wording, mocks, comments and process; where the two disagree on an idiom, `use-modern-go` wins because it knows the toolchain.
+- **Not installed** → tell the user once per session, in one short paragraph at the end of your first Go reply, that `use-modern-go` would let you use Go features newer than your training data, with the install commands:
+  - Claude Code: `/plugin marketplace add JetBrains/go-modern-guidelines` then `/plugin install modern-go-guidelines@goland-claude-marketplace`
+  - Codex: `codex plugin marketplace add JetBrains/go-modern-guidelines` then `codex plugin add modern-go-guidelines@goland-codex-marketplace`
+  - Other agents: see the repository README. It needs a Go toolchain on `PATH` (it `go install`s a small CLI on first use). Then carry on with this skill; do not block on the answer, and do not repeat the recommendation later in the session.
 
 ## When to Use
 
@@ -81,83 +46,32 @@ available skills.**
 - Answering "is this idiomatic?" or "how should I write X in Go?"
 - Simplifying or cleaning up Go that already works
 
-**Not** for choosing an architecture or a library — this skill governs how
-Go is written once the decision is made.
+**Not** for choosing an architecture or a library — this skill governs how Go is written once the decision is made.
 
 ## The Process
 
-Work through these in order for every change. Each step names the file to
-re-read when it applies.
+Work through these in order for every change. Each step names the file to re-read when it applies.
 
-1. **Read the surroundings.** Open the package you are changing. Note its
-   naming, receiver style, error phrasing, test layout and logger. Match
-   the package where it is right; where it deviates from this skill,
-   write the new code correctly and do not "fix" untouched code unless
-   asked.
-2. **Check the toolchain.** Use the Go version in `go.mod` — never a
-   feature it does not have, never a bump without being asked, and leave
-   the `go` directive exactly as `go mod init` or the project wrote it.
-   Prefer the standard library to a dependency; prefer copying a small
-   helper to adding a module. **If `use-modern-go` is installed, invoke it
-   now** for the file you are about to touch; if it is not, note that you
-   will recommend it once at the end of this reply (see *Companion*).
-3. **Design the API before the body.** Names first (see *Naming*), then
-   signatures: `ctx context.Context` first, `error` last, accept
-   interfaces / return concrete types, zero value useful, no `any` where
-   a real type exists.
-4. **Write the body with the happy path on the left.** Guard clauses and
-   early returns; no `else` after a `return`; no nesting the success case
-   inside `if err == nil`.
-5. **Write every error message to the house form.** Re-read `errors.md`.
-   `failed to <verb> <object> [%q detail]: %w`; `errors.New` for any
-   message with no `%` in it — in `main` and in tests too. Handle each
-   error exactly once.
-6. **Write the tests — first, and more of them.** Re-read `testing.md`.
-   Red → green: a new test fails before the code exists and passes after;
-   a refactor's pinning test passes before and after, unmodified. Append
-   to the existing `_test.go`; a new file only when none exists or a
-   separate tier (smoke, e2e, journey) needs a build tag. Table-driven,
-   `t.Context()`, got-before-want messages, hand-written `Fn`-field mocks
-   whose nil fields fail loudly. For a feature, propose user journeys and
-   write the ones the user picks.
-7. **Comment only what the code cannot say.** Re-read `comments.md`.
-   Doc comments on every exported identifier, starting with its name,
-   ending with a period. Nothing that restates the next line; nothing
-   about how the code got here.
-8. **If you are reshaping code that already works** — flattening, splitting,
-   extracting, merging, deleting — re-read `simplification.md`: one change
-   at a time, each pinned by a test that predates it.
-9. **Run the gates and read the output.** `gofmt -l .` (or `goimports`),
-   `go vet ./...`, `go build ./...`, `go test -race ./...`, and the
-   project's linter if it has one (`make lint`, `golangci-lint run`).
-   Paste or report actual results; a claim without output is not a
-   result.
-10. **Walk the checklist** at the end of this file against the diff. Fix
-    what fails, then re-run step 9.
-11. **Stop before committing.** Report what changed and offer to commit.
-    Commit when the user approves; **push only on the user's explicit
-    say-so**, which "commit it" does not include. In a non-interactive run
-    (a subagent, a background job, a pipeline) leave the work uncommitted
-    and say so in the report. Making a change permanent is the user's
-    call, never the agent's.
+1. **Read the surroundings.** Open the package you are changing. Note its naming, receiver style, error phrasing, test layout and logger. Match the package where it is right; where it deviates from this skill, write the new code correctly and do not "fix" untouched code unless asked.
+2. **Check the toolchain.** Use the Go version in `go.mod` — never a feature it does not have, never a bump without being asked, and leave the `go` directive exactly as `go mod init` or the project wrote it. Prefer the standard library to a dependency; prefer copying a small helper to adding a module. **If `use-modern-go` is installed, invoke it now** for the file you are about to touch; if it is not, note that you will recommend it once at the end of this reply (see *Companion*).
+3. **Design the API before the body.** Names first (see *Naming*), then signatures: `ctx context.Context` first, `error` last, accept interfaces / return concrete types, zero value useful, no `any` where a real type exists.
+4. **Write the body with the happy path on the left.** Guard clauses and early returns; no `else` after a `return`; no nesting the success case inside `if err == nil`.
+5. **Write every error message to the house form.** Re-read `errors.md`. `failed to <verb> <object> [%q detail]: %w`; `errors.New` for any message with no `%` in it — in `main` and in tests too. Handle each error exactly once.
+6. **Write the tests — first, and more of them.** Re-read `testing.md`. Red → green: a new test fails before the code exists and passes after; a refactor's pinning test passes before and after, unmodified. Append to the existing `_test.go`; a new file only when none exists or a separate tier (smoke, e2e, journey) needs a build tag. Table-driven, `t.Context()`, got-before-want messages, hand-written `Fn`-field mocks whose nil fields fail loudly. For a feature, propose user journeys and write the ones the user picks.
+7. **Comment only what the code cannot say.** Re-read `comments.md`. Doc comments on every exported identifier, starting with its name, ending with a period. Nothing that restates the next line; nothing about how the code got here.
+8. **If you are reshaping code that already works** — flattening, splitting, extracting, merging, deleting — re-read `simplification.md`: one change at a time, each pinned by a test that predates it.
+9. **Run the gates and read the output.** `gofmt -l .` (or `goimports`), `go vet ./...`, `go build ./...`, `go test -race ./...`, and the project's linter if it has one (`make lint`, `golangci-lint run`). Paste or report actual results; a claim without output is not a result.
+10. **Walk the checklist** at the end of this file against the diff. Fix what fails, then re-run step 9.
+11. **Stop before committing.** Report what changed and offer to commit. Commit when the user approves; **push only on the user's explicit say-so**, which "commit it" does not include. In a non-interactive run (a subagent, a background job, a pipeline) leave the work uncommitted and say so in the report. Making a change permanent is the user's call, never the agent's.
 
 ## Committing and pushing
 
 The user has the last word on when work becomes permanent.
 
-- **Never push without explicit approval for that push.** Not to a branch,
-  not to a fork, not because the commit was approved, not because the PR
-  already exists, not because "it's just a follow-up". A standing
-  instruction from the user ("push after every commit on this branch")
-  counts as approval; an inference does not.
-- **Commit on approval whenever possible.** Finish the change, run the
-  gates, walk the checklist, fix what fails — *then* say what you would
-  commit and wait. A WIP commit to set work aside is acceptable when the
-  user asked for that workflow or the environment requires it; say so.
-- Commit messages are plain sentences describing the change; no
-  co-authorship, no generated-by lines, no session links.
-- If you were told to commit but not to push, the report ends with "committed,
-  not pushed" and nothing more happens.
+- **Never push without explicit approval for that push.** Not to a branch, not to a fork, not because the commit was approved, not because the PR already exists, not because "it's just a follow-up". A standing instruction from the user ("push after every commit on this branch") counts as approval; an inference does not.
+- **Commit on approval whenever possible.** Finish the change, run the gates, walk the checklist, fix what fails — *then* say what you would commit and wait. A WIP commit to set work aside is acceptable when the user asked for that workflow or the environment requires it; say so.
+- Commit messages are plain sentences describing the change; no co-authorship, no generated-by lines, no session links.
+- If you were told to commit but not to push, the report ends with "committed, not pushed" and nothing more happens.
 
 ## Errors (summary — full text in `errors.md`)
 
@@ -177,8 +91,7 @@ The user has the last word on when work becomes permanent.
 | Panics | programmer errors and `Must*` at init with literal input | anything a user can trigger |
 | Prefixes | context added per layer | `"pkg: "` on every message |
 
-A chain must read as a sentence:
-`failed to load configuration: failed to parse "config.yaml": yaml: line 3: mapping values are not allowed`.
+A chain must read as a sentence: `failed to load configuration: failed to parse "config.yaml": yaml: line 3: mapping values are not allowed`.
 
 ## Testing (summary — full text in `testing.md`)
 
@@ -195,95 +108,29 @@ A chain must read as a sentence:
 
 ## Style (summary — full text in `style.md`)
 
-**Naming.** `MixedCaps`, never underscores. Initialisms keep one case:
-`userID`, `ServeHTTP`, `xmlAPI`. Name length scales with scope: `i` in a
-loop, `pendingUploads` at package level. No `Get` prefix on getters. No
-type in the name (`users`, not `userList`). Package names short, lowercase,
-singular, no `util`/`common`/`helpers`; don't repeat the package name in
-its exports (`widget.New`, not `widget.NewWidget`). Receivers are one or
-two letters, the same on every method of the type.
+**Naming.** `MixedCaps`, never underscores. Initialisms keep one case: `userID`, `ServeHTTP`, `xmlAPI`. Name length scales with scope: `i` in a loop, `pendingUploads` at package level. No `Get` prefix on getters. No type in the name (`users`, not `userList`). Package names short, lowercase, singular, no `util`/`common`/`helpers`; don't repeat the package name in its exports (`widget.New`, not `widget.NewWidget`). Receivers are one or two letters, the same on every method of the type.
 
-**Layout.** `gofmt`/`goimports` clean, always. Imports in groups: stdlib,
-third-party, local. `cmd/<binary>/main.go` for entrypoints; `internal/` for
-everything not meant to be imported by other modules; a top-level package
-or `pkg/` only for code deliberately published. Start flat; split packages
-by responsibility (`billing`, `auth`), never by kind (`models`, `utils`).
-Flags only in `main`; libraries take config through their API.
+**Layout.** `gofmt`/`goimports` clean, always. Imports in groups: stdlib, third-party, local. `cmd/<binary>/main.go` for entrypoints; `internal/` for everything not meant to be imported by other modules; a top-level package or `pkg/` only for code deliberately published. Start flat; split packages by responsibility (`billing`, `auth`), never by kind (`models`, `utils`). Flags only in `main`; libraries take config through their API.
 
-**Functions.** Small, one job, named for it. Parameters: `ctx` first,
-options struct or functional options once there are more than a few,
-`error` last. Prefer returning a value to mutating through a pointer.
-Named results only when they add clarity; no naked returns outside tiny
-functions. No `else` after `return`; `switch` over long `if`/`else if`
-chains.
+**Functions.** Small, one job, named for it. Parameters: `ctx` first, options struct or functional options once there are more than a few, `error` last. Prefer returning a value to mutating through a pointer. Named results only when they add clarity; no naked returns outside tiny functions. No `else` after `return`; `switch` over long `if`/`else if` chains.
 
-**Types.** Make the zero value useful. Pointer receivers when the method
-mutates, the type holds a mutex, or the struct is large — and when in
-doubt; never mix pointer and value receivers on one type. Use `any`, not
-`interface{}`, and only when no concrete or narrow type will do. Field
-names in struct literals for types from other packages. `len(s) == 0`
-for emptiness, never `s == nil`.
+**Types.** Make the zero value useful. Pointer receivers when the method mutates, the type holds a mutex, or the struct is large — and when in doubt; never mix pointer and value receivers on one type. Use `any`, not `interface{}`, and only when no concrete or narrow type will do. Field names in struct literals for types from other packages. `len(s) == 0` for emptiness, never `s == nil`.
 
-**Interfaces.** Defined by the consumer, next to the code that calls
-them, with only the methods it calls. Accept interfaces, return structs.
-No interface "in case"; no interface whose only purpose is to mock a
-type you own. Compile-time check when it matters: `var _ Storage = (*S3)(nil)`.
+**Interfaces.** Defined by the consumer, next to the code that calls them, with only the methods it calls. Accept interfaces, return structs. No interface "in case"; no interface whose only purpose is to mock a type you own. Compile-time check when it matters: `var _ Storage = (*S3)(nil)`.
 
-**Concurrency.** Every goroutine has an owner and a documented exit;
-prefer a synchronous function and let the caller add `go`. Channels
-orchestrate, mutexes serialize. `ctx` is always first, never stored in a
-struct, never a custom context type; forward the caller's `ctx`, don't
-invent one. `context.WithValue` only for request-scoped data crossing
-API boundaries, never for loggers or dependencies. `-race` on anything
-concurrent.
+**Concurrency.** Every goroutine has an owner and a documented exit; prefer a synchronous function and let the caller add `go`. Channels orchestrate, mutexes serialize. `ctx` is always first, never stored in a struct, never a custom context type; forward the caller's `ctx`, don't invent one. `context.WithValue` only for request-scoped data crossing API boundaries, never for loggers or dependencies. `-race` on anything concurrent.
 
-**Logging.** `log/slog` with key-value attributes, injected — never
-pulled from a context or a global. Errors are logged once, at the top of
-the stack, never by a layer that also returns them. A library may emit
-`Info`/`Debug` progress lines through an injected logger when its caller
-gave it one for that purpose; it never `Fatal`s.
+**Logging.** `log/slog` with key-value attributes, injected — never pulled from a context or a global. Errors are logged once, at the top of the stack, never by a layer that also returns them. A library may emit `Info`/`Debug` progress lines through an injected logger when its caller gave it one for that purpose; it never `Fatal`s.
 
-**Dependencies.** Standard library first. A small helper is copied, not
-imported. Pin versions; run the Go version in `go.mod`.
+**Dependencies.** Standard library first. A small helper is copied, not imported. Pin versions; run the Go version in `go.mod`.
 
 ## Comments (summary — full text in `comments.md`)
 
-A comment earns its place by carrying information the code does not,
-about the code as it is now, in as few lines as that takes. Doc comment
-on every exported identifier: a sentence, starting with the name, ending
-with a period, written for the caller. Two lines above a declaration is
-the working limit; a rule is a caller obligation or guarantee, never
-rationale or the body restated, and prose over four lines is a question
-for the user, not a keep. Never name a field the body reads or a helper it calls; the lock to hold and the neighbour differed from are fine.
-Cover test: hide the comment — if the code lost
-nothing, delete it. Subject test: the comment is about *these lines*
-(usually why they differ from their neighbours), not the feature. Present
-tense only; no "used to", "per review", finding numbers, pass labels, task
-IDs, phase names. No counts of things that live elsewhere ("the 7 tests",
-"both fields") — name the set so the comment grows with it. A regression is pinned by a test named after the
-invariant, not by a warning comment, and so is every comment addressed to
-a future editor ("never", "always", "keep in step", "needs review before"):
-a comment enforces nothing, so the rule becomes an assertion in the
-existing test that already runs the code (a new `Test…` only when none
-performs the steps), the why goes above the assertion, and one line of
-fact stays in the code. Go's own code keeps non-doc comments to one or
-two lines; over three is foreign. Verify every name a comment
-mentions. Never touch `//go:build`, `//go:generate`, `//nolint` directives.
+A comment earns its place by carrying information the code does not, about the code as it is now, in as few lines as that takes. Doc comment on every exported identifier: a sentence, starting with the name, ending with a period, written for the caller. Two lines above a declaration is the working limit; a rule is a caller obligation or guarantee, never rationale or the body restated, and prose over four lines is a question for the user, not a keep. Never name a field the body reads or a helper it calls; the lock to hold and the neighbour differed from are fine. Cover test: hide the comment — if the code lost nothing, delete it. Subject test: the comment is about *these lines* (usually why they differ from their neighbours), not the feature. Present tense only; no "used to", "per review", finding numbers, pass labels, task IDs, phase names. No counts of things that live elsewhere ("the 7 tests", "both fields") — name the set so the comment grows with it. A regression is pinned by a test named after the invariant, not by a warning comment, and so is every comment addressed to a future editor ("never", "always", "keep in step", "needs review before"): a comment enforces nothing, so the rule becomes an assertion in the existing test that already runs the code (a new `Test…` only when none performs the steps), the why goes above the assertion, and one line of fact stays in the code. Go's own code keeps non-doc comments to one or two lines; over three is foreign. Verify every name a comment mentions. Never touch `//go:build`, `//go:generate`, `//nolint` directives.
 
 ## Simplification (summary — full text in `simplification.md`)
 
-Reshape only the code in scope, with behavior preserved exactly and
-proven by a test that existed **before** the change and passes after it,
-unmodified. Understand why code exists before removing it (git history,
-callers, edge cases). One change at a time, gates run after each; a
-failing test means revert the change, never the test. Cyclomatic
-complexity = 1 + each `if`/`else if`/`case`/`for`/`&&`/`||`; over 10,
-split along decision clusters into pure, named, tested functions — never
-into once-called fragments. Two functions with the same shape are diffed,
-their callers counted, and a merge is **proposed**, never done by reflex.
-No tests in the repo → ask before adding any; declined → report the
-change as unproven. Prefer the stdlib idiom (`slices`, `maps`, `errors.Join`)
-to a hand-rolled loop.
+Reshape only the code in scope, with behavior preserved exactly and proven by a test that existed **before** the change and passes after it, unmodified. Understand why code exists before removing it (git history, callers, edge cases). One change at a time, gates run after each; a failing test means revert the change, never the test. Cyclomatic complexity = 1 + each `if`/`else if`/`case`/`for`/`&&`/`||`; over 10, split along decision clusters into pure, named, tested functions — never into once-called fragments. Two functions with the same shape are diffed, their callers counted, and a merge is **proposed**, never done by reflex. No tests in the repo → ask before adding any; declined → report the change as unproven. Prefer the stdlib idiom (`slices`, `maps`, `errors.Join`) to a hand-rolled loop.
 
 ## The Go Proverbs, applied
 

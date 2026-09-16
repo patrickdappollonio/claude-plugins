@@ -1,91 +1,29 @@
 # Appropriate Comments in Code
 
-Comment discipline for code an agent writes. One rule, applied every time a
-comment is written or touched:
+Comment discipline for code an agent writes. One rule, applied every time a comment is written or touched:
 
-> **Every comment carries information the code does not, about the code as it
-> is now, in as few lines as that takes. No iteration labels, finding numbers,
-> wave or task IDs, counts of things that live elsewhere, or "how we got here"
-> narrative.**
+> **Every comment carries information the code does not, about the code as it is now, in as few lines as that takes. No iteration labels, finding numbers, wave or task IDs, counts of things that live elsewhere, or "how we got here" narrative.**
 
-The audience is a developer months from now who was not in the session, did not
-read the pull request, does not know what was tried first, and cannot ask. If a
-sentence only makes sense to someone who watched the code being written, it does
-not belong in the code.
+The audience is a developer months from now who was not in the session, did not read the pull request, does not know what was tried first, and cannot ask. If a sentence only makes sense to someone who watched the code being written, it does not belong in the code.
 
 ## The tenets
 
-- **Two lines is the working limit, anywhere.** Above a declaration, aim for
-  one or two lines; above a statement inside a body, usually one. A comment can be accurate, present-tense and free of every ticket
-  number and still be wrong for the spot it occupies: twenty lines above a
-  function is documentation, and nobody reads it on the way to the code. The
-  exemption is a decision table, a state machine, or a one-rule-per-line list,
-  and bullets do not grant it: every row must be a condition and its outcome
-  with nothing added after it (no reason, no comparison, no second
-  sentence), and at least one row must map something the
-  body below cannot show, or the table is the body restated. A rule is a
-  caller obligation or a guarantee, not rationale, precedent, or the body
-  restated, and a prose comment still over four lines is shown to you with a
-  candidate home rather than kept.
-- **Every long comment is accounted for at the end.** The skill closes with
-  a ledger in its final message: one line per comment of three or more lines
-  in the change, listed as whole contiguous runs of comment lines even when
-  it only appended to them, with the shape, both counts for any table, and
-  the verdict. An exemption that is not in the ledger with its counts was
-  never earned, and a verdict is carried out in the file, not left as a
-  suggestion because the task only asked for a note.
-- **Doc comments on public items are documentation.** Where the doc generator
-  renders them (Rust `///`, docstrings, Javadoc, Go exported identifiers), they
-  keep a two-line summary plus the convention sections that state contracts;
-  rationale and the body restated still go. The marker is not the exemption:
-  `///` on a private function is a comment under the two-line limit.
-- **Name nothing the body already uses.** Every identifier in a comment is
-  a rename away from wrong and nothing checks it. The lock a caller must hold,
-  the neighbour a comment differs from, and things in other files stay; the
-  fields the body reads and the helpers it calls go.
-- **Describe the present, not the journey.** `// We used to buffer the whole
-  response but it blew up memory, so now we stream it` describes an edit, not the
-  code. State the standing constraint instead — it stays true, and it survives
-  the next person's change.
-- **A comment must earn its place.** `// Opens the DB connection` above
-  `connection.open()` costs the reader time and gives them nothing. Cover the
-  comment with your hand: if the code is no poorer, delete it.
-- **Never commit an identifier that outlives nothing.** Finding numbers (`F7`),
-  iteration labels ("pass 2"), wave/batch/task IDs, project phase names ("until
-  stage 3"), agent run labels, checklist positions — all meaningless to every reader but the one driving that session,
-  and meaningless to them within a day. Tracker IDs (JIRA, Linear, Notion) only
-  if the repo already uses them, or you ask first.
-- **Name the set, not its size.** "The 7 tests that cover this", "the 13
-  other integration tests", "both fields", "the three callers" — each is a
-  tally of something that lives elsewhere, true the day it is written and
-  silently wrong after the next addition. Point at the set instead (a file, a
-  build tag, a pattern, an invariant) so the comment grows with it. A number
-  stays only when it is a constraint this code enforces — and then it is a
-  named constant the comment explains.
-- **A new member matches its siblings.** A field, enum case, config key, or
-  route added to a list of bare peers stays bare; the one commented field among
-  twelve reads as the dangerous one, and the block is a fingerprint of the edit.
-  The day-one test: would the comment exist if the element had always been here?
-- **A log line already says what it is for.** Logs, metrics, error and assert
-  messages carry their own prose; the only comment they can earn is one line
-  about a non-obvious choice in their shape, such as a level that looks wrong.
-  A comment arguing that the line should exist at all goes to the PR
-  description or the handoff to the user, not the file.
-- **Half comments means it is a document.** When the comment lines in a
-  change reach half its code lines, the skill stops and asks you whether that
-  material belongs in a doc, a README, or the PR description, with short
-  pointers left in the code. It never trims comments just to get under the
-  line.
-- **Test files are exempt by default.** Sweeps skip them and existing test
-  comments stay: a regression test's incident history, runbook link, and "same
-  event, redelivered" markers are its specification. They are reviewed only when
-  you ask, and then only session identifiers and restatements go.
+- **Two lines is the working limit, anywhere.** Above a declaration, aim for one or two lines; above a statement inside a body, usually one. A comment can be accurate, present-tense and free of every ticket number and still be wrong for the spot it occupies: twenty lines above a function is documentation, and nobody reads it on the way to the code. The exemption is a decision table, a state machine, or a one-rule-per-line list, and bullets do not grant it: every row must be a condition and its outcome with nothing added after it (no reason, no comparison, no second sentence), and at least one row must map something the body below cannot show, or the table is the body restated. A rule is a caller obligation or a guarantee, not rationale, precedent, or the body restated, and a prose comment still over four lines is shown to you with a candidate home rather than kept.
+- **Every long comment is accounted for at the end.** The skill closes with a ledger in its final message: one line per comment of three or more lines in the change, listed as whole contiguous runs of comment lines even when it only appended to them, with the shape, both counts for any table, and the verdict. An exemption that is not in the ledger with its counts was never earned, and a verdict is carried out in the file, not left as a suggestion because the task only asked for a note.
+- **Doc comments on public items are documentation.** Where the doc generator renders them (Rust `///`, docstrings, Javadoc, Go exported identifiers), they keep a two-line summary plus the convention sections that state contracts; rationale and the body restated still go. The marker is not the exemption: `///` on a private function is a comment under the two-line limit.
+- **Name nothing the body already uses.** Every identifier in a comment is a rename away from wrong and nothing checks it. The lock a caller must hold, the neighbour a comment differs from, and things in other files stay; the fields the body reads and the helpers it calls go.
+- **Describe the present, not the journey.** `// We used to buffer the whole response but it blew up memory, so now we stream it` describes an edit, not the code. State the standing constraint instead — it stays true, and it survives the next person's change.
+- **A comment must earn its place.** `// Opens the DB connection` above `connection.open()` costs the reader time and gives them nothing. Cover the comment with your hand: if the code is no poorer, delete it.
+- **Never commit an identifier that outlives nothing.** Finding numbers (`F7`), iteration labels ("pass 2"), wave/batch/task IDs, project phase names ("until stage 3"), agent run labels, checklist positions — all meaningless to every reader but the one driving that session, and meaningless to them within a day. Tracker IDs (JIRA, Linear, Notion) only if the repo already uses them, or you ask first.
+- **Name the set, not its size.** "The 7 tests that cover this", "the 13 other integration tests", "both fields", "the three callers" — each is a tally of something that lives elsewhere, true the day it is written and silently wrong after the next addition. Point at the set instead (a file, a build tag, a pattern, an invariant) so the comment grows with it. A number stays only when it is a constraint this code enforces — and then it is a named constant the comment explains.
+- **A new member matches its siblings.** A field, enum case, config key, or route added to a list of bare peers stays bare; the one commented field among twelve reads as the dangerous one, and the block is a fingerprint of the edit. The day-one test: would the comment exist if the element had always been here?
+- **A log line already says what it is for.** Logs, metrics, error and assert messages carry their own prose; the only comment they can earn is one line about a non-obvious choice in their shape, such as a level that looks wrong. A comment arguing that the line should exist at all goes to the PR description or the handoff to the user, not the file.
+- **Half comments means it is a document.** When the comment lines in a change reach half its code lines, the skill stops and asks you whether that material belongs in a doc, a README, or the PR description, with short pointers left in the code. It never trims comments just to get under the line.
+- **Test files are exempt by default.** Sweeps skip them and existing test comments stay: a regression test's incident history, runbook link, and "same event, redelivered" markers are its specification. They are reviewed only when you ask, and then only session identifiers and restatements go.
 
 ## A regression is documented by a test
 
-`// don't remove this check, it caused a double-charge` is an honour-system
-guardrail: nothing fails when someone removes the check. A test does. The skill
-routes context to where it stays true rather than deleting it:
+`// don't remove this check, it caused a double-charge` is an honour-system guardrail: nothing fails when someone removes the check. A test does. The skill routes context to where it stays true rather than deleting it:
 
 | Context | Its home |
 |---|---|
@@ -105,20 +43,17 @@ routes context to where it stays true rather than deleting it:
 /plugin install appropriate-comments-code@patrickdappollonio
 ```
 
-**Any other agent** — Cursor, Codex, Copilot, opencode, Gemini, and 70+ more — via
-[`npx skills`](https://github.com/vercel-labs/skills):
+**Any other agent** — Cursor, Codex, Copilot, opencode, Gemini, and 70+ more — via [`npx skills`](https://github.com/vercel-labs/skills):
 
 ```bash
 npx skills add patrickdappollonio/claude-plugins --skill appropriate-comments-code
 ```
 
-Add `-g` to install for your user instead of just this project, and `-a <agent>` to
-target one agent. Update later with `npx skills update`.
+Add `-g` to install for your user instead of just this project, and `-a <agent>` to target one agent. Update later with `npx skills update`.
 
 ## Running it
 
-It is written to load itself whenever the agent is about to write code or touch
-a comment, so most of the time you do nothing. To invoke it deliberately:
+It is written to load itself whenever the agent is about to write code or touch a comment, so most of the time you do nothing. To invoke it deliberately:
 
 ```
 /appropriate-comments-code:appropriate-comments-code
@@ -128,32 +63,10 @@ Or ask for it in passing: *"Clean up the comments in what we just wrote."*
 
 ## Notes
 
-- **Language-agnostic.** It works on what a comment says, not on any one
-  language's comment syntax or doc convention. It follows whatever the project
-  already uses.
-- **It does not say write fewer comments.** Constraints from outside the code,
-  invariants callers must uphold, units and ownership, workarounds for upstream
-  bugs, and public API docs all earn their place — the skill lists what to write,
-  not just what to cut.
-- **Comments are part of the code you edit.** After changing a line, the skill
-  re-reads the comments around it; a comment that was right before the edit and
-  wrong after is worse than none. It watches in particular for a comment that
-  describes *one* of something — one caller, one direction, one supported mode —
-  after a change made it two.
-- **It checks what a comment claims.** An identifier, path or test name a
-  comment mentions is confirmed to exist first; a comment naming a method that
-  was renamed away is worse than silence, because the reader believes it.
-- **It has rules for bulk audits.** Cutting comments across a codebase goes
-  longest-first, skips test files, never compresses away a rule such as
-  "callers must hold the lock", leaves comments outside the change alone, and
-  verifies mechanically that no pragma directive (`//nolint`, `//go:build`) was
-  deleted as prose. The full procedure ships in `reviewing-comments.md` beside
-  the skill, and the worked examples for length, rules, and doc comments in
-  `length-and-doc-comments.md`.
-- **Deliberation is not a property of the line.** The skill names the bias
-  directly: a line the agent argued about for an hour feels like it deserves a
-  paragraph. It gets the two lines a reader needs, and the reasoning is told to
-  you in the handoff instead of left in the file.
-- **It steps aside for annotated code.** If you asked for tutorial or teaching
-  code where narrating every line *is* the deliverable, the skill says so and
-  gets out of the way.
+- **Language-agnostic.** It works on what a comment says, not on any one language's comment syntax or doc convention. It follows whatever the project already uses.
+- **It does not say write fewer comments.** Constraints from outside the code, invariants callers must uphold, units and ownership, workarounds for upstream bugs, and public API docs all earn their place — the skill lists what to write, not just what to cut.
+- **Comments are part of the code you edit.** After changing a line, the skill re-reads the comments around it; a comment that was right before the edit and wrong after is worse than none. It watches in particular for a comment that describes *one* of something — one caller, one direction, one supported mode — after a change made it two.
+- **It checks what a comment claims.** An identifier, path or test name a comment mentions is confirmed to exist first; a comment naming a method that was renamed away is worse than silence, because the reader believes it.
+- **It has rules for bulk audits.** Cutting comments across a codebase goes longest-first, skips test files, never compresses away a rule such as "callers must hold the lock", leaves comments outside the change alone, and verifies mechanically that no pragma directive (`//nolint`, `//go:build`) was deleted as prose. The full procedure ships in `reviewing-comments.md` beside the skill, and the worked examples for length, rules, and doc comments in `length-and-doc-comments.md`.
+- **Deliberation is not a property of the line.** The skill names the bias directly: a line the agent argued about for an hour feels like it deserves a paragraph. It gets the two lines a reader needs, and the reasoning is told to you in the handoff instead of left in the file.
+- **It steps aside for annotated code.** If you asked for tutorial or teaching code where narrating every line *is* the deliverable, the skill says so and gets out of the way.

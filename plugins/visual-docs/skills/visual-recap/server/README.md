@@ -1,37 +1,20 @@
 # @patrickdappollonio/visual-docs-server
 
-A zero-dependency local markdown viewer built for agent workflows. Point it at
-a directory; every `.md` file in it becomes a rendered, live-reloading web
-document with:
+A zero-dependency local markdown viewer built for agent workflows. Point it at a directory; every `.md` file in it becomes a rendered, live-reloading web document with:
 
 - **Mermaid diagrams** (` ```mermaid `)
-- **Sketch-style diagrams** via nomnoml's text DSL (` ```nomnoml `) — chosen
-  over Excalidraw because a text DSL is diffable and cheap for AI agents to
-  write, unlike coordinate-based scene JSON
+- **Sketch-style diagrams** via nomnoml's text DSL (` ```nomnoml `) — chosen over Excalidraw because a text DSL is diffable and cheap for AI agents to write, unlike coordinate-based scene JSON
 - **Rich diffs** with unified/side-by-side toggle (` ```diff `)
 - **Database migration cards** with up/down panes (` ```migration `)
 - **HTTP request/response cards**, `curl -v` style (` ```api `)
 - **Read-only OpenAPI explorer** (` ```openapi `, YAML or JSON)
 - Syntax highlighting for everything else
 - **Live reload** (SSE + filesystem watch) — edits appear instantly
-- **Comments**: readers pin feedback to sections; comments persist to
-  `<dir>/.visual-docs/comments.json` and are exposed over a tiny JSON API so
-  an agent can read and resolve them. A "Copy as prompt" fallback turns
-  feedback into a pasteable message when the server isn't reachable.
+- **Comments**: readers pin feedback to sections; comments persist to `<dir>/.visual-docs/comments.json` and are exposed over a tiny JSON API so an agent can read and resolve them. A "Copy as prompt" fallback turns feedback into a pasteable message when the server isn't reachable.
 - Light/dark themes.
-- **Export**: any doc as one self-contained HTML file (`--export <dir>
-  <doc.md>`, or the toolbar's export button) — same rendering fidelity,
-  works offline from `file://`, no server needed to view it.
+- **Export**: any doc as one self-contained HTML file (`--export <dir> <doc.md>`, or the toolbar's export button) — same rendering fidelity, works offline from `file://`, no server needed to view it.
 
-No npm dependencies — the server is pure `node:http` (Node ≥ 18). The browser
-UI is a small [Preact](https://preactjs.com/) app (with htm, no build step),
-and rendering uses **vendored** libraries (marked, DOMPurify, mermaid,
-highlight.js, diff2html, js-yaml, nomnoml, preact, htm) served from
-`assets/vendor/` — the page makes zero external requests and works fully
-offline. Each tag also carries a Subresource Integrity hash, so a tampered
-vendored file is refused by the browser. Each vendored
-file's version, source URL, license, size, and SHA-384 are recorded in an
-SBOM-style manifest, [`assets/vendor/manifest.json`](assets/vendor/manifest.json):
+No npm dependencies — the server is pure `node:http` (Node ≥ 18). The browser UI is a small [Preact](https://preactjs.com/) app (with htm, no build step), and rendering uses **vendored** libraries (marked, DOMPurify, mermaid, highlight.js, diff2html, js-yaml, nomnoml, preact, htm) served from `assets/vendor/` — the page makes zero external requests and works fully offline. Each tag also carries a Subresource Integrity hash, so a tampered vendored file is refused by the browser. Each vendored file's version, source URL, license, size, and SHA-384 are recorded in an SBOM-style manifest, [`assets/vendor/manifest.json`](assets/vendor/manifest.json):
 
 ```bash
 node scripts/update-vendor.mjs --verify   # check files against the manifest
@@ -57,8 +40,7 @@ visual-docs-server [dir] [options]
   --no-watch      Disable live reload
 ```
 
-Agent-facing commands — each prints ready-to-read text (no JSON to parse, no
-shell glue), so an agent never has to write a script:
+Agent-facing commands — each prints ready-to-read text (no JSON to parse, no shell glue), so an agent never has to write a script:
 
 ```bash
 visual-docs-server --docdir                        # print a fresh, session-scoped docs dir
@@ -66,14 +48,7 @@ visual-docs-server --comments <dir> [<file>.md]    # open-comments digest (markd
 visual-docs-server --status <dir> <id[,id2,…]> <state>   # set new|acknowledged|resolved
 ```
 
-The server records itself in `<dir>/.visual-docs/server.json` (pid, port, url,
-version), so starting again for an already-served directory just prints its URL
-instead of failing on a port clash, `--restart` swaps options (e.g. add
-`--host`) in one command, and `--stop` shuts down exactly that instance — no
-manual PID handling. If the plugin on disk has moved past the version a running
-server started with, `--comments`/`--status`/a plain reuse print a one-line
-note recommending `--restart`; the browser shows the same nudge as a
-dismissible banner.
+The server records itself in `<dir>/.visual-docs/server.json` (pid, port, url, version), so starting again for an already-served directory just prints its URL instead of failing on a port clash, `--restart` swaps options (e.g. add `--host`) in one command, and `--stop` shuts down exactly that instance — no manual PID handling. If the plugin on disk has moved past the version a running server started with, `--comments`/`--status`/a plain reuse print a one-line note recommending `--restart`; the browser shows the same nudge as a dismissible banner.
 
 The process prints a machine-readable line for scripts and agents:
 
@@ -100,52 +75,22 @@ Try the kitchen-sink example: `visual-docs-server examples/`.
 | `GET /agent/comments.md[?path=<rel>]` | Open comments as a readable markdown digest |
 | `GET /files/<rel>` | Images referenced by documents (content-verified by magic bytes) |
 
-These endpoints exist for the browser client and direct use. **Agents should use
-the `--comments` / `--status` commands above instead** — they return formatted
-text, so there's no JSON to parse. Comments live in
-`<dir>/.visual-docs/comments.json` (lifecycle `new → acknowledged → resolved`;
-the legacy `"resolved": true` boolean is still honoured).
+These endpoints exist for the browser client and direct use. **Agents should use the `--comments` / `--status` commands above instead** — they return formatted text, so there's no JSON to parse. Comments live in `<dir>/.visual-docs/comments.json` (lifecycle `new → acknowledged → resolved`; the legacy `"resolved": true` boolean is still honoured).
 
 ## Trash (recoverable delete)
 
-The viewer's doc list lets a reader move a document to a trash that keeps it
-recoverable for **10 days**; after that a lazy sweep (on `/api/docs`, at most
-once a minute) permanently deletes the file, its manifest entry, and its
-comments. Trashed files live in `.visual-docs/trash/`, tracked by
-`.visual-docs/trash.json`. This is a browser affordance — agents don't operate
-it and there is no CLI command for it.
+The viewer's doc list lets a reader move a document to a trash that keeps it recoverable for **10 days**; after that a lazy sweep (on `/api/docs`, at most once a minute) permanently deletes the file, its manifest entry, and its comments. Trashed files live in `.visual-docs/trash/`, tracked by `.visual-docs/trash.json`. This is a browser affordance — agents don't operate it and there is no CLI command for it.
 
-- `GET /api/docs` also returns `startedAt` (server start, epoch ms — the
-  viewer's "this session" boundary) and `trash`
-  (`[{id, path, title, trashedAt, daysLeft}]`, newest first).
-- `POST /api/trash` `{path}` — move a served markdown file to the trash.
-  Returns `{entry}`; `400` invalid path, `404` unknown doc.
-- `POST /api/trash/restore` `{id}` — move it back. If the original path is now
-  occupied it restores as `<name> (restored).md`; the response
-  `{path, renamed}` says which. `404` unknown id.
+- `GET /api/docs` also returns `startedAt` (server start, epoch ms — the viewer's "this session" boundary) and `trash` (`[{id, path, title, trashedAt, daysLeft}]`, newest first).
+- `POST /api/trash` `{path}` — move a served markdown file to the trash. Returns `{entry}`; `400` invalid path, `404` unknown doc.
+- `POST /api/trash/restore` `{id}` — move it back. If the original path is now occupied it restores as `<name> (restored).md`; the response `{path, renamed}` says which. `404` unknown id.
 
-Comments survive a trash + restore (they're keyed by path); they're only
-deleted when the 10-day sweep permanently removes the document.
+Comments survive a trash + restore (they're keyed by path); they're only deleted when the 10-day sweep permanently removes the document.
 
 ## Security posture
 
-Binds to `127.0.0.1` by default and refuses path traversal outside the served
-directory. `--host=<target>` adds exactly one more address (localhost always
-stays); bare `--host` binds every interface. Either exposes it to a network —
-only do that on one you trust (e.g. `--host=tailscale` for your tailnet); there
-is no authentication.
+Binds to `127.0.0.1` by default and refuses path traversal outside the served directory. `--host=<target>` adds exactly one more address (localhost always stays); bare `--host` binds every interface. Either exposes it to a network — only do that on one you trust (e.g. `--host=tailscale` for your tailnet); there is no authentication.
 
 ## Credits
 
-This package is part of the [`visual-docs` Claude Code plugin](https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/visual-docs),
-a fully local reimplementation of the excellent
-[`visual-plan` and `visual-recap` skills by Builder.io](https://github.com/BuilderIO/skills),
-which pioneered the idea of agents communicating plans through rich visual
-documents. Rendering is powered by [marked](https://github.com/markedjs/marked),
-[mermaid](https://github.com/mermaid-js/mermaid),
-[highlight.js](https://github.com/highlightjs/highlight.js),
-[diff2html](https://github.com/rtfpessoa/diff2html),
-[js-yaml](https://github.com/nodeca/js-yaml), and
-[nomnoml](https://github.com/skanaar/nomnoml) — see
-[`assets/vendor/manifest.json`](assets/vendor/manifest.json) for exact
-versions and licenses.
+This package is part of the [`visual-docs` Claude Code plugin](https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/visual-docs), a fully local reimplementation of the excellent [`visual-plan` and `visual-recap` skills by Builder.io](https://github.com/BuilderIO/skills), which pioneered the idea of agents communicating plans through rich visual documents. Rendering is powered by [marked](https://github.com/markedjs/marked), [mermaid](https://github.com/mermaid-js/mermaid), [highlight.js](https://github.com/highlightjs/highlight.js), [diff2html](https://github.com/rtfpessoa/diff2html), [js-yaml](https://github.com/nodeca/js-yaml), and [nomnoml](https://github.com/skanaar/nomnoml) — see [`assets/vendor/manifest.json`](assets/vendor/manifest.json) for exact versions and licenses.

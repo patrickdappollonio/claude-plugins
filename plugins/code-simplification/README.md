@@ -1,53 +1,28 @@
 # Code Simplification
 
-A **language-agnostic** skill that reduces code complexity while preserving
-exact behavior. The goal is not fewer lines — it's code that is easier to read,
-understand, modify, and debug. Every change must pass one test: *would a new
-team member understand this faster than the original?*
+A **language-agnostic** skill that reduces code complexity while preserving exact behavior. The goal is not fewer lines — it's code that is easier to read, understand, modify, and debug. Every change must pass one test: *would a new team member understand this faster than the original?*
 
 It works on patterns, not on any one language's idioms:
 
-- **Structural complexity** — deep nesting flattened into guard clauses, long
-  functions split, boolean flags replaced with named options
-- **Naming and readability** — generic/abbreviated/misleading names renamed,
-  "what" comments deleted, "why" comments kept
-- **Redundancy** — duplicated logic extracted, dead code removed, valueless
-  wrappers inlined, over-engineered patterns replaced with the direct approach
-- **Cyclomatic complexity** — decision points are counted (by tool or by
-  hand), reported before and after, and functions too tangled to test are
-  split along their decision clusters into pure, individually testable pieces
-- **Roughly equivalent functions** — two functions with the same shape and
-  different names are diffed, their callers counted, and a merge is
-  *proposed* to you rather than done by reflex
-- **Comments** — a condensed version of the `appropriate-comments-code` skill:
-  comments on touched lines must carry information the code does not, in the
-  present tense, in one or two lines, with no session-scoped identifiers
-  and no counts of things that live elsewhere
+- **Structural complexity** — deep nesting flattened into guard clauses, long functions split, boolean flags replaced with named options
+- **Naming and readability** — generic/abbreviated/misleading names renamed, "what" comments deleted, "why" comments kept
+- **Redundancy** — duplicated logic extracted, dead code removed, valueless wrappers inlined, over-engineered patterns replaced with the direct approach
+- **Cyclomatic complexity** — decision points are counted (by tool or by hand), reported before and after, and functions too tangled to test are split along their decision clusters into pure, individually testable pieces
+- **Roughly equivalent functions** — two functions with the same shape and different names are diffed, their callers counted, and a merge is *proposed* to you rather than done by reflex
+- **Comments** — a condensed version of the `appropriate-comments-code` skill: comments on touched lines must carry information the code does not, in the present tense, in one or two lines, with no session-scoped identifiers and no counts of things that live elsewhere
 
 And it's disciplined about *how*, not just *what*:
 
-- **Behavior is preserved exactly, and proven** — every change is pinned by
-  a test written *before* the change that still passes, unmodified, after it.
-  If the tests need "a small tweak" to pass, the simplification changed
-  behavior and gets reverted, not the tests.
-- **No tests? It asks first.** If the repository has no tests covering the code
-  in scope, it asks before creating any — even under deadline pressure. If you
-  decline, it says the change is unproven instead of pretending a deleted
-  throwaway script counts as evidence.
-- **Chesterton's Fence** — nothing is changed or removed before understanding
-  why it exists (including checking git history).
-- **One change at a time** — each simplification is applied and tested
-  individually, so a failure points at exactly one edit.
-- **Scoped by default** — it targets recently modified code unless you
-  explicitly widen the scope; no drive-by refactors of unrelated files.
-- **Balanced** — it also guards against *over*-simplification: aggressive
-  inlining, merging unrelated logic, or stripping abstractions that exist for
-  testability or extensibility.
+- **Behavior is preserved exactly, and proven** — every change is pinned by a test written *before* the change that still passes, unmodified, after it. If the tests need "a small tweak" to pass, the simplification changed behavior and gets reverted, not the tests.
+- **No tests? It asks first.** If the repository has no tests covering the code in scope, it asks before creating any — even under deadline pressure. If you decline, it says the change is unproven instead of pretending a deleted throwaway script counts as evidence.
+- **Chesterton's Fence** — nothing is changed or removed before understanding why it exists (including checking git history).
+- **One change at a time** — each simplification is applied and tested individually, so a failure points at exactly one edit.
+- **Scoped by default** — it targets recently modified code unless you explicitly widen the scope; no drive-by refactors of unrelated files.
+- **Balanced** — it also guards against *over*-simplification: aggressive inlining, merging unrelated logic, or stripping abstractions that exist for testability or extensibility.
 
 ## Inspiration
 
-This skill combines ideas from three sources into one language-agnostic
-process:
+This skill combines ideas from three sources into one language-agnostic process:
 
 - [Anthropic's code-simplifier plugin](https://github.com/anthropics/claude-plugins-official/blob/main/plugins/code-simplifier/agents/code-simplifier.md)
 - [Addy Osmani's code-simplification skill](https://github.com/addyosmani/agent-skills/blob/main/skills/code-simplification/SKILL.md)
@@ -62,20 +37,17 @@ process:
 /plugin install code-simplification@patrickdappollonio
 ```
 
-**Any other agent** — Cursor, Codex, Copilot, opencode, Gemini, and 70+ more — via
-[`npx skills`](https://github.com/vercel-labs/skills):
+**Any other agent** — Cursor, Codex, Copilot, opencode, Gemini, and 70+ more — via [`npx skills`](https://github.com/vercel-labs/skills):
 
 ```bash
 npx skills add patrickdappollonio/claude-plugins --skill code-simplification
 ```
 
-Add `-g` to install for your user instead of just this project, and `-a <agent>` to
-target one agent. Update later with `npx skills update`.
+Add `-g` to install for your user instead of just this project, and `-a <agent>` to target one agent. Update later with `npx skills update`.
 
 ## Running it
 
-Ask your agent to simplify code when something works but reads heavier than it
-should:
+Ask your agent to simplify code when something works but reads heavier than it should:
 
 ```
 Simplify what we just wrote using the code simplification skill.
@@ -87,38 +59,17 @@ Or invoke it explicitly with the slash command:
 /code-simplification:code-simplification
 ```
 
-By default it scopes itself to recently modified code (your session's edits or
-the working diff). Name a file, module, or the whole codebase to widen it.
+By default it scopes itself to recently modified code (your session's edits or the working diff). Name a file, module, or the whole codebase to widen it.
 
 ## Layout
 
-`SKILL.md` carries the principles, the process, and a self-sufficient summary
-of every step; four sibling files carry the comprehensive version an agent
-reads when it reaches that step — `cyclomatic-complexity.md` (counting, tools,
-the split procedure), `equivalent-functions.md` (diff → callers → propose →
-merge), `evidence-gathering.md` (model-tier routing, handoff packets,
-verification), and `comments.md` (the comment digest). All live in the skill
-directory, so both install paths ship them. The skill requires the agent to
-read all four on first use in a session, before any other step, and again at
-the step that names each one.
+`SKILL.md` carries the principles, the process, and a self-sufficient summary of every step; four sibling files carry the comprehensive version an agent reads when it reaches that step — `cyclomatic-complexity.md` (counting, tools, the split procedure), `equivalent-functions.md` (diff → callers → propose → merge), `evidence-gathering.md` (model-tier routing, handoff packets, verification), and `comments.md` (the comment digest). All live in the skill directory, so both install paths ship them. The skill requires the agent to read all four on first use in a session, before any other step, and again at the step that names each one.
 
 ## Notes
 
-- **It refuses some work on purpose.** Already-clean code, code it doesn't yet
-  understand, performance-critical hot paths, and soon-to-be-rewritten modules
-  are all reasons to stop, not simplify harder.
-- **Refactors stay separate from features.** It won't fold simplification into
-  a feature change — those are two diffs.
-- **Big sweeps get automated.** Refactors touching more than ~500 lines call
-  for codemods or AST transforms, not hand edits.
-- **Merges are proposals.** Near-duplicate functions are the one simplification
-  that routinely crosses scope and changes an API surface, so the skill shows
-  you the diff and the caller count and waits for a yes.
-- **Cheap models find, premium models decide.** Pattern finding (complexity
-  counts, same-shape candidates, callers) goes to Haiku/Sonnet or Luna — or
-  to `grep` and the project's complexity tool on a single-model harness —
-  while comprehension and the change itself stay on Opus/Fable or Sol/Terra.
-  It asks you how much parallelism to use before fanning out, and it
-  re-verifies every subagent finding itself before acting on it.
-- **Comments get the short version.** The comment rules here are a digest; for
-  the full treatment install the standalone `appropriate-comments-code` skill.
+- **It refuses some work on purpose.** Already-clean code, code it doesn't yet understand, performance-critical hot paths, and soon-to-be-rewritten modules are all reasons to stop, not simplify harder.
+- **Refactors stay separate from features.** It won't fold simplification into a feature change — those are two diffs.
+- **Big sweeps get automated.** Refactors touching more than ~500 lines call for codemods or AST transforms, not hand edits.
+- **Merges are proposals.** Near-duplicate functions are the one simplification that routinely crosses scope and changes an API surface, so the skill shows you the diff and the caller count and waits for a yes.
+- **Cheap models find, premium models decide.** Pattern finding (complexity counts, same-shape candidates, callers) goes to Haiku/Sonnet or Luna — or to `grep` and the project's complexity tool on a single-model harness — while comprehension and the change itself stay on Opus/Fable or Sol/Terra. It asks you how much parallelism to use before fanning out, and it re-verifies every subagent finding itself before acting on it.
+- **Comments get the short version.** The comment rules here are a digest; for the full treatment install the standalone `appropriate-comments-code` skill.

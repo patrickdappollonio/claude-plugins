@@ -1,14 +1,8 @@
 # Companion Skills — what each adds, and how to install it when asked
 
-This skill works alone: every companion below is distilled into the files
-beside this one. When a companion **is** installed, use it instead of the
-distilled version, because it is the fuller procedure. When one is not, keep
-going with the distilled version.
+This skill works alone: every companion below is distilled into the files beside this one. When a companion **is** installed, use it instead of the distilled version, because it is the fuller procedure. When one is not, keep going with the distilled version.
 
-**Never suggest installing a companion skill.** Do not say the
-result would be better with one, do not list what is missing. The user chose
-what to install. Give the install lines below only when the user asks how to
-get one.
+**Never suggest installing a companion skill.** Do not say the result would be better with one, do not list what is missing. The user chose what to install. Give the install lines below only when the user asks how to get one.
 
 Check what is installed by looking at the skill list your harness gives you.
 
@@ -23,31 +17,15 @@ Check what is installed by looking at the skill list your harness gives you.
 
 ## Using `visual-plan` for the presentation
 
-When it is installed, present through it: write the plan file where this
-skill decided (the `.plans/` file is the source of truth, so serve that
-directory rather than a temp directory), serve it, hand over the URL, and
-read its comments back into the file. State to yourself, before its lint
-step, that this document is for a technical audience; keep its other lint
-findings and fix them. Every open question in the file keeps its prose
-parts as markdown and turns its **Your call** line into a `question` fence,
-as `question-format.md` shows; the chat still asks one question at a time.
-An answer that arrives as a comment on a fence becomes a decision in the
-file, and the question is deleted.
+When it is installed, present through it: write the plan file where this skill decided (the `.plans/` file is the source of truth, so serve that directory rather than a temp directory), serve it, hand over the URL, and read its comments back into the file. State to yourself, before its lint step, that this document is for a technical audience; keep its other lint findings and fix them. Every open question in the file keeps its prose parts as markdown and turns its **Your call** line into a `question` fence, as `question-format.md` shows; the chat still asks one question at a time. An answer that arrives as a comment on a fence becomes a decision in the file, and the question is deleted.
 
 ## Using `implement-plan` after approval
 
-When it is installed, the closing message names it as the recommended next
-step and says it will pick up the plan file. Do not invoke it yourself; the
-user starts it, in plain text, so they can also choose any other skill or
-command they have.
+When it is installed, the closing message names it as the recommended next step and says it will pick up the plan file. Do not invoke it yourself; the user starts it, in plain text, so they can also choose any other skill or command they have.
 
 ## When the user asks how to install one
 
-All of them live in the same marketplace, `patrickdappollonio/claude-plugins`.
-Answer with the exact lines for their harness, nothing more. If you cannot
-tell which harness they are on, give all three and let them pick. In most
-harnesses a newly installed skill only takes effect in the next session.
-Tell the user that this run continues with the version described here.
+All of them live in the same marketplace, `patrickdappollonio/claude-plugins`. Answer with the exact lines for their harness, nothing more. If you cannot tell which harness they are on, give all three and let them pick. In most harnesses a newly installed skill only takes effect in the next session. Tell the user that this run continues with the version described here.
 
 ```text
 # Claude Code — type inside a session
@@ -65,6 +43,4 @@ codex plugin add <plugin>@patrickdappollonio
 npx skills add patrickdappollonio/claude-plugins --skill <skill>
 ```
 
-Claude Code and Codex install a whole **plugin** (every skill in it). `npx
-skills` installs one **skill** directory. Repeat `--skill` to install several;
-a comma-separated list installs nothing.
+Claude Code and Codex install a whole **plugin** (every skill in it). `npx skills` installs one **skill** directory. Repeat `--skill` to install several; a comma-separated list installs nothing.

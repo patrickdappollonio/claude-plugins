@@ -1,78 +1,23 @@
 # Planning Flow
 
-Turn a request into **one plan** — the current, complete answer to what you
-asked, with the decisions that shaped it and the caveats that remain — and
-never a story of how the plan got there.
+Turn a request into **one plan** — the current, complete answer to what you asked, with the decisions that shaped it and the caveats that remain — and never a story of how the plan got there.
 
-Two things go wrong when an agent plans with reviews in the loop. The chat
-becomes a travelogue of every hurdle the reviewers raised and every fix that
-followed, when all you wanted was the end plan. And the plan itself picks up
-the same habit: headings like "Implementing X, revisited", or an `Edit: we're
-actually not doing what the previous paragraph says` appended instead of the
-paragraph being rewritten, until you are reading a plan in diffs. This skill
-makes both impossible by rule: the plan is rewritten in place on every
-revision, the only memory it keeps is a decisions section, and the closing
-message describes the plan, whether it covers the ask, and the gotchas.
-Every stop along the way — each question, the presentation, the review
-offer — opens with where the flow is and carries the one question it asks in
-full, so the last message on your screen is always enough to answer from,
-even when a goal loop has re-prompted the agent several times while you were
-away.
+Two things go wrong when an agent plans with reviews in the loop. The chat becomes a travelogue of every hurdle the reviewers raised and every fix that followed, when all you wanted was the end plan. And the plan itself picks up the same habit: headings like "Implementing X, revisited", or an `Edit: we're actually not doing what the previous paragraph says` appended instead of the paragraph being rewritten, until you are reading a plan in diffs. This skill makes both impossible by rule: the plan is rewritten in place on every revision, the only memory it keeps is a decisions section, and the closing message describes the plan, whether it covers the ask, and the gotchas. Every stop along the way — each question, the presentation, the review offer — opens with where the flow is and carries the one question it asks in full, so the last message on your screen is always enough to answer from, even when a goal loop has re-prompted the agent several times while you were away.
 
 ## What it does
 
-- **Explores in parallel.** Cheaper subagents each take one bounded question
-  about the codebase and return facts with evidence; the session keeps the
-  synthesis.
-- **Drafts to a fixed skeleton** in `.plans/<task>.md` (kept out of the diff
-  through the repository's local exclude file, never your `.gitignore`), or
-  in the harness's own plan file when the session started in plan mode.
-- **Plans the simplest thing that works, and only plans.** A dedicated
-  step, run on every draft without asking and again on the finished plan,
-  restates the goal in one sentence and tests every part of the plan against
-  it: remove it if the goal survives, otherwise put it on the lowest rung
-  that keeps it — what the codebase has, the standard library or the
-  platform, an installed dependency, one line, and only then new code — with
-  every cut and lowering logged as a decision. The skill writes one markdown
-  file and nothing else: no mockup, prototype, or scaffold, however small.
-- **Reviews the draft with zero context.** One reviewer on the most capable
-  model available gets only your original words, the plan, and the codebase,
-  and tries to prove the plan fails the ask.
-- **Asks you only what the code cannot answer.** Questions from the agent and
-  the reviewer are merged, then filtered: anything an earlier decision
-  settles is decided the same way and logged; anything the codebase answers
-  becomes a spike; anything technical is decided and logged. What remains
-  is written into the plan in one fixed shape — a numbered heading with the
-  claim, then the situation, a numbered flow of what someone would run into,
-  the fix, its cost, and your call — and asked in chat one question per
-  message, as many rounds as it takes, so you never face a wall of
-  questions. In a visual plan each question's "your call" is an answer box.
-  A simple change may have none.
-- **Never nudges on delivery shape.** One pull request or several is your
-  call; the skill states both trades neutrally and makes no recommendation.
-  Big tickets are legitimate.
-- **Writes tickets** in one fixed format: title, what, why (in Simplified
-  Technical English), acceptance criteria, dependencies by title, and a size
-  guessed in lines of code, never time. Spikes are labeled in the title. No
-  ticket numbers, so nothing leaks into code comments.
-- **Logs every decision** with who made it, the alternative, the reason, the
-  drawback, and whether it is reversible, so you remember what you chose and
-  why, and can undo it later.
-- **Offers to close the cheap spikes on the spot**, and asks the leftover
-  questions until nothing is open.
-- **Offers one adversarial review of the finished plan**, only then, sized to
-  the change with the cost stated (the `adversarial-review` skills when
-  installed, an on-the-spot panel when not). It runs only if you pick quick
-  or full, and runs once. Technical findings are folded in and logged;
-  anything that changes what you would experience is asked; a second review
-  after the fixes needs your yes.
-- **Presents the plan** through the `visual-plan` skill when installed, the
-  harness's plan mode otherwise, or in chat, and closes with the path, what
-  the plan does, whether it covers the ask, the gotchas, and the decisions
-  you might want to reverse.
-- **Hands off in plain text.** Once approved, it asks whether to start
-  implementing, naming the `implement-plan` skill when installed, so you can
-  answer with any skill or command you have.
+- **Explores in parallel.** Cheaper subagents each take one bounded question about the codebase and return facts with evidence; the session keeps the synthesis.
+- **Drafts to a fixed skeleton** in `.plans/<task>.md` (kept out of the diff through the repository's local exclude file, never your `.gitignore`), or in the harness's own plan file when the session started in plan mode.
+- **Plans the simplest thing that works, and only plans.** A dedicated step, run on every draft without asking and again on the finished plan, restates the goal in one sentence and tests every part of the plan against it: remove it if the goal survives, otherwise put it on the lowest rung that keeps it — what the codebase has, the standard library or the platform, an installed dependency, one line, and only then new code — with every cut and lowering logged as a decision. The skill writes one markdown file and nothing else: no mockup, prototype, or scaffold, however small.
+- **Reviews the draft with zero context.** One reviewer on the most capable model available gets only your original words, the plan, and the codebase, and tries to prove the plan fails the ask.
+- **Asks you only what the code cannot answer.** Questions from the agent and the reviewer are merged, then filtered: anything an earlier decision settles is decided the same way and logged; anything the codebase answers becomes a spike; anything technical is decided and logged. What remains is written into the plan in one fixed shape — a numbered heading with the claim, then the situation, a numbered flow of what someone would run into, the fix, its cost, and your call — and asked in chat one question per message, as many rounds as it takes, so you never face a wall of questions. In a visual plan each question's "your call" is an answer box. A simple change may have none.
+- **Never nudges on delivery shape.** One pull request or several is your call; the skill states both trades neutrally and makes no recommendation. Big tickets are legitimate.
+- **Writes tickets** in one fixed format: title, what, why (in Simplified Technical English), acceptance criteria, dependencies by title, and a size guessed in lines of code, never time. Spikes are labeled in the title. No ticket numbers, so nothing leaks into code comments.
+- **Logs every decision** with who made it, the alternative, the reason, the drawback, and whether it is reversible, so you remember what you chose and why, and can undo it later.
+- **Offers to close the cheap spikes on the spot**, and asks the leftover questions until nothing is open.
+- **Offers one adversarial review of the finished plan**, only then, sized to the change with the cost stated (the `adversarial-review` skills when installed, an on-the-spot panel when not). It runs only if you pick quick or full, and runs once. Technical findings are folded in and logged; anything that changes what you would experience is asked; a second review after the fixes needs your yes.
+- **Presents the plan** through the `visual-plan` skill when installed, the harness's plan mode otherwise, or in chat, and closes with the path, what the plan does, whether it covers the ask, the gotchas, and the decisions you might want to reverse.
+- **Hands off in plain text.** Once approved, it asks whether to start implementing, naming the `implement-plan` skill when installed, so you can answer with any skill or command you have.
 
 ## Install
 
@@ -89,15 +34,13 @@ away.
 codex plugin add planning-flow@patrickdappollonio
 ```
 
-**Any other agent** — Cursor, Copilot, opencode, Gemini, and 70+ more — via
-[`npx skills`](https://github.com/vercel-labs/skills):
+**Any other agent** — Cursor, Copilot, opencode, Gemini, and 70+ more — via [`npx skills`](https://github.com/vercel-labs/skills):
 
 ```bash
 npx skills add patrickdappollonio/claude-plugins --skill planning-flow
 ```
 
-Add `-g` to install for your user instead of just this project, and `-a <agent>` to
-target one agent. Update later with `npx skills update`.
+Add `-g` to install for your user instead of just this project, and `-a <agent>` to target one agent. Update later with `npx skills update`.
 
 ## Running it
 
@@ -107,19 +50,8 @@ target one agent. Update later with `npx skills update`.
 
 or just ask for a plan in your own words.
 
-It pairs with, but does not require, the `visual-plan`, `adversarial-review`,
-`adversarial-review-quick`, `effective-communicator`, and `implement-plan`
-skills from this marketplace: when they are installed it uses them; when they
-are not, it carries a distilled version of each so it works standalone, and it
-does not suggest installing them unless you ask.
+It pairs with, but does not require, the `visual-plan`, `adversarial-review`, `adversarial-review-quick`, `effective-communicator`, and `implement-plan` skills from this marketplace: when they are installed it uses them; when they are not, it carries a distilled version of each so it works standalone, and it does not suggest installing them unless you ask.
 
 ## Credit
 
-The interview model — a design tree of decisions, a frontier of questions
-whose prerequisites are settled, asked in rounds, with facts found by the
-agent and only decisions put to the user, plus the fog-of-war and
-out-of-scope ideas and the rule to refer to work by name rather than by
-number — is adapted from [Matt Pocock's `grilling` and `wayfinder`
-skills](https://github.com/mattpocock/skills) (MIT). The plain-language
-discipline is distilled from this marketplace's own `effective-communicator`
-skill.
+The interview model — a design tree of decisions, a frontier of questions whose prerequisites are settled, asked in rounds, with facts found by the agent and only decisions put to the user, plus the fog-of-war and out-of-scope ideas and the rule to refer to work by name rather than by number — is adapted from [Matt Pocock's `grilling` and `wayfinder` skills](https://github.com/mattpocock/skills) (MIT). The plain-language discipline is distilled from this marketplace's own `effective-communicator` skill.

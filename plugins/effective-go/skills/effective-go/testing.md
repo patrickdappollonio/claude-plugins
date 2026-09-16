@@ -1,140 +1,62 @@
 # Testing — the full guide
 
-Read this file on first use of the skill in a session, and again before
-writing any `_test.go` file or test double. `SKILL.md` carries the summary;
-this file is the specification.
+Read this file on first use of the skill in a session, and again before writing any `_test.go` file or test double. `SKILL.md` carries the summary; this file is the specification.
 
 ## Tests are cheap now — write more, not fewer
 
-When an agent writes the tests, the historical cost argument for a thin
-suite is gone. Err on the side of more coverage: every branch you can
-reach, every error path, every edge case (empty, zero, nil, oversized,
-malformed, duplicate, concurrent). Coverage is still not the goal —
-confidence is — but the default answer to "should I add a case for
-that?" is yes.
+When an agent writes the tests, the historical cost argument for a thin suite is gone. Err on the side of more coverage: every branch you can reach, every error path, every edge case (empty, zero, nil, oversized, malformed, duplicate, concurrent). Coverage is still not the goal — confidence is — but the default answer to "should I add a case for that?" is yes.
 
 ## Red → green, for new code and for refactors
 
-For new behavior: write the test first, run it, watch it **fail** for the
-reason you expect, write the least code that makes it pass, run it green,
-then clean up. A test that has never failed proves nothing.
+For new behavior: write the test first, run it, watch it **fail** for the reason you expect, write the least code that makes it pass, run it green, then clean up. A test that has never failed proves nothing.
 
-For a refactor, the same cycle inverted: **before** touching the code,
-write (or find) a test that pins today's behavior and passes on the
-original. Make the change. The same test, **unmodified or with only
-mechanical edits** (a renamed identifier, an import), must still pass.
-If it needs its expectations changed, the refactor changed behavior —
-revert the refactor, not the test. A test that needs rewriting to survive
-a refactor was testing the implementation, not the behavior; write it
-against the public surface so it survives the next refactor too.
+For a refactor, the same cycle inverted: **before** touching the code, write (or find) a test that pins today's behavior and passes on the original. Make the change. The same test, **unmodified or with only mechanical edits** (a renamed identifier, an import), must still pass. If it needs its expectations changed, the refactor changed behavior — revert the refactor, not the test. A test that needs rewriting to survive a refactor was testing the implementation, not the behavior; write it against the public surface so it survives the next refactor too.
 
 ## User-journey tests
 
-Unit tests prove functions; journey tests prove the product. A user
-journey is one thing a real user does end to end, in order, through the
-public surface — for a banking system: *create an account, send money to
-it from another account, observe the balance land*. That is one journey
-of many.
+Unit tests prove functions; journey tests prove the product. A user journey is one thing a real user does end to end, in order, through the public surface — for a banking system: *create an account, send money to it from another account, observe the balance land*. That is one journey of many.
 
 When you add or change a feature:
 
-1. **Propose journeys to the user** — a short numbered list of the
-   end-to-end paths a user would actually take through what you built,
-   including the unhappy ones (insufficient funds, a duplicate transfer,
-   a cancelled request). Ask which to add; do not write them all
-   unasked, and do not skip proposing them.
-2. Write each approved journey as one test that drives the system the way
-   a user would — through the API, the CLI, or the top-level service —
-   with real or in-memory dependencies, not mocks of the code under test.
+1. **Propose journeys to the user** — a short numbered list of the end-to-end paths a user would actually take through what you built, including the unhappy ones (insufficient funds, a duplicate transfer, a cancelled request). Ask which to add; do not write them all unasked, and do not skip proposing them.
+2. Write each approved journey as one test that drives the system the way a user would — through the API, the CLI, or the top-level service — with real or in-memory dependencies, not mocks of the code under test.
 3. Name it after the journey: `TestJourney_TransferLandsInRecipientBalance`.
-4. Keep journeys in their own file with a build tag (`//go:build journey`
-   or `e2e`) when they need infrastructure or take real time, so
-   `go test ./...` stays fast and the journeys run on demand
-   (`go test -tags journey ./...`).
+4. Keep journeys in their own file with a build tag (`//go:build journey` or `e2e`) when they need infrastructure or take real time, so `go test ./...` stays fast and the journeys run on demand (`go test -tags journey ./...`).
 
 ## Where tests live
 
-**Append to the existing `_test.go` file.** New tests for a package go at
-the bottom of the test file that already covers that source file
-(`foo.go` → `foo_test.go`); a diff that adds functions to the end of a
-file is perfectly readable. Do **not** create a new test file for a single
-function, a single scenario, a "cleaner" grouping, or because the existing
-file is long. Create a new `_test.go` file only when:
+**Append to the existing `_test.go` file.** New tests for a package go at the bottom of the test file that already covers that source file (`foo.go` → `foo_test.go`); a diff that adds functions to the end of a file is perfectly readable. Do **not** create a new test file for a single function, a single scenario, a "cleaner" grouping, or because the existing file is long. Create a new `_test.go` file only when:
 
 - (a) **no test file exists** for the source file or package yet, or
-- (b) the tests are a **different tier** that must be separated — unit vs
-  smoke vs e2e/journey — because the separated tier needs a build tag, a
-  different package (`foo_test` black-box), or infrastructure the unit
-  tests must not depend on.
+- (b) the tests are a **different tier** that must be separated — unit vs smoke vs e2e/journey — because the separated tier needs a build tag, a different package (`foo_test` black-box), or infrastructure the unit tests must not depend on.
 
-One source file, one test file, is the steady state. A package with
-`foo_test.go`, `foo_edge_cases_test.go`, `foo_errors_test.go` and
-`foo_more_test.go` is the failure mode.
+One source file, one test file, is the steady state. A package with `foo_test.go`, `foo_edge_cases_test.go`, `foo_errors_test.go` and `foo_more_test.go` is the failure mode.
 
 
-- Same package as the code (`package uploader`), in `*_test.go`, named
-  after the source file it covers. Use the
-  black-box package `uploader_test` only when you want to prove the exported
-  API is sufficient on its own or to break an import cycle.
-- Fixtures in `testdata/` next to the test (the toolchain ignores that
-  directory for builds).
-- Integration tests that need real infrastructure go in a separate package or
-  behind a build tag / environment check, so `go test ./...` stays fast and
-  hermetic.
-- Shared test scaffolding (fakes, fixture loaders, recorders) lives in one
-  shared test-helper package that every suite imports. Never copy a helper
-  from one `_test.go` into another.
+- Same package as the code (`package uploader`), in `*_test.go`, named after the source file it covers. Use the black-box package `uploader_test` only when you want to prove the exported API is sufficient on its own or to break an import cycle.
+- Fixtures in `testdata/` next to the test (the toolchain ignores that directory for builds).
+- Integration tests that need real infrastructure go in a separate package or behind a build tag / environment check, so `go test ./...` stays fast and hermetic.
+- Shared test scaffolding (fakes, fixture loaders, recorders) lives in one shared test-helper package that every suite imports. Never copy a helper from one `_test.go` into another.
 
 ## Shape of a test
 
-- **Table-driven** whenever there is more than one case: a slice of
-  `struct{ name string; ...; want T; wantErr error }`, iterated with
-  `t.Run(tc.name, ...)`. Case names say what is being tested
-  (`"rejects empty bucket"`), not `"case 3"`.
-- **A row in the existing table before a standalone test.** Before
-  writing a new `Test…` function, find the existing test on the same
-  function or command and count: one step per setup call and action in
-  the test you would write (assertions are not steps). Mark each step the
-  existing test already performs; the share is marked steps divided by
-  listed steps. At 60% or more shared, the new case is a row
-  in that test's table (add the column it needs) or a step in its
-  workflow, not a function of its own. A standalone `TestFoo_Bar` beside a
-  table-driven `TestFoo` that repeats its arrange and act is the failure
-  mode; convert the standalone into a row. Asserting on something no test
-  has asserted on yet is a new column, not a new function.
-- **Arrange / Act / Assert**, visibly separated by a blank line. Arrange
-  belongs in the table where possible.
-- `Test<Func>` or `Test<Func>_<Scenario>` for names. Subtests carry the
-  scenario when the table does.
-- `t.Parallel()` on tests and subtests that share no mutable fixture. Note
-  `t.Setenv` and `t.Parallel` are mutually exclusive.
-- `t.Context()` for a context (Go 1.24+), never a bare
-  `context.Background()` — it is cancelled when the (sub)test ends, so
-  leaked goroutines die with the test. On a `go.mod` older than 1.24, the
-  equivalent is `ctx, cancel := context.WithCancel(context.Background())`
-  followed by `t.Cleanup(cancel)`.
+- **Table-driven** whenever there is more than one case: a slice of `struct{ name string; ...; want T; wantErr error }`, iterated with `t.Run(tc.name, ...)`. Case names say what is being tested (`"rejects empty bucket"`), not `"case 3"`.
+- **A row in the existing table before a standalone test.** Before writing a new `Test…` function, find the existing test on the same function or command and count: one step per setup call and action in the test you would write (assertions are not steps). Mark each step the existing test already performs; the share is marked steps divided by listed steps. At 60% or more shared, the new case is a row in that test's table (add the column it needs) or a step in its workflow, not a function of its own. A standalone `TestFoo_Bar` beside a table-driven `TestFoo` that repeats its arrange and act is the failure mode; convert the standalone into a row. Asserting on something no test has asserted on yet is a new column, not a new function.
+- **Arrange / Act / Assert**, visibly separated by a blank line. Arrange belongs in the table where possible.
+- `Test<Func>` or `Test<Func>_<Scenario>` for names. Subtests carry the scenario when the table does.
+- `t.Parallel()` on tests and subtests that share no mutable fixture. Note `t.Setenv` and `t.Parallel` are mutually exclusive.
+- `t.Context()` for a context (Go 1.24+), never a bare `context.Background()` — it is cancelled when the (sub)test ends, so leaked goroutines die with the test. On a `go.mod` older than 1.24, the equivalent is `ctx, cancel := context.WithCancel(context.Background())` followed by `t.Cleanup(cancel)`.
 - `t.TempDir()`, `t.Setenv()`, `t.Cleanup()` over hand-rolled setup/teardown.
 - Helpers call `t.Helper()` first so failures point at the test, not the helper.
 - No global mutable state shared between tests; no test order dependence.
 
 ## Assertions
 
-- Failure messages are diagnosable without opening the implementation:
-  what was called, with what, what came back, what was wanted —
-  **got before want**:
-  `t.Errorf("Parse(%q) = %v, want %v", in, got, want)`.
-- `t.Errorf` by default so one run reports every failure; `t.Fatalf` only
-  when continuing is meaningless (a precondition failed, `got` is nil and
-  would be dereferenced).
-- Errors are asserted with `errors.Is` / `errors.As` against a sentinel or
-  type — never by comparing `err.Error()` to a string. Assert the *absence*
-  of an error explicitly: `if err != nil { t.Fatalf("UploadFile(%q) returned unexpected error: %v", path, err) }`.
-- Structural comparisons: `reflect.DeepEqual` is acceptable for plain
-  data; if `github.com/google/go-cmp` is already a dependency, prefer
-  `cmp.Diff`. Do not add an assertion library to a project that has none.
-- Don't compare against text whose formatting is not guaranteed stable
-  (raw JSON, `fmt`-formatted structs, map iteration order). Compare
-  decoded values.
+- Failure messages are diagnosable without opening the implementation: what was called, with what, what came back, what was wanted — **got before want**: `t.Errorf("Parse(%q) = %v, want %v", in, got, want)`.
+- `t.Errorf` by default so one run reports every failure; `t.Fatalf` only when continuing is meaningless (a precondition failed, `got` is nil and would be dereferenced).
+- Errors are asserted with `errors.Is` / `errors.As` against a sentinel or type — never by comparing `err.Error()` to a string. Assert the *absence* of an error explicitly: `if err != nil { t.Fatalf("UploadFile(%q) returned unexpected error: %v", path, err) }`.
+- Structural comparisons: `reflect.DeepEqual` is acceptable for plain data; if `github.com/google/go-cmp` is already a dependency, prefer `cmp.Diff`. Do not add an assertion library to a project that has none.
+- Don't compare against text whose formatting is not guaranteed stable (raw JSON, `fmt`-formatted structs, map iteration order). Compare decoded values.
 
 ## Test doubles
 
@@ -158,37 +80,17 @@ func (m *mockStorage) Put(ctx context.Context, bucket, key string, body io.Reade
 The rules that make this pattern work:
 
 1. **One `Fn` field per interface method.** The test wires only what it needs.
-2. **A nil `Fn` fails loudly.** A method with an `error` return returns a
-   distinctive `not implemented` error naming the mock and the field. A
-   method with **no** error return **panics** with the same text — it has
-   no other way to fail. A test that forgets to wire a dependency its code
-   actually calls must never pass on a zero value.
-3. **Field naming:** unexported `<method>Fn` (`putFn`, `getByIDFn`) for
-   mocks inside a `_test.go`; exported `Fn<Method>` (`FnPut`, `FnGetByID`)
-   for mocks in a shared mocks package.
-4. **Record calls when the code under test tolerates errors.** If the
-   production path swallows the mock's error (log-and-continue), the
-   `not implemented` error cannot fail the test — add a call counter or
-   captured-arguments field and assert on it.
-5. **Prefer a real thing over a mock when the stdlib provides one:**
-   `httptest.NewServer` / `httptest.NewRecorder` for HTTP, `t.TempDir()`
-   for the filesystem, an in-memory implementation for a store. Do not
-   introduce `sqlmock`-style libraries; test SQL against a real database in
-   integration tests or test the layer above it.
-6. Interfaces exist so callers can inject; they are defined **by the
-   consumer** and kept to the methods the consumer calls. Do not define an
-   interface *only* to mock a type you own outright.
-7. When an interface gains or loses a method, update **every**
-   implementation and **every** mock — the real one, the shared mocks
-   package, and each inline mock in `_test.go` files — in the same change.
+2. **A nil `Fn` fails loudly.** A method with an `error` return returns a distinctive `not implemented` error naming the mock and the field. A method with **no** error return **panics** with the same text — it has no other way to fail. A test that forgets to wire a dependency its code actually calls must never pass on a zero value.
+3. **Field naming:** unexported `<method>Fn` (`putFn`, `getByIDFn`) for mocks inside a `_test.go`; exported `Fn<Method>` (`FnPut`, `FnGetByID`) for mocks in a shared mocks package.
+4. **Record calls when the code under test tolerates errors.** If the production path swallows the mock's error (log-and-continue), the `not implemented` error cannot fail the test — add a call counter or captured-arguments field and assert on it.
+5. **Prefer a real thing over a mock when the stdlib provides one:** `httptest.NewServer` / `httptest.NewRecorder` for HTTP, `t.TempDir()` for the filesystem, an in-memory implementation for a store. Do not introduce `sqlmock`-style libraries; test SQL against a real database in integration tests or test the layer above it.
+6. Interfaces exist so callers can inject; they are defined **by the consumer** and kept to the methods the consumer calls. Do not define an interface *only* to mock a type you own outright.
+7. When an interface gains or loses a method, update **every** implementation and **every** mock — the real one, the shared mocks package, and each inline mock in `_test.go` files — in the same change.
 
 ## Coverage and running
 
-- Coverage is a signal, not a goal — but tests are cheap to write now, so
-  cover every reachable branch, edge case and error path; skip only
-  trivial getters.
-- Run `go test -race ./...` for anything that touches goroutines, channels
-  or shared state; run `go vet ./...` always.
+- Coverage is a signal, not a goal — but tests are cheap to write now, so cover every reachable branch, edge case and error path; skip only trivial getters.
+- Run `go test -race ./...` for anything that touches goroutines, channels or shared state; run `go vet ./...` always.
 - A bug fix ships with a test that fails before the fix and passes after.
 
 ## Worked example
@@ -246,9 +148,7 @@ func TestClient_UploadFile(t *testing.T) {
 }
 ```
 
-`errors.Is(nil, nil)` is true, so the success case needs no special branch.
-`slog.NewTextHandler(io.Discard, nil)` builds on any Go with `log/slog`;
-from Go 1.24 on, `slog.New(slog.DiscardHandler)` is the shorter form.
+`errors.Is(nil, nil)` is true, so the success case needs no special branch. `slog.NewTextHandler(io.Discard, nil)` builds on any Go with `log/slog`; from Go 1.24 on, `slog.New(slog.DiscardHandler)` is the shorter form.
 
 ## Review checklist for tests
 
