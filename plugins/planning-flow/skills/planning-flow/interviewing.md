@@ -43,46 +43,51 @@ question reaches the user:
 What survives all three is a decision only the user can make. **If nothing
 survives, there is no interview.** Say so in one line and move on. Never pad.
 
-## The frontier, in rounds
+## The frontier, one question at a time
 
 The **frontier** is every unanswered decision whose prerequisites are
 settled: the questions you can ask *now* without guessing at answers you have
 not heard. A question whose answer depends on another question still open
-belongs to a later round, not this one.
+waits until that one is answered.
 
-Work in rounds:
+Work like this:
 
-- Take the frontier. Order it so the decisions that unblock the most
-  downstream decisions come first.
-- Ask **at most four per round**, grouped by theme, through the harness's
-  question tool when it has one (a multiple-choice prompt), or as numbered
-  plain-text questions otherwise. When the frontier holds more than four,
-  the rest wait for the next round; they are still frontier, not blocked.
-- Wait for the answers. Fold each one into the plan as a decision (the
-  user's), rewrite the sections it touches, delete the question.
+- Write **every** open question into the plan's *Open questions* section,
+  in the shape `question-format.md` defines, frontier first, ordered so the
+  decisions that unblock the most downstream decisions come first; a
+  blocked question sits below the one it waits on and says so in its first
+  sentence. The file always holds the whole list.
+- Ask **one question per chat message**: the first frontier question, word
+  for word as it stands in the file, under the position line. Never two,
+  never the whole list, never through the harness's question tool — its
+  fields have no room for the flow. When `visual-plan` is serving the file,
+  the user may instead answer the question's fence there.
+- Wait for the answer. Fold it into the plan as a decision (the user's),
+  rewrite the sections it touches, delete the question, renumber the rest.
 - Each answer settles a decision and makes the questions that depended on
-  it askable. Recompute the frontier and ask the next round.
+  it askable. Recompute the frontier and ask the next one in the next
+  message. There is no cap on how many rounds this takes.
 - Stop when the frontier is empty: every branch visited, nothing left
   silently assumed.
 
 ## The shape of one question
 
-Each question carries, in this order:
+Every question has the one shape in `question-format.md` — read that file
+before writing the first one. In short: a numbered heading one level below
+the section that holds it (`### Question <N> of <M> — <the claim>`), then
+four mandatory bold labels in this order, then *Your call* (a bold line, or a `question` fence when `visual-plan` is serving the file) — **The situation.** (what exists
+and what is unsettled, in plain words: not "how should we handle
+`dropoff_enabled`?" but "the drop-off check is not run for three suppliers,
+and the plan does not say whether it should be"), **The flow.** (numbered
+steps walking the consumer of the code to the consequence they would notice,
+or `N/A` only when nobody would notice), **The fix.** (your recommendation —
+**except for delivery shape**, which carries none, below), **Cost.** (what
+the fix costs, or `None`), and **Your call:** (the question in a few words,
+with the alternatives when there are any). Prose at most 200 words.
 
-1. **The decision**, in one sentence, in plain words. Not "how should we
-   handle `dropoff_enabled`?" but "Should the drop-off check be switched on
-   for the three suppliers that are not checked today?"
-2. **Why it is theirs**: the consequence a user or operator would notice,
-   in one line. The user can answer away from their machine because the
-   consequence is stated.
-3. **The options**, each with its consequence in a clause. Two to four
-   options. Include "something else" only when the space is genuinely open.
-4. **Your recommendation**, marked as such, with the reason in a clause —
-   **except for delivery shape**, which carries no recommendation (below).
-
-A question with no stated consequence is really a fact you should look up,
-or a question you have not finished thinking about. Rewrite it or answer it
-yourself.
+A question whose flow has no consequence at its end is really a fact you
+should look up, or a question you have not finished thinking about. Rewrite
+it or answer it yourself.
 
 ## Delivery shape: the one question with no recommendation
 
@@ -91,10 +96,11 @@ When the work is bigger than one small ticket, the frontier always holds:
 neutral line — one PR is a single review and a single merge; several are
 smaller reviews and more coordination between them — and stop. Give no
 recommendation, no default, no "most teams". Big tickets and big PRs are
-legitimate; the user decides how they want to review their own work. If they
-choose several, ask in the same round or the next how they want them cut
-(by ticket, by subsystem, by dependency order), with a recommendation this
-time, because the cut is a technical question once the shape is chosen.
+legitimate; the user decides how they want to review their own work. In the
+template, **The fix.** holds the two trades and no pick. If they choose
+several, ask next how they want them cut (by ticket, by subsystem, by
+dependency order), with a recommendation this time, because the cut is a
+technical question once the shape is chosen.
 
 ## Fog: what you cannot yet phrase
 
@@ -131,23 +137,24 @@ the decisions the user should know about, as a checklist with what each one
 unblocks, and keep the dependent tickets in the plan with the prerequisite
 named in *Depends on*.
 
-## Every stop carries every open question, in full
+## Every stop carries its one question, in full
 
-A round is a stop: the run waits for the user. The user may not be at the
+A question is a stop: the run waits for the user. The user may not be at the
 keyboard, and under a goal loop (see below) the harness may re-prompt you
 several times before they return. Whatever message is last on their screen
-is the one they answer from. So every stop restates **every** question that
-is still open — the ones asked this round and the ones from earlier rounds
-that went unanswered — each with its four parts (the decision, why it is
-theirs, the options with consequences, your recommendation), plus any
-command they must run or file they must send, written out in full. Never
-"the question from round two", "as asked above", or "the two commands in my
-earlier message". Repeating text you wrote before is the intended cost; the
-reader has the last message and nothing else.
+is the one they answer from. So every stop carries the **one** question it
+asks in full — heading, situation, flow, fix, cost, your call, exactly as the
+file has it — plus any command they must run or file they must send, written
+out in full, plus the count of other questions still open and the path (and
+URL, when served) of the file that holds them. Never "the question from two
+messages ago", "as asked above", or "the two commands in my earlier
+message". Repeating text you wrote before is the intended cost; the reader
+has the last message and nothing else. What a stop never carries is a second
+question: the rest wait in the file for their turn.
 
 Open each stop with one line of position: `Step <n> of 13; <k> questions
 open; <what happens once they are answered>`. Steps are the numbered steps
-in `SKILL.md`; `k` counts open questions across all rounds. A user who comes
+in `SKILL.md`; `k` counts every open question in the file. A user who comes
 back at a random moment reads that line and knows whether the plan is close.
 
 ### Under a goal loop
@@ -159,7 +166,7 @@ that says `Continue working toward the active thread goal` (Codex), or a
 message beginning `Stop hook feedback:` or `Goal check-in:`. Assume the loop
 is on until the harness reports the goal cleared or paused. Neither harness
 tells you which stop will be the one the user reads, so every stop is
-written as if it is the last: the position line and every open question in
+written as if it is the last: the position line and the one question in
 full, never a shortened version.
 
 Between stops, keep chat to one line: the position and the next action.
@@ -189,12 +196,15 @@ question the decisions section already answers: that was never a question.
 
 - A question the user answered earlier, asked again in different words
 - A question whose answer a subagent could read off the code
-- A question with no consequence attached
-- Two questions in one round where the second depends on the first
+- A question whose flow ends without a consequence
+- A question missing a label, a number, or a numbered flow; a flow marked
+  `N/A` when someone would notice the outcome
+- Two questions in one chat message, or a question sent through the harness
+  question tool
 - A recommendation attached to the one-PR-or-several question
 - A ticket that says "assume", "probably", or "for now" after the frontier
   is empty
-- A round "answered" by the agent so it could keep going
-- Six questions in one prompt because "they are all related"
-- A stop that points at an earlier round instead of restating its open questions
+- A question "answered" by the agent so it could keep going
+- A stop that points at an earlier message instead of carrying its question
+  in full
 - A reply to a goal re-prompt that is shorter than the stop before it

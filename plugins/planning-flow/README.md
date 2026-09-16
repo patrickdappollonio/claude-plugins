@@ -13,11 +13,11 @@ paragraph being rewritten, until you are reading a plan in diffs. This skill
 makes both impossible by rule: the plan is rewritten in place on every
 revision, the only memory it keeps is a decisions section, and the closing
 message describes the plan, whether it covers the ask, and the gotchas.
-Every stop along the way — each round of questions, the presentation, the
-review offer — opens with where the flow is and restates every question that
-is still open, in full, so the last message on your screen is always enough
-to answer from, even when a goal loop has re-prompted the agent several times
-while you were away.
+Every stop along the way — each question, the presentation, the review
+offer — opens with where the flow is and carries the one question it asks in
+full, so the last message on your screen is always enough to answer from,
+even when a goal loop has re-prompted the agent several times while you were
+away.
 
 ## What it does
 
@@ -41,8 +41,13 @@ while you were away.
 - **Asks you only what the code cannot answer.** Questions from the agent and
   the reviewer are merged, then filtered: anything an earlier decision
   settles is decided the same way and logged; anything the codebase answers
-  becomes a spike; anything technical is decided and logged. What remains is
-  asked in themed batches of at most four. A simple change may have none.
+  becomes a spike; anything technical is decided and logged. What remains
+  is written into the plan in one fixed shape — a numbered heading with the
+  claim, then the situation, a numbered flow of what someone would run into,
+  the fix, its cost, and your call — and asked in chat one question per
+  message, as many rounds as it takes, so you never face a wall of
+  questions. In a visual plan each question's "your call" is an answer box.
+  A simple change may have none.
 - **Never nudges on delivery shape.** One pull request or several is your
   call; the skill states both trades neutrally and makes no recommendation.
   Big tickets are legitimate.

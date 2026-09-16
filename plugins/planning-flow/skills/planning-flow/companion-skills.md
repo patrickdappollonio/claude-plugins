@@ -14,7 +14,7 @@ Check what is installed by looking at the skill list your harness gives you.
 
 | Skill (`--skill`) | Plugin | What it adds when installed | Distilled here in |
 |---|---|---|---|
-| `visual-plan` | `visual-docs` | Renders the plan in the browser with diagrams, a comment loop, and `question` fences that collect answers as comments. Under this skill the audience is **technical**: its write-for-a-non-developer rule and the linter's warnings about code symbols in prose do not apply; everything else, including its own rewrite-in-place rule, does. | `SKILL.md` step 9 |
+| `visual-plan` | `visual-docs` | Renders the plan in the browser with diagrams, a comment loop, and `question` fences that collect answers as comments — under this skill, one fence per open question, holding only its *Your call* line (`question-format.md`). Under this skill the audience is **technical**: its write-for-a-non-developer rule and the linter's warnings about code symbols in prose do not apply; everything else, including its own rewrite-in-place rule, does. | `SKILL.md` step 9 |
 | `adversarial-review-quick` | `adversarial-review` | A small hostile panel — the fewest reviewers that fit the plan, with the user able to add or drop any — with a separate reviewer that discards false findings and another that checks each fix — the review for plans inside one subsystem | `plan-review.md` |
 | `adversarial-review` | `adversarial-review` | The full 18-reviewer panel with the same two checking reviewers — the review for plans that touch the database schema, sign-in and permissions, work that runs at the same time, outside services, or more than one subsystem | `plan-review.md` |
 | `implement-plan` | `implement-plan` | Builds the approved plan without further input from the user. It works in a separate copy of the repository, has cheaper models write the tests before the code, checks each ticket against the plan, asks which hostile review to run on the finished code (quick, full, or none) and runs that one, and appends its decisions to this same plan file. It reads the `.plans/` file directly and treats the decisions section as already decided. | not distilled; named in the closing when installed |
@@ -28,8 +28,11 @@ skill decided (the `.plans/` file is the source of truth, so serve that
 directory rather than a temp directory), serve it, hand over the URL, and
 read its comments back into the file. State to yourself, before its lint
 step, that this document is for a technical audience; keep its other lint
-findings and fix them. Answers that arrive as comments on `question` fences
-become decisions in the file, and the fence is deleted.
+findings and fix them. Every open question in the file keeps its prose
+parts as markdown and turns its **Your call** line into a `question` fence,
+as `question-format.md` shows; the chat still asks one question at a time.
+An answer that arrives as a comment on a fence becomes a decision in the
+file, and the question is deleted.
 
 ## Using `implement-plan` after approval
 

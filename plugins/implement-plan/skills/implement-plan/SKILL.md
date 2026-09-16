@@ -38,16 +38,17 @@ skill's own.
 ## Read the Companion Files First
 
 This skill ships in two layers. `SKILL.md` carries the rules and a summary of
-each step; six files beside it carry the full procedures:
+each step; seven files beside it carry the full procedures:
 
 - `handoff-packet.md` — the executor prompt: scope, TDD, the test map, the documentation rule, user-journey tests, the executor discipline, stop conditions
 - `conformance-review.md` — the thorough plan-vs-work check, item by item
 - `adversarial-review-fallback.md` — how to run the installed review skills, the plan-as-diff variant, and the on-the-spot panel when no skill is installed
 - `model-routing.md` — which model executes, which judges, and the trade you must state
 - `capacity-check.md` — the back-of-the-napkin estimate, the advisory usage check, `/goal`, the resume block, and how to stop under a goal loop
+- `question-format.md` — the one shape every decision put to the user takes (numbered heading, the situation, the flow, the fix, the cost, your call), its heading level, where the questions live (all in the plan file, one per chat message), and how a `question` fence carries the answer in a visual plan
 - `companion-skills.md` — the skills this one uses when installed (`adversarial-review`, `adversarial-review-quick`, `visual-plan`, `appropriate-comments-code`, `code-simplification`, `use-premium-models-efficiently`, `use-claude-limits-efficiently`), what each adds, and how to install them on Claude Code, Codex, or via `npx skills`
 
-**The first time you use this skill in a session, read all six before doing
+**The first time you use this skill in a session, read all seven before doing
 anything else** — before opening the plan, sizing the work, or answering a
 question about it. The summaries here remind a reader who has seen the full
 text; they never replace it. Re-read the relevant file at the step that names
@@ -116,9 +117,10 @@ slice", "the user should see progress first", "I need the usage numbers first"
 
 **Every stop ends with the same resume block** (`capacity-check.md`): phase
 and progress figure (slices merged of slices total, as a percentage), done,
-pending, and everything needed from the user — each question with options
-and your pick, each command in a code block, **re-pasted at every stop, never
-"see my earlier message"**: the user's screen holds the last message only.
+pending, and everything needed from the user — the one decision you are
+asking, in full, each command in a code block, **re-pasted at every stop,
+never "see my earlier message"**: the user's screen holds the last message
+only.
 **No keyword**: "go ahead", "approved", "yes, the first option" all resume
 the run — read the reply for its meaning, never demand a word. **Under a
 goal loop, every stop is the last message.** A goal is on when the user said
@@ -129,11 +131,20 @@ stops, one line of progress and next action; a re-prompt with nothing changed
 gets the identical block again, never a shorter one.
 
 **How to ask.** In plain text, in the message itself — never a harness
-question tool, which not every harness has. Give the options, the consequence
-of each, and your recommendation, then stop; bundle every open question into
-one stop, so one reply resumes the run. When `/goal` is available (Claude
-Code, Codex), hand over a ready-to-paste condition at kickoff (template in
-`capacity-check.md`); the gates still pause the loop by design.
+question tool, which not every harness has and whose fields cannot hold the
+shape. A **decision** — a G3 item, a parked functional choice, a simpler
+path than the plan — takes the shape in `question-format.md`: `### Question
+<N> of <M> — <the claim>` (one heading level below its section), then **The
+situation.**, **The flow.** (numbered steps to the consequence; `N/A` only
+when nobody would notice), **The fix.**, **Cost.**, then *Your call* — all
+five parts, prose at most 200 words. Every open decision
+lives in full in the decisions log (step 9); **chat asks one per stop**,
+word for word from the file, and says how many more wait there — never two,
+never the list. The skill's own gates (branch and testing depth at G1,
+quick / full / none at G2, delete / keep at G4) are short procedural asks
+and keep their one-line options-and-pick shape. When `/goal` is available
+(Claude Code, Codex), hand over a ready-to-paste condition at kickoff
+(template in `capacity-check.md`); the gates still pause the loop by design.
 
 ## The Process
 
@@ -208,9 +219,11 @@ message.
 **A simpler path is reported, never taken.** When an executor stops because
 the plan prescribes a rung above what already exists (codebase, standard
 library, platform, installed dependency), or you see it yourself, build
-neither: stop at **G3** for that slice with both paths, their cost, and your
-recommendation; independent slices keep going. An executor that over-built
-*beyond* the plan is simply sent back.
+neither: write it into the decisions log as a `question-format.md` question
+(the lower rung in **The fix.**, what the user would notice in **The
+flow.**, the difference in **Cost.**) and stop at **G3** for that slice with
+that one question; independent slices keep going. An executor that
+over-built *beyond* the plan is simply sent back.
 
 ### 5. Conformance review — thorough, not a skim
 
@@ -316,8 +329,10 @@ Append a `## Decisions made during implementation` section at the **end of the
 plan file** (the visual plan when there is one — it live-reloads; otherwise the
 plan file; otherwise the chat summary). One bullet per technical decision, in
 plain language: what was chosen, the alternative, and why. Functional items
-waiting on the user go in the same place with the recommended option; in a
-visual plan, use a `question` fence so the answer comes back as a comment.
+waiting on the user follow the bullets, each a `question-format.md` question
+under its own `### Question <N> of <M> — <claim>` heading; in a visual plan
+its **Your call** line is a `question` fence so the answer comes back as a
+comment, with the prose parts as markdown above it, never inside it.
 
 ### 10. Worktree cleanup — G4
 
@@ -332,7 +347,7 @@ Exactly these four bullets, short:
 
 - **What was done**
 - **What were the decisions you made** (technical, with the reason)
-- **What's pending for me to decide on** (functional/operational, each with your recommendation; any command or file still needed, in full)
+- **What's pending for me to decide on** (functional/operational: each open question by its heading, one line, with the path and URL of the plan file where each stands in full — the chat asks them one at a time, never all here; any command or file still needed, in full)
 - **What's next**
 
 ## Testing and documentation — the floor is TDD plus current docs; the rest is the user's to size
@@ -428,6 +443,10 @@ stated plainly.
 | "They were merged, so I deleted the worktrees" | Merged is not consent. Deletion waits for G4, always. |
 | "I recommended a branch and created it" | Recommending is asking. Creating one unasked moves the merge target and leaves the user with a branch they never chose. |
 | "The user is away, so I skipped the permission question" | Absence does not grant permission. Stop with the resume block; resuming costs them a short reply in their own words. |
+| "Two slices are parked, I'll ask both in this stop so one reply resumes everything" | Two questions in one message is the wall the shape exists to prevent. Both go in the decisions log in full; the stop asks the first and says one more waits. |
+| "It's a quick functional choice, options and a pick are enough" or "the flow is obvious, N/A" | A parked decision gets the full shape; the one-line form is for the skill's own gates. `N/A` is for a decision nobody would notice — if someone would, walk them to it in numbered steps. |
+| "The whole question fits in the fence description" | The description renders as one inline line; a numbered flow becomes a run-on sentence. Prose above the fence, only the *Your call* line inside it. |
+| "I'll write the bold *Your call* line; they can answer in chat anyway" | When `visual-plan` is serving the file, the file's *Your call* is a `question` fence from the first draft; chat gets the bold line with the alternatives as a list. |
 | "I gave the commands an hour ago; a pointer to that message is enough" or "the goal check keeps rejecting, so one line will do" | The user's screen holds the last message, and nine one-liners bury the one that had the commands. Paste the commands again at every stop; answer a re-prompt with the same full block, word for word, plus a line saying nothing changed. |
 | "It's one file over the threshold, and asking would block for hours, so I ran the quick panel and named the gap" | One over is over, and no panel runs before the G2 answer. Recommend the full one, ask quick / full / none, and wait. |
 | "The quick panel needs no permission, so I'll run it now" | Every panel costs tokens the user has not agreed to spend. One question at G2, then at most one review. |
@@ -481,13 +500,14 @@ stated plainly.
 - The comment or simplification pass started without `appropriate-comments-fallback.md` and `code-simplification-fallback.md` opened at that step — an earlier read does not count
 - A simplification that touches a file outside the merged diff, modifies a test, or merges two functions
 - A stop that does not end with the resume block, or one that asks the user for a specific keyword instead of a plain-language answer
+- A parked decision missing one of the four labels or the *Your call* part of `question-format.md`, its number, or its numbered flow; two decisions asked in one stop; a decision sent through the harness question tool; a fence holding anything but the *Your call* line
 - A stop whose *Needed from you* points at an earlier message instead of restating the command, question, or file, or a reply to `Stop hook feedback:` shorter than the stop before it
 
 ## Checklist
 
 Create a todo per item.
 
-- [ ] Read all six companion files (first use in this session)
+- [ ] Read all seven companion files (first use in this session)
 - [ ] Plan located; a plan review offered at G1 only when none has run — outcome recorded
 - [ ] Starting branch + commit recorded; branch recommended once (G1)
 - [ ] Capacity estimated and usage reported in one line (or marked unreadable) without stopping; `/goal` condition with the waiting-on-the-user clause handed over; every stop carries the full resume block with the progress figure and every needed command re-pasted, and under a goal loop a re-prompt gets the identical block
@@ -501,6 +521,6 @@ Create a todo per item.
 - [ ] Comment and simplification passes run on the merged diff — the installed skill as written, else the fallback: every flagged comment rewritten or deleted, test-file comments left alone; behavior-preserving, tests unmodified and green, merges parked as proposals; code changes re-checked for conformance
 - [ ] G2 asked once, after the pass: change sized, quick / full / none offered in plain text with the cost of each; exactly the chosen review run once on the whole merged diff; fallback panel if no skill
 - [ ] Every finding fixed or parked by the authority split; conformance re-run on the fixes; a second review offered with a recommendation and run only on a yes
-- [ ] Decisions log appended at the end of the plan file
+- [ ] Decisions log appended at the end of the plan file; every parked decision there in the `question-format.md` shape, asked in chat one per stop
 - [ ] Worktree deletion asked (G4) — nothing removed before the answer
 - [ ] Four-bullet recap delivered

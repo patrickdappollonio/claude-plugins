@@ -350,9 +350,10 @@ Build a coding plan that ends as **one plan**, never a story of its
 revisions. The agent explores the codebase with parallel subagents, drafts to
 a fixed skeleton in a gitignored `.plans/` file, has a zero-context reviewer
 on the most capable model hold the draft against your original words, and
-asks you only what the code cannot answer — in themed batches, never
-repeating a decision you already made, and never recommending one pull
-request over several. Work is written as tickets with a what, a why in
+asks you only what the code cannot answer — each question in one fixed
+shape (the situation, a numbered flow, the fix, its cost, your call), one
+per message, never repeating a decision you already made, and never
+recommending one pull request over several. Work is written as tickets with a what, a why in
 Simplified Technical English, acceptance criteria, dependencies by title,
 and a size guessed in lines of code rather than time; spikes are labeled and
 the cheap ones are closed on the spot. Every decision is logged with its
