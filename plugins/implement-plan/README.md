@@ -1,9 +1,11 @@
 # Implement Plan
 
 Turn an agreed plan into merged, reviewed, tested, documented code — mostly hands-free, and
-without deciding for you what is yours to decide. Every question it has for
-you is asked in plain text with options and a recommendation, so it works in
-any agent and can be answered while you are away.
+without deciding for you what is yours to decide. Every decision it has for
+you is written in one fixed shape — the situation, a numbered flow of what
+you would run into, the fix, its cost, and your call — into the plan file,
+and asked in chat one at a time, so it works in any agent and can be
+answered while you are away.
 
 You planned the work (plan mode, a `visual-plan`, a plan file, or a design you
 agreed in chat). This skill is the "now build it" step: the agent splits the
@@ -28,8 +30,9 @@ parked with a recommendation, never assumed.
   run is hands-free. The check is informational: it never pauses the run.
 - **Every stop is readable on its own.** A stop opens with where the run is
   and how many slices are merged (as a percentage), and restates everything
-  it needs from you — each question with options and a recommendation, each
-  command in full — even if it asked an hour ago. Under a goal loop, where the
+  it needs from you — the one decision it is asking, in full, and each
+  command in full — even if it asked an hour ago; the other open decisions
+  wait in the plan file, counted, and are asked one per stop. Under a goal loop, where the
   harness may re-prompt several times before you return, a stop with nothing
   new repeats the same block word for word instead of shrinking into a run of
   "still blocked" one-liners that bury the message that had the commands.

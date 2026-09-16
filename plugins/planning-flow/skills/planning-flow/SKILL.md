@@ -29,10 +29,11 @@ of it belongs in the plan or in the message that delivers it.
    direction is the user's, asked.** The authority table below decides which
    is which, and a decision the user already made is never asked again.
 4. **Facts are yours to find; decisions are the user's to make.** Find the
-   facts yourself. Ask the user only what the codebase cannot answer. Ask in
-   rounds: each round holds only the questions whose earlier questions are
-   already answered. Never answer a question you put to the user. A change
-   can be so simple that there are no questions; do not invent them.
+   facts yourself. Ask the user only what the codebase cannot answer. Ask
+   every question in the one shape in `question-format.md`, and in chat ask
+   one per message, each after the questions it depends on are answered.
+   Never answer a question you put to the user. A change can be so simple
+   that there are no questions; do not invent them.
 5. **The plan is a document, and it plans the simplest thing that works.**
    This skill produces one markdown file and nothing else: no prototype, no
    mockup, no scaffold, no demo, no code — a spike may run a throwaway probe,
@@ -50,16 +51,17 @@ of it belongs in the plan or in the message that delivers it.
 ## Read the Companion Files First
 
 This skill ships in two layers. `SKILL.md` carries the rules and a summary of
-each step; six files beside it carry the full procedures:
+each step; seven files beside it carry the full procedures:
 
 - `plan-template.md` — the plan file skeleton, the ticket format, the decisions entry format, the size bands, and the timeless-prose rule with examples
 - `communication.md` — how to write for a reader who has not seen the code: the identifier rule, Simplified Technical English (ASD-STE100), outcome-first messages
-- `interviewing.md` — the design tree, the frontier, rounds, the shape of a question, fog, out of scope, the rule never to answer your own question, and how every stop restates every open question — including under a goal loop
+- `interviewing.md` — the design tree, the frontier, one question at a time, fog, out of scope, the rule never to answer your own question, and what every stop carries — including under a goal loop
+- `question-format.md` — the one shape every question takes (numbered heading, the situation, the flow, the fix, the cost, your call), its heading level, where the questions live (all in the file, one per chat message), and how a `question` fence carries the answer in a visual plan
 - `plan-review.md` — the zero-context reviewer, the adversarial review of a plan (installed skills or an on-the-spot panel), the sizing rule, and how to run a spike
 - `model-routing.md` — which tier explores, which tier reviews, the model names, and what to do when the harness cannot choose
 - `companion-skills.md` — what `visual-plan`, `adversarial-review`, `adversarial-review-quick`, and `implement-plan` add when installed, and the install lines to give only when asked
 
-**The first time you use this skill in a session, read all six before doing
+**The first time you use this skill in a session, read all seven before doing
 anything else** — before exploring, before drafting, before answering a
 question about the ask. The summaries here remind a reader who has already
 seen the full text; they are not a substitute for it. Re-read the named file
@@ -143,9 +145,11 @@ this change.
 Do every step in order. Read the named file at its step. Between steps, keep
 chat to one-line status notes; the plan is where the tokens go. **Every stop
 is complete on its own** (`interviewing.md`): it opens with `Step <n> of 13;
-<k> questions open` and restates every open question in full — four parts,
-from every round — plus any command or file you need; never a pointer to an
-earlier message. **Under a goal loop** (the user said so, or the conversation
+<k> questions open`, carries the one question it asks in full — in the shape
+of `question-format.md`, the same text the file holds — and any command or
+file you need; never a pointer to an earlier message, never a second
+question. The file holds every open question; the chat asks them one at a
+time. **Under a goal loop** (the user said so, or the conversation
 holds `A session-scoped Stop hook is now active`, `Stop hook feedback:`, `Goal
 check-in:`, or a Codex `<objective>` block) every stop is the last message the
 user reads; a re-prompt with nothing changed gets it again, identical.
@@ -244,19 +248,28 @@ decision under the decision it depends on. Then remove from it, in order:
 What remains is what only the user can answer. **If nothing remains, say so
 in one line and skip step 7.** Never pad the list.
 
-### 7. Ask the frontier, in rounds
+### 7. Ask the frontier, one question at a time
 
-The frontier is every unanswered decision whose prerequisites are settled.
-Ask it in rounds of at most **four**, grouped by theme, the decisions that
-unblock the most others first, through the harness's question tool (a
-multiple-choice prompt where available; numbered plain text otherwise). Each
-question has four parts. The decision, in plain words. Why it is the user's:
-the consequence they would notice. Two to four options, each with its
-consequence. Your recommendation. A question that depends on one still
-open waits for a later round. After each round, fold the answers in (step
-8), recompute the frontier, and ask again; stop when it is empty. **Never
-answer your own question**: no likely answer filled in, no silence taken as
-consent.
+Read `question-format.md`, the file that defines the one shape every
+question takes. Write **every** open question into the plan's *Open
+questions* section in that shape: `### Question <N> of <M> — <the claim>`
+(one heading level below the section), then **The situation.**, **The
+flow.** (numbered steps to the consequence; `N/A` only when nobody would
+notice), **The fix.**, **Cost.**, then *Your call* — all five parts, in that order,
+its prose at most 200 words. Frontier first — every
+question whose prerequisites are settled, the ones that unblock the most
+others earliest; a question that waits on another sits below it and says so.
+
+Then ask **in chat, one question per message**: the first frontier question,
+word for word from the file, under the position line, with the count of
+what else is open and the file's path. Never through the harness's question
+tool — its fields cannot hold a flow — and never two at once. Wait. Fold the
+answer in (step 8), renumber, recompute the frontier, ask the next one in
+the next message; as many rounds as it takes, until nothing is open. When
+`visual-plan` serves the file, each question's **Your call** line is a
+`question` fence, so the user may answer there instead; chat still carries
+one at a time. **Never answer your own question**: no likely answer filled
+in, no silence taken as consent.
 
 **Delivery shape is always on the frontier when the work is bigger than one
 small ticket:** one pull request for everything, or several. State the trade
@@ -423,10 +436,14 @@ example in `plan-template.md`):
 | "The reviewer found seven issues; the user should know" | They should know the plan is sound. Fold in the fixes, log the decisions, present the plan. |
 | "The reader is technical, so function names are fine" | Technical is not the same as having read the code. Name it and explain it in the same sentence. |
 | "I'll number the tickets so dependencies are easier to write" | Titles do the same job and never end up in a code comment. |
-| "Three questions in one prompt is faster than six rounds" | Three related questions in one round is the design. Six unrelated ones is a wall. Group by theme, four at most. |
-| "I'll ask the default and the table in the same round to save a trip" | The default depends on the table. A question whose prerequisite is open belongs to the next round. |
+| "Three questions in one message is faster than three messages" | Three questions in one message is a wall the user reads three times. The file holds all of them; the chat asks one, waits, asks the next. |
+| "I'll ask the default and the table in the same message to save a trip" | The default depends on the table. A question whose prerequisite is open waits for the answer. |
+| "The user is here, a one-line question is quicker" or "the flow is obvious, N/A" | The shape is what makes the question answerable away from the code: heading, situation, flow, fix, cost, your call, every time. `N/A` is for a decision nobody would notice — if someone would, walk them to it in numbered steps. |
+| "The harness has a question tool, I'll use it for this one" | Its fields hold one line per option and no flow. The question goes in the message as markdown, and the user answers in their own words. |
 | "The user is away, so I'll take my recommendation as their answer" | A question put to the user is answered by the user. The question stays open in the plan until they answer it. |
-| "I asked that in round two; a pointer is enough" or "the goal check keeps rejecting, one line will do" | The user's screen holds the last message. Restate every open question at every stop; answer a re-prompt with the same full message, word for word. |
+| "I asked that two messages ago; a pointer is enough" or "the goal check keeps rejecting, one line will do" | The user's screen holds the last message. Every stop carries its one question in full; answer a re-prompt with the same full message, word for word. |
+| "The whole question fits in the fence description" | The description renders as one inline line; a numbered flow becomes a run-on sentence. Prose above the fence, only the *Your call* line inside it. |
+| "I'll write the bold *Your call* line; they can answer in chat anyway" | When `visual-plan` is serving the file, the file's *Your call* is a `question` fence from the first draft; chat gets the bold line with the alternatives as a list. |
 | "I can't phrase it sharply yet, so I'll skip it" | Write the unclear area under *Not yet specified*. Turn it into a real question once the questions ahead of it are answered. |
 | "The user answered something close to this earlier" | Close enough is decided. Decide it in their direction and log it as following from their answer. |
 | "This decision is technical, so it's mine" | Only while its effect stays invisible. Trace the consequence first. |
@@ -460,9 +477,10 @@ example in `plan-template.md`):
 - A sentence in *What* or *Why* that dies when its identifier is deleted
 - A question on the list that the decisions section already answers
 - A question on the list that a subagent could answer from the codebase
-- Two questions in one round where the second depends on the first
+- A question missing one of its five parts, its number, or its numbered flow, or with prose over the 200 words `question-format.md` allows
+- Two questions in one chat message, or a question asked through the harness question tool
 - A question the agent answered itself to keep going
-- A stop that points at an earlier round instead of restating its open questions, or a goal re-prompt answered with less than the stop before it
+- A stop that points at an earlier message instead of carrying its question in full, or a goal re-prompt answered with less than the stop before it
 - A recommendation attached to the one-pull-request-or-several question
 - A ticket split because it "felt too big" with no user request
 - A *Technical context* section that names a file without saying what is in it, or a format without its exact strings
@@ -480,7 +498,7 @@ example in `plan-template.md`):
 
 Create a todo per item.
 
-- [ ] Read all six companion files (first use in this session)
+- [ ] Read all seven companion files (first use in this session)
 - [ ] Plan location chosen; ask copied verbatim into the file
 - [ ] Exploration subagents dispatched in parallel on the cheaper tier
 - [ ] Draft written to the full skeleton; decisions logged as made
@@ -489,7 +507,7 @@ Create a todo per item.
 - [ ] Zero-context reviewer run on the most capable tier with only the ask, the plan, and the codebase
 - [ ] Cold implementer check run on a different model family where possible; every gap that would change what gets built filled with the exact value; re-run until none of that kind remain
 - [ ] One question list from every source, arranged as a design tree, then filtered: decided, answerable by code, technical
-- [ ] Frontier asked in rounds of at most four until empty; delivery shape included without a recommendation; no question answered by the agent; every stop opens with its position line and restates every open question in full
+- [ ] Every open question written into the file in the `question-format.md` shape — numbered heading, situation, flow, fix, cost, your call — and asked in chat one per message until nothing is open; delivery shape included without a recommendation; no question answered by the agent; every stop opens with its position line and carries its one question in full
 - [ ] Plan rewritten in place after every round; spikes and dropped tickets folded into decisions
 - [ ] Presented through `visual-plan` (technical audience stated), plan mode, or chat
 - [ ] Cheap spikes offered at presentation; results folded in; leftover questions asked until nothing is open

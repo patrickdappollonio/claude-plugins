@@ -68,8 +68,11 @@ user ruled it out, or the ask did. Do not add it back to this plan.>
 
 ## Open questions
 
-<Only questions the user has not yet answered. Delete each one when answered;
-its answer becomes a decision. When empty: "No open questions.">
+<Every question the user has not yet answered, each in the shape from
+`question-format.md`: an `### Question <N> of <M> — <claim>` heading, then
+**The situation.**, **The flow.**, **The fix.**, **Cost.**, **Your call:**.
+Frontier first; a blocked one says what it waits on. Delete each when
+answered; its answer becomes a decision. When empty: "No open questions.">
 
 ### Not yet specified
 

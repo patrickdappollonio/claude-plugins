@@ -84,7 +84,7 @@ conformance review passed item by item; the adversarial review ran and every
 confirmed finding is fixed and re-verified or parked as a user decision; the
 decisions log is appended to the plan; the worktree-deletion question was asked;
 and the resume block (where we are / done / pending / needed from you, with
-every command and question written out in full) was delivered.
+every command and the current question written out in full) was delivered.
 ```
 
 The "or is waiting on the user" clause is not optional. The goal evaluator
@@ -108,8 +108,11 @@ their own words:
 **Where we are:** phase <n> of 11 — <one line>. <k> of <m> slices merged (<p>%).
 **Done:** <slices merged, reviews run>.
 **Pending:** <worktrees alive, parked decisions>.
-**Needed from you:** <every open question, with options and your recommendation;
-every command or file you need, written out in full>.
+**Needed from you:** <the one decision you are asking now, in full, in the
+`question-format.md` shape — heading, situation, flow, fix, cost, your call —
+word for word as it stands in the plan's decisions log; how many more wait
+there, with the file's path (and URL when served); every command or file
+you need, written out in full>.
 Say the word and I keep going.
 ```
 
@@ -120,8 +123,10 @@ time or lines. A user who comes back at a random moment reads that one
 figure and knows whether to wait or walk away.
 
 **Needed from you** is complete on its own, every time. The command the
-user must run appears in a code block; the question they must answer
-appears with its options and your pick; the file they must send is named.
+user must run appears in a code block; the decision they must make appears
+once, in the full shape, never as options-and-a-pick shorthand and never
+two at a time — the rest wait in the plan file, counted; the file they must
+send is named.
 Never "the two commands from my last message", "as discussed above", or
 "see the earlier recap": the reader's screen holds the last message and
 nothing else. Repeating text you wrote an hour ago is the intended cost.
