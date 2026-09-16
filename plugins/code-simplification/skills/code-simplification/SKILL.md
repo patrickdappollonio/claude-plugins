@@ -7,31 +7,20 @@ description: Use when code works but is harder to read, maintain, or extend than
 
 ## Overview
 
-Simplify code by reducing complexity while preserving exact behavior. The goal
-is not fewer lines — it's code that is easier to read, understand, modify, and
-debug. Every simplification must pass one test: **"Would a new team member
-understand this faster than the original?"**
+Simplify code by reducing complexity while preserving exact behavior. The goal is not fewer lines — it's code that is easier to read, understand, modify, and debug. Every simplification must pass one test: **"Would a new team member understand this faster than the original?"**
 
-This skill is language-agnostic: it works on patterns (nesting, naming,
-duplication, dead code), not on any one language's idioms. Apply it using the
-idioms of whatever language and codebase you're in.
+This skill is language-agnostic: it works on patterns (nesting, naming, duplication, dead code), not on any one language's idioms. Apply it using the idioms of whatever language and codebase you're in.
 
 ## Read the Companion Files First
 
-This skill ships in two layers. `SKILL.md` carries the rules and a short
-summary of each step; four files beside it carry the full procedures:
+This skill ships in two layers. `SKILL.md` carries the rules and a short summary of each step; four files beside it carry the full procedures:
 
 - `evidence-gathering.md` — model-tier routing, handoff packets, verifying findings
 - `cyclomatic-complexity.md` — counting, tools, the split procedure
 - `equivalent-functions.md` — diff → callers → propose → merge
 - `comments.md` — the comment digest
 
-**The first time you use this skill in a session, read all four before doing
-anything else** — before scoping, before reading the target code, before
-answering a question about it. The summaries in this file are reminders for a
-reader who has already seen the full text; they are not a substitute for it.
-Re-read the relevant file again at the step that names it. If the files are
-missing, say so — do not proceed as if the summaries were the whole skill.
+**The first time you use this skill in a session, read all four before doing anything else** — before scoping, before reading the target code, before answering a question about it. The summaries in this file are reminders for a reader who has already seen the full text; they are not a substitute for it. Re-read the relevant file again at the step that names it. If the files are missing, say so — do not proceed as if the summaries were the whole skill.
 
 ## When to Use
 
@@ -50,19 +39,13 @@ missing, say so — do not proceed as if the summaries were the whole skill.
 
 ## Determine the Scope First
 
-Default to **recently modified code**: the current session's edits, the working
-diff (`git diff HEAD`), or the current branch's changes. Only widen the scope
-when the user explicitly names a file, module, or the whole codebase.
-Unscoped simplification creates noisy diffs and risks regressions in code
-nobody asked you to touch.
+Default to **recently modified code**: the current session's edits, the working diff (`git diff HEAD`), or the current branch's changes. Only widen the scope when the user explicitly names a file, module, or the whole codebase. Unscoped simplification creates noisy diffs and risks regressions in code nobody asked you to touch.
 
 ## The Five Principles
 
 ### 1. Preserve Behavior Exactly
 
-Don't change what the code does — only how it expresses it. All inputs,
-outputs, side effects, error behavior, ordering, and edge cases must remain
-identical. If you're not sure a simplification preserves behavior, don't make it.
+Don't change what the code does — only how it expresses it. All inputs, outputs, side effects, error behavior, ordering, and edge cases must remain identical. If you're not sure a simplification preserves behavior, don't make it.
 
 ```
 ASK BEFORE EVERY CHANGE:
@@ -73,29 +56,17 @@ ASK BEFORE EVERY CHANGE:
 → Is there a test, written BEFORE the change, that would fail if the answer to any of these were "no"?
 ```
 
-"Semantically equivalent" is a claim, and a claim is proven by a test that
-existed before the edit and still passes after it — see *Prove Equivalence With
-a Test That Predates the Change*. Reasoning about equivalence, however careful,
-is not proof.
+"Semantically equivalent" is a claim, and a claim is proven by a test that existed before the edit and still passes after it — see *Prove Equivalence With a Test That Predates the Change*. Reasoning about equivalence, however careful, is not proof.
 
 ### 2. Follow Project Conventions
 
-Simplification means making code more consistent with **this** codebase, not
-imposing external preferences. Before simplifying, read the project's
-instructions file (CLAUDE.md, AGENTS.md, CONTRIBUTING, style guides) and study
-how neighboring code handles similar patterns — imports, declaration style,
-naming, error handling, type/annotation depth. Match them, even where you'd
-personally write it differently.
+Simplification means making code more consistent with **this** codebase, not imposing external preferences. Before simplifying, read the project's instructions file (CLAUDE.md, AGENTS.md, CONTRIBUTING, style guides) and study how neighboring code handles similar patterns — imports, declaration style, naming, error handling, type/annotation depth. Match them, even where you'd personally write it differently.
 
 Simplification that breaks project consistency is not simplification — it's churn.
 
 ### 3. Prefer Clarity Over Cleverness
 
-Explicit code beats compact code whenever the compact version requires a mental
-pause to parse. A five-line conditional a reader scans in two seconds is
-simpler than a one-line nested ternary they have to decode. Dense chained
-one-liners that build a structure in a single expression are usually clearer as
-a named intermediate step. When in doubt, write the boring version.
+Explicit code beats compact code whenever the compact version requires a mental pause to parse. A five-line conditional a reader scans in two seconds is simpler than a one-line nested ternary they have to decode. Dense chained one-liners that build a structure in a single expression are usually clearer as a named intermediate step. When in doubt, write the boring version.
 
 ### 4. Maintain Balance
 
@@ -109,17 +80,13 @@ Simplification has a failure mode: over-simplification. Watch for these traps:
 
 ### 5. Scope to What Changed
 
-Simplify the code in scope; leave the rest alone. No drive-by refactors, no
-"improving" adjacent code, no reformatting files you pass through. Every
-changed line should trace back to a simplification you can name.
+Simplify the code in scope; leave the rest alone. No drive-by refactors, no "improving" adjacent code, no reformatting files you pass through. Every changed line should trace back to a simplification you can name.
 
 ## The Simplification Process
 
 ### Step 1: Understand Before Touching (Chesterton's Fence)
 
-Before changing or removing anything, understand why it exists. If you see a
-fence across a road and don't know why it's there, don't tear it down —
-first learn the reason, then decide whether the reason still applies.
+Before changing or removing anything, understand why it exists. If you see a fence across a road and don't know why it's there, don't tear it down — first learn the reason, then decide whether the reason still applies.
 
 ```
 BEFORE SIMPLIFYING, ANSWER:
@@ -173,10 +140,7 @@ Scan for these patterns — each is a concrete signal, not a vague smell:
 
 ### Step 3: Apply Changes Incrementally
 
-Make **one simplification at a time** and run the tests after each change.
-Never batch several simplifications into a single untested edit — when
-something breaks, you need to know which change caused it. "Extracted four
-helpers" is four changes, not one.
+Make **one simplification at a time** and run the tests after each change. Never batch several simplifications into a single untested edit — when something breaks, you need to know which change caused it. "Extracted four helpers" is four changes, not one.
 
 ```
 FOR EACH SIMPLIFICATION:
@@ -188,12 +152,9 @@ FOR EACH SIMPLIFICATION:
 6. Tests fail → revert and reconsider (do NOT modify the tests to make them pass)
 ```
 
-**Keep refactoring separate from feature work.** A change that refactors and
-adds a feature is two changes — split them into separate commits or PRs.
+**Keep refactoring separate from feature work.** A change that refactors and adds a feature is two changes — split them into separate commits or PRs.
 
-**The Rule of 500:** if a refactoring would touch more than ~500 lines, invest
-in automation (codemods, structured search-and-replace, AST transforms) instead
-of hand-editing. Manual edits at that scale are error-prone and exhausting to review.
+**The Rule of 500:** if a refactoring would touch more than ~500 lines, invest in automation (codemods, structured search-and-replace, AST transforms) instead of hand-editing. Manual edits at that scale are error-prone and exhausting to review.
 
 ### Step 4: Verify the Result
 
@@ -207,33 +168,21 @@ COMPARE BEFORE AND AFTER:
 - Would a teammate approve this change as a net improvement?
 ```
 
-If the "simplified" version is harder to understand or review, revert it. Not
-every simplification attempt succeeds, and reverting is a valid outcome.
+If the "simplified" version is harder to understand or review, revert it. Not every simplification attempt succeeds, and reverting is a valid outcome.
 
 ## Gathering the Evidence
 
-Finding (which functions are complex, which pairs share a shape, who calls
-what) is cheap work; comprehending (why, and whether a change is safe) is
-expensive work. Route them differently:
+Finding (which functions are complex, which pairs share a shape, who calls what) is cheap work; comprehending (why, and whether a change is safe) is expensive work. Route them differently:
 
-- **Ask the user once** how many subagents may run in parallel and which model
-  tiers are available, before fanning out. Their tokens, their machine.
-- **Cheap tiers find, premium tiers decide.** Pattern finding goes to Haiku,
-  Sonnet, or Luna; equivalence judgment, the change itself, and verification
-  stay on Opus, Fable, Sol, or Terra (medium–max). On a single-model harness,
-  find with `grep`/`rg` and the project's complexity tool instead of reading.
-- **Verify every finding yourself.** A subagent's report is a lead, not a
-  fact: open the location, recount the number, re-diff the pair, re-run the
-  test. A finding you have not reproduced is a hypothesis.
+- **Ask the user once** how many subagents may run in parallel and which model tiers are available, before fanning out. Their tokens, their machine.
+- **Cheap tiers find, premium tiers decide.** Pattern finding goes to Haiku, Sonnet, or Luna; equivalence judgment, the change itself, and verification stay on Opus, Fable, Sol, or Terra (medium–max). On a single-model harness, find with `grep`/`rg` and the project's complexity tool instead of reading.
+- **Verify every finding yourself.** A subagent's report is a lead, not a fact: open the location, recount the number, re-diff the pair, re-run the test. A finding you have not reproduced is a hypothesis.
 
-**Read `evidence-gathering.md` before spawning any subagent** — it has the
-routing table, the handoff-packet template, and the stop conditions.
+**Read `evidence-gathering.md` before spawning any subagent** — it has the routing table, the handoff-packet template, and the stop conditions.
 
 ## Prove Equivalence With a Test That Predates the Change
 
-Every change this skill makes — a renamed variable, a flattened conditional, a
-split function, a merged pair — must be semantically equivalent to what it
-replaced. The only accepted proof is **TDD applied to refactoring**:
+Every change this skill makes — a renamed variable, a flattened conditional, a split function, a merged pair — must be semantically equivalent to what it replaced. The only accepted proof is **TDD applied to refactoring**:
 
 ```
 1. Before touching the code, write (or locate) tests that pin its CURRENT behavior:
@@ -245,36 +194,17 @@ replaced. The only accepted proof is **TDD applied to refactoring**:
 4. Run the same tests, unmodified. They must still pass.
 ```
 
-A test that passes before and after is the evidence. A test written *after* the
-change proves only that the new code does what the new code does.
+A test that passes before and after is the evidence. A test written *after* the change proves only that the new code does what the new code does.
 
-**If the repository has no tests — or none cover the code in scope — stop and
-ask the user before creating any.** Adding a test file, a test framework, or a
-test dependency is a decision about their project, not yours. Ask once, with
-the specifics: which functions you want to pin, what framework you would use,
-and what the tests would live under. The simplification waits for the answer —
-do not make the change first and ask afterwards, and do not treat silence as a
-decline. Deadline pressure, "keep it moving", and
-"it's a small change" do not waive this — a missing test is exactly when a
-refactor silently changes behavior.
+**If the repository has no tests — or none cover the code in scope — stop and ask the user before creating any.** Adding a test file, a test framework, or a test dependency is a decision about their project, not yours. Ask once, with the specifics: which functions you want to pin, what framework you would use, and what the tests would live under. The simplification waits for the answer — do not make the change first and ask afterwards, and do not treat silence as a decline. Deadline pressure, "keep it moving", and "it's a small change" do not waive this — a missing test is exactly when a refactor silently changes behavior.
 
-If the user declines tests, say plainly that the change is unproven, use a
-throwaway differential check (old function vs. new function over the same
-inputs) as the best remaining evidence, report what it covered, and keep the
-change mechanical. Do not present a deleted script as proof: it guards nothing
-once it is gone, and the next person who edits the function inherits none of it.
+If the user declines tests, say plainly that the change is unproven, use a throwaway differential check (old function vs. new function over the same inputs) as the best remaining evidence, report what it covered, and keep the change mechanical. Do not present a deleted script as proof: it guards nothing once it is gone, and the next person who edits the function inherits none of it.
 
-**What the pinning tests are not:** they are not a rewrite of the test suite,
-not a coverage project, and not a place to fix behavior you dislike. A
-characterization test records what the code does today — including the odd
-edge case — because today's behavior is what "equivalent" means.
+**What the pinning tests are not:** they are not a rewrite of the test suite, not a coverage project, and not a place to fix behavior you dislike. A characterization test records what the code does today — including the odd edge case — because today's behavior is what "equivalent" means.
 
 ## Cyclomatic Complexity
 
-Count the independent paths: **1, plus 1 for each `if`, `elif`/`else if`,
-`case`, loop, `catch`, ternary, and `&&`/`||` inside a condition.** The
-number is roughly how many tests the function needs, which is why high values
-go untested.
+Count the independent paths: **1, plus 1 for each `if`, `elif`/`else if`, `case`, loop, `catch`, ternary, and `&&`/`||` inside a condition.** The number is roughly how many tests the function needs, which is why high values go untested.
 
 | Complexity | Meaning | Action |
 |---|---|---|
@@ -282,42 +212,19 @@ go untested.
 | 11–20 | Hard to test fully | Look for a split along decision clusters |
 | 21+ | Effectively untestable as one unit | Split — this is not optional |
 
-Report the number before and after. Split along *decision clusters* into pure,
-individually testable functions, and never into once-called helpers that just
-relocate lines. **Read `cyclomatic-complexity.md` before splitting a
-function** — it has the tools per ecosystem, the split procedure, and the
-fragmentation trap.
+Report the number before and after. Split along *decision clusters* into pure, individually testable functions, and never into once-called helpers that just relocate lines. **Read `cyclomatic-complexity.md` before splitting a function** — it has the tools per ecosystem, the split procedure, and the fragmentation trap.
 
 ## Roughly Equivalent Functions
 
-Two functions with the same control-flow skeleton and the same calls,
-differing only in names or literals, were written twice. A merge is a
-**proposal to the user, never a reflex**: diff them line by line, count the
-callers of both, then propose the unified signature and wait. Behavioral
-differences — error handling, validation, mutation — end the review; they are
-not equivalent. **Read `equivalent-functions.md` before proposing a merge.**
+Two functions with the same control-flow skeleton and the same calls, differing only in names or literals, were written twice. A merge is a **proposal to the user, never a reflex**: diff them line by line, count the callers of both, then propose the unified signature and wait. Behavioral differences — error handling, validation, mutation — end the review; they are not equivalent. **Read `equivalent-functions.md` before proposing a merge.**
 
 ## Comments
 
-Comments on touched lines are in scope. The rule: **a comment earns its place
-by carrying information the code does not, about the code as it is now, in as
-few lines as that takes.** Cover it with your hand — if the code is no poorer,
-delete it. Present tense, not history; two lines above a declaration, and a
-prose comment over four lines is a question for the user, not a keep; never
-name a field the body reads or a helper it calls; no
-session-scoped identifiers (finding numbers, pass labels, task IDs, phase
-names); no counts of things that live elsewhere ("the 7 tests", "both
-fields") — name the set so the comment grows with it; verify anything a
-comment names. A comment telling a future editor what to do ("never",
-"always", "keep in step") enforces nothing: it becomes an assertion in the
-existing test that runs the code, with one line of fact left behind. **Read
-`comments.md` before writing or rewriting a comment.** The standalone `appropriate-comments-code` skill is the
-full treatment.
+Comments on touched lines are in scope. The rule: **a comment earns its place by carrying information the code does not, about the code as it is now, in as few lines as that takes.** Cover it with your hand — if the code is no poorer, delete it. Present tense, not history; two lines above a declaration, and a prose comment over four lines is a question for the user, not a keep; never name a field the body reads or a helper it calls; no session-scoped identifiers (finding numbers, pass labels, task IDs, phase names); no counts of things that live elsewhere ("the 7 tests", "both fields") — name the set so the comment grows with it; verify anything a comment names. A comment telling a future editor what to do ("never", "always", "keep in step") enforces nothing: it becomes an assertion in the existing test that runs the code, with one line of fact left behind. **Read `comments.md` before writing or rewriting a comment.** The standalone `appropriate-comments-code` skill is the full treatment.
 
 ## Core Pattern Example
 
-The single most portable simplification — flattening nested conditionals into
-guard clauses. The shape is identical in every language:
+The single most portable simplification — flattening nested conditionals into guard clauses. The shape is identical in every language:
 
 ```python
 # Before: the happy path is buried three levels deep

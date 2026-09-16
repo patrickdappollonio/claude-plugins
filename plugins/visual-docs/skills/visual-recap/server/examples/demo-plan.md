@@ -62,10 +62,7 @@ A sketch-style view of the same flow, for contrast:
 
 ### New middleware
 
-Today nothing stops one API key from using the whole capacity. We add one
-check in front of every request: it takes a token from the key's bucket and
-lets the request through, or answers "slow down" with a wait time. After the
-change, one noisy customer can only exhaust their own allowance.
+Today nothing stops one API key from using the whole capacity. We add one check in front of every request: it takes a token from the key's bucket and lets the request through, or answers "slow down" with a wait time. After the change, one noisy customer can only exhaust their own allowance.
 
 ```go
 func RateLimit(store limiter.Store) func(http.Handler) http.Handler {
@@ -205,16 +202,13 @@ paths:
 3. Enable in production per-region.
 
 > [!NOTE]
-> The limiter is a no-op until `RATE_LIMIT_ENABLED=true`, so shipping the code is
-> safe to do ahead of the rollout.
+> The limiter is a no-op until `RATE_LIMIT_ENABLED=true`, so shipping the code is safe to do ahead of the rollout.
 
 > [!WARNING]
-> Enabling this in production immediately sheds traffic over the limit — roll it
-> out per-region and watch `rate_limit_rejections_total` before going global.
+> Enabling this in production immediately sheds traffic over the limit — roll it out per-region and watch `rate_limit_rejections_total` before going global.
 
 > [!TIP]
-> Set a generous per-key override for internal services in `api_key_limits` so
-> health checks and dashboards aren't throttled.
+> Set a generous per-key override for internal services in `api_key_limits` so health checks and dashboards aren't throttled.
 
 ## Open questions
 

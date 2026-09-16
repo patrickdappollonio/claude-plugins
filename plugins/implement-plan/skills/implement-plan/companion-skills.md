@@ -1,13 +1,8 @@
 # Companion Skills — what each adds, and how to install it
 
-This skill works alone: every companion below is distilled into the files
-beside this one. When a companion **is** installed, use it instead of the
-distilled version — it is the fuller procedure. When one is not, keep going
-with the distilled version, and if the user asks how to get the real thing,
-give them the commands below. Never stop the run to install a skill yourself.
+This skill works alone: every companion below is distilled into the files beside this one. When a companion **is** installed, use it instead of the distilled version — it is the fuller procedure. When one is not, keep going with the distilled version, and if the user asks how to get the real thing, give them the commands below. Never stop the run to install a skill yourself.
 
-All of them live in the same marketplace, `patrickdappollonio/claude-plugins`.
-Register it once per harness, then install by plugin name:
+All of them live in the same marketplace, `patrickdappollonio/claude-plugins`. Register it once per harness, then install by plugin name:
 
 ```text
 # Claude Code — type inside a session
@@ -25,9 +20,7 @@ codex plugin add <plugin>@patrickdappollonio
 npx skills add patrickdappollonio/claude-plugins --skill <skill>
 ```
 
-Claude Code and Codex install a whole **plugin** (every skill in it). `npx
-skills` installs one **skill** directory. Repeat `--skill` to install several;
-a comma-separated list installs nothing.
+Claude Code and Codex install a whole **plugin** (every skill in it). `npx skills` installs one **skill** directory. Repeat `--skill` to install several; a comma-separated list installs nothing.
 
 | Skill (`--skill`) | Plugin (`/plugin install`, `codex plugin add`) | What it adds when installed | Distilled here in |
 |---|---|---|---|
@@ -40,12 +33,8 @@ a comma-separated list installs nothing.
 | `use-premium-models-efficiently` | `use-premium-models-efficiently` | The general delegation pattern: premium model judges, cheap models do bounded work, handoff packets, vetting delegated reports | `model-routing.md` |
 | `use-claude-limits-efficiently` | `use-claude-limits-efficiently` | The pause-and-resume loop for 5-hour and weekly usage windows, with chained wakeups | `capacity-check.md` |
 
-Installing the `adversarial-review` plugin brings **both** review skills; with
-`npx skills`, name each one you want.
+Installing the `adversarial-review` plugin brings **both** review skills; with `npx skills`, name each one you want.
 
 ## When the user asks
 
-Answer with the exact lines for their harness — nothing more. If you cannot
-tell which harness they are on, give the Claude Code, Codex, and `npx skills`
-lines and let them pick. Installed skills take effect on the next session in
-most harnesses, so say that the current run continues on the distilled version.
+Answer with the exact lines for their harness — nothing more. If you cannot tell which harness they are on, give the Claude Code, Codex, and `npx skills` lines and let them pick. Installed skills take effect on the next session in most harnesses, so say that the current run continues on the distilled version.

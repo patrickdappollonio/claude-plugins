@@ -1,46 +1,22 @@
 # Simplification — the full guide
 
-Read this file on first use of the skill in a session, and again before
-reshaping working Go code: flattening nesting, splitting a function,
-extracting or inlining a helper, merging near-duplicates, removing dead
-code, or renaming. `SKILL.md` carries the summary; this file is the
-specification. It condenses the standalone `code-simplification` skill for
-Go.
+Read this file on first use of the skill in a session, and again before reshaping working Go code: flattening nesting, splitting a function, extracting or inlining a helper, merging near-duplicates, removing dead code, or renaming. `SKILL.md` carries the summary; this file is the specification. It condenses the standalone `code-simplification` skill for Go.
 
 ## The goal
 
-Code a new team member understands faster than the original, with
-**exactly** the same behavior. Not fewer lines. Not cleverer. Every change
-must pass: *would a reader understand this faster?* and *does a test that
-predates the change still pass, unmodified?*
+Code a new team member understands faster than the original, with **exactly** the same behavior. Not fewer lines. Not cleverer. Every change must pass: *would a reader understand this faster?* and *does a test that predates the change still pass, unmodified?*
 
 ## Scope
 
-Default to the code you are already changing: this session's edits, the
-working diff, the branch. Widen only when asked. No drive-by refactors,
-no reformatting files you pass through, no "improving" a neighbour. Keep
-refactoring and feature work in separate commits.
+Default to the code you are already changing: this session's edits, the working diff, the branch. Widen only when asked. No drive-by refactors, no reformatting files you pass through, no "improving" a neighbour. Keep refactoring and feature work in separate commits.
 
 ## Principles
 
-1. **Preserve behavior exactly** — inputs, outputs, side effects, ordering,
-   error values **and error message text**, edge cases. If unsure, don't.
-   Rewording an error message during a refactor is a behavior change:
-   callers, logs, and dashboards may match on it. Fix the message only
-   when the message is the target of the change, as its own step, and say
-   so in the report.
-2. **Follow the package's conventions** — simplification makes code more
-   like *this* codebase, not more like your preferences. Where the package
-   is wrong by this skill, write the new lines right; don't rewrite the
-   package.
-3. **Clarity over cleverness** — five plain lines beat a dense one-liner;
-   a named intermediate beats a chained expression.
-4. **Balance** — don't inline a helper that named a concept; don't merge
-   unrelated logic; don't strip an abstraction that exists for testability;
-   never remove validation or error handling because it "looks cleaner".
-5. **Chesterton's Fence** — before removing or changing anything, know why
-   it is there: what calls it, what it calls, its edge cases, its tests,
-   and what `git log -p`/`git blame` say. If you can't answer, read more.
+1. **Preserve behavior exactly** — inputs, outputs, side effects, ordering, error values **and error message text**, edge cases. If unsure, don't. Rewording an error message during a refactor is a behavior change: callers, logs, and dashboards may match on it. Fix the message only when the message is the target of the change, as its own step, and say so in the report.
+2. **Follow the package's conventions** — simplification makes code more like *this* codebase, not more like your preferences. Where the package is wrong by this skill, write the new lines right; don't rewrite the package.
+3. **Clarity over cleverness** — five plain lines beat a dense one-liner; a named intermediate beats a chained expression.
+4. **Balance** — don't inline a helper that named a concept; don't merge unrelated logic; don't strip an abstraction that exists for testability; never remove validation or error handling because it "looks cleaner".
+5. **Chesterton's Fence** — before removing or changing anything, know why it is there: what calls it, what it calls, its edge cases, its tests, and what `git log -p`/`git blame` say. If you can't answer, read more.
 
 ## What to look for (Go-specific signals)
 
@@ -73,10 +49,7 @@ refactoring and feature work in separate commits.
 
 ## Cyclomatic complexity
 
-Count: **1, plus 1 for each `if`, `else if`, `case`, `for`, `&&`, `||`** in
-the function. Use `gocyclo` or `golangci-lint`'s `gocyclo`/`cyclop` when
-the project has it; otherwise count by hand and say so. Report the number
-before and after any split.
+Count: **1, plus 1 for each `if`, `else if`, `case`, `for`, `&&`, `||`** in the function. Use `gocyclo` or `golangci-lint`'s `gocyclo`/`cyclop` when the project has it; otherwise count by hand and say so. Report the number before and after any split.
 
 | Complexity | Meaning | Action |
 |---|---|---|
@@ -86,38 +59,24 @@ before and after any split.
 
 Split procedure:
 
-1. Find the **decision clusters** — branches that decide one nameable
-   thing (a tier, a rate, a validation).
-2. Extract each as a **pure function**: inputs in, value out, no mutation
-   of the caller's state.
-3. Leave **orchestration** in the original: it reads as the sequence of
-   decisions, not their bodies.
+1. Find the **decision clusters** — branches that decide one nameable thing (a tier, a rate, a validation).
+2. Extract each as a **pure function**: inputs in, value out, no mutation of the caller's state.
+3. Leave **orchestration** in the original: it reads as the sequence of decisions, not their bodies.
 4. Test each extracted piece — this is where the win lands.
 5. Re-run the tests that pinned the original, unmodified.
 
-Splitting must not become **fragmentation**: a once-called helper with a
-vague name that relocates three lines is worse than the inline code. Every
-extracted function is nameable by what it decides and testable alone. A
-helper more complex than the piece it replaced means you moved the tangle.
+Splitting must not become **fragmentation**: a once-called helper with a vague name that relocates three lines is worse than the inline code. Every extracted function is nameable by what it decides and testable alone. A helper more complex than the piece it replaced means you moved the tangle.
 
 ## Roughly equivalent functions
 
-Same control-flow skeleton, same external calls in the same order, names
-differing by a qualifier, bug fixes that had to land in both — one
-function written twice. Handle by **proposal, never reflex**:
+Same control-flow skeleton, same external calls in the same order, names differing by a qualifier, bug fixes that had to land in both — one function written twice. Handle by **proposal, never reflex**:
 
-1. **Diff them** line by line. Only names and literals differ → candidates.
-   Different error handling, validation, or mutation → not equivalent; stop.
+1. **Diff them** line by line. Only names and literals differ → candidates. Different error handling, validation, or mutation → not equivalent; stop.
 2. **Count and read every caller** of both.
-3. **Propose** to the user: both names, the unified signature (a parameter
-   for the literal that varied, or nothing), the caller count. Wait.
-4. If approved: pin both with tests, write the unified function, route
-   every caller, run the pinning tests unmodified, delete the originals.
-   Thin exported wrappers over a shared body are a valid endpoint when
-   callers are external.
+3. **Propose** to the user: both names, the unified signature (a parameter for the literal that varied, or nothing), the caller count. Wait.
+4. If approved: pin both with tests, write the unified function, route every caller, run the pinning tests unmodified, delete the originals. Thin exported wrappers over a shared body are a valid endpoint when callers are external.
 
-Never merge coincidental similarity — two short loops in unrelated domains
-gain nothing from a shared helper with a vague name.
+Never merge coincidental similarity — two short loops in unrelated domains gain nothing from a shared helper with a vague name.
 
 ## Process
 
@@ -134,35 +93,19 @@ FOR EACH SIMPLIFICATION:
 4. Pass → keep, next.  Fail → revert the change. Never edit the test to pass.
 ```
 
-"Extracted four helpers" is four changes. If a refactor would touch more
-than ~500 lines, use tooling (`gofmt -r`, `gopls rename`, `gorename`,
-`sed` with review) rather than hand edits.
+"Extracted four helpers" is four changes. If a refactor would touch more than ~500 lines, use tooling (`gofmt -r`, `gopls rename`, `gorename`, `sed` with review) rather than hand edits.
 
-**If the repository has no tests covering the code in scope, stop and ask
-before creating any.** A test file, framework, or dependency is a decision
-about their project. Ask once, with the specifics (which functions, where
-the tests live). Do not change first and ask after; silence is not
-consent; deadlines do not waive this. If the user declines, say the change
-is unproven, use a throwaway differential check (old vs new over the same
-inputs) as the best remaining evidence, report what it covered, and keep
-the change mechanical — a deleted script is not proof.
+**If the repository has no tests covering the code in scope, stop and ask before creating any.** A test file, framework, or dependency is a decision about their project. Ask once, with the specifics (which functions, where the tests live). Do not change first and ask after; silence is not consent; deadlines do not waive this. If the user declines, say the change is unproven, use a throwaway differential check (old vs new over the same inputs) as the best remaining evidence, report what it covered, and keep the change mechanical — a deleted script is not proof.
 
 ## Evidence
 
-Finding is cheap; deciding is expensive. Locate candidates with `grep`/`rg`,
-`gocyclo`, `staticcheck`, `go vet`, `gopls` — or, on a multi-agent harness,
-a cheap subagent after asking the user how much parallelism they want.
-Judgment, the change, and verification stay with you. **A subagent's report
-is a lead, not a fact**: open the location, recount, re-diff, re-run before
-acting on it.
+Finding is cheap; deciding is expensive. Locate candidates with `grep`/`rg`, `gocyclo`, `staticcheck`, `go vet`, `gopls` — or, on a multi-agent harness, a cheap subagent after asking the user how much parallelism they want. Judgment, the change, and verification stay with you. **A subagent's report is a lead, not a fact**: open the location, recount, re-diff, re-run before acting on it.
 
 ## After the pass
 
-- Is it genuinely easier to understand? If not, revert — reverting is a
-  valid outcome.
+- Is it genuinely easier to understand? If not, revert — reverting is a valid outcome.
 - Is the diff clean, reviewable, and free of unrelated changes?
-- No new pattern the package doesn't use; no removed validation; no dead
-  code left (unused imports, orphaned helpers, unreachable branches).
+- No new pattern the package doesn't use; no removed validation; no dead code left (unused imports, orphaned helpers, unreachable branches).
 - Would a teammate call it a net improvement?
 
 ## Rationalizations
