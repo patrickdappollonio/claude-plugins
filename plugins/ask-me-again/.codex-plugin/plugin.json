@@ -1,0 +1,33 @@
+{
+  "name": "ask-me-again",
+  "version": "0.1.0",
+  "description": "Re-asks an agent's open questions one at a time, in one fixed shape, with every recommended fix checked first.",
+  "author": {
+    "name": "Patrick D'appollonio",
+    "email": "patrickdappollonio@gmail.com"
+  },
+  "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/ask-me-again",
+  "license": "MIT",
+  "keywords": [
+    "questions",
+    "decisions",
+    "clarification",
+    "communication",
+    "plain-language",
+    "one-at-a-time"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Ask Me Again",
+    "shortDescription": "Re-ask open questions one at a time, in a clear shape.",
+    "longDescription": "Takes every question the agent has open, checks the facts behind each and that each recommended fix works, then asks them again in plain chat, one per message: a numbered claim, the situation, a numbered flow to the consequence, the fix, its cost, and your call. Only a direct apply, reject, or different direction closes a question. After a doubtful reply it asks the user to say which they mean, and it builds nothing until the last question is closed.",
+    "developerName": "Patrick D'appollonio",
+    "category": "Productivity",
+    "capabilities": [
+      "Explain"
+    ],
+    "defaultPrompt": [
+      "Ask me again."
+    ]
+  }
+}

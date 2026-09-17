@@ -73,6 +73,12 @@
       "source": { "source": "local", "path": "./plugins/visual-docs" },
       "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
       "category": "Productivity"
+    },
+    {
+      "name": "ask-me-again",
+      "source": { "source": "local", "path": "./plugins/ask-me-again" },
+      "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
+      "category": "Productivity"
     }
   ]
 }
