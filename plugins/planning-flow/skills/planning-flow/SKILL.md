@@ -24,7 +24,7 @@ This skill ships in two layers. `SKILL.md` carries the rules and a summary of ea
 - `plan-template.md` — the plan file skeleton, the ticket format, the decisions entry format, the size bands, and the timeless-prose rule with examples
 - `communication.md` — how to write for a reader who has not seen the code: the identifier rule, Simplified Technical English (ASD-STE100), outcome-first messages
 - `interviewing.md` — the design tree, the frontier, one question at a time, fog, out of scope, the rule never to answer your own question, and what every stop carries — including under a goal loop
-- `question-format.md` — the one shape every question takes (numbered heading, the situation, the flow, the fix, the cost, your call), its heading level, where the questions live (all in the file, one per chat message), and how a `question` fence carries the answer in a visual plan
+- `question-format.md` — the one shape every question takes (numbered heading, the situation, the flow, the fix, the cost, your call), how to check the facts and the fix before asking, its heading level, where the questions live (all in the file, one per chat message), and how a `question` fence carries the answer in a visual plan
 - `plan-review.md` — the zero-context reviewer, the adversarial review of a plan (installed skills or an on-the-spot panel), the sizing rule, and how to run a spike
 - `model-routing.md` — which tier explores, which tier reviews, the model names, and what to do when the harness cannot choose
 - `companion-skills.md` — what `visual-plan`, `adversarial-review`, `adversarial-review-quick`, and `implement-plan` add when installed, and the install lines to give only when asked
@@ -108,7 +108,7 @@ What remains is what only the user can answer. **If nothing remains, say so in o
 
 ### 7. Ask the frontier, one question at a time
 
-Read `question-format.md`, the file that defines the one shape every question takes. Write **every** open question into the plan's *Open questions* section in that shape: `### Question <N> of <M> — <the claim>` (one heading level below the section), then **The situation.**, **The flow.** (numbered steps to the consequence; `N/A` only when nobody would notice), **The fix.**, **Cost.**, then *Your call* — all five parts, in that order, its prose at most 200 words. Frontier first — every question whose prerequisites are settled, the ones that unblock the most others earliest; a question that waits on another sits below it and says so.
+Read `question-format.md`, the file that defines the one shape every question takes. Write **every** open question into the plan's *Open questions* section in that shape: `### Question <N> of <M> — <the claim>` (one heading level below the section), then **The situation.**, **The flow.** (three to five numbered steps to the consequence; one or two when that is the whole story, more than five only when absolutely needed, never past ten; `N/A` only when nobody would notice), **The fix.**, **Cost.**, then *Your call* — all five parts, in that order, its prose at most 200 words (15 more for each flow step past the fifth, on the rare flow that needs them). Before a question is written or asked, check that its facts hold now and that its fix works — the API, flag, version, or command it names exists as installed — and end the fix with `Not verified: <what>, because <why>.` for a part you cannot check from here. Only a direct accept, reject, or different direction closes a question; a vague reply or a question back gets the same *Your call* line again. Frontier first — every question whose prerequisites are settled, the ones that unblock the most others earliest; a question that waits on another sits below it and says so.
 
 Then ask **in chat, one question per message**: the first frontier question, word for word from the file, under the position line, with the count of what else is open and the file's path. Never through the harness's question tool — its fields cannot hold a flow — and never two at once. Wait. Fold the answer in (step 8), renumber, recompute the frontier, ask the next one in the next message; as many rounds as it takes, until nothing is open. When `visual-plan` serves the file, each question's **Your call** line is a `question` fence, so the user may answer there instead; chat still carries one at a time. **Never answer your own question**: no likely answer filled in, no silence taken as consent.
 
@@ -235,7 +235,7 @@ Every unit of work is a ticket in **exactly** this format (full detail and an ex
 - A sentence in *What* or *Why* that dies when its identifier is deleted
 - A question on the list that the decisions section already answers
 - A question on the list that a subagent could answer from the codebase
-- A question missing one of its five parts, its number, or its numbered flow, or with prose over the 200 words `question-format.md` allows
+- A question missing one of its five parts, its number, or its numbered flow, or with prose over the word limit `question-format.md` sets; a question asked before its facts and its fix were checked; a question treated as answered after a vague reply
 - Two questions in one chat message, or a question asked through the harness question tool
 - A question the agent answered itself to keep going
 - A stop that points at an earlier message instead of carrying its question in full, or a goal re-prompt answered with less than the stop before it
@@ -265,7 +265,7 @@ Create a todo per item.
 - [ ] Zero-context reviewer run on the most capable tier with only the ask, the plan, and the codebase
 - [ ] Cold implementer check run on a different model family where possible; every gap that would change what gets built filled with the exact value; re-run until none of that kind remain
 - [ ] One question list from every source, arranged as a design tree, then filtered: decided, answerable by code, technical
-- [ ] Every open question written into the file in the `question-format.md` shape — numbered heading, situation, flow, fix, cost, your call — and asked in chat one per message until nothing is open; delivery shape included without a recommendation; no question answered by the agent; every stop opens with its position line and carries its one question in full
+- [ ] Every open question written into the file in the `question-format.md` shape — numbered heading, situation, flow, fix, cost, your call — each with its facts and fix checked before it was asked, and asked in chat one per message until a direct answer closes it and nothing is open; delivery shape included without a recommendation; no question answered by the agent; every stop opens with its position line and carries its one question in full
 - [ ] Plan rewritten in place after every round; spikes and dropped tickets folded into decisions
 - [ ] Presented through `visual-plan` (technical audience stated), plan mode, or chat
 - [ ] Cheap spikes offered at presentation; results folded in; leftover questions asked until nothing is open
