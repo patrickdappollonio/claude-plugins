@@ -115,8 +115,8 @@ If you approved a plan or a mock, point at it — *"review this against the plan
 
 ## Notes
 
-- **It reports, it doesn't rewrite.** Every finding is verified and every proposed fix is validated by a separate agent, and then it stops and hands you the choice: explain, apply, or triage.
-- **A problem with the plan is never fixed silently.** When the finding is that the agreed design was wrong, the fix necessarily changes what you approved — so it comes to you as a decision with its cost attached, and a fourth choice appears: revise the design. Deciding to live with it is a valid answer too.
+- **It reports, it doesn't rewrite.** Every finding is verified and every proposed fix is validated by a separate agent, and then it stops and puts each finding to you one at a time — the situation, the steps to the consequence, the validated fix, its cost, and your call: apply, defer, or dismiss. Ask for more on any of them; nothing changes until the last one is decided.
+- **A problem with the plan is never fixed silently.** When the finding is that the agreed design was wrong, the fix necessarily changes what you approved — so it comes to you first, as a decision with its cost attached, and *apply* is not on offer: you revise the design or keep it. Deciding to live with it is a valid answer too.
 - **Token-heavy by design.** It runs many agents in parallel. In Claude Code each reviewer uses the cheaper `sonnet` model to keep cost sane — the value is in the panel's breadth, not any single agent's horsepower. The quick panel runs only the reviewers the change triggers, plus any you add; it never trades away the two verification gates, which is where the trust comes from.
 - **The Fact-Checker needs web access** (web search / fetch) to ground claims against real documentation. The quick panel only needs the network when the Fact-Checker is on its roster.
 - **`gh` CLI is optional** — it's only needed to review GitHub PRs directly; local diffs work without it.
