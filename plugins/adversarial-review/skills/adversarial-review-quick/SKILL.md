@@ -17,7 +17,13 @@ The full `adversarial-review` skill runs every reviewer with no picking. It exis
 
 ### Asking the user
 
-This skill asks the user three things at most: which change to review (when two exist), what the brief is (when none can be found), and which reviewers to run (always). **Use the harness's question tool when one exists** — `AskUserQuestion` in Claude Code, or its equivalent elsewhere. When the harness has none, ask in plain text and wait for the reply. Never skip a question because the tool is missing.
+Before the review runs, this skill asks the user three procedural things at most: which change to review (when two exist), what the brief is (when none can be found), and which reviewers to run (always). **Use the harness's question tool when one exists** — `AskUserQuestion` in Claude Code, or its equivalent elsewhere. When the harness has none, ask in plain text and wait for the reply. Never skip a question because the tool is missing.
+
+The decisions after the report are different. Each confirmed finding is put to the user in plain text, one per message, in the shape defined in `question-format.md` — never through the question tool, whose fields cannot hold that shape. Step 9 summarizes it; the file defines it.
+
+### Companion file — read it first
+
+`question-format.md` sits next to this file and defines the one shape every end-of-review question takes: the template, what goes in each part, the word cap, the alternatives, and the one-per-message rule. **Read it in full the first time this skill runs in a session, before step 1**, and read it again at the STOP step. The summary in that step is a reminder of text you have already read, never a substitute for it.
 
 ### The one thing reviewers must know: what was agreed
 
@@ -199,27 +205,28 @@ A finding renders like this — note the explanation has no function name and no
 
 A `design_is_wrong` finding is the same shape with two changes: the second field is headed **The change to the plan**, and it ends with what that change costs, because it asks the user to revisit a decision rather than approve a patch.
 
-This register governs **Explain** in step 9 too: "go deeper" means more of the reasoning, the sequence, and the consequence — not a switch into code-speak.
+This register governs the questions in step 9 too, and any explanation the user asks for along the way: "go deeper" means more of the reasoning, the sequence, and the consequence — not a switch into code-speak.
 
-### 9. STOP — hand the decision to the user; do not change anything
+### 9. STOP — put each finding to the user, one at a time; do not change anything
 
 **Reviewing and proposing fixes is the whole job. A described, validated fix is NOT permission to apply it.** Do not edit code, do not open files to "just apply the quick one".
 
-Present these choices (question tool when there is one, plain text otherwise) and wait:
+**How to ask.** Re-read `question-format.md`. Every confirmed finding is one question in that shape, in plain text in the message itself — never `AskUserQuestion` or any harness question tool, whose one-line-per-option fields cannot hold a flow: `### Question <N> of <M> — <the claim>`, then **The situation.** (what the code does, what the brief says, and where it was found, with severity and reviewer), **The flow.** (numbered steps to the consequence someone would notice), **The fix.** (the validated fix), **Cost.** (what the fix costs), then a bold **Your call:** line with the alternatives as a bulleted list — all five parts, prose at most 200 words, the same finding the report described, in the same plain register. `M` is the findings still undecided, in the report's order: `design_is_wrong` first, then conformance, then serious to minor. **One question per message.** Ask it, stop, wait, record the answer, ask the next one in the next message, and say how many more wait. Never two, never the list; the report is where they see everything.
 
-1. **Explain a finding or its fix** — read-only; explaining is not applying.
-2. **Apply the fixes** — implement the validated fixes for the confirmed findings.
-3. **Triage** — defer some, let the user dismiss ones they judge non-issues (record their reasoning), act on the rest.
-4. **Revise the design** — offer this **only when there is at least one `design_is_wrong` finding**, and when there is, offer it first. Applying such a fix silently would be you re-deciding a design on the user's behalf. If they'd rather keep the design, record it as an accepted trade-off with their reasoning; that is a legitimate answer.
-5. **Review again with more reviewers** — the ones left off this run, or the full `adversarial-review` skill for all of them.
+**The alternatives.** An ordinary finding offers three: **apply** the validated fix (recommended unless there is no confirmed fix); **defer** to a follow-up (recorded, nothing changes now); **dismiss** as a non-issue (they say why; the reason is recorded). A `design_is_wrong` finding never offers *apply*: its fix changes what the user approved, so applying it would be you re-deciding a design on their behalf. It offers **revise the design** — you write down what the design becomes, they approve or amend it, that becomes the new brief, and the change is then measured against it, not against the old one — or **keep the design**, recorded as an accepted trade-off with their reasoning, which is a legitimate answer that closes the finding, or defer. **Explaining is not an alternative because it is always available.** When the answer is a question, go deeper in the same plain register — more of the reasoning, the sequence, the consequence, not code-speak unless they quote symbols back at you — then ask the same question again, word for word. Explaining never edits anything.
 
-**Never fold a design change into "apply the fixes."** If the user picks *Apply* while a `design_is_wrong` finding is undecided, apply everything else and stop at that one. "Apply the fixes", "all of them", and "just do everything" are answers about the fixes you offered, not approval of a design they have not been shown.
+**Answers in their own words.** "Apply all of them", "just do everything", "the rest too" answer every remaining ordinary question at once: record it and stop asking those. Say "recorded as apply", never "applying now" — nothing is applied until the last question is answered, and the message must not claim otherwise. They never answer a `design_is_wrong` question, which is asked one by one regardless: "all of them" is an answer about the fixes they were offered, not approval of a design they have not been shown. Silence answers nothing: an unanswered finding stays undecided and nothing is applied, and every message says how many are open.
+
+**Only after the last question is answered** do you touch code, and only the accepted fixes and approved design changes. Close with a short ledger: applied, deferred, dismissed with their reasons, and each design decision.
+
+**Then offer the wider review, in one line.** Once the last finding is decided — or right after the report, when no finding survived verification — offer to review again with the reviewers left off this run, or with the full `adversarial-review` skill for all of them. This is a procedural ask, not a finding: one plain line, and the harness's question tool is fine for it.
 
 | The pull you'll feel | The reality |
 |---|---|
 | "This one's a trivial one-liner, I'll just apply it." | Trivial or not, it's the user's code and the user's call. |
 | "It's serious — surely they want it fixed now." | Severity raises urgency, not your authority. |
 | "Fixing as I go is more efficient than asking." | They asked for a review, not a rewrite. |
+| "Six findings, six messages — I'll list them all in one." | One question per message is the shape. The report already shows them all; the chat is where they decide one at a time. |
 
 ## Shared output format (give this to every reviewer)
 
@@ -472,6 +479,7 @@ Be strict. A fix is valid only if you can point at the specific code that makes 
 - **Letting a design finding die at a gate.** The verifier rejecting it as "already agreed", or the validator rejecting its fix as "outside the brief", are the same circular error at two stations. The `design_is_wrong` flag exists to carry a finding past both.
 - **Reporting a design finding as if the implementer erred.** The code here is faithful. Say so, or the user goes hunting a coding mistake that isn't there.
 - **Skipping the verifier or the validator to save tokens.** They are what makes the output trustworthy. The panel is where this skill economizes, not the gates.
-- **Applying fixes before the user chooses.** This produces a *review with proposed fixes*, not changes to the code. Stop at the report.
+- **Applying fixes before the user chooses.** This produces a *review with proposed fixes*, not changes to the code. Stop at the report and put each finding to the user in the `question-format.md` shape, one per message, until every one is decided.
+- **Asking a finding through the question tool, several at once, or without the five parts.** The tool holds one line per option and no flow; a menu of "explain / apply / triage" asks the user to decide about findings they cannot read away from the code. Heading, situation, flow, fix, cost, your call — one finding per message. If you have not read `question-format.md` this session, you have skipped a step.
 - **Running reviewers sequentially.** Dispatch them in one batch so they run concurrently.
 - **Using the expensive model for subagents in Claude Code.** Use `sonnet`.
