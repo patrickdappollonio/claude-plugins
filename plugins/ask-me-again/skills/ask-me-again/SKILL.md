@@ -8,12 +8,13 @@ description: >-
 
 You have questions open for the user, and the way you asked them did not work: too many at once, too much jargon, a bare "A or B?" with no picture of what each one does, or a multiple-choice prompt with one line per option. This skill asks them again. **The goal of the run is to end uncertainty:** when it is over, you and the user know the answers to what you needed to know. The format serves that goal and is not the goal. Each question becomes a decision the user can make away from the code, in one reading, and every question has the same shape, so a reader who has seen one can read them all.
 
-## The four rules
+## The five rules
 
 1. **Facts are yours to find; decisions are the user's to make.** Before asking anything, check whether the codebase, the docs, or a command can answer it. A question that a fact answers is not asked.
 2. **A fix you recommend is a fix you have checked.** The user reads **The fix.** as "this works". Verify it before the first question goes out (step 2). A fix you could not check says so, in its own text.
 3. **One question per message, in plain chat, in the template.** Never the question tool of the harness (the program that runs you, such as Claude Code or Codex) — `AskUserQuestion` or its equivalent — even when the harness has one: it has room for one line per option and none for a flow. Never two questions in one message, never the list of them.
 4. **Only a direct answer closes a decision.** The user applies the fix, rejects it, or sends you in a different direction, in words that leave no doubt. Anything else keeps the question open, and you ask the user to say which they mean. Never answer your own question, and never treat silence or a vague reply as consent. The checks in step 2 are work you do now. Building anything the questions decide waits until the last one is closed, unless the user tells you to start earlier.
+5. **The user has not seen what you have seen.** You opened the files and ran the commands. The user did not, and many harnesses fold your tool calls into a one-line summary, so the user often never saw the file you read, the output you got, or the edit you made. Never write as if they watched. The user does know the product: what it does, who uses it, how it behaves. Write every question from that side, in the words its users and operators use. A name from the code is a label for a reader who can look it up. It is never the explanation.
 
 ## The process
 
@@ -121,11 +122,25 @@ The four bold labels **The situation.**, **The flow.**, **The fix.**, and **Cost
 ## What goes in each part
 
 - **The heading** is the claim: what goes wrong, or what is undecided, as one sentence a reader can agree or disagree with. "The two 'at the same time' tests could pass without ever running in parallel", not "Test parallelism". It states the problem or the open point, never the recommendation. Test it: if the heading could be pasted into **The fix.**, it is a recommendation, so rewrite it as what is wrong or undecided today. A heading with "should" or "will" in it almost always fails this test ("Archive should reuse the 30-day window" is the fix, and it belongs in **The fix.**). It is a statement, so it never ends in a question mark: "Audit exports would inherit the five-minute cache lifetime", not "Should audit exports use the same lifetime?". Never a bare topic, never a code identifier alone. **One question holds one decision:** the heading, the fix, and **Your call** are all about the same thing. If the fix solves one problem and **Your call** asks about another, that is two questions.
-- **The situation** gives the facts the decision rests on: what the code or the plan does today, what is not settled, and why it is the user's to settle and not yours. A function, file, or flag named here is explained in the same sentence. The reader may not be able to see the code.
+- **The situation** gives the facts the decision rests on: what the code or the plan does today, what is not settled, and why it is the user's to settle and not yours. It is written for a reader who knows the product and has not seen the code (the section below).
 - **The flow** is a numbered walk, step by step, through what the consumer of the code — a user, an operator, the next process, the next developer — does and what they hit. It ends at the consequence they would notice. **It walks one path:** what happens today, or what would happen without the fix. A step that forks ("if we pick A, this; if we pick B, that") is really the alternatives written as a step; they go in **Your call**. It lets the reader see what the decision does instead of working it out from a description. **Three to five steps, one line each.** A flow with only one or two real steps is the written exception: write it as it is, and never pad a flow to reach three. For a button label, the whole flow is `1. Someone opens the page and sees two buttons, "Download CSV" and "Export PDF", and stops to work out whether they differ.` Go past five only when it is absolutely needed: removing any step would hide how the consequence comes about. Never go past ten. A flow that needs eleven steps is two questions, or a situation that says too little. Write `**The flow.** N/A` only when no person or system would ever notice the decision. `N/A` is for a flow that does not exist, never for one you did not write.
 - **The fix** is your recommendation: the one path you would take and why, in plain words, checked in step 2. It names no other path; the alternatives go in **Your call**. When the choice is pure preference and nothing supports one side, write `No recommendation: this is a preference.` The options go in **Your call** with none marked `(recommended)`, and **Cost** reads `Depends on the option; see each line.`
 - **Cost** is what the fix costs, and only the fix: lines, a migration, a new dependency, a new background process, a behavior someone would notice. Not what the alternative would cost, not what the fix saves; an alternative's price is its consequence, and it goes on that alternative's line in **Your call**. `None` is a legitimate value and is written out, never left blank.
 - **Your call** is the question itself, in a few words. It has one of two forms. When the only real choice is the fix or nothing, it is `accept?` with no list. When the decision is a choice, it names the choice and lists two to four alternatives as bullets, each with its consequence on the same line; the fix is the first bullet, marked `(recommended)`. Never `accept?` over a list that leaves the fix out. A bullet with no consequence ("No, use a different approach"), or a list that is only yes and no, is really a plain `accept?`: write `accept?` and drop the list. The user may answer in their own words; the alternatives are a convenience, not a form.
+
+## Write for a reader who knows the product and not the code
+
+The user can tell you how the checkout behaves. They cannot tell you what the seventh function in `pricing.rs` is called, and they should not have to. A question full of code names hands the work of understanding back to the one person who did not read the code.
+
+- **Say what the product does, not what the code is called.** "The step that applies a discount code at checkout", not "`apply_promo()` in `pricing.rs`".
+- **Run the delete test on every sentence.** Take out each function, file, variable, and type name. If the sentence no longer makes sense, the name was doing the explaining: rewrite it so the words carry the meaning.
+- **Keep the names the user types or sets** — a command, a setting, a flag, a button label — and say in the same sentence what each one does.
+- **Never point at something only you saw.** "The function I edited earlier", "as the output above shows", and "the second call site" mean nothing to a reader whose screen showed a one-line summary. Say what the thing is and what it does, again, here.
+- **The flow is a scene, not a call stack.** People and systems doing things and noticing things: "a customer enters an expired code and pays full price with no message", not "`validate()` returns `None` and the caller falls through".
+- **Swap jargon for the plain word**, or explain it the first time: "at the same time", not "concurrently"; "empty", not "null"; "a change to the database structure", not "a migration" alone.
+- **One pointer is allowed.** A single `file:line` may close the situation, for the reader who wants to look. The question must be complete without it.
+
+The test for the whole question: could a person who uses this product every day, and has never opened its code, make this decision from this message alone?
 
 ## Count the words; do not judge length by feel
 
@@ -162,6 +177,7 @@ Nothing in it can be removed without losing something the reader needs. The agen
 | "I'm fairly sure the fix works" | "Fairly sure" is a belief. Check it, or write `Not verified:` in the fix |
 | "It was only an `accept?`, and they said 'fine I guess' — close enough" | "I guess" is the user telling you they are not sure. Ask them to say which they mean; a wrong "Recorded:" costs far more than one line |
 | "The code already follows a pattern, so no decision is needed" | You offered the user a choice, so the choice is theirs. The pattern is why you recommend one option. Put it in **The fix.** and ask |
+| "The user is a developer, so function names are fine" | Technical is not the same as having read the code. They did not see what you opened; the harness may have shown them one line. Say what the product does |
 | "They said 'sounds fine', that's a yes" | A yes names the thing it agrees to. When you cannot tell, the question is open; ask the **Your call** part again |
 | "They have not replied; I'll go with my recommendation so the work moves" | Silence is not consent. The question stays open and the blocked work stays blocked |
 | "The flow is obvious, I'll write N/A" | If anyone would notice the decision, there is at least one step. Write it; one or two steps is a valid flow |
@@ -187,7 +203,8 @@ Nothing in it can be removed without losing something the reader needs. The agen
 - A flow step that forks into the alternatives ("if A… if B…") instead of walking one path
 - A heading that could be pasted into **The fix.** ("X should…", "X will use…", "X follows…"); a **Your call** bullet with no consequence, or a yes/no list
 - A flow written as prose instead of numbered steps, a flow over five steps that was not absolutely needed, a flow over ten steps, a flow padded with a step that describes nothing real, or `N/A` on a decision somebody would notice
-- A function, file, or flag named with no plain-words explanation in the same sentence, or a flow step that only a reader of the code could follow
+- A sentence that stops making sense when its function, file, or variable names are taken out; a flow step that only a reader of the code could follow
+- A reference to something only you saw: "the function I edited earlier", "as the output above shows", "the second call site"
 - A cost left blank, a cost that prices the alternative, or a fix that describes a second path
 - Prose over the word limit, more than four alternatives, or a fact repeated between the situation and the fix or cost
 - A `Recorded:` line after a reply that holds a word of doubt; a number or estimate in an answer that nothing you checked supports
@@ -199,6 +216,7 @@ Nothing in it can be removed without losing something the reader needs. The agen
 - [ ] Every open question collected, unconfirmed assumptions included; none invented
 - [ ] Each one checked: facts re-read now, fix verified or marked `Not verified:`, questions a fact could answer dropped and reported in one line
 - [ ] Ordered so the answerable and most-unblocking come first; numbered `N of M`
+- [ ] Every question written for a reader who knows the product and has not seen the code: behavior in plain words, the delete test passed, nothing that points at something only you saw
 - [ ] One question per message, plain chat, full template, flow of three to five steps (one or two when that is the whole story, more only when absolutely needed), words counted
 - [ ] Every question closed by a direct apply, reject, or different direction; doubtful or vague replies asked again on the spot; the user's own directions and conditions noted, checked once after the last question, and brought back only when a check fails
 - [ ] Answers that partly settled or pulled against other answers were carried forward: later questions rewritten, conflicts put to the user with a recommendation and its reason
