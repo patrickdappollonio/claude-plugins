@@ -7,8 +7,9 @@ Once the report is delivered, each confirmed finding is a decision only the user
 ```markdown
 ### Question <N> of <M> — <the claim, in one plain sentence>
 
-**The situation.** <What exists, what the plan says, what is unsettled, and
-why the codebase cannot settle it. Two to four sentences.>
+**The situation.** <What the code does today, what the agreed brief says
+about it, and why the choice is the user's. Two to four sentences; the last
+one says where it was found, how serious it is, and which reviewer found it.>
 
 **The flow.**
 
@@ -16,14 +17,17 @@ why the codebase cannot settle it. Two to four sentences.>
 2. <Step two.>
 3. <The last step: the consequence they would notice.>
 
-**The fix.** <What you recommend, in one to three sentences.>
+**The fix.** <The validated fix, in one to three sentences.>
 
 **Cost.** <What the fix costs — lines, a migration (a change to the
 database structure), a dependency, a change someone would notice — or
 `None`.>
 
-**Your call:** <the question, in a few words; the alternatives, when there
-are any, each with its consequence on the same line>
+**Your call:** <the question, in a few words>
+- <The recommended alternative first, with its consequence on the same line:
+  apply, or revise the design on a design finding.>
+- <Each other alternative and its consequence: defer, dismiss, or keep the
+  design. At most four bullets in all.>
 ```
 
 The four bold labels **The situation.**, **The flow.**, **The fix.**, and **Cost.** are mandatory, in this order, spelled exactly like this, and are followed by a bold **Your call:** line with its alternatives as a bulleted list under it. A question missing one part is not finished. Every question is numbered in its heading.
@@ -72,9 +76,9 @@ Nothing in it can be removed without losing something the reader needs.
 ### Question 1 of 6 — A failed upload leaves a record marked ready with no file behind it
 
 **The situation.** The upload handler saves the record as "ready" first and
-then copies the file to storage. The brief says nothing about the order, so
-this is not a conformance gap; it is a defect in how the work was done, and
-only you can weigh the fix against your release. Found at
+then copies the file to storage. What was agreed for this change says
+nothing about the order, so the code does not go against it; it is a defect
+in how the work was done, and only you can weigh the fix against your release. Found at
 `internal/media/upload.go:88`, rated serious, by the Data Integrity
 Prosecutor.
 

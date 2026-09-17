@@ -77,7 +77,7 @@ gh pr view --json number,title  # is there an open PR for this branch? (ignore e
 Decision:
 - **Only local changes exist** → review the local diff (`git diff HEAD`, plus staged).
 - **Only a PR exists** (clean working tree, branch has a PR) → review the whole PR (`gh pr diff <n>`).
-- **Both exist** (uncommitted changes AND an open PR) → **ask the user** with `AskUserQuestion` which to review (the PR as a whole, or just the local uncommitted changes). Do not guess.
+- **Both exist** (uncommitted changes AND an open PR) → **ask the user** which to review (the PR as a whole, or just the local uncommitted changes). Use the harness's question tool when one exists — `AskUserQuestion` in Claude Code, or its equivalent elsewhere — and ask in plain text and wait for the reply when there is none. Do not guess.
 - **Neither** → tell the user there is nothing to review and stop.
 
 **If there's no `gh` CLI** recommend the user to install it. It might also be the user wants to review the last codebase here, not in the PR. Feel free to ask for guidance.
@@ -109,7 +109,7 @@ Rules for writing the brief:
 
 - **Quote and cite; do not editorialize.** Every line is either lifted from a source or a plain statement of fact about the assignment, with the source named. No assessments of the code, no "this looks handled," no hypotheses.
 - **A non-goal only counts if it was actually agreed.** Do not invent one to excuse something the change skipped. If you are not sure whether an omission was deliberate, leave it out of the non-goals and let the reviewers flag it.
-- **If there is no brief, do not fabricate one.** Use `AskUserQuestion` to ask what this change was supposed to do and what was deliberately left out. If the user has nothing — an old branch, an inherited PR — that is a legitimate answer: run the panel spec-blind, skip the *Spec Conformance Auditor*, and **say plainly in the report that no agreed scope was available**, so the user knows design drift was not checked. The *Premise Auditor* still runs: with nothing written down, the design is whatever the change implies, and it attacks that instead.
+- **If there is no brief, do not fabricate one.** Ask what this change was supposed to do and what was deliberately left out, through the harness's question tool when one exists and in plain text when there is none; never skip the question because the tool is missing. If the user has nothing — an old branch, an inherited PR — that is a legitimate answer: run the panel spec-blind, skip the *Spec Conformance Auditor*, and **say plainly in the report that no agreed scope was available**, so the user knows design drift was not checked. The *Premise Auditor* still runs: with nothing written down, the design is whatever the change implies, and it attacks that instead.
 
 Give the brief to **every** reviewer, the verifier, and the validator, marked clearly as the brief.
 
