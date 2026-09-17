@@ -22,8 +22,11 @@ why the codebase cannot settle it. Two to four sentences.>
 database structure), a dependency, a change someone would notice — or
 `None`.>
 
-**Your call:** <the question, in a few words; the alternatives, when there
-are any, each with its consequence on the same line>
+**Your call:** <the question, in a few words>
+
+- <The fix (recommended): its consequence, on one line. Bullets only when
+  the decision is a choice; none when the question is `accept?`.>
+- <The next alternative and its consequence. Two to four bullets in all.>
 ```
 
 The four bold labels **The situation.**, **The flow.**, **The fix.**, and **Cost.** are mandatory, in this order, spelled exactly like this, and are followed by *Your call*: a bold **Your call:** line in chat and in a file nobody is serving, a `question` fence in a file that `visual-plan` is serving (below). A question missing one part is not finished. Every question is numbered in its heading.
