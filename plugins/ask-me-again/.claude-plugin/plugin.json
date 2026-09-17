@@ -1,0 +1,19 @@
+{
+  "name": "ask-me-again",
+  "description": "Re-asks the questions an agent has open, one per chat message, in one fixed shape — a numbered claim, the situation, a numbered flow to the consequence, the fix, its cost, your call — after checking the facts and that each recommended fix really works, and waits for a direct apply, reject, or different direction before it continues. Never uses the harness question tool.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Patrick D'appollonio",
+    "email": "patrickdappollonio@gmail.com"
+  },
+  "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/ask-me-again",
+  "license": "MIT",
+  "keywords": [
+    "questions",
+    "decisions",
+    "clarification",
+    "communication",
+    "plain-language",
+    "one-at-a-time"
+  ]
+}
