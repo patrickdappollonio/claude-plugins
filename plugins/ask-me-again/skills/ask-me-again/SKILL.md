@@ -6,7 +6,7 @@ description: >-
 
 # Ask Me Again
 
-You have questions open for the user, and the way you asked them did not work: too many at once, too much jargon, a bare "A or B?" with no picture of what each one does, or a multiple-choice prompt with one line per option. This skill asks them again. Each question becomes a decision the user can make away from the code, in one reading, and every question has the same shape, so a reader who has seen one can read them all.
+You have questions open for the user, and the way you asked them did not work: too many at once, too much jargon, a bare "A or B?" with no picture of what each one does, or a multiple-choice prompt with one line per option. This skill asks them again. **The goal of the run is to end uncertainty:** when it is over, you and the user know the answers to what you needed to know. The format serves that goal and is not the goal. Each question becomes a decision the user can make away from the code, in one reading, and every question has the same shape, so a reader who has seen one can read them all.
 
 ## The four rules
 
@@ -25,7 +25,7 @@ Read back through the conversation and list every question that is still waiting
 
 An assumption you made without asking is an open question when it changes what the user gets and the user has not confirmed it. Put it in the list. A routine choice of how to write the code is not one. Keep the list to yourself; the user sees one question at a time.
 
-A new problem that you find while checking (step 2), and that only the user can decide, is a question of its own. Add it to the end of the list; `M`, the number of questions this run asks, grows by one. Never fold it into another question, and never bring it up inside the message that asks a different one.
+A new problem that you find while checking (step 2), and that only the user can decide, is a question of its own. Add it to the end of the list; `M`, the number of questions this run asks, grows by one. Never fold it into another question, and never bring it up inside the message that asks a different one. The same holds for a question that an answer opens up during the run. More questions coming up as the uncertainty is worked through is normal, not a failure: add each one, and do not hold one back to keep the list short. The only questions you do not add are ones you invent, such as a decision made up out of a fact you just confirmed.
 
 ### 2. Check the facts and the fix — before the first question
 
@@ -73,6 +73,12 @@ The first message holds, in this order: one line for each question you closed yo
 
 **Test every reply before you write `Recorded:`.** Does it hold a word of doubt — guess, think, probably, maybe, might, suppose, whatever, not sure — or end in a question mark? Then the question is still open and you ask the user to say which they mean, even when the same reply also holds "yes", "sure", or "ok" ("mm probably, sure" is not an answer). Beyond that test, judge whether the reply picks an action beyond doubt, not whether it contains a certain word. Doubt keeps the question open, whether it comes with a yes, a no, or a direction of their own ("no, probably leave it").
 
+**Answers touch other questions. Carry them forward.**
+
+- **An answer that partly settles a later question.** Rewrite the later question before you ask it: say in its situation what the earlier answer already settled, and ask only what is left. Remove only what that answer settled: a choice it did not touch stays in the question with its options, and facts you checked (the cost, the numbers) stay as they were. When nothing is left, it is closed (`M` goes down), and the record line says so.
+- **An answer that pulls against an earlier one** (the user leaned yes there and no here, and both cannot hold). Do not pick a winner, and do not build both. Say so in your next message, before the next question, in this short form: `These two answers pull against each other:` the two decisions and, in one sentence, why both cannot hold; `I recommend` which one gives way and why, in one or two sentences, where the reason is what is better for the user or the product and never only which answer came first; then a **Your call** part with each way out as a bullet, the recommended one first. Keep it that short. The user can ask for more, and then you give more.
+- **Every question you add or rewrite during the run carries a recommendation and its reason**, like every other question. The user decides faster from "I would do A, because B" than from a bare list.
+
 When the user's question makes you change your recommendation, say that it changed and why, and move `(recommended)` to the new option in the **Your call** list.
 
 A message that asks again does not repeat the full template. It holds only these things: the answer to what they asked (when they asked something), one line that says the question is still open and why, and the **Your call** part. The still-open line is never left out, also when the reply held a question: a user who wrote "ok, but what about X?" may believe they have answered. No new issue, no second question.
@@ -85,7 +91,7 @@ When a question closes, the next message opens with one record line — `Recorde
 
 First do the checks you noted as *to check*: each direction of the user's own, each condition, and each later question an answer changed, checked as you checked the fix in step 2. One that holds stays closed. One that does not comes back to the user: reopen that question, one per message, with its heading text, one line on what your check found, and a **Your call** part that fits what you now know. A new question that the checks turned up is asked now too, in the full template. The same reply rules apply to these.
 
-Then send one short message: every decision, one line each, in plain words, plus any question that stayed open and why. Then do the work the questions were blocking, exactly as decided. Build an applied fix as it was described. Do not build a rejected fix. Build a different direction as the user stated it. Work that depends on a question that stayed open stays blocked; say which.
+Then send one short message that shows what the run settled. For each thing you needed to know when the run began, and each one that came up during it, one line in plain words: the decision the user made, or the fact you found, or that it is still open and why. If the run settled nothing, say that plainly; do not dress it up. Then do the work the questions were blocking, exactly as decided. Build an applied fix as it was described. Do not build a rejected fix. Build a different direction as the user stated it. Work that depends on a question that stayed open stays blocked; say which.
 
 ## The template
 
@@ -175,6 +181,9 @@ Nothing in it can be removed without losing something the reader needs. The agen
 - `No recommendation` in **The fix.** with `(recommended)` in the list below it
 - A message that asks again without saying what you could not tell, or that raises a new issue
 - Stopping in the middle of the run to investigate something the user did not ask you to look into
+- Two answers that cannot both hold, and you picked one or said nothing; a later question asked as written after an earlier answer already settled part of it
+- A question that came up during the run held back to keep the list short, or asked with no recommendation and no reason
+- A closing message that lists what was asked instead of what is now known
 - A flow step that forks into the alternatives ("if A… if B…") instead of walking one path
 - A heading that could be pasted into **The fix.** ("X should…", "X will use…", "X follows…"); a **Your call** bullet with no consequence, or a yes/no list
 - A flow written as prose instead of numbered steps, a flow over five steps that was not absolutely needed, a flow over ten steps, a flow padded with a step that describes nothing real, or `N/A` on a decision somebody would notice
@@ -192,4 +201,6 @@ Nothing in it can be removed without losing something the reader needs. The agen
 - [ ] Ordered so the answerable and most-unblocking come first; numbered `N of M`
 - [ ] One question per message, plain chat, full template, flow of three to five steps (one or two when that is the whole story, more only when absolutely needed), words counted
 - [ ] Every question closed by a direct apply, reject, or different direction; doubtful or vague replies asked again on the spot; the user's own directions and conditions noted, checked once after the last question, and brought back only when a check fails
-- [ ] Decisions listed, one line each, after the last answer; work resumed exactly as decided
+- [ ] Answers that partly settled or pulled against other answers were carried forward: later questions rewritten, conflicts put to the user with a recommendation and its reason
+- [ ] The run ended uncertainty: everything you needed to know is now a decision, a fact you found, or named as still open with the reason. A run that settled nothing is reported as that
+- [ ] Work resumed exactly as decided
