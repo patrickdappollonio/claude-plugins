@@ -20,7 +20,7 @@
   "interface": {
     "displayName": "Ask Me Again",
     "shortDescription": "Re-ask open questions one at a time, in a clear shape.",
-    "longDescription": "Takes every question the agent has open, checks the facts behind each and that each recommended fix works, then asks them again in plain chat, one per message: a numbered claim, the situation, a numbered flow to the consequence, the fix, its cost, and your call. It waits for a direct apply, reject, or different direction before it asks the next one or does any work.",
+    "longDescription": "Takes every question the agent has open, checks the facts behind each and that each recommended fix works, then asks them again in plain chat, one per message: a numbered claim, the situation, a numbered flow to the consequence, the fix, its cost, and your call. Only a direct apply, reject, or different direction closes a question. After a doubtful reply it asks the user to say which they mean, and it builds nothing until the last question is closed.",
     "developerName": "Patrick D'appollonio",
     "category": "Productivity",
     "capabilities": [

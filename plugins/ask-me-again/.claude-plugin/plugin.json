@@ -1,6 +1,6 @@
 {
   "name": "ask-me-again",
-  "description": "Re-asks the questions an agent has open, one per chat message, in one fixed shape — a numbered claim, the situation, a numbered flow to the consequence, the fix, its cost, your call — after checking the facts and that each recommended fix really works, and waits for a direct apply, reject, or different direction before it continues. Never uses the harness question tool.",
+  "description": "Re-asks the questions an agent has open, one per chat message, in one fixed shape — a numbered claim, the situation, a numbered flow to the consequence, the fix, its cost, your call — after checking the facts and that each recommended fix really works, and builds nothing until every question has a direct apply, reject, or different direction. After a doubtful reply it asks the user to say which they mean. Never uses the harness question tool.",
   "version": "0.1.0",
   "author": {
     "name": "Patrick D'appollonio",

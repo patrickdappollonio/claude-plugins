@@ -19,7 +19,7 @@ Say `/ask-me-again` (or "ask me again", "one question at a time"). The agent the
    - **The fix.** The one path the agent recommends.
    - **Cost.** What that fix costs, or `None`.
    - **Your call:** the question in a few words, with up to four alternatives.
-4. **Waits for a direct answer**: apply, reject, or a different direction. A vague reply, a question back, or silence keeps the question open, and the agent asks the same **Your call** line again. It does no blocked work until the question is closed.
+4. **Closes a question only on a direct answer**: apply, reject, or a different direction. After a doubtful or vague reply ("fine, I guess"), the agent says what it could not tell and asks the same **Your call** again. When you give a direction of your own, it does not stop to investigate: it notes the direction, keeps asking, checks it once after the last question, and comes back only when the check fails. It looks into something in the middle only when you ask it to. It builds nothing until the last question is closed.
 5. **Lists the decisions** after the last answer, one line each, and carries on with exactly what was decided.
 
 The prose of a question is capped at 200 counted words (a little more on the rare flow that needs over five steps), so a question is one reading and never a long block of text.
