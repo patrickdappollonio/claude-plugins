@@ -6,7 +6,7 @@ Four procedures. The first two always run, together. The third is offered. The f
 
 One reviewer, on the most capable tier your harness offers (see `model-routing.md`), dispatched after the first draft. It receives **exactly three things** and nothing else:
 
-1. The user's ask, verbatim, marked as the ask.
+1. The plan's *The ask* section, as written: the task sentence and the user's quoted words, marked as the ask. Never the message that asked for a plan; if that is all the section holds, fix the section first (`SKILL.md` step 1).
 2. The plan file.
 3. Access to the codebase (the repository path).
 
@@ -16,7 +16,7 @@ It does not receive the conversation, your exploration notes, or any reassurance
 
 > You are reviewing a plan document against the request it is meant to satisfy. You have the request, the plan, and read access to the repository at `<path>`. You have no other context, and that is deliberate.
 >
-> The request, verbatim:
+> The request (the task, then the requester's own words):
 > > <ask>
 >
 > The plan is at `<plan path>`. Read it in full.
@@ -41,7 +41,7 @@ Dispatch one subagent **on a different model family from the one that wrote the 
 >
 > Pass 2, now open the repository: list what the text got wrong, with the file and line. Then write the bullets that the technical context should have contained so an implementer never has to explore.
 >
-> The task, verbatim: <ask>
+> The task, then the requester's own words: <ask>
 >
 > Technical context: <section>
 >
@@ -53,7 +53,7 @@ Fold the result in. Sort the pass-1 list into two kinds. A **build-changing gap*
 
 An adversarial review assumes the change is broken and tries to prove it from several independent angles, by reviewers who share none of the author's context, with a separate reviewer that discards false findings. It is the most expensive step in this skill. It runs **once**, on the finished plan — no open question, no pending spike, no cold implementer gap — and only after the user picks quick or full; none is an answer. After the fixes, a second run needs a fresh yes. The review skill expects a code change. A plan works as one: it is a new file in which every line is an added line.
 
-**The review measures the plan against the user's ask, not against the plan.** A code review receives the plan as its standard (its "brief"). A plan review receives the **user's ask**, verbatim, plus any constraints and non-goals they stated. If you hand the review the plan as its own standard, it checks the plan against itself and finds nothing. Tell the review the subject is a plan document, that the "was this design right" and "does it match the ask" angles carry the weight, and that it may skip charters that cannot apply to prose as long as it says which.
+**The review measures the plan against the user's ask, not against the plan.** A code review receives the plan as its standard (its "brief"). A plan review receives the **user's ask** — the plan's *The ask* section as written, which holds the task in one sentence and the user's own words for it, their constraints and non-goals included. If you hand the review the plan as its own standard, it checks the plan against itself and finds nothing. Tell the review the subject is a plan document, that the "was this design right" and "does it match the ask" angles carry the weight, and that it may skip charters that cannot apply to prose as long as it says which.
 
 ### Sizing
 
