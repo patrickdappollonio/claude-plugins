@@ -172,6 +172,9 @@ button { font: inherit; cursor: pointer; }
   text-align: left; background: none; border: none; cursor: pointer;
   color: var(--ink); font-size: 0.82rem; line-height: 1.35; padding: 5px 9px; border-radius: 6px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  /* overflow:hidden zeroes a flex item's min-height, so without this a long
+     outline squashes every row instead of scrolling. */
+  flex: 0 0 auto;
 }
 .ol-item:hover { background: rgba(120, 118, 113, 0.1); }
 .ol-item.lvl-3 { padding-left: 22px; font-size: 0.78rem; color: var(--ink-soft); }
