@@ -73,7 +73,12 @@ Do every step in order. Read the named file at its step. Between steps, keep cha
 
 ### 1. Acknowledge, then capture the ask
 
-Reply with one short sentence that acknowledges the request and says you are exploring. Then copy the user's ask **verbatim** into the plan file's *The ask* section — the words they typed, not your paraphrase; the reviewer in step 5 and the final self-check both measure against these words.
+Reply with one short sentence that acknowledges the request and says you are exploring. Then write the plan file's *The ask* section. **The ask is the task the plan is for — what is to be fixed, built, or changed — never the request for a plan.** "Can we make this into a plan?", "plan this", and the command that loaded this skill are how the user called the skill; none of them goes in the file. The section has two parts, in this order:
+
+- **The task, in one sentence.** What is to be fixed, built, or changed, and for whom. Use the user's wording when they stated it. When the task took shape across the conversation and the user never stated it, state it yourself from the problem they raised or confirmed: this sentence is yours to write, and leaving it out to avoid a paraphrase leaves a section nobody can measure against. An approach you proposed and the user did not accept is not part of the task; it enters the draft as a decision or a question.
+- **The user's words, verbatim, under it.** Every message of theirs that states the task, a constraint, or a non-goal, each as its own quote, in order, from wherever in the conversation it sits. Never reworded. When the message that called the skill also carries the task ("/planning-flow add rate limiting to the public API"), quote the task and drop the command.
+
+Test the section before moving on: **a reader who never saw the conversation can tell from it what is to be built or fixed.** A section that would fit above any other plan unchanged holds the invocation, not the ask. If you cannot tell what "this" points at, ask in one plain line before exploring. The reviewer in step 5 and the final self-check both measure against this section.
 
 ### 2. Explore in parallel
 
@@ -91,7 +96,7 @@ Before any reviewer sees the draft, read the ask once more and write, in one sen
 
 Read `plan-review.md`, the file that defines every review this skill runs. Dispatch two fresh subagents in one message, neither with conversation history, reassurance, or a list of what you already checked.
 
-- **The zero-context reviewer**, on the most capable tier your harness offers, with exactly three things: the user's ask verbatim, the plan file, and access to the codebase. Its charter: assume the plan fails the ask and prove it — gaps, wrong premises, missing cases, questions the user must answer, things the plan asserts about the code that are not true. It returns findings and candidate questions.
+- **The zero-context reviewer**, on the most capable tier your harness offers, with exactly three things: the plan's *The ask* section as written (the task sentence and the user's quoted words), the plan file, and access to the codebase. Its charter: assume the plan fails the ask and prove it — gaps, wrong premises, missing cases, questions the user must answer, things the plan asserts about the code that are not true. It returns findings and candidate questions.
 - **The cold implementer**, on a different model family from yours when the harness offers one (a Codex agent, for example) and on the cheaper tier otherwise, with the ask and the plan's *Technical context* and *Tickets* sections only, and no repository access at first. Its charter: restate the challenge, grade whether it could start implementing from this text alone, and list every exact string, format, path, convention, command, and location it would still have to go and find; then open the repository and report what the text got wrong. Every item on its list that would change what gets built is a gap in *Technical context*; fill each with the exact value and run the check again until the list holds nothing of that kind. An implementer still opens the file it edits; the surrounding text of an insertion point is not a gap.
 
 The reviewer finds what the plan gets wrong; the implementer finds what the plan leaves out. A plan that passes only the first is correct and unimplementable.
@@ -138,7 +143,7 @@ A spike answer folds in as step 8 describes. Recompute the frontier and run step
 
 ### 12. The one adversarial review — only when nothing is open
 
-An adversarial review is the most expensive thing this skill can do, so it runs **once**, on the finished plan, and only when the user picks it. Size it with the table in `plan-review.md`: a change inside one subsystem gets the quick recommendation, as long as it does not touch the database schema, sign-in and permissions, work that runs at the same time, or an outside service; anything else gets the full one. Offer it in plain text — **quick, full, or none** — with your recommendation and the cost of each in plain words (full is roughly twice quick). Run exactly what they chose, once: the installed `adversarial-review-quick` or `adversarial-review` skill when present, given the plan file as the change under review and **the user's ask, word for word, as the standard the plan must meet**; the on-the-spot panel from `plan-review.md` when neither is installed.
+An adversarial review is the most expensive thing this skill can do, so it runs **once**, on the finished plan, and only when the user picks it. Size it with the table in `plan-review.md`: a change inside one subsystem gets the quick recommendation, as long as it does not touch the database schema, sign-in and permissions, work that runs at the same time, or an outside service; anything else gets the full one. Offer it in plain text — **quick, full, or none** — with your recommendation and the cost of each in plain words (full is roughly twice quick). Run exactly what they chose, once: the installed `adversarial-review-quick` or `adversarial-review` skill when present, given the plan file as the change under review and **the plan's *The ask* section, as written, as the standard the plan must meet**; the on-the-spot panel from `plan-review.md` when neither is installed.
 
 Findings go through the authority table. A finding whose fix leaves behavior unchanged: apply it and log it as your decision with the reason and any drawback. A finding that changes what the user or an operator would experience, and any `design_is_wrong` finding: add it to the one question list with the reviewer's suggestion as the recommendation, and run it through the same filter and frontier as every other question (steps 6 and 7). Rewrite in place. Never write "the review found" anywhere in the plan.
 
@@ -154,7 +159,7 @@ The closing message is the plan, not its history. Exactly this shape, short:
 
 - **Where the plan is** — the path (and the URL when served).
 - **What it does** — two or three plain sentences: the problem, and how the plan solves it.
-- **Does it cover the ask** — one line, measured against the verbatim ask.
+- **Does it cover the ask** — one line, measured against *The ask* section: the task and every quoted constraint.
 - **Gotchas and caveats** — the ones that survived, each a line.
 - **Decisions you should know about** — the ones you made on the user's behalf that they might want to reverse, each with a line of reason, and every manual step only they can do, written out in full, never as a pointer back.
 
@@ -193,6 +198,8 @@ Every unit of work is a ticket in **exactly** this format (full detail and an ex
 
 | Excuse | Reality |
 |---|---|
+| "The user's last message is the ask, and the rule says their literal words" | The message that called the skill asks for a plan; the ask is what the plan is for. Write the task in one sentence, then quote the messages that state it and its constraints. |
+| "The task took shape in my messages, so stating it would be my paraphrase" | The task sentence is yours to write when the user never wrote one; build it from the problem they raised or confirmed. Your unaccepted proposals stay out of it. |
 | "I'll add an *Update* section so the user can see what changed" | The user asked for the plan, not its diff. Rewrite the section. The decisions log is the only memory. |
 | "Keeping the old paragraph with a note is faster" | Faster to write, unreadable to read. In place, always. |
 | "The reviewer found seven issues; the user should know" | They should know the plan is sound. Fold in the fixes, log the decisions, present the plan. |
@@ -230,6 +237,7 @@ Every unit of work is a ticket in **exactly** this format (full detail and an ex
 ## Red Flags — Stop and Re-read the Step
 
 - Any heading or sentence in the plan containing a word from the delete table in `plan-template.md`: "revisited", "updated", "revised", "corrected", "previously", "as clarified", "as discussed", "after the review", "the reviewer noted", "Edit:", "Update:"
+- *The ask* holding "can we make this into a plan", "plan this", or the skill's command; no task sentence above the quotes; or a constraint the user stated that is not quoted
 - A struck-through line, a "for context" section, or a superseded paragraph kept beside its replacement
 - A ticket with a number, code, or identifier in its title
 - A sentence in *What* or *Why* that dies when its identifier is deleted
@@ -257,7 +265,7 @@ Every unit of work is a ticket in **exactly** this format (full detail and an ex
 Create a todo per item.
 
 - [ ] Read all seven companion files (first use in this session)
-- [ ] Plan location chosen; ask copied verbatim into the file
+- [ ] Plan location chosen; *The ask* holds the task in one sentence and the user's words that state it, verbatim; the request for a plan is nowhere in it
 - [ ] Exploration subagents dispatched in parallel on the cheaper tier
 - [ ] Draft written to the full skeleton; decisions logged as made
 - [ ] Step 4 run on the draft without asking, and again on the finished plan: goal restated in one sentence, every part tested for removal and for a lower rung, each cut and lowering logged

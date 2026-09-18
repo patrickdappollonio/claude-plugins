@@ -11,7 +11,13 @@ Include every section. When a section has nothing to say, keep the heading and w
 
 ## The ask
 
-> <The user's request, verbatim. Their words, not a paraphrase. Quote it.>
+<One sentence: the task this plan is for — what is to be fixed, built, or
+changed. The user's wording when they stated it; yours when the task took
+shape across the conversation. Never the request for a plan.>
+
+> <The user's words, verbatim: each message that states the task, a
+> constraint, or a non-goal, as its own quote, in order. Not the message
+> that asked for the plan.>
 
 ## Summary
 
