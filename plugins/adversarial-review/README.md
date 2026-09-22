@@ -57,7 +57,7 @@ Each reviewer attacks from one narrow angle. The full panel runs all of them; th
 | **Authorization Attacker** | what a valid-but-unauthorized user can reach |
 | **Resource Exhaustion Adversary** | unbounded growth, leaks, quadratic blowups |
 | **Maintainability Cynic** | what the next reader will misread |
-| **Karpathy Minimalist** | speculative complexity and scope creep (doing *too much*) |
+| **Karpathy Minimalist** | speculative complexity, scope creep (doing *too much*), and hand-written copies of what the standard library, a declared dependency, or a repo helper already provides |
 | **AI Anti-Slop Critic** | plausible-but-hollow generated code, hallucinated APIs |
 | **Fact-Checker** | every factual claim verified against primary sources via web search |
 

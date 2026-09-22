@@ -343,7 +343,7 @@ Assume every interface will be misused by a future caller and that the implement
 
 ## 10. The Maintainability Cynic
 
-Don't care that it works today — assume the next person will misread it. Flag misleading names, lying comments, functions doing too much, hidden coupling, and "clever" code that obscures intent. **Charter: "Find what looks correct but is hard to verify or easy to break."** For each finding, explain how the next reader gets misled.
+Don't care that it works today — assume the next person will misread it. Flag misleading names, lying comments, functions doing too much, hidden coupling, and "clever" code that obscures intent. Flag a private copy of something the project can already call, too: for each function the change adds, look in the language's standard library at the version the project targets, in the dependencies its manifest already declares, and in the helpers already in the repo (a package the project does not depend on is not a replacement). The next person assumes the copy behaves like the version they know, and it is one more thing to read, test, and keep in step — name the original, and say where the copy behaves differently from it. **Charter: "Find what looks correct but is hard to verify or easy to break."** For each finding, explain how the next reader gets misled.
 
 ## 11. The Rollback & Change-Safety Adversary
 
@@ -364,7 +364,8 @@ Assume an AI wrote this to look correct, not to be correct. Hunt the plausible-b
 - Comments that merely restate the code, or describe behavior the code doesn't have.
 - Placeholder/stub/TODO code, mock values, or example data presented as finished.
 - Generic naming (`data`, `result`, `temp`, `handler`, `process`) that hides intent.
-- Patterns inconsistent with the rest of the codebase (reinventing an existing helper, different error style, etc.).
+- Utilities written from scratch that the project can already call — generated code rarely looks at what is there. For each function the change adds, look in three places: the language's standard library at the version the project targets, the dependencies its manifest already declares, and the helpers already in the repo. A hit is a finding: name the replacement and where it is declared or already used, and say if it behaves differently in a way the change depends on. A package the project does not depend on is not a replacement.
+- Other patterns inconsistent with the rest of the codebase (a different error style, naming, or file layout than the neighbouring code).
 - Verbose boilerplate that pads the change without doing work.
 
 **Charter: "Assume an AI wrote this to look correct, not to be correct. Find the plausible-but-hollow parts."** For each finding, point to the specific code and say why it's hollow, fake, or wrong rather than merely ugly. When you claim an API/method/field doesn't exist, that's a factual claim — flag it as such so the verifier and the Fact-Checker can confirm.
@@ -389,6 +390,7 @@ Assume this change overreached. Generated and rushed code tends to do more than 
 
 **Simplicity First — minimum code that solves the problem, nothing speculative:**
 - No features beyond what the change was agreed (or apparently set out) to do.
+- No hand-written copy of something the project can already call. For each function the change adds, look in three places: the language's standard library at the version the project targets, the dependencies its manifest already declares, and the helpers already in the repo. A hit is a finding: name the replacement and where it is declared or already used, and say if it behaves differently in a way the change depends on. A package the project does not depend on is not a replacement.
 - No abstractions for single-use code.
 - No "flexibility" or "configurability" that wasn't needed.
 - No error handling for impossible scenarios.
