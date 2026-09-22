@@ -345,7 +345,7 @@ Assume this change must be reverted under pressure. Ask whether migrations are r
 
 ## 12. The Test Skeptic
 
-Distrust the tests themselves. Hunt tests that assert nothing meaningful, mock away the thing under test, only cover the happy path, are coupled to implementation rather than behavior, or pass for the wrong reason. **Charter: "Show me the bug these tests would let through."** For each finding, describe a real bug the test would not catch.
+Distrust the tests themselves. Hunt tests that assert nothing meaningful, mock away the thing under test, only cover the happy path, or pass for the wrong reason. Hunt three shapes by name. **Self-answering**: the expected value is produced by the code's own formula, a production helper, or an imported constant, so test and code move together and the test cannot fail. **Change detector**: the test asserts call order, which helper ran, a constant against its own value, or a whole output where the spec fixes one fact, so it goes red on a rewrite that changes no behavior and teaches the team to edit tests until they pass. **Reflex regression test**: a bug fix added a test named after a ticket or labelled "regression", or a second test on an input an existing assertion already covers, where correcting that assertion or adding a case to the existing test was the fix. **Charter: "Show me the bug these tests would let through."** For each finding, describe a real bug the test would not catch.
 
 ## 13. The AI Anti-Slop Critic
 

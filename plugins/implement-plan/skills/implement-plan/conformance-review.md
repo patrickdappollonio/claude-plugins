@@ -10,7 +10,8 @@
    - **present** — file:line that fulfils it, and the test that proves it;
    - **missing** — nothing implements it;
    - **different** — implemented, but not as specified (quote both);
-   - **untested** — present but no test would fail if it broke;
+   - **untested** — present but no test would fail if it broke. A test that computes its expected value with the code's own formula, helper, or constant counts as no test: quote the assertion;
+   - **brittle** — a test asserts call order, a constant's own value, a whole output the plan fixes only part of, or a repo sample file, so it goes red on a rewrite with the same behavior; or a bug fix added a test named after a ticket, or a second test on an input an existing assertion already covers. Quote it;
    - **duplicated** — proved by a new test function or file whose setup and action steps are 60% or more already performed by an existing test on the same surface, whatever it asserts at the end. A setup block copied from another test is the strongest sign; look for it first. Quote both and the count;
    - **tainted** — the diff or a commit message carries a label from this run (a gate ID, slice or wave name, round, pass, finding, or step number, a ticket title). Quote the line; it goes back whatever else is right;
    - **undocumented** — present and tested, but a document that describes this surface (README, `docs/`, help text, CHANGELOG, spec, docstring) still describes the old behavior or omits the new one. Do not take the executor's "no document describes this" on faith: run the search.

@@ -12,6 +12,10 @@ For new behavior: write the test first, run it, watch it **fail** for the reason
 
 For a refactor, the same cycle inverted: **before** touching the code, write (or find) a test that pins today's behavior and passes on the original. Make the change. The same test, **unmodified or with only mechanical edits** (a renamed identifier, an import), must still pass. If it needs its expectations changed, the refactor changed behavior — revert the refactor, not the test. A test that needs rewriting to survive a refactor was testing the implementation, not the behavior; write it against the public surface so it survives the next refactor too.
 
+For a bug fix, the failing test comes first too, but it is not automatically a new test. Find what let the bug through. If a table row already exercises that input and its `want` is wrong, correct the row: it fails, you fix the code, it passes, and nothing is added beside it. If the fix makes the row's name, or the test's, untrue of what it checks, rename it in the same edit rather than moving the row. If no row exercised the behavior, that is a genuine gap: add the row to the table that already covers the function, named for the behavior (`"exactly ten units gets the bulk discount"`). A pure function tested one call per case is always a table: the setup stays once above the loop, the row holds the input and the `want`, and the subtest body is the call and the assertion, so the row's name is what tells the cases apart. The corrected or added row is what keeps the bug fixed; a ticket that asks for coverage is asking for that row and nothing more.
+
+Name every test and every row for the behavior, never for the ticket: no `TestIssue1234`, no `TestRegression…`, no ticket ID in a row name or a test comment. Grep the test lines you added for the ticket ID and for `regress` before you finish.
+
 ## User-journey tests
 
 Unit tests prove functions; journey tests prove the product. A user journey is one thing a real user does end to end, in order, through the public surface — for a banking system: *create an account, send money to it from another account, observe the balance land*. That is one journey of many.
@@ -56,6 +60,8 @@ One source file, one test file, is the steady state. A package with `foo_test.go
 - `t.Errorf` by default so one run reports every failure; `t.Fatalf` only when continuing is meaningless (a precondition failed, `got` is nil and would be dereferenced).
 - Errors are asserted with `errors.Is` / `errors.As` against a sentinel or type — never by comparing `err.Error()` to a string. Assert the *absence* of an error explicitly: `if err != nil { t.Fatalf("UploadFile(%q) returned unexpected error: %v", path, err) }`.
 - Structural comparisons: `reflect.DeepEqual` is acceptable for plain data; if `github.com/google/go-cmp` is already a dependency, prefer `cmp.Diff`. Do not add an assertion library to a project that has none.
+- **`want` is written down, never worked out by the test.** A `want` built with the code's own formula, a production helper, or an exported constant (`want := price * (1 + TaxRate)`) moves with the code and cannot disagree with it. Put a literal in the table row, worked out from the rule on a small input; for a pinning test, freeze the original's output as a literal. This holds when the code is meant to reuse an existing helper: reuse it in the code, state the result in the test.
+- **Assert what a caller can observe, and only what the spec fixes.** A test that checks which helper ran, the order of calls the spec does not require, a constant against its own value, or every word of an output when one fact in it matters goes red on a rewrite with the same behavior. That is a change detector: it trains people to edit tests until they pass. Before keeping an assertion, name a behavior-preserving rewrite that would turn it red; if you can, loosen it.
 - Don't compare against text whose formatting is not guaranteed stable (raw JSON, `fmt`-formatted structs, map iteration order). Compare decoded values.
 
 ## Test doubles
@@ -162,6 +168,9 @@ func TestClient_UploadFile(t *testing.T) {
 - [ ] `t.Context()`, `t.TempDir()`, `t.Setenv()`, `t.Cleanup()`, `t.Helper()` where applicable
 - [ ] `t.Parallel()` where nothing shared is mutated
 - [ ] Failure messages name the call, input, got, want — got first
+- [ ] Every `want` is a literal; none is built with the code's formula, a production helper, or an exported constant
+- [ ] No assertion on call order the spec does not require, a constant's own value, or a whole output where one fact matters
+- [ ] Bug fix: the wrong row was corrected in place, or a genuine gap got a behavior-named row in the existing table; no ticket-named or duplicate test
 - [ ] `t.Errorf` by default, `t.Fatalf` only for preconditions
 - [ ] Errors checked with `errors.Is`/`errors.As`, never by string
 - [ ] Mocks are hand-written `Fn`-field structs; nil `Fn` returns a `not implemented` error (or panics when there is no error return)
