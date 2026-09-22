@@ -31,6 +31,8 @@ The floor is fixed and has three parts — TDD, a map of the existing tests befo
 > - **Nothing exercised the behavior.** That is a genuine gap, and it gets one case. Where the case goes is decided by the test map below, like any other new case: into the existing test when the share is 60% or more, a new test otherwise.
 >
 > **Name every test for the behavior it checks, never for the ticket.** No ticket ID, issue number, or the word "regression" in a test name, a case name, or a test comment. Before you report, grep the test lines you added for the ticket IDs in your task and for `regress`, and expect no hits. A ticket that asks for coverage so the bug stays fixed is asking for the corrected assertion or the filled gap, and gets nothing more.
+>
+> **Do not add a gate.** A coverage threshold, a new required CI job, a lint rule raised to an error, a pre-commit or release check: none is added unless the plan section asks for one. Name the gate you would add in your report and leave it out. For every case you keep, be able to name the one change to this slice's code that would make it fail while every other case stays green; that sentence goes in your report.
 
 > **Map the existing tests before writing one, and count the overlap.** Before the mini-plan, find every test that already exercises the surface this slice changes. The surface is the command, function, endpoint, or type the code change lands in — never the feature. Grep the test directories for those names and for the fixture and helper names their tests use, and open every file that hits. "No test mentions <the feature>" is not a gap: the feature is new, the code it lands in is not.
 >
@@ -82,15 +84,16 @@ Include verbatim:
 > **Before editing**
 > - Read the relevant code, tests, and configuration directly. Do not work from   search snippets or guesses.
 > - If a requirement is ambiguous or a premise is unverified, stop and report   it; do not build on it.
+> - When you are not certain how a library, framework, tool, or platform API behaves, or whether it exists, find the version this repository uses (the lock file, the installed package, `<tool> --version`) and read the official documentation or the source for that version. Memory and the latest online examples describe some other version. When the version in use lacks what the latest documentation shows, write the code for the version in use. Changing a version to match an example is a dependency change: pause and report.
 > - State a minimal plan in your first message, in this shape:
 >   - **Outcome** — the exact behavior requested
 >   - **Non-goals** — what this task will not do
 >   - **Files** — the smallest set expected to change
 >   - **Proof** — the check that will prove the change works: the test map —     one entry per behavior, naming the nearest existing test, listing     the setup and action steps with a mark for each one that test     already performs, and the extend-or-new decision the share gives
-> - Take one implementation path. Do not split the work further.
+> - Take one implementation path, and make it the simplest one that meets the plan section. Do not split the work further.
 >
 > **While editing**
-> - Before writing new code, walk the ladder and stop at the first rung   that holds: this slice does not need it → skip it; the codebase already   has it → reuse it; the standard library or the platform has it → use it;   an installed dependency has it → use it; it is a one-liner → one line;   only then write the minimum that works. Reuse tests and test setup the   same way. Never cut: validation at a trust boundary, data-loss handling,   security, accessibility.
+> - Before writing new code, walk the ladder and stop at the first rung   that holds: this slice does not need it → skip it; the codebase already   has it → reuse it; the standard library or the platform has it → use it;   an installed dependency has it → use it; none of those has it, and what you would write implements part of a published format, protocol, or standard (a YAML, CSV, or Markdown reader, a URL or date parser, a JWT check, a diff, a crypto primitive) or is a problem maintained open-source libraries exist for → that is the library rung: do not hand-write it and do not install it, pause and report with the library as your recommendation (below); the framework or platform has a supported extension point for it (a plugin hook, a middleware slot, a documented config option) → use that before patching around it; it is a one-liner → one line; only then write the minimum that works. "It handles only the shape the plan shows" is the sentence that precedes a hand-written subset of a format: when you are about to write it, you are on the library rung. Reuse tests and test setup the   same way. Never cut: validation at a trust boundary, data-loss handling,   security, accessibility.
 > - Fix bugs at the root cause. Do not stack patches around a wrong premise.
 > - Add an abstraction, adapter, or config layer only for a second real caller   in this task or a stated requirement.
 > - Preserve behavior outside the requested change.
@@ -99,7 +102,7 @@ Include verbatim:
 >
 > **Pause and report — do not proceed — before:**
 > - Materially expanding scope or touching files outside the stated set
-> - Adding a dependency, framework, service, or new test infrastructure
+> - Adding a dependency, framework, service, new test infrastructure, or a gate (coverage threshold, required CI job, lint rule, hook), or changing the version of a dependency, runtime, or tool. This pause is never a reason to write the thing yourself: the pause and the ladder do not "point the same direction". When the library rung holds, build the plan items that are complete without it, leave out whole every item that is not — never ship a command, endpoint, or option that exists but does not yet do what the plan says, because a check that prints nothing and exits 0 is invented behavior — and report: the library you recommend and one alternative, each with its current version, last release date, license, and open security advisories, read from the package registry with a query that installs nothing (`npm view <pkg> version license` and then `npm view <pkg> "time[<that version>]"` for its release date — `time.modified` is when the metadata changed, not a release; `pip index versions <pkg>`, `go list -m -versions <module>`, `cargo search <crate>`; advisories from a public advisory database queried by package and version, such as osv.dev or the GitHub advisory database) — try the query before saying you cannot; a figure you did not read there is written "not checked", never recalled from memory; what it replaces; what integrating and maintaining each path costs, the hand-written path included, with the inputs it would get wrong. The user chooses; you wait.
 > - Changing a public API, schema, storage format, or wire format the plan   does not already specify
 > - Deleting or overwriting user data, discarding uncommitted work, rewriting   history, or dropping data
 > - Keeping two implementations of the same behavior alive
@@ -125,6 +128,8 @@ The orchestrator does the conformance review from this, so it must be complete:
 - The exact test commands run and their output summary (pass/fail counts).
 - The test map as executed: the existing tests found for the surface (or the search that found none), and for every test added or changed, *extended* with the file:line of the case, or *new* with its map entry (nearest test, the marked step list, the share).
 - For each plan item, the documents updated for it (file:line) — or "no document describes this" with the search that established it.
+- For each library, framework, tool, or platform API the change relies on: the version in use and how its behavior was established — the documentation or source of that version, a probe and what it printed — or "from memory, not verified".
+- For every test case added: the code change that would make it fail alone, in a few words.
 - The commit hash(es) on the slice branch.
 - Every assumption made, every item left undecided, every deviation from the plan section and why.
 - Anything the stop conditions triggered.
