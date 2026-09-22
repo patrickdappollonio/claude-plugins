@@ -89,10 +89,11 @@ The solution is the least new code that answers the ask, and the plan is the pla
 2. **Does the codebase already have it?** A helper, a pattern, a component, a table. Reuse it, even when a fresh one would be tidier.
 3. **Does the standard library or the platform have it?** A date field is the browser's `<input type="date">` before it is a picker component; a retry is the HTTP client's option before it is a retry package.
 4. **Does an installed dependency have it?** Use what is already in the lock file before adding a sibling that does the same thing.
-5. **Is it a one-liner?** Then it is one line, not a function, a class, or a module.
-6. **Only then:** the minimum that works today. No layer for a second caller that does not exist, no option nobody asked for, no configuration for a value that never changes.
+5. **Does a maintained library, or a supported extension point, have it?** When the part implements any of a published format, protocol, or standard (a YAML, CSV, or Markdown reader, a URL or date parser, a JWT check, a diff, a crypto primitive), or is a problem maintained open-source libraries exist for, the plan names the library, never a hand-written version of it. "It only needs to handle the shape in the example" is the sentence that precedes a parser that misreads the first real file. A framework's plugin hook, middleware slot, or documented option is the same rung: use it before patching around it. Adding a dependency changes what the project needs at runtime, so this rung is a question for the user, not a decisions entry: the recommended library and one alternative, each with its current version, last release date, license, and open advisories read from the package registry and an advisory database (a figure not read there is written "not checked"), what each costs to integrate and maintain, and what a hand-written version would get wrong.
+6. **Is it a one-liner?** Then it is one line, not a function, a class, or a module.
+7. **Only then:** the minimum that works today. No layer for a second caller that does not exist, no option nobody asked for, no configuration for a value that never changes.
 
-Every rung you climb past is a decisions entry: what the lower rung was, why it does not answer the ask, and what the higher one costs. A reviewer who finds a lower rung that would have worked has found a defect in the plan.
+Every rung you climb past is a decisions entry (rung 5 excepted — it is a question): what the lower rung was, why it does not answer the ask, and what the higher one costs. A reviewer who finds a lower rung that would have worked has found a defect in the plan.
 
 **Never on the chopping block:** validation at a trust boundary, handling that prevents data loss, security, and accessibility. The ladder cuts code volume, never correctness.
 
