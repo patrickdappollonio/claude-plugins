@@ -187,7 +187,8 @@ Every change this skill makes — a renamed variable, a flattened conditional, a
 ```
 1. Before touching the code, write (or locate) tests that pin its CURRENT behavior:
    the normal cases, every branch you can reach, the error paths, and the edge cases
-   (empty input, zero, missing keys, malformed data).
+   (empty input, zero, missing keys, malformed data). Write each expected value
+   down as a literal; assert only what a caller can observe.
 2. Run them against the ORIGINAL code. They must pass. A test that fails here is
    describing behavior the code does not have — fix the test, not the code.
 3. Make the simplification.
@@ -201,6 +202,11 @@ A test that passes before and after is the evidence. A test written *after* the 
 If the user declines tests, say plainly that the change is unproven, use a throwaway differential check (old function vs. new function over the same inputs) as the best remaining evidence, report what it covered, and keep the change mechanical. Do not present a deleted script as proof: it guards nothing once it is gone, and the next person who edits the function inherits none of it.
 
 **What the pinning tests are not:** they are not a rewrite of the test suite, not a coverage project, and not a place to fix behavior you dislike. A characterization test records what the code does today — including the odd edge case — because today's behavior is what "equivalent" means.
+
+**A pin that cannot fail is not evidence, and neither is one that fails for the wrong reason.** Two shapes of test defeat the proof above, and both look thorough:
+
+- **The test works out its own answer.** The expected value is produced by the same logic as the code: the formula typed again in the test, a production helper or constant called to build it, an expected structure assembled by running the code's own pieces. Both sides then move together, so the test passes before the change, after it, and after a change that broke something. Write the expected value down instead. For a pinning test the source is the original code's output, captured once and frozen as a literal; for a new helper it is a value worked out from the rule on a small input. "The helper keeps the test consistent with the code" is the fault, not a defense of it. The throwaway differential check is not this fault: old and new are two implementations, and they can disagree.
+- **The test pins how, not what.** It asserts which helper was called, in what order, a constant against its own value, or a whole output (every word of a message, every field of a record) when one fact in it matters. It goes red on a rewrite that changes nothing a caller sees — which is every change this skill makes — and the only way forward is then to edit the test, which destroys the proof. Pin what a caller can observe: return values, errors, the effects on collaborators, the facts a message carries. Before keeping a pin, name a behavior-preserving rewrite that would turn it red; if you can, loosen it. Odd edge cases are still pinned, because a caller can observe them.
 
 ## Cyclomatic Complexity
 
@@ -266,6 +272,8 @@ Same errors, same behavior, same edge cases — only the shape changed.
 | "I'll refactor while adding this feature" | Mixed changes are harder to review, revert, and understand in history. Separate them. |
 | "The tests need a small tweak to pass" | Tests failing means you changed behavior. Revert the simplification, don't bend the tests. |
 | "There are no tests and we ship tomorrow, so I'll just be careful" | Careful is not proof. Ask the user for permission to add pinning tests; if they decline, say the change is unproven. Pressure is when refactors break things. |
+| "I built the expected value with the project's own helper, so the test stays consistent" | Then the test and the code share one source and cannot disagree. Freeze a literal. |
+| "Asserting the full output is the most thorough pin" | It pins wording and layout no caller relies on, and goes red on the next harmless rewrite. Pin the facts a caller reads. |
 | "I verified it with a throwaway script, then cleaned up" | A deleted check guards nothing. The next edit to that function has no test. Either the tests stay, or the report says the change is unpinned. |
 | "I split it into helpers, so it's simpler" | Only if each helper decides one nameable thing and has its own tests. Relocating lines into once-called helpers with vague names is fragmentation. |
 | "Those two functions are basically the same, I'll merge them while I'm here" | Merging crosses scope and changes an API surface. Diff them, count callers, propose it. A near-duplicate is sometimes two things that change for different reasons. |
@@ -290,6 +298,8 @@ Same errors, same behavior, same edge cases — only the shape changed.
 - You are about to change a function that no test covers and you have not asked about adding one
 - You are creating tests in a repo that has none without asking
 - Your proof of equivalence is a script you intend to delete
+- A pinning test's expected value is computed (arithmetic, a production helper, an imported constant) instead of written down
+- A pinning test would go red on a rewrite that changes nothing a caller can observe
 - You are merging two functions you have not diffed line by line, or without checking their callers
 - A function's complexity went *up* in a helper you extracted (you moved the tangle, not untangled it)
 - A comment you wrote says "used to", "per review", names a finding or pass number, or is longer than two lines above a declaration
@@ -306,6 +316,7 @@ After completing a simplification pass:
 - [ ] All four companion files were read on first use this session, and the relevant one re-read at its step
 - [ ] All existing tests pass **without modification**
 - [ ] Every reshaped function is pinned by a test that existed **before** the change and passes after it
+- [ ] Every expected value in a test you wrote is a literal, and no pin asserts call order, a constant's own value, or a whole output where one fact matters
 - [ ] If the repo had no tests, the user was asked before any were created; if they declined, the report says the change is unproven and what the differential check covered
 - [ ] Cyclomatic complexity was reported before and after for any function you split, and no extracted helper is more complex than the piece it replaced
 - [ ] Each extracted helper decides one nameable thing and has its own tests

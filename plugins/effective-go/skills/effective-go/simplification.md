@@ -87,11 +87,14 @@ FOR EACH SIMPLIFICATION:
    after the refactor with no edits, or mechanical ones only. None? Write
    one first (a characterization test of what the code does TODAY,
    including its odd edge cases), appended to the existing `_test.go`.
-   Run it on the ORIGINAL; it must pass.
+   Run it on the ORIGINAL; it must pass. Expected values are literals
+   frozen from the original's output, never recomputed in the test.
 2. Make ONE change.
 3. go build ./... && go vet ./... && go test -race ./...
 4. Pass → keep, next.  Fail → revert the change. Never edit the test to pass.
 ```
+
+**A pin must be able to fail, and only for a change a caller can see.** A test that builds its expected value with the code's own formula, a production helper, or an imported constant passes whatever the code does; freeze a literal instead. A test that asserts call order, a constant's own value, or a whole output where one fact matters goes red on a harmless rewrite and forces a test edit, which destroys the proof; pin return values, errors, effects on collaborators, and the facts a message carries. The throwaway differential check (old against new) is fine: they are two implementations.
 
 "Extracted four helpers" is four changes. If a refactor would touch more than ~500 lines, use tooling (`gofmt -r`, `gopls rename`, `gorename`, `sed` with review) rather than hand edits.
 
@@ -129,6 +132,7 @@ Finding is cheap; deciding is expensive. Locate candidates with `grep`/`rg`, `go
 ## Red flags
 
 - A test had to change for the simplification to pass
+- A pinning test computes its expected value, or would go red on a rewrite no caller can observe
 - An error message's wording changed inside a change that was supposed to be a pure refactor
 - An extracted helper has no test of its own — the original's table exercising it indirectly is not the same
 - The "simpler" version is longer or harder to follow

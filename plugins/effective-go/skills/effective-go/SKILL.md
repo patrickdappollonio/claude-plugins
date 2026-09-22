@@ -99,6 +99,7 @@ A chain must read as a sentence: `failed to load configuration: failed to parse 
 - `t.Context()` (Go 1.24+; the pre-1.24 equivalent is in `testing.md`), `t.TempDir()`, `t.Setenv()`, `t.Cleanup()`, `t.Helper()`, `t.Parallel()` where safe.
 - Messages: `t.Errorf("Func(%v) = %v, want %v", in, got, want)` — got before want. `t.Fatalf` only when continuing is meaningless.
 - Errors asserted with `errors.Is`/`errors.As`, never by string.
+- `want` is a literal, never built with the code's own formula, helper, or exported constant. Assert what a caller observes and the spec fixes, never call order, a constant's own value, or a whole output where one fact matters. A bug fix corrects the wrong table row in place or adds a behavior-named row for a genuine gap; no `TestIssue…`, no second test on an input already covered.
 - Mocks are hand-written structs with one `Fn` field per method. A nil `Fn` returns `errors.New("mockT.Method: methodFn not implemented")`; a method without an error return panics with the same text. Add call counters when the code under test swallows errors.
 - `httptest` for HTTP; real or in-memory implementations for stores; no mocking or assertion libraries added to a project that has none; no `sqlmock`.
 - Tests are cheap when the agent writes them: cover every reachable branch, edge and error path. Red → green for new code; for a refactor, a pinning test that passes before and after with no edits.

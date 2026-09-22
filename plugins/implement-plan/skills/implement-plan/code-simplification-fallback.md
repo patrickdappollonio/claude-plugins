@@ -41,7 +41,7 @@ Either way, the scope is the merged change only: `git diff <starting-commit>..HE
 
 **Apply one change at a time, tests between.** For each simplification:
 
-1. Confirm a test that **already exists** pins the behavior you are about to reshape — it must pass on the code as it stands. Under this skill every slice shipped under TDD, so the test should be there; if none covers the function, do not simplify it — record it under *Pending for you* with the simplification you would make, because adding a test after the fact proves only that the new code does what the new code does.
+1. Confirm a test that **already exists** pins the behavior you are about to reshape — it must pass on the code as it stands. Under this skill every slice shipped under TDD, so the test should be there; if none covers the function, do not simplify it — record it under *Pending for you* with the simplification you would make, because adding a test after the fact proves only that the new code does what the new code does. A test counts as a pin only if it can fail for a change a caller would see: one that computes its expected value with the code's own formula, helper, or constant passes whatever the code does, and one that asserts call order or a whole output where one fact matters goes red on a harmless rewrite. Treat a function covered only by such tests as uncovered, and report the test.
 2. Make the change.
 3. Run the test suite. Green → keep it and move on. Red → revert and reconsider; the tests are not touched.
 
