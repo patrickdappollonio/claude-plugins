@@ -619,15 +619,20 @@
 
   /* ---------- OpenAPI fences ---------- */
 
+  /** Returns `{ spec }` or `{ error }` — the reason is shown in the fallback
+      block, so an author sees why the explorer did not render. */
   function parseOpenApiSpec(code) {
     const t = code.trim();
     if (t.startsWith('{')) {
-      try { return JSON.parse(t); } catch { return null; }
+      try { return { spec: JSON.parse(t) }; } catch (err) { return { error: `invalid JSON — ${err.message}` }; }
     }
-    if (window.jsyaml) {
-      try { return window.jsyaml.load(t); } catch { return null; }
+    if (!window.jsyaml) return { error: 'YAML parser not loaded' };
+    try {
+      return { spec: window.jsyaml.load(t) };
+    } catch (err) {
+      const line = err.mark && Number.isInteger(err.mark.line) ? ` (line ${err.mark.line + 1} of the fence)` : '';
+      return { error: `invalid YAML — ${err.reason || err.message}${line}` };
     }
-    return null;
   }
 
   function schemaToText(schema, depth = 0) {
@@ -692,9 +697,12 @@
   }
 
   function renderOpenApiFence(code) {
-    const spec = parseOpenApiSpec(code);
-    if (!spec || typeof spec !== 'object' || !spec.paths) {
-      return `<div class="codewrap" ${blockAttrs(code)}><span class="lang-tag">openapi</span><pre><code class="hljs">${escapeHTML(code)}</code></pre></div>`;
+    const { spec, error } = parseOpenApiSpec(code);
+    const problem = error
+      || (!spec || typeof spec !== 'object' ? 'the document is not a mapping'
+        : !spec.paths || typeof spec.paths !== 'object' ? 'no `paths:` object' : null);
+    if (problem) {
+      return `<div class="codewrap" ${blockAttrs(code)}><span class="lang-tag">openapi</span><div class="render-error">openapi: not rendered — ${escapeHTML(problem)}. Quote any value that contains , [ ] { } : or #, then reload.\n\n${escapeHTML(code)}</div></div>`;
     }
     const title = spec.info?.title || 'API';
     const version = spec.info?.version ? ` · v${spec.info.version}` : '';

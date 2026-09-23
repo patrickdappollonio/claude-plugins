@@ -204,6 +204,8 @@ An OpenAPI 3.x document (YAML or JSON) rendered as a read-only, expandable endpo
             "200": { description: Current limit }
     ```
 
+The fence must be valid YAML (or JSON), and the two YAML mistakes that come easiest are silent: an unquoted comma inside `{ … }` ends the value there (`{ description: unknown request, or not this customer's }` renders only "unknown request"), and a `[`, `]`, `{`, `}`, `:` or `#` inside an unquoted value stops the whole fence from parsing, so the viewer shows the raw text with the parser's error instead of the explorer. Quote any value that contains one of those characters, or write it on its own indented line instead of inside `{ … }`. `visual-docs-lint` parses the fence with the same YAML library as the viewer and reports both cases with the line.
+
 ### Everything else
 
 Regular fences (` ```go `, ` ```python `, …) get syntax highlighting and a language tag. Untyped fences are auto-detected. The bundled highlighter covers the common set — including **go, rust, python, typescript/javascript, java, kotlin, swift, ruby, php, c/c++, c#, sql, bash/shell, yaml, toml, json, xml, css, markdown, diff** — so those all just work offline.
@@ -218,7 +220,7 @@ node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-lint.js" path/to/doc.md
 
 `${CLAUDE_PLUGIN_ROOT}` is the directory this plugin is installed in — Claude Code sets it automatically; on any other agent platform, substitute the plugin's install path.
 
-It flags: missing/duplicate H1, a structured fence with no one-sentence intent above it, empty or malformed fences (e.g. an `openapi` with no `paths:`, a `migration` with no `-- up`/`-- down`), unknown admonition types, and obvious unredacted secrets. Errors exit non-zero; `--strict` also fails on warnings.
+It flags: missing/duplicate H1, a structured fence with no one-sentence intent above it, empty or malformed fences (e.g. an `openapi` that does not parse as YAML or JSON, has no `paths:`, or has a value cut short by an unquoted comma; a `migration` with no `-- up`/`-- down`), unknown admonition types, and obvious unredacted secrets. Errors exit non-zero; `--strict` also fails on warnings.
 
 ## Comments / feedback loop
 

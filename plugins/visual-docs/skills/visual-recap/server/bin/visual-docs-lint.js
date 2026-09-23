@@ -26,7 +26,57 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
+
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+
+/** The viewer parses openapi fences with the vendored js-yaml (a browser UMD
+    bundle), so the linter parses with the very same file: what fails here
+    fails on screen, and vice versa. Loaded in a sandbox because the bundle is
+    not an ES module. */
+let yamlLoader;
+function loadYaml(text) {
+  if (!yamlLoader) {
+    const src = fs.readFileSync(path.join(HERE, '..', 'assets', 'vendor', 'js-yaml.min.js'), 'utf8');
+    const sandbox = {};
+    sandbox.window = sandbox; sandbox.self = sandbox; sandbox.globalThis = sandbox;
+    vm.runInNewContext(src, sandbox);
+    yamlLoader = sandbox.jsyaml;
+  }
+  return yamlLoader.load(text);
+}
+
+/** Parse an openapi fence the way the viewer does: JSON when it opens with
+    `{`, YAML otherwise. Returns `{ spec }` or `{ error, line }` (line is
+    0-based within the fence body when known). */
+function parseOpenApi(text) {
+  const t = text.trim();
+  if (t.startsWith('{')) {
+    try { return { spec: JSON.parse(t) }; } catch (err) { return { error: `invalid JSON — ${err.message}` }; }
+  }
+  try {
+    return { spec: loadYaml(t) };
+  } catch (err) {
+    const line = err.mark && Number.isInteger(err.mark.line) ? err.mark.line : undefined;
+    return { error: `invalid YAML — ${err.reason || err.message}`, line };
+  }
+}
+
+/** Keys with whitespace are what an unquoted comma inside `{ … }` leaves
+    behind: `{ description: unknown request, or not ours }` parses as the
+    description "unknown request" plus a key "or not ours". Nothing in an
+    OpenAPI document legitimately has such a key, so each one is a value that
+    got split — and the rest of the sentence is silently dropped on screen. */
+function splitFlowValues(node, out = []) {
+  if (!node || typeof node !== 'object') return out;
+  if (Array.isArray(node)) { node.forEach((v) => splitFlowValues(v, out)); return out; }
+  for (const [k, v] of Object.entries(node)) {
+    if (/\s/.test(k.trim())) out.push(k);
+    splitFlowValues(v, out);
+  }
+  return out;
+}
 
 // Keep in sync with the fence dispatch in assets/app.js (renderCodeFence): a new
 // structured fence there needs adding here (and to NEEDS_INTENT if it wants an
@@ -250,8 +300,17 @@ function lintFence(lang, body, start, add) {
       });
     }
   } else if (lang === 'openapi' || lang === 'swagger') {
-    if (!/(^|\n)\s*paths\s*:/.test(text) && !/"paths"\s*:/.test(text)) {
-      add(at, 'warn', 'openapi fence has no `paths:` — include at least one path, or it falls back to a raw code block.');
+    const quoteHint = 'In YAML, quote any value that contains `,` `[` `]` `{` `}` `:` or `#` (or write it on its own indented line instead of inside `{ … }`).';
+    const { spec, error, line } = parseOpenApi(text);
+    if (error) {
+      add(line === undefined ? at : start + 2 + line, 'error', `openapi fence does not parse (${error}) — the viewer shows the raw text with this error instead of the endpoint explorer. ${quoteHint}`);
+    } else if (!spec || typeof spec !== 'object' || !spec.paths || typeof spec.paths !== 'object') {
+      add(at, 'warn', 'openapi fence has no `paths:` object — include at least one path, or it falls back to a raw code block.');
+    } else {
+      for (const key of splitFlowValues(spec)) {
+        const k = body.findIndex((l) => l.includes(key));
+        add(k >= 0 ? start + 2 + k : at, 'warn', `openapi value was cut at an unquoted comma — \`${key.slice(0, 50)}\` became a key of its own and the text before the comma is all that renders. ${quoteHint}`);
+      }
     }
   } else if (lang === 'migration' || lang === 'sql-migration' || lang === 'db-migration') {
     const hasUp = /--\s*(\+migrate\s+up|migrate:up|up)\b/i.test(text);
