@@ -45,7 +45,7 @@ The four bold labels **The situation.**, **The flow.**, **The fix.**, and **Cost
 
 ## Numbering and order
 
-`Question <N> of <M>`: `M` is how many findings are still undecided, and `N` is this question's position among them. The order is the report's order: `design_is_wrong` findings first, because every other finding is measured against a plan they say was wrong; then conformance findings; then the rest from serious to minor. When a finding is decided, the rest renumber. A finding is referred to by its heading text, never by its number, because the number changes.
+`Question <N> of <M>`: `N` counts the findings you have asked about, from 1; asking the same one again does not raise it. `M` is the findings already asked about plus the ones still undecided. A decision does not change `M`: after the user answers `Question 1 of 6`, the next heading is `Question 2 of 6`, never `Question 1 of 5`. A finding closed before it is asked (an earlier answer settled it) lowers `M`, and the next message says so in one line. The order is the report's order: `design_is_wrong` findings first, because every other finding is measured against a plan they say was wrong; then conformance findings; then the rest from serious to minor. A finding is referred to by its heading text, never by its number.
 
 ## Heading level
 
