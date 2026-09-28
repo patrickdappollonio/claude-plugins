@@ -54,7 +54,7 @@ If a fact was wrong, correct the situation, or drop the question when nothing is
 
 ## Numbering
 
-`Question <N> of <M>`: `M` is how many questions are open right now, across every round, and `N` is this question's position among them, in the order they appear in the file. The count is of open questions only: when a question is answered it is deleted, and the rest renumber. A question is referred to by its heading text, never by its number, because the number changes.
+`Question <N> of <M>`: `M` is the questions answered so far, across every round, plus the ones open right now. `N` is the number answered so far plus this question's position among the open ones, in the order they appear in the file. Answering a question deletes it from the file but still counts it, so an answer does not change `M`: after the user answers `Question 1 of 5`, the next heading is `Question 2 of 5`, never `Question 1 of 4`. A new question raises `M`, and one dropped or settled by another answer before it was asked lowers it; update the headings of every open question when that happens, and say so in one line in the next message. A question is referred to by its heading text, never by its number, because the number can change.
 
 Order the open questions so the ones that can be answered now come first, and among those, put the question that unblocks the most other questions first; a question whose answer waits on another open question comes after it and says so in its first sentence ("Waits on the reclaim question above.").
 

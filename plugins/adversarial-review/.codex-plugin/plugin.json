@@ -1,6 +1,6 @@
 {
   "name": "adversarial-review",
-  "version": "1.8.0",
+  "version": "1.8.1",
   "description": "Hostile, bias-free review using independent reviewers, false-positive verification, and validated fixes.",
   "author": { "name": "Patrick D'appollonio", "email": "patrickdappollonio@gmail.com" },
   "homepage": "https://gist.github.com/patrickdappollonio/2fc5af4d714b97802072e97422823bc4",
