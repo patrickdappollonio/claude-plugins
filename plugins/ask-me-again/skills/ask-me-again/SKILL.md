@@ -13,7 +13,7 @@ You have questions open for the user, and the way you asked them did not work: t
 1. **Facts are yours to find; decisions are the user's to make.** Before asking anything, check whether the codebase, the docs, or a command can answer it. A question that a fact answers is not asked.
 2. **A fix you recommend is a fix you have checked.** The user reads **The fix.** as "this works". Verify it before the first question goes out (step 2). A fix you could not check says so, in its own text.
 3. **One question per message, in plain chat, in the template.** Never the question tool of the harness (the program that runs you, such as Claude Code or Codex) — `AskUserQuestion` or its equivalent — even when the harness has one: it has room for one line per option and none for a flow. Never two questions in one message, never the list of them.
-4. **Only a direct answer closes a decision.** The user applies the fix, rejects it, or sends you in a different direction, in words that leave no doubt. Anything else keeps the question open, and you ask the user to say which they mean. Never answer your own question, and never treat silence or a vague reply as consent. The checks in step 2 are work you do now. Building anything the questions decide waits until the last one is closed, unless the user tells you to start earlier.
+4. **Only a direct answer closes a decision.** The user applies the fix, rejects it, or sends you in a different direction, in words that leave no doubt. Anything else keeps the question open, and you ask the user to say which they mean. Never answer your own question, and never treat silence or a vague reply as consent. A direct answer counts wherever the user gave it, in this run or in any earlier message, and a decision the user already made is never asked again (step 1). The checks in step 2 are work you do now. Building anything the questions decide waits until the last one is closed, unless the user tells you to start earlier.
 5. **The user has not seen what you have seen.** You opened the files and ran the commands. The user did not, and many harnesses fold your tool calls into a one-line summary, so the user often never saw the file you read, the output you got, or the edit you made. Never write as if they watched. The user does know the product: what it does, who uses it, how it behaves. Write every question from that side, in the words its users and operators use. A name from the code is a label for a reader who can look it up. It is never the explanation.
 
 ## The process
@@ -26,13 +26,21 @@ Read back through the conversation and list every question that is still waiting
 
 An assumption you made without asking is an open question when it changes what the user gets and the user has not confirmed it. Put it in the list. A routine choice of how to write the code is not one. Keep the list to yourself; the user sees one question at a time.
 
+**Then strike what the user already decided.** Read every message the user sent in this conversation, not only their replies to your questions, and hold each question on the list against them. When you can quote the user's own words that pick an action for a question, it is not open: it is the user's decision, and you record it instead of asking it. Three shapes are easy to miss:
+
+- **An instruction given before you asked.** "Use a 3-node cluster" settles the question it answers, even when you had not written that question yet.
+- **A conditional instruction.** "If X works, do Y" is a decision with a fact attached. Check the fact in step 2. When it holds, the decision is closed as the user's, and you do not ask them to confirm it. When it fails, the question is open, and its situation says what the check found.
+- **Words of scope.** "All", "every", "the rest", and "wherever it is missing" cover everything that fits them, including what your checks turned up after the user spoke. The items you had named before were examples inside that scope, not its edge.
+
+A decision the user made is fixed for every question after it. When a check turns up something new about it, such as a cost, a risk, or more places it applies, say so in one line of the opening message (step 4). When that new fact leaves a decision of its own, such as how to guard against the risk, it is a new question. Its situation states the user's decision as settled, and its **Your call** never lists undoing that decision as an alternative. The user can still name that direction; you never offer it. There is one reason to ask about the user's decision again: the check shows it cannot be followed as given, because its condition is false, it is impossible, or it would break something else the user asked for. Then it is a question of its own, and its situation says what the check found.
+
 A new problem that you find while checking (step 2), and that only the user can decide, is a question of its own. Add it to the end of the list; `M`, the number of questions this run asks, grows by one. Never fold it into another question, and never bring it up inside the message that asks a different one. The same holds for a question that an answer opens up during the run. More questions coming up as the uncertainty is worked through is normal, not a failure: add each one, and do not hold one back to keep the list short. The only questions you do not add are ones you invent, such as a decision made up out of a fact you just confirmed.
 
 ### 2. Check the facts and the fix — before the first question
 
 For each question, in this order:
 
-- **Can a fact settle it?** Test the question first. A question about what something **is** today ("which format do the file names use?") can be closed by a fact. A question about what something **should be**, or which of several options to take ("A or B?", "keep it the same?"), cannot: it stays the user's, whatever the code suggests. Then, for a question a fact can close: read the code, the config, the docs of the version that is installed, or run a read-only command. If the answer is there, the question is closed by you. Keep one line about it for the opening message. A fact closes a question only when nothing is left to decide. "Which delimiter does the export use?" is closed by reading the code. "The lifetime is 300 seconds today — should the new export keep it?" is not: the value today is a fact, and whether it stays is the user's decision. A fact that leaves only one workable option does not close the decision either: ask whether to take it. A habit you see in the code ("the other button says Download") is a reason for your recommendation; it is not the user's answer. When in doubt, ask.
+- **Can a fact settle it?** Test the question first. A question about what something **is** today ("which format do the file names use?") can be closed by a fact. A question about what something **should be**, or which of several options to take ("A or B?", "keep it the same?"), cannot: it stays the user's, whatever the code suggests. Then, for a question a fact can close: read the code, the config, the docs of the version that is installed, or run a read-only command. If the answer is there, the question is closed by you. Keep one line about it for the opening message. A fact closes a question only when nothing is left to decide. "Which delimiter does the export use?" is closed by reading the code. "The lifetime is 300 seconds today — should the new export keep it?" is not: the value today is a fact, and whether it stays is the user's decision. A fact that leaves only one workable option does not close the decision either: ask whether to take it. A habit you see in the code ("the other button says Download") is a reason for your recommendation; it is not the user's answer. When in doubt whether a fact closes a question, ask. This doubt is about facts you found. A question the user's own words already answer was struck in step 1, and it does not come back here.
 - **Is every fact in the situation true right now?** Open the file or run the command again. Your memory of the conversation is not evidence; the file may have changed and you may have misread it the first time.
 - **Does the fix work?** Check every part of it that can be wrong: the function, flag, option, endpoint, or command exists in the version that is installed, or in the version the fix would add or upgrade to (read its source or its docs, not your memory of it); the change fits in the place you say it goes; the behavior you promise is the behavior it has. When a small probe would settle it — a throwaway script or test in a scratch directory — run the probe, read what it printed, and delete it. How much to check depends on what can be wrong. A fix that is only a choice of wording needs no check. A fix that names an API, a version, a config option, a command, a number, or how another system behaves always needs one.
 - **Never change the user's files, install anything, call or write to a service outside the machine, or put heavy load on the machine to check a fix.** Those need the user's word first, and the user has not answered yet. Reading public documentation is allowed.
@@ -53,7 +61,7 @@ Questions that can be answered now come first, and among those, the one whose an
 
 ### 4. Ask the first question, then stop
 
-The first message holds, in this order: one line for each question you closed yourself in step 2 (if any), then the one question, in full, in the template below. Nothing after **Your call**. End your turn and wait. If the checks closed every question, send the one-line findings, say that nothing is left to decide, and carry on with the work.
+The first message holds, in this order: one line for each decision the user's earlier words already made (`Recorded from your earlier message: <the decision>.`, plus what a check found about it, if anything), one line for each question you closed yourself in step 2 (if any), then the one question, in full, in the template below. Nothing after **Your call**. End your turn and wait. If the checks closed every question, send the one-line findings, say that nothing is left to decide, and carry on with the work.
 
 ### 5. Read the reply
 
@@ -182,6 +190,10 @@ Nothing in it can be removed without losing something the reader needs. The agen
 | "They have not replied; I'll go with my recommendation so the work moves" | Silence is not consent. The question stays open and the blocked work stays blocked |
 | "The flow is obvious, I'll write N/A" | If anyone would notice the decision, there is at least one step. Write it; one or two steps is a valid flow |
 | "This one needs seven steps" | Three to five is the rule. Try to cut it first: a step the reader could guess is not a step. Past five only when cutting any one hides how the consequence comes about; past ten, it is two questions |
+| "They said it earlier, but asking them to confirm is safer" | A confirmation is the same question asked twice. Quote their words in a `Recorded from your earlier message:` line and move on |
+| "Their condition held, so I'll check they still want it" | The condition was theirs to set and yours to check. It held, so the decision is closed |
+| "The check found a new cost, so they should decide again" | Report the cost in one line. Ask only about a decision the cost leaves open, and never list undoing their decision among its alternatives |
+| "They said 'all', but they only knew about the ones I named" | "All" is their scope. What you found afterwards is inside it |
 | "I'll start applying the first answer while I ask the second" | A later answer can change it. Work starts after the last answer, unless the user says otherwise |
 
 ## Red flags — stop and fix
@@ -190,6 +202,8 @@ Nothing in it can be removed without losing something the reader needs. The agen
 - Two questions in one message, or a message that lists every open question
 - A question asked before its facts and its fix were checked; a fix that names an API, flag, version, command, or number you did not look up; an unchecked part with no `Not verified:` line
 - A question that a file or a command could have answered
+- A question whose answer you can quote from the user's own earlier words, including a conditional whose condition held and an "all" that covers what you found later
+- A **Your call** that lists undoing a decision the user already made; a situation that says "you asked for X" and then asks whether to do X
 - A bold label missing, renamed, or reordered, or a heading without a number
 - A heading that is a topic ("Retry policy") or a question ("Should we retry?") instead of a claim; a heading about one decision over a **Your call** about another
 - Alternatives written inside the **Your call** sentence instead of as a bulleted list, or a list that leaves the fix out
@@ -214,6 +228,7 @@ Nothing in it can be removed without losing something the reader needs. The agen
 ## Checklist
 
 - [ ] Every open question collected, unconfirmed assumptions included; none invented
+- [ ] Every question held against everything the user has said in the conversation; the ones their words already decide recorded, not asked, and never offered for undoing
 - [ ] Each one checked: facts re-read now, fix verified or marked `Not verified:`, questions a fact could answer dropped and reported in one line
 - [ ] Ordered so the answerable and most-unblocking come first; numbered `N of M`
 - [ ] Every question written for a reader who knows the product and has not seen the code: behavior in plain words, the delete test passed, nothing that points at something only you saw

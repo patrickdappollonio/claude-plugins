@@ -94,6 +94,16 @@ The question's heading sits **one level below the section that holds it**, so th
 
 A harness question tool (a multiple-choice prompt) has room for one line per option and none for a flow. These questions need the whole template, so they go in the message as markdown, and the user answers in their own words. This holds even when the harness has such a tool.
 
+## Never ask what the user already decided
+
+Before a question is written, read every message the user sent in this conversation, not only their replies to your questions, and the decisions section. When you can quote the user's own words that pick an action for the question, it is not a question: record it as their decision and do not ask it. Three shapes are easy to miss:
+
+- **An instruction given before you asked.** "Use a 3-node cluster" settles the question it answers, even when you had not written that question yet.
+- **A conditional instruction.** "If X works, do Y" is a decision with a fact attached. Check the fact. When it holds, the decision is the user's and closed, and you do not ask them to confirm it. When it fails, ask, and say in the situation what the check found.
+- **Words of scope.** "All", "every", "the rest", and "wherever it is missing" cover everything that fits them, including what your checks turned up after the user spoke. The items you had named before were examples inside that scope, not its edge.
+
+A decision the user made is fixed for every question after it. A cost, a risk, or more places it applies, found later, is one line in your next message, not a reason to ask again. When the new fact leaves a decision of its own, such as how to guard against the risk, that is a new question: its situation states the user's decision as settled, and its *Your call* never lists undoing that decision as an alternative. The user can still name that direction; you never offer it. Ask about the user's decision again only when a check shows it cannot be followed as given, because its condition is false, it is impossible, or it would break something else the user asked for.
+
 ## Never answer your own question
 
 A question put to the user is answered by the user. Do not fill in a likely answer and proceed, do not treat silence as consent, do not pick the fix because the user is away. Only a direct answer closes a question: the user accepts the fix, rejects it, or names a different direction, in words that leave no doubt. A vague, partial, or hedged reply ("sure, whatever you think", "fine I guess", "ok" to a question with several alternatives) or a question back does not: answer what they asked, say in one line what you could not tell, and put the same *Your call* part again, alternatives included. If a question is unanswered, it stays open in the file, and every stop says how many are open.
@@ -136,6 +146,7 @@ one existing freeze test already uses. Assert exactly one winner per job.
 - A flow written as prose instead of numbered steps, a flow padded with a step that describes nothing real, a flow over five steps that was not absolutely needed, a flow over ten steps, or `N/A` on a decision that has a consumer who would notice it
 - A question asked before its facts and its fix were checked; a fix that names an API, flag, version, command, or number you did not look up; an unchecked part with no `Not verified:` line
 - A question treated as answered after a reply that was vague, partial, or a question back
+- A question whose answer you can quote from the user's own earlier words; a *Your call* that lists undoing a decision the user already made
 - A cost left blank, a cost that prices the alternative, or a fix that describes a second path (except the delivery-shape question)
 - Two questions in one chat message, or a chat message that lists every open question
 - A question in chat whose heading, situation, flow, fix, or cost differs by a word from the file's

@@ -51,7 +51,7 @@ Every companion skill is optional. This skill works alone. When one is installed
 
 **The test:** if a reasonable user could say "I didn't want that", the decision is theirs. Trace the consequence of every technical choice before you make it. The choice belongs to the user if it changes output, ordering, timing, defaults, error behavior, or what is stored and where. It also belongs to the user if it changes how the thing is deployed, configured, monitored, or paid for. This holds even when the choice looks like an implementation detail. Log your decisions in the plan's decisions section with the alternative, the reason, and any drawback. Park theirs as questions.
 
-**Never ask a question the user has already answered.** Before asking anything, read the decisions section. If an earlier answer settles the question, or lets you infer the answer with confidence, decide it yourself in the direction the user already chose, and log it as a decision that follows from theirs. Asking twice is the failure this rule prevents.
+**Never ask a question the user has already answered.** An instruction the user gives in chat is a decision: write it into the decisions section when they give it. Before asking anything, read the decisions section and every message the user sent. If their words settle the question, or lets you infer the answer with confidence, decide it yourself in the direction the user already chose, and log it as a decision that follows from theirs. Asking twice is the failure this rule prevents. A conditional instruction whose condition you checked and found true is settled. "All" covers what you found after the user said it. A new cost of their decision is a line in your message; it is never an alternative that undoes the decision.
 
 ## Where the Plan Lives
 
@@ -105,7 +105,7 @@ The reviewer finds what the plan gets wrong; the implementer finds what the plan
 
 Read `interviewing.md`, the file that defines how questions are found, filtered, and asked. There is **one** question list for the whole flow, whatever the source: your own notes, the zero-context reviewer, the adversarial review, spike results, a walk through your own plan for every "assume", "probably", and "for now". Arrange it as a design tree: each decision under the decision it depends on. Then remove from it, in order:
 
-1. Anything the decisions section already answers or implies (rule 3) — decide it in the user's direction and log it as following from theirs.
+1. Anything the decisions section or the user's own messages already answer or imply (rule 3) — decide it in the user's direction and log it as following from theirs.
 2. Anything the codebase or an experiment can answer — it is a fact, not a decision; dispatch a subagent or a spike and let only the questions downstream of it wait.
 3. Anything technical under the authority table — decide it, log it.
 
@@ -242,7 +242,7 @@ Every unit of work is a ticket in **exactly** this format (full detail and an ex
 - A struck-through line, a "for context" section, or a superseded paragraph kept beside its replacement
 - A ticket with a number, code, or identifier in its title
 - A sentence in *What* or *Why* that dies when its identifier is deleted
-- A question on the list that the decisions section already answers
+- A question on the list that the decisions section or the user's own earlier words already answer; a *Your call* that offers undoing a decision the user made
 - A question on the list that a subagent could answer from the codebase
 - A question missing one of its five parts, its number, or its numbered flow, or with prose over the word limit `question-format.md` sets; a question asked before its facts and its fix were checked; a question treated as answered after a vague reply
 - Two questions in one chat message, or a question asked through the harness question tool
