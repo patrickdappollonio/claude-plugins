@@ -161,6 +161,18 @@
       },
       "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/ask-me-again",
       "license": "MIT"
+    },
+    {
+      "name": "anti-slop",
+      "source": "./plugins/anti-slop",
+      "description": "Keeps what the agent makes from reading as AI slop, in two skills. anti-slop-ui covers interfaces: no gradient-everything, rainbow palettes, pulsing badges for states that never change, fingernail-striped cards, emoji icons, default fonts, uppercase labels, scroll effects, screens with no hierarchy or no empty, loading, and error states, or landing-page hype on working screens. anti-slop-text covers prose: no invented details, inflated significance, promotional tone, weasel attributions, not-X-but-Y contrasts, manufactured rhythm, AI vocabulary, chat residue, restating conclusions, or PR text about what was left unchanged. Each checks its output against a catalog of known tells before it ships.",
+      "category": "code-quality",
+      "keywords": ["ui", "design", "frontend", "css", "writing", "prose", "ai-slop", "code-quality"],
+      "author": {
+        "name": "Patrick D'appollonio"
+      },
+      "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/anti-slop",
+      "license": "MIT"
     }
   ]
 }

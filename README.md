@@ -60,11 +60,12 @@ Add `-g` to install for your user instead of the current project, and `-a <agent
 
 To install several, repeat the flag — `--skill a --skill b`. A comma-separated list matches nothing and silently installs nothing, so don't use one.
 
-Each plugin below maps to one skill of the same name, except `adversarial-review` and `visual-docs`, which provide two each. Every skill is self-contained, so installing one without its sibling works fine:
+Each plugin below maps to one skill of the same name, except `adversarial-review`, `anti-slop`, and `visual-docs`, which provide two each. Every skill is self-contained, so installing one without its sibling works fine:
 
 | Plugin | `--skill` name(s) |
 |---|---|
 | adversarial-review | `adversarial-review`, `adversarial-review-quick` |
+| anti-slop | `anti-slop-ui`, `anti-slop-text` |
 | appropriate-comments-code | `appropriate-comments-code` |
 | ask-me-again | `ask-me-again` |
 | code-simplification | `code-simplification` |
@@ -109,6 +110,32 @@ npx skills add patrickdappollonio/claude-plugins --skill adversarial-review --sk
 ```
 
 Then just ask: *"Give this change an adversarial review."* — or *"a smaller adversarial review"* for the quick panel. [Read more →](plugins/adversarial-review)
+
+### anti-slop
+
+Two skills that keep what your agent makes from reading as AI-generated; installing the plugin gets both.
+
+`anti-slop-ui` is design discipline for any UI your agent builds or restyles, based on the article ["10 Tells of a Slop UI"](https://hereticpleb.vercel.app/blog/10-tells-of-slop), the [Hacker News discussion](https://news.ycombinator.com/item?id=49867038) of it, and ["Spot the slop"](https://world.hey.com/kostac/spot-the-slop-a-ui-designer-s-guide-to-fixing-ai-defaults-4c448c9c). One rule: **every color, effect, badge, animation, and line of text on a screen must tell the person using it something they need on that screen.** Ask an agent to make a page "modern and polished" and it reaches for the same defaults every time: gradients on everything, a rainbow of accent colors, a pulsing "Active" badge on a state that can never be inactive, rounded cards with a colored "fingernail" stripe down one edge, emoji as icons, Inter or JetBrains Mono, uppercase labels, chains of middle dots, fade-in on scroll, glassmorphism, and a grey hype subtitle under every heading. It also turns the chat into page text — the client's reasons for the project, or the stack and editor the author mentioned, end up printed on the screen.
+
+The skill follows the project's own design language first. Without one, it sets the palette (60–30–10, status colors only for status), a flat surface, one radius scale, and the font as tokens before any CSS is written; with no font set, it recommends a few that fit and lets you choose. Badges must stand for a state that can change, and animation is only for work in progress or feedback to the user's own action. Every screen gets one primary element, and every data view gets its empty, loading, and error states. It checks alignment by rendering the page when a browser is available. Before finishing, it reviews the result against eighteen tells, each with a search signal and a fix, and reports what it found and changed.
+
+`anti-slop-text` does the same for prose: READMEs, docs, commit messages, PR descriptions, blog posts, emails, and chat replies. It is built on Wikipedia's ["Signs of AI writing"](https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing) and the phrase patterns in Simon Willison's [LLM cliché highlighter](https://tools.simonwillison.net/llm-cliche-highlighter). One rule: **every sentence gives the reader a fact they need, in the plainest words that carry it, and every fact comes from the material the agent was given or something it checked.** The agent lists its facts before writing and asks for a missing reason or number instead of inventing one, since no word list catches invented facts. It writes plain verbs and numbers instead of "stands as a testament" and "plays a pivotal role", says Y instead of "not just X, but Y", drops the rule-of-three rhythm, the ", highlighting …" tails, the "Certainly!" and the closing summary, and in PR descriptions says only what changed. Before handing text over it reviews against a catalog of the words and sentence shapes to search for, and it does not overcorrect: plain constructions, repeated terms, and a real list of three stay.
+
+```text
+# Claude Code session — type this as a message
+/plugin install anti-slop@patrickdappollonio
+
+# Shell — Claude Code
+claude plugin install anti-slop@patrickdappollonio
+
+# Shell — Codex CLI
+codex plugin add anti-slop@patrickdappollonio
+
+# Shell — npx skills
+npx skills add patrickdappollonio/claude-plugins --skill anti-slop-ui --skill anti-slop-text
+```
+
+Then just ask: *"Restyle the settings page so it doesn't look AI-generated,"* or *"Rewrite this README so it doesn't read like a chatbot wrote it."* [Read more →](plugins/anti-slop)
 
 ### appropriate-comments-code
 

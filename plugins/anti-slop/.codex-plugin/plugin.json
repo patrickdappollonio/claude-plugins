@@ -1,0 +1,19 @@
+{
+  "name": "anti-slop",
+  "version": "1.0.0",
+  "description": "Keeps the UI and prose the agent writes from reading as AI slop.",
+  "author": { "name": "Patrick D'appollonio", "email": "patrickdappollonio@gmail.com" },
+  "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/anti-slop",
+  "license": "MIT",
+  "keywords": ["ui", "design", "frontend", "css", "writing", "prose", "ai-slop", "code-quality"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Anti-Slop",
+    "shortDescription": "UI and text that do not read as AI-generated.",
+    "longDescription": "Two skills. anti-slop-ui keeps generated or restyled interfaces free of the common tells of AI slop — gradients everywhere, rainbow palettes, meaningless pulsing badges, fingernail-striped cards, emoji icons, default fonts, uppercase labels, scroll effects, missing states, and landing-page hype. anti-slop-text does the same for prose — invented details, inflated significance, promotional tone, contrast formulas, AI vocabulary, chat residue, and restating conclusions. Each reviews its output against a catalog of tells before it ships.",
+    "developerName": "Patrick D'appollonio",
+    "category": "Developer Tools",
+    "capabilities": ["Write", "Review"],
+    "defaultPrompt": ["Restyle this page and check it for AI-slop tells.", "Rewrite this README so it doesn't read as AI-generated."]
+  }
+}
