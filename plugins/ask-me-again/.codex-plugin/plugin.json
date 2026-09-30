@@ -1,6 +1,6 @@
 {
   "name": "ask-me-again",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Re-asks an agent's open questions one at a time, in one fixed shape, with every recommended fix checked first.",
   "author": {
     "name": "Patrick D'appollonio",

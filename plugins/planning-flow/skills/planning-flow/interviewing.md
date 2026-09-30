@@ -16,7 +16,7 @@ Build it from three sources, merged:
 
 A question goes to the user only when it is a decision. A fact — what the code does, what a table holds, whether an endpoint accepts a call, what a library exposes, what a document says — is your job to find. Before a question reaches the user:
 
-1. **Is it already decided?** Read the decisions section. If an earlier answer settles it, or lets you infer it with confidence, decide it in the user's direction and log it as following from their answer. Asking twice is a failure.
+1. **Is it already decided?** Read the decisions section, then every message the user sent in this conversation, not only their replies to your questions. If their words settle it, or let you infer it with confidence, decide it in the user's direction and log it as following from their answer. Asking twice is a failure. Watch for a conditional instruction ("if X works, do Y": check X; when it holds, the decision is made) and for words of scope ("all", "every", "wherever it is missing" cover what you found after the user spoke, not only what you had named). A cost or risk you find in a decision the user made is one line in your next message; a decision it leaves open is a new question whose *Your call* never offers undoing theirs. `question-format.md` has the full rule.
 2. **Can the codebase or an experiment answer it?** Then it is a fact. Dispatch a subagent or a cheap spike. Do not stop the interview while the lookup runs. Only the questions that depend on its answer wait. Ask the others now.
 3. **Is it technical under the authority table?** Decide it, log it with the alternative, reason, and drawback.
 
@@ -81,7 +81,8 @@ A question put to the user is answered by the user. Do not fill in a likely answ
 
 ## Red flags — the interview is failing
 
-- A question the user answered earlier, asked again in different words
+- A question the user answered earlier, asked again in different words, including an instruction they gave in chat that never reached the decisions section
+- A question that lists undoing the user's decision as an alternative, or that asks to confirm a conditional instruction whose condition held
 - A question whose answer a subagent could read off the code
 - A question whose flow ends without a consequence
 - A question missing a label, a number, or a numbered flow; a flow marked `N/A` when someone would notice the outcome
