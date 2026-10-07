@@ -17,7 +17,7 @@ Parallel slices should not share files. When two slices must touch the same file
 
 ## Testing and documentation rules
 
-The floor is fixed and has three parts — TDD, a map of the existing tests before any new one, and documentation in the same diff; the tiers above it are whatever the user chose at G1. Include all three floor blocks verbatim, then only the tiers that apply:
+The floor is fixed and has these parts — TDD, a map of the existing tests before any new one, and documentation in the same diff; the tiers above it are whatever the user chose at G1. Include every floor block verbatim, then only the tiers that apply:
 
 > **TDD is mandatory.** For every behavior: write a unit test, run it and watch it fail for the right reason, write the minimum code to pass, run it green, refactor with tests green. Tests written after the code do not count — if you notice code without a failing test behind it, delete the code and start that step over.
 >
@@ -65,7 +65,7 @@ The floor is fixed and has three parts — TDD, a map of the existing tests befo
 >
 > None of these makes a test new: the existing test would "lose focus" or "blur its narrative"; the new case asserts on something (a file, a JSON key, an absent file) no test has asserted on; the table has no column for it; the feature name has no grep hits; the new test reads better on its own.
 
-> **Documentation is updated in this same diff.** Before writing the mini-plan, search the repository for every document that describes the surface this slice changes: README and `docs/`, CLI help and usage text, man pages, config and environment-variable references, CHANGELOG when the repo keeps one, OpenAPI or schema files, example and sample files, and the doc comments or docstrings on any public API you touch. List each one under **Files** and update it alongside the code so that no document describes the old behavior when you finish. Extend existing documents; create a new one only when the plan section calls for it, otherwise report the gap. This is not a follow-up task and is not optional: a slice whose docs still describe the old behavior is not done. If the search finds no document describing this surface, say so in the evidence and name what you searched.
+> **Documentation is updated in this same diff.** Before writing the mini-plan, search the repository for every document that describes the surface this slice changes: README and `docs/`, CLI help and usage text, man pages, config and environment-variable references, CHANGELOG when the repo keeps one, OpenAPI or schema files, example and sample files, and the doc comments or docstrings on any public API you touch. List each one under **Files** and update it alongside the code so that no document describes the old behavior when you finish. Extend existing documents; create a new one only when the plan section calls for it, otherwise report the gap. This is not a follow-up task and is not optional: a slice whose docs still describe the old behavior is not done. If the search finds no document describing this surface, say so in the evidence and name what you searched. A document you write or extend never counts things that live elsewhere ("supports 12 commands", "the three providers"): list them or state the rule that finds them, so the next one added does not make the document wrong; a limit, threshold, version, or measurement that is itself the fact stays.
 
 Add when the repo has integration/E2E tests, or the user asked for journeys:
 

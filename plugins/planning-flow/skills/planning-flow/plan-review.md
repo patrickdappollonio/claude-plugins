@@ -4,7 +4,7 @@ Four procedures. The first two always run, together. The third is offered. The f
 
 ## 1. The zero-context reviewer (always, one subagent)
 
-One reviewer, on the most capable tier your harness offers (see `model-routing.md`), dispatched after the first draft. It receives **exactly three things** and nothing else:
+One reviewer, on the most capable tier your harness offers (see `model-routing.md`), dispatched after the first draft. It receives **exactly these things** and nothing else:
 
 1. The plan's *The ask* section, as written: the task sentence and the user's quoted words, marked as the ask. Never the message that asked for a plan; if that is all the section holds, fix the section first (`SKILL.md` step 1).
 2. The plan file.
@@ -47,7 +47,7 @@ Dispatch one subagent **on a different model family from the one that wrote the 
 >
 > Tickets: <section>
 
-Fold the result in. Sort the pass-1 list into two kinds. A **build-changing gap** is a fact that decides what gets built: an exact string, a format, a rule, a severity, a path, a convention, a command, a place where an edit goes. Each one becomes a stated fact in *Technical context*, with the exact value. An **edit-time read** is the surrounding text of a file the implementer will open anyway to make the edit: the current wording around an insertion point, the formatting of a config file, the version of an action in a workflow. Those are not gaps; a plan that pasted them would be a copy of the repository. Every pass-2 correction is a fix. Every item that only the user can answer goes to the question list. Then run the check again. **It passes when the pass-1 list holds no build-changing gap.** A grade is not a pass; a list with only edit-time reads on it is.
+Fold the result in. Sort the pass-1 list into these kinds. A **build-changing gap** is a fact that decides what gets built: an exact string, a format, a rule, a severity, a path, a convention, a command, a place where an edit goes. Each one becomes a stated fact in *Technical context*, with the exact value. An **edit-time read** is the surrounding text of a file the implementer will open anyway to make the edit: the current wording around an insertion point, the formatting of a config file, the version of an action in a workflow. Those are not gaps; a plan that pasted them would be a copy of the repository. Every pass-2 correction is a fix. Every item that only the user can answer goes to the question list. Then run the check again. **It passes when the pass-1 list holds no build-changing gap.** A grade is not a pass; a list with only edit-time reads on it is.
 
 ## 3. The adversarial review of the plan (once, at the end, the user's choice)
 
@@ -78,7 +78,7 @@ The quick skill proposes the fewest reviewers that fit the plan and asks which t
 
 ### On-the-spot panel (no review skill installed)
 
-Dispatch **five reviewers in one message**, each a fresh subagent on the cheaper tier, each receiving only: its charter, the ask (marked as the brief), the plan file, the repository path, the scope rule, and the output format.
+Dispatch **one reviewer per charter below, all in one message**, each a fresh subagent on the cheaper tier, each receiving only: its charter, the ask (marked as the brief), the plan file, the repository path, the scope rule, and the output format.
 
 **Scope rule (verbatim in every prompt):**
 
@@ -107,7 +107,7 @@ Nothing about the review is written into the plan except the resulting decisions
 
 ## 4. Spikes
 
-A spike is a ticket whose title starts with `Spike:` and whose acceptance criteria are questions. Two kinds:
+A spike is a ticket whose title starts with `Spike:` and whose acceptance criteria are questions. The kinds:
 
 - **Cheap** — a subagent can close it in a minute or two: does this endpoint accept this call, does this library expose this function, does this path exist, what does this table look like, does this command run. Offer these when presenting the plan, in one plain-text list, and run the ones the user accepts as parallel subagents on the cheaper tier, each with one question and the instruction to report what it measured, not what it believes.
 - **Real** — needs an experiment, a prototype, or time the user must budget. These stay as tickets.

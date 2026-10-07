@@ -65,7 +65,7 @@ Some prerequisites are manual work only the user can do: sign up for a service, 
 
 A question is a stop: the run waits for the user. The user may not be at the keyboard, and under a goal loop (see below) the harness may re-prompt you several times before they return. Whatever message is last on their screen is the one they answer from. So every stop carries the **one** question it asks in full — heading, situation, flow, fix, cost, your call, exactly as the file has it — plus any command they must run or file they must send, written out in full, plus the count of other questions still open and the path (and URL, when served) of the file that holds them. Never "the question from two messages ago", "as asked above", or "the two commands in my earlier message". Repeating text you wrote before is the intended cost; the reader has the last message and nothing else. What a stop never carries is a second question: the rest wait in the file for their turn.
 
-Open each stop with one line of position: `Step <n> of 13; <k> questions open; <what happens once they are answered>`. Steps are the numbered steps in `SKILL.md`; `k` counts every open question in the file. A user who comes back at a random moment reads that line and knows whether the plan is close.
+Open each stop with one line of position: `Step <n> of <m>; <k> questions open; <what happens once they are answered>`. Steps are the numbered steps in `SKILL.md`, and `<m>` is the number of the last one; `k` counts every open question in the file. A user who comes back at a random moment reads that line and knows whether the plan is close.
 
 ### Under a goal loop
 

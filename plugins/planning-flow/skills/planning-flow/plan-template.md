@@ -112,7 +112,7 @@ A pointer is not context. "The template defines the shape" is a pointer; the ten
 - **Where each edit goes.** For a change to a document or a config, the section or key that changes and its current text.
 - **The rules of the repository that bind this work**, stated as rules, not as "see the instructions file".
 
-What does not belong: history, alternatives (those are decisions), and opinions. If a fact is uncertain, say so and make it a spike.
+What does not belong: history, alternatives (those are decisions), opinions, and counts of things that live elsewhere ("the 24 handlers", "all seven tests") — list them or state the rule that finds them, since the next one added makes the number wrong. If a fact is uncertain, say so and make it a spike.
 
 ## The ticket format
 

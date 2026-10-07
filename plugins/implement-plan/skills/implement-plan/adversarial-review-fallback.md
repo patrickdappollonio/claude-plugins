@@ -1,6 +1,6 @@
 # Adversarial Review — using the skills, or running one on the spot
 
-An adversarial review is a review that **assumes the change is broken and tries to prove it**, from several independent angles, by reviewers who share none of the author's context. It is different from a friendly review in three ways:
+An adversarial review is a review that **assumes the change is broken and tries to prove it**, from several independent angles, by reviewers who share none of the author's context. It is different from a friendly review in these ways:
 
 1. **Fresh eyes per angle.** Each reviewer is its own subagent with one narrow charter and no access to the conversation, so it inherits no rationalization.
 2. **The brief bounds scope; it never establishes correctness.** Reviewers get what was agreed (so they do not flag agreed omissions) but "it was in the plan" is never a reason to withhold a defect. A finding that the plan itself is wrong is flagged `design_is_wrong` and outranks everything.
@@ -36,7 +36,7 @@ A plan is a diff too: a brand-new file with only additions. Point the same revie
 
 ## On-the-spot panel (no skill installed)
 
-Dispatch **six reviewers in one message**, each its own fresh subagent on the cheap tier, each receiving only: its charter, the brief (marked as such), the diff, the changed-file list, the scope rule, and the output format.
+Dispatch **one reviewer per charter below, all in one message**, each its own fresh subagent on the cheap tier, each receiving only: its charter, the brief (marked as such), the diff, the changed-file list, the scope rule, and the output format.
 
 **Scope rule (verbatim in every prompt):**
 
