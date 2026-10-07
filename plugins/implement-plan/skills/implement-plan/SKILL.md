@@ -11,16 +11,17 @@ Turn an **agreed plan** into merged, reviewed, tested, documented code — hands
 
 The executor discipline (minimum sufficient change, the four-line mini-plan, pause-and-confirm, "done means") is adapted from [@voxyz_ai](https://x.com/voxyz_ai); the orchestration around it — worktrees, conformance, adversarial review, model routing, capacity, keep-going — is this skill's own.
 
-**Three rules bind everything below:**
+**These rules bind everything below:**
 
 1. **The plan is the spec.** Work is measured against what was agreed, item by item — never against "does it look right".
 2. **Technical direction is yours; operational and functional direction is the user's.** Never assume for them. The table under *Two Authorities* decides which is which.
 3. **Keep going.** Stop only at the named gates; a stop is a single word to resume and complete on its own — under a goal loop it is all the user sees.
 4. **This skill's labels never reach the repository.** Gate IDs (G1–G4), slice and wave names, round, pass, finding, and step numbers, ticket titles, and *Pending* mean nothing after this run, and the plan file that defines them is usually ignored by git. None appears in code, comments, test names, docs, or commit messages; the conformance review greps for them.
+5. **Nothing an agent writes counts things that live elsewhere.** Docs, comments, the decisions log, and messages never say how many there are ("the 24 handlers", "all seven tests"): the next one added makes the number wrong. List the items or state the rule that finds them. A number stays only when it is itself the fact: a limit or threshold the code enforces, a quantity the work must use, a version, or a measurement with what it measured.
 
 ## Read the Companion Files First
 
-This skill ships in two layers. `SKILL.md` carries the rules and a summary of each step; seven files beside it carry the full procedures:
+This skill ships in two layers. `SKILL.md` carries the rules and a summary of each step; the files beside it carry the full procedures:
 
 - `handoff-packet.md` — the executor prompt: scope, TDD, the test map, the documentation rule, user-journey tests, the executor discipline, stop conditions
 - `conformance-review.md` — the thorough plan-vs-work check, item by item
@@ -30,7 +31,7 @@ This skill ships in two layers. `SKILL.md` carries the rules and a summary of ea
 - `question-format.md` — the one shape every decision put to the user takes (numbered heading, the situation, the flow, the fix, the cost, your call), how to check the facts and the fix before asking, its heading level, where the questions live (all in the plan file, one per chat message), and how a `question` fence carries the answer in a visual plan
 - `companion-skills.md` — the skills this one uses when installed (`adversarial-review`, `adversarial-review-quick`, `visual-plan`, `appropriate-comments-code`, `code-simplification`, `use-premium-models-efficiently`, `use-claude-limits-efficiently`), what each adds, and how to install them on Claude Code, Codex, or via `npx skills`
 
-**The first time you use this skill in a session, read all seven before doing anything else** — before opening the plan, sizing the work, or answering a question about it. The summaries here remind a reader who has seen the full text; they never replace it. Re-read the relevant file at the step that names it; a missing file: say so and work from the summary.
+**The first time you use this skill in a session, read every file in that list before doing anything else** — before opening the plan, sizing the work, or answering a question about it. The summaries here remind a reader who has seen the full text; they never replace it. Re-read the relevant file at the step that names it; a missing file: say so and work from the summary.
 
 Two more files are **not** part of that first read. They are read fresh at the pass they describe, never recalled from an earlier read:
 
@@ -68,7 +69,7 @@ The **only** legitimate stops, each a gate below: (G1) the starting-point questi
 
 **Every stop ends with the same resume block** (`capacity-check.md`): phase and progress figure (slices merged of slices total, as a percentage), done, pending, and everything needed from the user — the one decision you are asking, in full, each command in a code block, **re-pasted at every stop, never "see my earlier message"**: the user's screen holds the last message only. **No keyword**: "go ahead", "approved", "yes, the first option" all resume the run — read the reply for its meaning, never demand a word. **Under a goal loop, every stop is the last message.** A goal is on when the user said so or the conversation holds `A session-scoped Stop hook is now active`, `Stop hook feedback:`, `Goal check-in:`, or a Codex `<objective>` block. No harness says which stop is final, so each carries the full block; between stops, one line of progress and next action; a re-prompt with nothing changed gets the identical block again, never a shorter one.
 
-**How to ask.** In plain text, in the message itself — never a harness question tool, which not every harness has and whose fields cannot hold the shape. A **decision** — a G3 item, a parked functional choice, a simpler path than the plan — takes the shape in `question-format.md`: `### Question <N> of <M> — <the claim>` (one heading level below its section), then **The situation.**, **The flow.** (three to five numbered steps to the consequence; one or two when that is the whole story, more than five only when absolutely needed, never past ten; `N/A` only when nobody would notice), **The fix.**, **Cost.**, then *Your call* — all five parts, prose at most 200 words (15 more for each flow step past the fifth, on the rare flow that needs them). Before a question is written or asked, check that its facts hold now and that its fix works — the API, flag, version, or command it names exists as installed — and end the fix with `Not verified: <what>, because <why>.` for a part you cannot check from here. Only a direct accept, reject, or different direction closes a question; a vague reply or a question back gets the same *Your call* line again. A decision the user's own words already made, in the plan or anywhere in the conversation, is recorded, never asked again, and never offered for undoing among a later question's alternatives. Every open decision lives in full in the decisions log (step 9); **chat asks one per stop**, word for word from the file, and says how many more wait there — never two, never the list. The skill's own gates (branch and testing depth at G1, quick / full / none at G2, delete / keep at G4) are short procedural asks and keep their one-line options-and-pick shape. When `/goal` is available (Claude Code, Codex), hand over a ready-to-paste condition at kickoff (template in `capacity-check.md`); the gates still pause the loop by design.
+**How to ask.** In plain text, in the message itself — never a harness question tool, which not every harness has and whose fields cannot hold the shape. A **decision** — a G3 item, a parked functional choice, a simpler path than the plan — takes the shape in `question-format.md`: `### Question <N> of <M> — <the claim>` (one heading level below its section), then **The situation.**, **The flow.** (three to five numbered steps to the consequence; one or two when that is the whole story, more than five only when absolutely needed, never past ten; `N/A` only when nobody would notice), **The fix.**, **Cost.**, then *Your call* — every part, prose at most 200 words (15 more for each flow step past the fifth, on the rare flow that needs them). Before a question is written or asked, check that its facts hold now and that its fix works — the API, flag, version, or command it names exists as installed — and end the fix with `Not verified: <what>, because <why>.` for a part you cannot check from here. Only a direct accept, reject, or different direction closes a question; a vague reply or a question back gets the same *Your call* line again. A decision the user's own words already made, in the plan or anywhere in the conversation, is recorded, never asked again, and never offered for undoing among a later question's alternatives. Every open decision lives in full in the decisions log (step 9); **chat asks one per stop**, word for word from the file, and says how many more wait there — never two, never the list. The skill's own gates (branch and testing depth at G1, quick / full / none at G2, delete / keep at G4) are short procedural asks and keep their one-line options-and-pick shape. When `/goal` is available (Claude Code, Codex), hand over a ready-to-paste condition at kickoff (template in `capacity-check.md`); the gates still pause the loop by design.
 
 ## The Process
 
@@ -76,7 +77,7 @@ Do every step in order. Gates are marked. Read the named file at its step.
 
 ### 0. Locate the plan and check it was reviewed
 
-Find the agreement: the visual plan's file, the plan-mode plan, the plan file, or the chat agreement (quote it into a file so executors can read it). A plan file under `.plans/` or `.planning-flow/` at the repo root comes from the `planning-flow` skill: its *Decisions* section is already decided — every entry there is settled, by the user or on their behalf, and is never re-asked — and its tickets are the plan items, with *Depends on* fixing the order and *Size* sizing the slice. Append the decisions log (step 9) to that same file. Then:
+Find the agreement: the visual plan's file, the plan-mode plan, the plan file, or the chat agreement (quote it into a file so executors can read it). A plan file under `.plans/` or `.planning-flow/` at the repo root comes from the `planning-flow` skill (`codebase-map.md` in that folder is that skill's map of the repository, never a plan): its *Decisions* section is already decided — every entry there is settled, by the user or on their behalf, and is never re-asked — and its tickets are the plan items, with *Depends on* fixing the order and *Size* sizing the slice. Append the decisions log (step 9) to that same file. Then:
 
 - A plan the `planning-flow` skill finished already had its one review; say so and move on. Otherwise ask, bundled into the G1 message, whether the plan was reviewed; if not, offer a plan review there — recommend it for a visual plan or a plan that touches a sensitive area, since a wrong plan built faithfully is the most expensive failure — and run it only on a yes, as `adversarial-review-fallback.md` § *Reviewing a plan* describes.
 
@@ -156,7 +157,7 @@ List every worktree and branch you created, with its merge status. **Ask**, in t
 
 ### 11. Recap
 
-Exactly these four bullets, short:
+Exactly these bullets, short:
 
 - **What was done**
 - **What were the decisions you made** (technical, with the reason)
@@ -264,7 +265,7 @@ Minimum sufficient change. Read the real code and the tests that already cover i
 
 Create a todo per item.
 
-- [ ] Read all seven companion files (first use in this session)
+- [ ] Read every companion file (first use in this session)
 - [ ] Plan located; a plan review offered at G1 only when none has run — outcome recorded
 - [ ] Starting branch + commit recorded; branch recommended once (G1)
 - [ ] Capacity estimated and usage reported in one line (or marked unreadable) without stopping; `/goal` condition with the waiting-on-the-user clause handed over; every stop carries the full resume block with the progress figure and every needed command re-pasted, and under a goal loop a re-prompt gets the identical block

@@ -1,7 +1,7 @@
 {
   "name": "planning-flow",
-  "version": "1.6.2",
-  "description": "Build one clean coding plan: explore in parallel, review the draft against the ask, batch the questions, write tickets and resolve spikes, log every decision, then hand off to implementation.",
+  "version": "1.7.0",
+  "description": "Build one clean coding plan: map the codebase, explore in parallel, review the draft against the ask, batch the questions, write tickets and resolve spikes, log every decision, then hand off to implementation.",
   "author": { "name": "Patrick D'appollonio", "email": "patrickdappollonio@gmail.com" },
   "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/planning-flow",
   "license": "MIT",
@@ -10,7 +10,7 @@
   "interface": {
     "displayName": "Planning Flow",
     "shortDescription": "Turn an ask into one clean, reviewed, ticketed plan.",
-    "longDescription": "Explores the codebase with parallel subagents, drafts a plan, has a zero-context reviewer hold it against the original ask, asks the user only the questions the code cannot answer, writes tickets with what, why, acceptance criteria, dependencies and a size, resolves cheap spikes on the spot, logs every decision with its reason, and always presents the current plan rather than the history of its revisions.",
+    "longDescription": "Maps the codebase once (structure, flows, patterns, tests) and keeps the map fresh by commit, explores the change with parallel subagents, drafts a plan, has a zero-context reviewer hold it against the original ask, asks the user only the questions the code cannot answer, writes tickets with what, why, acceptance criteria, dependencies and a size, resolves cheap spikes on the spot, logs every decision with its reason, and always presents the current plan rather than the history of its revisions.",
     "developerName": "Patrick D'appollonio",
     "category": "Productivity",
     "capabilities": ["Plan", "Research", "Review"],

@@ -81,7 +81,7 @@
     {
       "name": "planning-flow",
       "source": "./plugins/planning-flow",
-      "description": "Plan-building flow that ends in one clean plan, never a story of revisions — parallel codebase exploration, a zero-context review of the draft against the original ask, questions batched for the user and filtered by what was already decided, tickets with what/why/acceptance criteria/dependencies/size, spikes resolved on the spot, every decision logged with its reason, and a plain-text handoff to implementation.",
+      "description": "Plan-building flow that ends in one clean plan, never a story of revisions — a commit-stamped map of the codebase's structure, flows, patterns, and tests, parallel exploration, a zero-context review of the draft against the original ask, questions batched for the user and filtered by what was already decided, tickets with what/why/acceptance criteria/dependencies/size, spikes resolved on the spot, every decision logged with its reason, and a plain-text handoff to implementation.",
       "category": "planning",
       "keywords": ["planning", "plan", "tickets", "spikes", "decisions", "adversarial-review", "orchestration", "subagents"],
       "author": {
