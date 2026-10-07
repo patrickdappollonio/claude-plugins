@@ -7,7 +7,7 @@ description: Use when the user asks for a plan for a coding change — "plan thi
 
 ## Overview
 
-Turn a request into **one plan**: the current, complete answer to the user's ask, with the decisions that shaped it and the caveats that remain. The process behind it — parallel exploration, a zero-context review, rounds of questions, spikes, an adversarial review — exists to make the plan right; none of it belongs in the plan or in the message that delivers it.
+Turn a request into **one plan**: the current, complete answer to the user's ask, with the decisions that shaped it and the caveats that remain. The process behind it — a map of the codebase, parallel exploration, a zero-context review, rounds of questions, spikes, an adversarial review — exists to make the plan right; none of it belongs in the plan or in the message that delivers it.
 
 **Five rules bind everything below:**
 
@@ -15,12 +15,13 @@ Turn a request into **one plan**: the current, complete answer to the user's ask
 2. **The reader has not seen the code.** You read hundreds of lines; the user read none. A function, file, or variable name is a label for a thing you must explain in plain words, never the explanation. Full rules in `communication.md`.
 3. **Technical direction is yours, logged; functional and operational direction is the user's, asked.** The authority table below decides which is which, and a decision the user already made is never asked again.
 4. **Facts are yours to find; decisions are the user's to make.** Find the facts yourself. Ask the user only what the codebase cannot answer. Ask every question in the one shape in `question-format.md`, and in chat ask one per message, each after the questions it depends on are answered. Never answer a question you put to the user. A change can be so simple that there are no questions; do not invent them.
-5. **The plan is a document, and it plans the simplest thing that works.** This skill produces one markdown file and nothing else: no prototype, no mockup, no scaffold, no demo, no code — a spike may run a throwaway probe, deleted before the plan is presented. Inside that file, use everything the viewer can render: Mermaid diagrams, diff and migration fences, API cards, file trees, question fences, a summary card. A picture of the design belongs in the plan; a working copy does not. The solution sits on the lowest rung of the ladder in `plan-template.md` that answers the ask: not needed → cut it; the codebase has it → reuse it; the standard library or platform has it → use it; an installed dependency has it → use it; otherwise the minimum that works. A higher rung is a decisions entry, rejected, with the reason. Never cut: validation at a trust boundary, data-loss handling, security, accessibility.
+5. **The plan is a document, and it plans the simplest thing that works.** This skill produces markdown and nothing else — the plan file, and, outside plan mode, the shared codebase map step 0 keeps beside it: no prototype, no mockup, no scaffold, no demo, no code — a spike may run a throwaway probe, deleted before the plan is presented. Inside that file, use everything the viewer can render: Mermaid diagrams, diff and migration fences, API cards, file trees, question fences, a summary card. A picture of the design belongs in the plan; a working copy does not. The solution sits on the lowest rung of the ladder in `plan-template.md` that answers the ask: not needed → cut it; the codebase has it → reuse it; the standard library or platform has it → use it; an installed dependency has it → use it; otherwise the minimum that works. A higher rung is a decisions entry, rejected, with the reason. Never cut: validation at a trust boundary, data-loss handling, security, accessibility.
 
 ## Read the Companion Files First
 
-This skill ships in two layers. `SKILL.md` carries the rules and a summary of each step; seven files beside it carry the full procedures:
+This skill ships in two layers. `SKILL.md` carries the rules and a summary of each step; eight files beside it carry the full procedures:
 
+- `codebase-map.md` — step 0: where the codebase map lives, how to tell fresh from stale, the mappers and what each covers (structure, features and flows, patterns and recipes, testing and the test inventory, rules and concerns, and services and access when the repository serves requests), the rules every mapper follows, the template, and how later steps use the map
 - `plan-template.md` — the plan file skeleton, the ticket format, the decisions entry format, the size bands, and the timeless-prose rule with examples
 - `communication.md` — how to write for a reader who has not seen the code: the identifier rule, Simplified Technical English (ASD-STE100), outcome-first messages
 - `interviewing.md` — the design tree, the frontier, one question at a time, fog, out of scope, the rule never to answer your own question, and what every stop carries — including under a goal loop
@@ -29,7 +30,7 @@ This skill ships in two layers. `SKILL.md` carries the rules and a summary of ea
 - `model-routing.md` — which tier explores, which tier reviews, the model names, and what to do when the harness cannot choose
 - `companion-skills.md` — what `visual-plan`, `adversarial-review`, `adversarial-review-quick`, and `implement-plan` add when installed, and the install lines to give only when asked
 
-**The first time you use this skill in a session, read all seven before doing anything else** — before exploring, before drafting, before answering a question about the ask. The summaries here remind a reader who has already seen the full text; they are not a substitute for it. Re-read the named file at the step that names it. If a file is missing, say so and work from the summary — do not pretend the summary was the whole skill.
+**The first time you use this skill in a session, read all eight before doing anything else** — before mapping, before exploring, before drafting, before answering a question about the ask. The summaries here remind a reader who has already seen the full text; they are not a substitute for it. Re-read the named file at the step that names it. If a file is missing, say so and work from the summary — do not pretend the summary was the whole skill.
 
 Every companion skill is optional. This skill works alone. When one is installed, use it; when it is not, use the distilled version here and never suggest installing anything unless the user asks.
 
@@ -55,9 +56,9 @@ Every companion skill is optional. This skill works alone. When one is installed
 
 ## Where the Plan Lives
 
-The plan is one markdown file, and the file is the single source of truth. Viewers (plan mode, a visual plan) show the file's content; they never hold content the file lacks. The file is also the only thing this skill writes: a request for a plan is never a request for a working example, a page that shows the idea, or a starting scaffold, however small. Describe, and draw with every fence the `visual-plan` viewer renders — diagrams, diffs, migration and API cards, file trees, question fences — but do not build.
+The plan is one markdown file, and the file is the single source of truth. Viewers (plan mode, a visual plan) show the file's content; they never hold content the file lacks. The file is also the only thing this skill writes, besides the codebase map in the same folder (step 0): a request for a plan is never a request for a working example, a page that shows the idea, or a starting scaffold, however small. Describe, and draw with every fence the `visual-plan` viewer renders — diagrams, diffs, migration and API cards, file trees, question fences — but do not build.
 
-- **The session started in plan mode** (the harness told you writes are limited to its own plan file): the harness plan file *is* the plan. Write nothing else; everything below still applies to its content.
+- **The session started in plan mode** (the harness told you writes are limited to its own plan file): the harness plan file *is* the plan. Write nothing else, not even the codebase map (`codebase-map.md` says how step 0 runs then); everything below still applies to its content.
 - **Otherwise, inside a git repository:** write to `.plans/<task-name>.md` under the repo root. If `.plans/` already exists and holds files that are not plans from this skill, use `.planning-flow/` instead. Keep the folder out of the diff by appending its name to the repository's local exclude file, which is never committed and never touches the user's `.gitignore`:
   ```
   git rev-parse --git-path info/exclude
@@ -71,9 +72,13 @@ Name the file after the task in kebab-case, short and without filler words: "add
 
 Do every step in order. Read the named file at its step. Between steps, keep chat to one-line status notes; the plan is where the tokens go. **Every stop is complete on its own** (`interviewing.md`): it opens with `Step <n> of 13; <k> questions open`, carries the one question it asks in full — in the shape of `question-format.md`, the same text the file holds — and any command or file you need; never a pointer to an earlier message, never a second question. The file holds every open question; the chat asks them one at a time. **Under a goal loop** (the user said so, or the conversation holds `A session-scoped Stop hook is now active`, `Stop hook feedback:`, `Goal check-in:`, or a Codex `<objective>` block) every stop is the last message the user reads; a re-prompt with nothing changed gets it again, identical.
 
-### 1. Acknowledge, then capture the ask
+### 0. Map the codebase
 
-Reply with one short sentence that acknowledges the request and says you are exploring. Then write the plan file's *The ask* section. **The ask is the task the plan is for — what is to be fixed, built, or changed — never the request for a plan.** "Can we make this into a plan?", "plan this", and the command that loaded this skill are how the user called the skill; none of them goes in the file. The section has two parts, in this order:
+Reply with one short sentence that acknowledges the request and says you are mapping the codebase first. Then read `codebase-map.md`, the file that defines the map, and `model-routing.md`. Choose the plan folder and add its exclude line now, as *Where the Plan Lives* says, because the map is written there before the plan is. The map describes the whole repository as it is today — stack and structure, modules, entry points, features, one end-to-end flow per kind of entry point with `path:line` at each step, and for a repository that serves requests, every route with its middleware, how callers sign in, and what each route lets them do, the patterns and conventions to copy with an example of each, recipes for the common extension points, how tests run and a test inventory of what each test file exercises, CI, the repository's rules, integrations, and concerns. It lives in `codebase-map.md` in the plan folder, stamped with the commit it was made from, and every plan in the repository reuses it. Check the stamp yourself, never ask: no map or a stamped commit that no longer exists means map everything; files changed since the stamp (`git diff --name-only <sha>` and untracked files) mean re-run only the mappers whose sections those files touch, or all of them when three or more are touched; nothing changed means reuse it as it is. In plan mode, outside a git repository, or in an empty repository, follow the exits in `codebase-map.md`. Mapping runs five mappers on the cheaper tier in parallel, in one message, and a sixth for services and access when the repository serves requests; you assemble the file and check one cited line per section against the code. Mappers never learn what is being planned, never read or quote a secret, and describe only what the code does now. A plan never points at the map: its facts are copied into *Technical context*, because the cold implementer does not get the map.
+
+### 1. Capture the ask
+
+Write the plan file's *The ask* section. **The ask is the task the plan is for — what is to be fixed, built, or changed — never the request for a plan.** "Can we make this into a plan?", "plan this", and the command that loaded this skill are how the user called the skill; none of them goes in the file. The section has two parts, in this order:
 
 - **The task, in one sentence.** What is to be fixed, built, or changed, and for whom. Use the user's wording when they stated it. When the task took shape across the conversation and the user never stated it, state it yourself from the problem they raised or confirmed: this sentence is yours to write, and leaving it out to avoid a paraphrase leaves a section nobody can measure against. An approach you proposed and the user did not accept is not part of the task; it enters the draft as a decision or a question.
 - **The user's words, verbatim, under it.** Every message of theirs that states the task, a constraint, or a non-goal, each as its own quote, in order, from wherever in the conversation it sits. Never reworded. When the message that called the skill also carries the task ("/planning-flow add rate limiting to the public API"), quote the task and drop the command.
@@ -82,7 +87,7 @@ Test the section before moving on: **a reader who never saw the conversation can
 
 ### 2. Explore in parallel
 
-Read `model-routing.md`, the file that says which model tier runs each role. Dispatch exploration subagents on the cheaper tier, in one message, each with one bounded question: where does the affected behavior live, what tests cover it, what documents describe it, what does the data look like, what do the existing patterns look like, what external dependencies are involved. Each subagent returns facts with file paths as evidence. You keep the synthesis. Do not explore serially, and do not do the bulk reading yourself when a subagent can.
+Read `model-routing.md`, the file that says which model tier runs each role. Dispatch exploration subagents on the cheaper tier, in one message, each with the codebase map (or the sections that bear on its question) and one bounded question: where does the affected behavior live, what tests cover it, what documents describe it, what does the data look like, what do the existing patterns look like, what external dependencies are involved. Two questions are always asked: for each file the change creates or modifies, the closest existing example to copy and the recipe that applies; and for each surface the change touches, which existing tests already exercise it or overlap with what the change must prove, so acceptance criteria extend them instead of adding new tests. Explorers start from the map and read the current code for the area; they do not map again. Each subagent returns facts with file paths as evidence. You keep the synthesis. When an explorer finds a line of the map wrong, fix that line in the map. Do not explore serially, and do not do the bulk reading yourself when a subagent can.
 
 ### 3. Draft the plan
 
@@ -95,6 +100,8 @@ Before any reviewer sees the draft, read the ask once more and write, in one sen
 ### 5. Zero-context review and cold implementer check
 
 Read `plan-review.md`, the file that defines every review this skill runs. Dispatch two fresh subagents in one message, neither with conversation history, reassurance, or a list of what you already checked.
+
+Tell both to ignore the plan folder: it holds the codebase map, which would let them trust what they should check.
 
 - **The zero-context reviewer**, on the most capable tier your harness offers, with exactly three things: the plan's *The ask* section as written (the task sentence and the user's quoted words), the plan file, and access to the codebase. Its charter: assume the plan fails the ask and prove it — gaps, wrong premises, missing cases, questions the user must answer, things the plan asserts about the code that are not true. It returns findings and candidate questions.
 - **The cold implementer**, on a different model family from yours when the harness offers one (a Codex agent, for example) and on the cheaper tier otherwise, with the ask and the plan's *Technical context* and *Tickets* sections only, and no repository access at first. Its charter: restate the challenge, grade whether it could start implementing from this text alone, and list every exact string, format, path, convention, command, and location it would still have to go and find; then open the repository and report what the text got wrong. Every item on its list that would change what gets built is a gap in *Technical context*; fill each with the exact value and run the check again until the list holds nothing of that kind. An implementer still opens the file it edits; the surrounding text of an insertion point is not a gap.
@@ -198,6 +205,10 @@ Every unit of work is a ticket in **exactly** this format (full detail and an ex
 
 | Excuse | Reality |
 |---|---|
+| "I already know this repository from earlier in the session, the map can wait" | The map is checked by its stamp, not by memory. A fresh map costs one `git diff`; a missing one is built before anything else. |
+| "The change is small, mapping the whole repository is overkill" | The map is built once per repository and reused by every plan after it. Step 0 on a fresh map is a stamp check. |
+| "The map has the convention; *Technical context* can point to it" | The cold implementer never gets the map. Copy the value into the plan. |
+| "No test covers exactly this, so the criterion gets a new test" | The test inventory lists the tests that exercise the surface, and an explorer confirms them against the code. A test that does most of the setup and actions is extended, not copied. |
 | "The user's last message is the ask, and the rule says their literal words" | The message that called the skill asks for a plan; the ask is what the plan is for. Write the task in one sentence, then quote the messages that state it and its constraints. |
 | "The task took shape in my messages, so stating it would be my paraphrase" | The task sentence is yours to write when the user never wrote one; build it from the problem they raised or confirmed. Your unaccepted proposals stay out of it. |
 | "I'll add an *Update* section so the user can see what changed" | The user asked for the plan, not its diff. Rewrite the section. The decisions log is the only memory. |
@@ -237,6 +248,11 @@ Every unit of work is a ticket in **exactly** this format (full detail and an ex
 
 ## Red Flags — Stop and Re-read the Step
 
+- A draft written before step 0 ran this session, or a map reused without checking its stamp against the current commit
+- A *Technical context* that says "see the codebase map" instead of the values; the map handed to the zero-context reviewer or the cold implementer
+- A secret value, or a description of the change being planned, in the codebase map
+- A ticket that adds or changes a route without stating who may call it, how they sign in, and where that is enforced
+- An acceptance criterion with a new test when the test inventory lists a test on that surface the explorer never checked
 - Any heading or sentence in the plan containing a word from the delete table in `plan-template.md`: "revisited", "updated", "revised", "corrected", "previously", "as clarified", "as discussed", "after the review", "the reviewer noted", "Edit:", "Update:"
 - *The ask* holding "can we make this into a plan", "plan this", or the skill's command; no task sentence above the quotes; or a constraint the user stated that is not quoted
 - A struck-through line, a "for context" section, or a superseded paragraph kept beside its replacement
@@ -256,7 +272,7 @@ Every unit of work is a ticket in **exactly** this format (full detail and an ex
 - A second adversarial review started without a fresh yes
 - A closing message that counts revisions or quotes reviewers
 - The implementation offer made through a question tool
-- A file other than the plan written by this skill — a prototype, a mockup, a scaffold, a script kept after its spike
+- A file other than the plan and the codebase map written by this skill — a prototype, a mockup, a scaffold, a script kept after its spike
 - A solution that builds what the codebase, the standard library, the platform, or an installed dependency already provides, with no decisions entry rejecting that rung
 - A ticket that hand-writes a reader, writer, parser, or check for a published format, protocol, or standard, or a new dependency chosen in the decisions log instead of asked as a question with registry-read facts
 - A draft handed to the reviewers before step 4 ran, or a finished plan closed without the second walk
@@ -266,12 +282,13 @@ Every unit of work is a ticket in **exactly** this format (full detail and an ex
 
 Create a todo per item.
 
-- [ ] Read all seven companion files (first use in this session)
+- [ ] Read all eight companion files (first use in this session)
+- [ ] Step 0: codebase map reused if its stamp matches, refreshed where files changed, or built by five parallel mappers (six when the repository serves requests); one cited line per section checked
 - [ ] Plan location chosen; *The ask* holds the task in one sentence and the user's words that state it, verbatim; the request for a plan is nowhere in it
-- [ ] Exploration subagents dispatched in parallel on the cheaper tier
+- [ ] Exploration subagents dispatched in parallel on the cheaper tier, starting from the map; closest examples and overlapping tests found for every file and surface the change touches
 - [ ] Draft written to the full skeleton; decisions logged as made
 - [ ] Step 4 run on the draft without asking, and again on the finished plan: goal restated in one sentence, every part tested for removal and for a lower rung, each cut and lowering logged
-- [ ] Nothing written but the plan file; spike probes deleted
+- [ ] Nothing written but the plan file and the codebase map; spike probes deleted
 - [ ] Zero-context reviewer run on the most capable tier with only the ask, the plan, and the codebase
 - [ ] Cold implementer check run on a different model family where possible; every gap that would change what gets built filled with the exact value; re-run until none of that kind remain
 - [ ] One question list from every source, arranged as a design tree, then filtered: decided, answerable by code, technical

@@ -105,10 +105,10 @@ A pointer is not context. "The template defines the shape" is a pointer; the ten
 
 - **Every exact string the implementation must match.** Heading text, labels, tokens, separators, file names, command names, flag names, output formats, exit codes, error messages the code must print or parse. Quote them.
 - **Every file the tickets touch, with what is there today.** The path, what the file does in one line, and the current state of the part that will change: the function's shape, the existing list, the current wording.
-- **The convention to copy, with the file that shows it.** When the plan says "follow the existing pattern", name the file, and state the pattern in words: how it parses, how it reports, how it exits, what it imports.
+- **The convention to copy, with the file that shows it.** The codebase map's *Patterns and conventions* and *Recipes* are the source; copy the rule and its example here, since the implementer never gets the map. When the plan says "follow the existing pattern", name the file, and state the pattern in words: how it parses, how it reports, how it exits, what it imports.
 - **The runtime facts.** Language version, module format, dependencies allowed, platform constraints, where a script runs from and what its working directory is.
 - **How tests and checks run today.** The exact command, the runner, the workflow file and its trigger paths, the version it runs on, and what is missing when nothing exists yet.
-- **The tests that already cover each surface the tickets touch.** For every command, function, endpoint, or type a ticket changes, the test file and test name that exercises it today, and what that test does (its setup, the calls it makes, what it asserts). This is what lets an acceptance criterion name the test it extends.
+- **The tests that already cover each surface the tickets touch.** For every command, function, endpoint, or type a ticket changes, the test file and test name that exercises it today, and what that test does (its setup, the calls it makes, what it asserts). Research starts from the test inventory in the codebase map and confirms each entry against the code. This is what lets an acceptance criterion name the test it extends.
 - **Where each edit goes.** For a change to a document or a config, the section or key that changes and its current text.
 - **The rules of the repository that bind this work**, stated as rules, not as "see the instructions file".
 

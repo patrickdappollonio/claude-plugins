@@ -76,7 +76,7 @@ Do every step in order. Gates are marked. Read the named file at its step.
 
 ### 0. Locate the plan and check it was reviewed
 
-Find the agreement: the visual plan's file, the plan-mode plan, the plan file, or the chat agreement (quote it into a file so executors can read it). A plan file under `.plans/` or `.planning-flow/` at the repo root comes from the `planning-flow` skill: its *Decisions* section is already decided — every entry there is settled, by the user or on their behalf, and is never re-asked — and its tickets are the plan items, with *Depends on* fixing the order and *Size* sizing the slice. Append the decisions log (step 9) to that same file. Then:
+Find the agreement: the visual plan's file, the plan-mode plan, the plan file, or the chat agreement (quote it into a file so executors can read it). A plan file under `.plans/` or `.planning-flow/` at the repo root comes from the `planning-flow` skill (`codebase-map.md` in that folder is that skill's map of the repository, never a plan): its *Decisions* section is already decided — every entry there is settled, by the user or on their behalf, and is never re-asked — and its tickets are the plan items, with *Depends on* fixing the order and *Size* sizing the slice. Append the decisions log (step 9) to that same file. Then:
 
 - A plan the `planning-flow` skill finished already had its one review; say so and move on. Otherwise ask, bundled into the G1 message, whether the plan was reviewed; if not, offer a plan review there — recommend it for a visual plan or a plan that touches a sensitive area, since a wrong plan built faithfully is the most expensive failure — and run it only on a yes, as `adversarial-review-fallback.md` § *Reviewing a plan* describes.
 

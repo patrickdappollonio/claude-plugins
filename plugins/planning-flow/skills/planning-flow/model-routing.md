@@ -4,7 +4,7 @@ Distilled from the `use-premium-models-efficiently` skill; if that skill is inst
 
 ## The rule
 
-The **premium** model makes every judgment. That is this session, when the session runs on a premium model. It combines what the explorers found, writes the plan, filters the question list, makes the technical decisions, folds in review findings, and writes the closing message. **Cheaper** models do bounded work: exploring one question each, running spikes, running the on-the-spot review panel and its verifier.
+The **premium** model makes every judgment. That is this session, when the session runs on a premium model. It combines what the explorers found, writes the plan, filters the question list, makes the technical decisions, folds in review findings, and writes the closing message. **Cheaper** models do bounded work: mapping one part of the codebase each, exploring one question each, running spikes, running the on-the-spot review panel and its verifier.
 
 The **zero-context reviewer** is the one delegated role that does not run on a cheaper model. It runs on the **most capable tier your harness offers**. Its whole value is judgment against the ask with no context, and a weaker model finds the obvious gaps and misses the expensive ones.
 
@@ -20,6 +20,7 @@ Model names change over time. The rule is about relative cost inside whichever p
 | Role | Tier | Why |
 |---|---|---|
 | Synthesis, drafting, question filtering, authority decisions, closing | premium | judgment |
+| Codebase mappers (step 0, one set of map sections each, in parallel) | cheap | each covers a fixed part of the repository and cites `path:line`; you check one cited line per section |
 | Exploration subagents (one bounded question each, in parallel) | cheap | the question is narrow, and the answer comes back with evidence |
 | Zero-context reviewer | most capable available | judgment with no context is the whole point |
 | Cheap spikes | cheap | one measurable question each |
