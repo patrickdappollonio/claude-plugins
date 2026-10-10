@@ -5,6 +5,7 @@ An adversarial review is a review that **assumes the change is broken and tries 
 1. **Fresh eyes per angle.** Each reviewer is its own subagent with one narrow charter and no access to the conversation, so it inherits no rationalization.
 2. **The brief bounds scope; it never establishes correctness.** Reviewers get what was agreed (so they do not flag agreed omissions) but "it was in the plan" is never a reason to withhold a defect. A finding that the plan itself is wrong is flagged `design_is_wrong` and outranks everything.
 3. **A standalone verifier** filters false positives before anything reaches the user, and every proposed fix is validated by another standalone agent.
+4. **Every agent is one-shot.** Each reviewer, the verifier, and the validator does one task, returns, and ends. A second round — a revised fix, a re-check — is a **new** agent with everything in its prompt, never the earlier one resumed or messaged (`SendMessage` in Claude Code, or the equivalent): an idle agent's prompt cache expires within minutes, so the next message re-reads its whole history at full price, and an agent that has already ruled is no longer fresh.
 
 ## When it runs, and which one
 
@@ -36,7 +37,7 @@ A plan is a diff too: a brand-new file with only additions. Point the same revie
 
 ## On-the-spot panel (no skill installed)
 
-Dispatch **one reviewer per charter below, all in one message**, each its own fresh subagent on the cheap tier, each receiving only: its charter, the brief (marked as such), the diff, the changed-file list, the scope rule, and the output format.
+Dispatch **one reviewer per charter below, all in one message**, each its own fresh subagent on the cheap tier, each receiving only: its charter, the brief (marked as such), the diff, the changed-file list, the scope rule, the output format, and the line "This is a single task. Return your findings when you are done and end; nobody will send you further instructions."
 
 **Scope rule (verbatim in every prompt):**
 
@@ -55,7 +56,7 @@ Dispatch **one reviewer per charter below, all in one message**, each its own fr
 
 Then dispatch **one verifier** (fresh, cheap tier) with every finding, the brief, the diff, and the files: it returns *confirmed / not confirmed* with a one-line reason, and must reproduce or point at the exact lines for a "confirmed". Only confirmed findings proceed.
 
-For each confirmed finding, draft the **smallest root-cause fix**, then send the fixes with the findings and the diff to **one validator** (fresh, cheap tier) that returns *valid / invalid* with a reason. Re-draft rejected fixes.
+For each confirmed finding, draft the **smallest root-cause fix**, then send the fixes with the findings and the diff to **one validator** (fresh, cheap tier) that returns *valid / invalid* with a reason. Re-draft rejected fixes and send them, with the previous validator's reason, to a **new** validator; never resume the old one.
 
 Report to the user in plain language: what was reviewed, whether it matches the plan, whether the plan held up, how many confirmed findings and how serious, then each finding as **What's wrong / The fix / Where / Severity**. Findings marked `design_is_wrong` lead, and they are the user's to decide.
 

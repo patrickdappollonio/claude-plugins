@@ -10,7 +10,7 @@ Keep long-running agent work inside the current 5-hour and weekly usage windows.
 ## Core Loop
 
 1. Run a bounded wave of work. Default to at most **3 parallel subagents** unless the user or host sets a different throttle.
-2. Wait for the wave to finish. Don't interrupt in-flight subagents just to save budget — that usually loses work.
+2. Wait for the wave to finish. Don't interrupt in-flight subagents just to save budget — that usually loses work. Every subagent is one-shot: it returns its report and ends, and it is never told to wait for the next wave, for you, or for the user.
 3. Check current 5-hour and weekly usage (see below).
 4. If either window is at or above 95%, stop launching work and schedule a self-contained resume for when the window should clear.
 5. On resume, re-check the real window before continuing. Never trust elapsed wall-clock time alone.
@@ -48,6 +48,8 @@ Make every wake prompt self-contained — the resumed turn cannot rely on conver
 - The previous session reset time, so the resumed turn can tell whether the window actually rolled over.
 - The next verification steps.
 - The next wave's handoff packets (scope, verification commands, stop conditions) if delegation will resume.
+
+**Resume with new subagents, never old ones.** After a pause, every wave is dispatched fresh from its handoff packets; never message or continue a subagent from before the pause (`SendMessage` in Claude Code, or the equivalent elsewhere). An idle subagent's prompt cache expires within minutes, far sooner than any usage window resets, so the first message to it re-reads its whole history at full price — exactly the spend this skill exists to prevent. The same holds between waves with no pause: a follow-up on a subagent's work is a new subagent with the earlier report in its packet.
 
 ## Choosing the Wait Mechanism
 

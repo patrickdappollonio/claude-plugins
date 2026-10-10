@@ -46,6 +46,7 @@ Read `model-routing.md` first. Dispatch the mappers below on the cheaper tier, i
 - **Never read or quote a secret.** `.env` files, key files, credential stores, and tokens in config are noted as existing, with their path, and never opened or copied. A variable's name may be recorded when the code reads it by that name; its value never is.
 - **No counts of things that live elsewhere.** Never write how many there are — "24 handlers", "three services", "the 12 tests in this file". The 25th handler makes the count wrong, and a stale number reads as a fact. List the items, or state the rule that finds them ("every file under `handlers/` that registers a route"); a reader who needs the number counts the list. A limit or a threshold the code enforces ("requests over 10 MB are rejected") is a fact about behavior, not a count, and stays.
 - **Whole repository, not the change.** A mapper is never told what is being planned; the map serves every later plan.
+- **One task, then end.** Each mapper's prompt ends with: "This is a single task. Return your sections when you are done and end; nobody will send you further instructions." A section that comes back thin is re-run by a new mapper, never by messaging the one that returned.
 
 ## The template
 

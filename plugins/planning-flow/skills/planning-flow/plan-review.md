@@ -24,6 +24,8 @@ It does not receive the conversation, your exploration notes, or any reassurance
 > Assume the plan fails the request and prove it. Look for: parts of the request the plan does not address; premises the plan asserts about the code that are not true (check the code); cases the plan does not handle (empty, first run, migration of existing data, failure of an external system, concurrent use); decisions the plan makes that the requester would want to make themselves; anything the plan would need to know that nobody wrote down; anything in the plan that is not needed for the request; and anything the plan builds that the codebase, the standard library, the platform, or a dependency already installed provides — name the existing thing.
 >
 > Return two lists. **Findings:** each with what is wrong, why it matters, the evidence (a file and line, or the sentence of the request or plan), and whether fixing it changes what a user or operator would experience. **Questions for the requester:** each one a decision only they can make, with the options and the consequence of each. Do not ask anything the repository answers; answer it yourself and cite where. Return empty lists if the plan holds; do not invent problems.
+>
+> This is a single task. Return your result when you are done and end; nobody will send you further instructions.
 
 Merge its findings into the plan through the authority table in `SKILL.md` and its questions into the question list, then filter that list as `SKILL.md` step 6 describes.
 
@@ -46,8 +48,10 @@ Dispatch one subagent **on a different model family from the one that wrote the 
 > Technical context: <section>
 >
 > Tickets: <section>
+>
+> This is a single task. Return your result when you are done and end; nobody will send you further instructions.
 
-Fold the result in. Sort the pass-1 list into these kinds. A **build-changing gap** is a fact that decides what gets built: an exact string, a format, a rule, a severity, a path, a convention, a command, a place where an edit goes. Each one becomes a stated fact in *Technical context*, with the exact value. An **edit-time read** is the surrounding text of a file the implementer will open anyway to make the edit: the current wording around an insertion point, the formatting of a config file, the version of an action in a workflow. Those are not gaps; a plan that pasted them would be a copy of the repository. Every pass-2 correction is a fix. Every item that only the user can answer goes to the question list. Then run the check again. **It passes when the pass-1 list holds no build-changing gap.** A grade is not a pass; a list with only edit-time reads on it is.
+Fold the result in. Sort the pass-1 list into these kinds. A **build-changing gap** is a fact that decides what gets built: an exact string, a format, a rule, a severity, a path, a convention, a command, a place where an edit goes. Each one becomes a stated fact in *Technical context*, with the exact value. An **edit-time read** is the surrounding text of a file the implementer will open anyway to make the edit: the current wording around an insertion point, the formatting of a config file, the version of an action in a workflow. Those are not gaps; a plan that pasted them would be a copy of the repository. Every pass-2 correction is a fix. Every item that only the user can answer goes to the question list. Then run the check again, with a **new** subagent given the rewritten sections — never the earlier one resumed: it has read the old text, so it is no longer cold, and its prompt cache has expired while it sat idle, so a message to it re-reads its whole history at full price. **It passes when the pass-1 list holds no build-changing gap.** A grade is not a pass; a list with only edit-time reads on it is.
 
 ## 3. The adversarial review of the plan (once, at the end, the user's choice)
 
@@ -78,7 +82,7 @@ The quick skill proposes the fewest reviewers that fit the plan and asks which t
 
 ### On-the-spot panel (no review skill installed)
 
-Dispatch **one reviewer per charter below, all in one message**, each a fresh subagent on the cheaper tier, each receiving only: its charter, the ask (marked as the brief), the plan file, the repository path, the scope rule, and the output format.
+Dispatch **one reviewer per charter below, all in one message**, each a fresh subagent on the cheaper tier, each receiving only: its charter, the ask (marked as the brief), the plan file, the repository path, the scope rule, the output format, and the line "This is a single task. Return your result when you are done and end; nobody will send you further instructions." Every panel agent, the verifier included, is one-shot: a second look at anything is a new agent, never one resumed or messaged.
 
 **Scope rule (verbatim in every prompt):**
 
@@ -109,7 +113,7 @@ Nothing about the review is written into the plan except the resulting decisions
 
 A spike is a ticket whose title starts with `Spike:` and whose acceptance criteria are questions. The kinds:
 
-- **Cheap** — a subagent can close it in a minute or two: does this endpoint accept this call, does this library expose this function, does this path exist, what does this table look like, does this command run. Offer these when presenting the plan, in one plain-text list, and run the ones the user accepts as parallel subagents on the cheaper tier, each with one question and the instruction to report what it measured, not what it believes.
+- **Cheap** — a subagent can close it in a minute or two: does this endpoint accept this call, does this library expose this function, does this path exist, what does this table look like, does this command run. Offer these when presenting the plan, in one plain-text list, and run the ones the user accepts as parallel subagents on the cheaper tier, each with one question, the instruction to report what it measured, not what it believes, and the line "This is a single task. Return your result when you are done and end; nobody will send you further instructions." A follow-up question is a new spike.
 - **Real** — needs an experiment, a prototype, or time the user must budget. These stay as tickets.
 
 **A spike must measure, not reason.** Its report says what was run and what it printed. A spike that could not measure says so, and the ticket stays.

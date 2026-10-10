@@ -2,16 +2,19 @@
 
 The prompt every executor receives. Executors have **no chat context**: nothing you know reaches them unless it is in the packet. Write it as if to a capable contractor who has never seen the project or the conversation.
 
+**Every executor is one-shot.** It runs the packet, returns its evidence, and ends. Nobody replies to it: a pause is the end of its run, not a wait. When the slice needs more — a gap from conformance, the user's answer to a pause, a fix after the review — a **new** executor gets a new packet with that gap or answer in it, plus the slice branch and the commits already on it. Never resume, message, or continue a finished executor (`SendMessage` in Claude Code, or the equivalent elsewhere): its prompt cache expires within minutes of going idle, so every message to it re-reads its whole history at full price.
+
 ## What goes in, in this order
 
 1. **Repo path and branch.** The worktree path and the slice branch. "Work only inside this directory."
 2. **The plan section, verbatim.** Copy the slice's part of the plan word for word — never paraphrase, a paraphrase is where requirements drift. Include the plan's non-goals and any item marked *undecided by the user*, with the instruction: **do not decide undecided items; leave them out and report them.**
 3. **Scope.** Files and surfaces in scope; files explicitly out of scope (other slices' files, shared config the orchestrator owns).
 4. **Announced deviations** already agreed with the user, if any.
-5. **Testing and documentation rules** (below), plus the repo's actual test command, layout, any integration/E2E convention you found, and where its documentation lives (README, `docs/`, help text, CHANGELOG, specs).
-6. **The executor discipline** (below), verbatim.
-7. **Evidence to return** (below).
-8. **Stop conditions** (below).
+5. **Earlier work on this slice**, when this is not the first executor on it: the commits already on the slice branch, and the conformance gap list or the user's answer that sends this run out, quoted.
+6. **Testing and documentation rules** (below), plus the repo's actual test command, layout, any integration/E2E convention you found, and where its documentation lives (README, `docs/`, help text, CHANGELOG, specs).
+7. **The executor discipline** (below), verbatim.
+8. **Evidence to return** (below).
+9. **Stop conditions** (below).
 
 Parallel slices should not share files. When two slices must touch the same file (a dispatch table, a router, a `switch` in the CLI entry point), either serialize them or name the shared file in both packets as *append-only in your own section* and own the merge yourself — the conflict is the orchestrator's, never an executor's to resolve by editing the other slice.
 
@@ -85,7 +88,7 @@ Include verbatim:
 > - Read the relevant code, tests, and configuration directly. Do not work from   search snippets or guesses.
 > - If a requirement is ambiguous or a premise is unverified, stop and report   it; do not build on it.
 > - When you are not certain how a library, framework, tool, or platform API behaves, or whether it exists, find the version this repository uses (the lock file, the installed package, `<tool> --version`) and read the official documentation or the source for that version. Memory and the latest online examples describe some other version. When the version in use lacks what the latest documentation shows, write the code for the version in use. Changing a version to match an example is a dependency change: pause and report.
-> - State a minimal plan in your first message, in this shape:
+> - State a minimal plan at the top of your report, in this shape, then carry on; nobody will reply to it:
 >   - **Outcome** — the exact behavior requested
 >   - **Non-goals** — what this task will not do
 >   - **Files** — the smallest set expected to change
@@ -102,14 +105,14 @@ Include verbatim:
 >
 > **Pause and report — do not proceed — before:**
 > - Materially expanding scope or touching files outside the stated set
-> - Adding a dependency, framework, service, new test infrastructure, or a gate (coverage threshold, required CI job, lint rule, hook), or changing the version of a dependency, runtime, or tool. This pause is never a reason to write the thing yourself: the pause and the ladder do not "point the same direction". When the library rung holds, build the plan items that are complete without it, leave out whole every item that is not — never ship a command, endpoint, or option that exists but does not yet do what the plan says, because a check that prints nothing and exits 0 is invented behavior — and report: the library you recommend and one alternative, each with its current version, last release date, license, and open security advisories, read from the package registry with a query that installs nothing (`npm view <pkg> version license` and then `npm view <pkg> "time[<that version>]"` for its release date — `time.modified` is when the metadata changed, not a release; `pip index versions <pkg>`, `go list -m -versions <module>`, `cargo search <crate>`; advisories from a public advisory database queried by package and version, such as osv.dev or the GitHub advisory database) — try the query before saying you cannot; a figure you did not read there is written "not checked", never recalled from memory; what it replaces; what integrating and maintaining each path costs, the hand-written path included, with the inputs it would get wrong. The user chooses; you wait.
+> - Adding a dependency, framework, service, new test infrastructure, or a gate (coverage threshold, required CI job, lint rule, hook), or changing the version of a dependency, runtime, or tool. This pause is never a reason to write the thing yourself: the pause and the ladder do not "point the same direction". When the library rung holds, build the plan items that are complete without it, leave out whole every item that is not — never ship a command, endpoint, or option that exists but does not yet do what the plan says, because a check that prints nothing and exits 0 is invented behavior — and report: the library you recommend and one alternative, each with its current version, last release date, license, and open security advisories, read from the package registry with a query that installs nothing (`npm view <pkg> version license` and then `npm view <pkg> "time[<that version>]"` for its release date — `time.modified` is when the metadata changed, not a release; `pip index versions <pkg>`, `go list -m -versions <module>`, `cargo search <crate>`; advisories from a public advisory database queried by package and version, such as osv.dev or the GitHub advisory database) — try the query before saying you cannot; a figure you did not read there is written "not checked", never recalled from memory; what it replaces; what integrating and maintaining each path costs, the hand-written path included, with the inputs it would get wrong. The user chooses; your run ends with this report.
 > - Changing a public API, schema, storage format, or wire format the plan   does not already specify
 > - Deleting or overwriting user data, discarding uncommitted work, rewriting   history, or dropping data
 > - Keeping two implementations of the same behavior alive
 > - Deciding anything the plan marks as undecided, or anything a user could   reasonably say "I didn't want that" about — output wording, new flags or   syntax, defaults
-> - Building what the plan section prescribes when the ladder shows a lower   rung that already exists — in the codebase, the standard library, the   platform, or an installed dependency. Build neither. Report both: the   plan's approach, the lower rung with its file and line, and what each   costs. The user chooses; you wait.
+> - Building what the plan section prescribes when the ladder shows a lower   rung that already exists — in the codebase, the standard library, the   platform, or an installed dependency. Build neither. Report both: the   plan's approach, the lower rung with its file and line, and what each   costs. The user chooses; your run ends with this report.
 >
-> **If the plan grows:** stop when the work starts adding future-use layers, workaround stacks, unrelated cleanup, or tests for unstated behavior. Report the smaller scope you propose and wait.
+> **If the plan grows:** stop when the work starts adding future-use layers, workaround stacks, unrelated cleanup, or tests for unstated behavior. Report the smaller scope you propose and end your run.
 >
 > **Done means**
 > - The requested behavior works and every item of the plan section is met
@@ -140,11 +143,14 @@ The report is a lead, not a fact: the orchestrator reopens the cited files.
 
 Stop and report instead of improvising when: the code does not match what the packet describes; a command fails after one reasonable retry; the task needs out-of-scope files; a pause-and-report condition fires; a test cannot be made to fail first (the behavior may already exist — report it).
 
+Stopping ends the run: commit what is done on the slice branch, return the evidence with the reason you stopped, and finish. Do not wait for an answer and do not ask the orchestrator a question and idle; the answer, when it comes, goes to a new executor.
+
 ## Template
 
 ```
 You are implementing one slice of an agreed plan in <worktree path>, branch <slice-branch>.
 Work only inside that directory. Do not push. Do not touch other branches.
+This is a single run: when you finish or hit a stop condition, return your report and end. Nobody will reply to you.
 
 ## The plan section you are implementing (verbatim — this is the spec)
 <paste>
@@ -157,6 +163,9 @@ In: <files/surfaces>   Out: <files/surfaces>
 
 ## Already-announced deviations
 <none | list>
+
+## Earlier work on this slice
+<none | the commits already on the branch, and the gap list or the user's answer that sends this run out, quoted>
 
 ## Testing and documentation rules
 <paste the TDD floor, the test-map floor, and the documentation floor; then only the tiers the user chose at G1>

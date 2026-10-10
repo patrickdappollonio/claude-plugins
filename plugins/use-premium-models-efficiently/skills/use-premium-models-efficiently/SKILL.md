@@ -53,7 +53,17 @@ Write every delegated prompt as if the subagent has no useful chat context — b
 - The files, packages, or surfaces in scope, and anything explicitly **out** of scope.
 - The evidence format to return: files, line refs, commands, diffs, failures, screenshots, and uncertainty.
 - The verification commands or browser flows to run, plus what success should look like when that is knowable.
-- Stop conditions: if the code doesn't match the prompt, a command fails after a reasonable retry, or the task needs out-of-scope files — **stop and report instead of improvising**.
+- Stop conditions: if the code doesn't match the prompt, a command fails after a reasonable retry, or the task needs out-of-scope files — **stop and report instead of improvising**. Stopping ends the run; the subagent does not wait for an answer.
+
+## Subagents Are One-Shot
+
+Every subagent gets one self-contained packet, does it, returns its report, and ends. This is a hard rule, not a default:
+
+- **Never resume, message, or continue a subagent that has reported** (`SendMessage` in Claude Code, or the equivalent elsewhere). A follow-up, a correction, a retry, or a second round is a **new** subagent whose packet carries everything it needs, including the earlier report.
+- **Never tell a subagent to wait** for your next instruction, for another subagent, or for the user. A question it cannot answer ends its run: it reports the question, and the answer goes to a new subagent.
+- **End every packet with:** "This is a single task. Return your report when you are done and end; nobody will send you further instructions."
+
+Why: a subagent's prompt cache can expire within minutes while it sits idle, far sooner than the orchestrator's. The next message to it then re-reads its whole history at full price — hundreds of thousands of tokens per turn on a codebase-heavy task. A fresh packet costs a fraction of that, and it carries only what the next step needs.
 
 ## Vet Delegated Work
 
