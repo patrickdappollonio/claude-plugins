@@ -1,6 +1,6 @@
 {
   "name": "use-claude-limits-efficiently",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Budget loop for long-running or parallel Claude work under five-hour and weekly usage limits.",
   "author": { "name": "Patrick D'appollonio", "email": "patrickdappollonio@gmail.com" },
   "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/use-claude-limits-efficiently",

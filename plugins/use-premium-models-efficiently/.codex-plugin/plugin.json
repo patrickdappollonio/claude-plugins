@@ -1,6 +1,6 @@
 {
   "name": "use-premium-models-efficiently",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Use premium models for judgment while delegating bounded, token-heavy work to cheaper subagents.",
   "author": { "name": "Patrick D'appollonio", "email": "patrickdappollonio@gmail.com" },
   "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/use-premium-models-efficiently",

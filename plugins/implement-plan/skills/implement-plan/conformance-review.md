@@ -39,7 +39,7 @@ Diff: 41 test lines added, 28 non-test (1.5 to 1).
 | "`--priority` rejects unknown levels" | duplicated | `src/cli.js:18` | new `test/priority.test.js` shares 5 of 6 steps (83%) with `test/cli.test.js` "add with priority" — move the case there | `README.md:44` |
 | "empty-list export: not decided" | decided by executor — header only | `src/export.js:9` | revert + park | — |
 
-Below the table: **Extras** (unannounced), **Announced deviations** (confirmed they match what was announced), **Verdict**, **Return to executor** (the gap list, if any).
+Below the table: **Extras** (unannounced), **Announced deviations** (confirmed they match what was announced), **Verdict**, **Return to executor** (the gap list, if any — it goes into the packet of a **new** executor for the slice, never as a message to the one that reported).
 
 ## Pull to resist
 

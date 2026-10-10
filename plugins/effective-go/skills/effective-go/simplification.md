@@ -102,7 +102,7 @@ FOR EACH SIMPLIFICATION:
 
 ## Evidence
 
-Finding is cheap; deciding is expensive. Locate candidates with `grep`/`rg`, `gocyclo`, `staticcheck`, `go vet`, `gopls` — or, on a multi-agent harness, a cheap subagent after asking the user how much parallelism they want. Judgment, the change, and verification stay with you. **A subagent's report is a lead, not a fact**: open the location, recount, re-diff, re-run before acting on it.
+Finding is cheap; deciding is expensive. Locate candidates with `grep`/`rg`, `gocyclo`, `staticcheck`, `go vet`, `gopls` — or, on a multi-agent harness, a cheap subagent after asking the user how much parallelism they want. Each subagent is one-shot: one task, one report, then it ends; a follow-up is a new subagent, never one resumed or left waiting. Judgment, the change, and verification stay with you. **A subagent's report is a lead, not a fact**: open the location, recount, re-diff, re-run before acting on it.
 
 ## After the pass
 

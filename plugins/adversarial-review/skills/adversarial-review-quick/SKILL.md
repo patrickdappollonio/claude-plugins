@@ -13,7 +13,7 @@ This skill saves tokens by running fewer reviewers, never by skipping the verifi
 
 The full `adversarial-review` skill runs every reviewer with no picking. It exists for the change that deserves breadth. This skill does not try to replace it: when the user wants everything, send them there.
 
-**Claude: do not use dynamic workflows.** That means more token consumption for no functional gain. Dispatch plain subagents in parallel.
+**Every subagent is one-shot, and a second round is always a new subagent.** Each reviewer, the verifier, and the validator gets one self-contained task, returns its result, and ends: it never waits for a reply, a follow-up, or the user, and it is never resumed, messaged again, or continued (`SendMessage` in Claude Code, or the equivalent elsewhere) — not to re-validate a revised fix, not to "check one more thing", not to explain a finding. When the review needs more, dispatch a **fresh** subagent with everything it needs in its prompt, including the earlier result. Two reasons, both binding: a subagent left idle loses its prompt cache within minutes, so the next message re-reads its whole history at full price, often hundreds of thousands of tokens; and an agent that has already argued a position is no longer independent. **Claude: do not use dynamic workflows** either — more token consumption for no functional gain. Plain one-shot subagents, dispatched in parallel.
 
 ### Asking the user
 
@@ -136,6 +136,7 @@ Each reviewer prompt contains, and ONLY contains:
 3. The raw diff.
 4. The list of changed files (the reviewer may open them and surrounding code).
 5. The scope rule and the output format below.
+6. This line, verbatim: "This is a single task. Return your findings when you are done and end; nobody will send you further instructions."
 
 Do **not** add your own framing, hypotheses, or reassurances. The isolation is the value.
 
@@ -155,7 +156,7 @@ Do **not** add your own framing, hypotheses, or reassurances. The isolation is t
 
 ### 6. Verify every finding (standalone)
 
-Collect all findings, then dispatch **one separate verifier subagent** — the *False-Positive Filter*, charter below, also `model: "sonnet"`. Give it every finding, the brief (including the approved artifact — it cannot check a conformance finding without it), the diff, and the changed files. It returns **confirmed / not-confirmed** with a one-line reason. Fresh and standalone, so it inherits no reviewer's enthusiasm.
+Collect all findings, then dispatch **one separate verifier subagent** — the *False-Positive Filter*, charter below, also `model: "sonnet"`. Give it every finding, the brief (including the approved artifact — it cannot check a conformance finding without it), the diff, and the changed files. It returns **confirmed / not-confirmed** with a one-line reason. Fresh and standalone, so it inherits no reviewer's enthusiasm; its prompt ends with the same single-task line the reviewers get.
 
 Only **confirmed** findings reach the user. Keep the rest in case the user asks.
 
@@ -165,9 +166,9 @@ Only **confirmed** findings reach the user. Keep the rest in case the user asks.
 
    Three rules bind fixes. A fix must **stay inside the brief** — if the only real fix breaks an agreed constraint or builds a declared non-goal, present it as a decision, not a patch. A fix for a **conformance** finding is *restore what was approved*, not a third design. A fix for a **`design_is_wrong`** finding is the exception: the agreed design is the defect, so the fix necessarily leaves the brief. Draft it anyway, as small as it can be, and carry it as a **design decision to make**. Never water it down to fit the old design — a fix that stays inside a broken design keeps the bug.
 
-2. **Validate every fix** with one standalone *Solution Validator* subagent (charter below, `model: "sonnet"`). Give it the brief, the confirmed findings, the drafted fixes, the diff, and the changed files. It returns **valid / invalid** with a one-line reason and modifies nothing.
+2. **Validate every fix** with one standalone *Solution Validator* subagent (charter below, `model: "sonnet"`). Give it the brief, the confirmed findings, the drafted fixes, the diff, and the changed files. It returns **valid / invalid** with a one-line reason and modifies nothing. Its prompt ends with the same single-task line the reviewers get.
 
-3. **Revise and re-validate** anything rejected. If a fix still can't be validated, **say so plainly** — "no confirmed fix yet" beats shipping a guess.
+3. **Revise and re-validate** anything rejected — with a **new** *Solution Validator* subagent each round, given the brief, the finding, the revised fix, the previous validator's reason, the diff, and the changed files; never the earlier validator resumed. If a fix still can't be validated, **say so plainly** — "no confirmed fix yet" beats shipping a guess.
 
 Only **validated** fixes appear in the report.
 
@@ -485,3 +486,4 @@ Be strict. A fix is valid only if you can point at the specific code that makes 
 - **Asking a finding through the question tool, several at once, or without the five parts.** The tool holds one line per option and no flow; a menu of "explain / apply / triage" asks the user to decide about findings they cannot read away from the code. Heading, situation, flow, fix, cost, your call — one finding per message. If you have not read `question-format.md` this session, you have skipped a step.
 - **Running reviewers sequentially.** Dispatch them in one batch so they run concurrently.
 - **Using the expensive model for subagents in Claude Code.** Use `sonnet`.
+- **Resuming a subagent instead of dispatching a new one.** Sending a rejected fix back to the same validator, asking a reviewer a follow-up, or keeping any agent waiting for the next instruction. Its cache expires while it idles, so every later message pays for its whole history again, and it is no longer fresh. One task per subagent; more work means a new one.

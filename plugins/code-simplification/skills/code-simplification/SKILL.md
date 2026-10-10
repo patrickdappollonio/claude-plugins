@@ -177,6 +177,7 @@ Finding (which functions are complex, which pairs share a shape, who calls what)
 - **Ask the user once** how many subagents may run in parallel and which model tiers are available, before fanning out. Their tokens, their machine.
 - **Cheap tiers find, premium tiers decide.** Pattern finding goes to Haiku, Sonnet, or Luna; equivalence judgment, the change itself, and verification stay on Opus, Fable, Sol, or Terra (medium–max). On a single-model harness, find with `grep`/`rg` and the project's complexity tool instead of reading.
 - **Verify every finding yourself.** A subagent's report is a lead, not a fact: open the location, recount the number, re-diff the pair, re-run the test. A finding you have not reproduced is a hypothesis.
+- **Every subagent is one-shot.** One task, one report, then it ends. A follow-up goes to a new subagent with the earlier result in its prompt; never resume or message one that has reported, and never leave one waiting — an idle agent's cache expires within minutes, and the next message pays for its whole history again.
 
 **Read `evidence-gathering.md` before spawning any subagent** — it has the routing table, the handoff-packet template, and the stop conditions.
 
@@ -308,6 +309,7 @@ Same errors, same behavior, same edge cases — only the shape changed.
 - A comment you kept tells a future editor "never", "always", or "keep in step" with no test that fails when ignored
 - You are about to edit on the strength of a subagent's finding you have not opened and confirmed yourself
 - You fanned out subagents without asking the user how many, or used a premium model to grep
+- You are about to message a subagent that already reported, or you told one to wait for your next instruction
 
 ## Verification Checklist
 
@@ -322,7 +324,7 @@ After completing a simplification pass:
 - [ ] Each extracted helper decides one nameable thing and has its own tests
 - [ ] Any function merge was proposed with the diff and caller count before being made, and every caller was updated
 - [ ] Every finding that became a change was reproduced by the model running this skill — location opened, numbers recounted, pairs re-diffed, tests re-run
-- [ ] Subagent fan-out and model tiers matched what the user agreed to; finding went to cheap models or grep, judgment to premium
+- [ ] Subagent fan-out and model tiers matched what the user agreed to; finding went to cheap models or grep, judgment to premium; every subagent one-shot, follow-ups sent to new ones
 - [ ] Comments on touched lines survive the cover test, are present-tense, fit in two lines above a declaration, name no field or helper from the body, cite nothing session-scoped, count nothing that lives elsewhere, and instruct no future editor without a test behind it
 - [ ] Build succeeds with no new warnings; linter/formatter passes
 - [ ] Each simplification was applied and tested as its own incremental change
