@@ -99,7 +99,7 @@ A chain must read as a sentence: `failed to load configuration: failed to parse 
 - `t.Context()` (Go 1.24+; the pre-1.24 equivalent is in `testing.md`), `t.TempDir()`, `t.Setenv()`, `t.Cleanup()`, `t.Helper()`, `t.Parallel()` where safe.
 - Messages: `t.Errorf("Func(%v) = %v, want %v", in, got, want)` — got before want. `t.Fatalf` only when continuing is meaningless.
 - Errors asserted with `errors.Is`/`errors.As`, never by string.
-- `want` is a literal, never built with the code's own formula, helper, or exported constant. Assert what a caller observes and the spec fixes, never call order, a constant's own value, or a whole output where one fact matters. A bug fix corrects the wrong table row in place or adds a behavior-named row for a genuine gap; no `TestIssue…`, no second test on an input already covered.
+- `want` is a literal, never built with the code's own formula, helper, or exported constant. Assert what a caller observes and the spec fixes, never call order, a constant's own value, or a whole output where one fact matters. Existing tests that cover code you edit or review get the same check: report each tautological `want` or change detector with its fix, fix a row you are already changing, and leave the rest unedited unless asked. A bug fix corrects the wrong table row in place or adds a behavior-named row for a genuine gap; no `TestIssue…`, no second test on an input already covered.
 - Mocks are hand-written structs with one `Fn` field per method. A nil `Fn` returns `errors.New("mockT.Method: methodFn not implemented")`; a method without an error return panics with the same text. Add call counters when the code under test swallows errors.
 - `httptest` for HTTP; real or in-memory implementations for stores; no mocking or assertion libraries added to a project that has none; no `sqlmock`.
 - Tests are cheap when the agent writes them: cover every reachable branch, edge and error path. Red → green for new code; for a refactor, a pinning test that passes before and after with no edits.
@@ -177,6 +177,7 @@ Reshape only the code in scope, with behavior preserved exactly and proven by a 
 | "This case deserves its own test function, the table would get busy" | Count the setup and action steps. At 60% shared it is a row: however many rows a table has, it still has one setup block and one call. |
 | "No existing test checks the file on disk, so this one is new" | The assertion is new. The arrange and act are not. Add the check after the call the existing test already makes. |
 | "Tests after the refactor prove it works" | They prove the new code does what the new code does. The pinning test predates the change. |
+| "That test already covers it, so it's pinned" | Only if it can fail. A `want` computed with the code's own formula passes whatever the code does. Check it, and report it if it can't. |
 | "Journeys are the user's job" | Proposing them is yours. Writing the picked ones is yours. |
 | "Reading the companion files is overkill for a one-line change" | One-line changes are where error strings and `'%s'` slip in. Read them. |
 | "The comment explains the history of this fix" | The reader sees today's code. State the constraint; the story goes in the commit. |
@@ -206,6 +207,7 @@ Reshape only the code in scope, with behavior preserved exactly and proven by a 
 - A new `_test.go` beside an existing one for the same source file, with no build tag and no separate tier
 - A new `Test…` function that repeats 60% or more of the setup and action steps an existing test on the same function already performs
 - A feature change with no journeys proposed to the user
+- An existing test covering the code you touched or reviewed has a computed `want` or asserts call order, and your report does not mention it
 - `git push` in your plan without a user message approving *that* push; a commit the user has not asked for
 - You reached step 3 without checking whether `use-modern-go` is available, or you are recommending it for the second time this session
 - You have not opened `errors.md`, `testing.md`, `style.md`, `comments.md` and `simplification.md` this session
@@ -226,6 +228,7 @@ Reshape only the code in scope, with behavior preserved exactly and proven by a 
 - [ ] Doc comment on every exported identifier, sentence form, ends with a period; every comment passes the cover and subject tests; no history, no session IDs, no counts of things that live elsewhere; no prose over four lines kept as "rules"; no field or helper from the body named; every editor-addressed rule is an assertion in the existing test, with one line of fact left in the code
 - [ ] Any reshaping of existing code: one change at a time, pinned by a pre-existing test, complexity reported for splits, merges proposed first
 - [ ] Tests: table-driven, `t.Context()`, got-before-want messages, `errors.Is` assertions, `Fn`-field mocks that fail loudly, `t.Parallel()` where safe
+- [ ] Existing tests covering the changed or reviewed code checked for a computed `want` or change-detector assertion; each one found reported with its fix, none rewritten unasked except a row already being changed
 - [ ] Interface changed → every implementation and every mock updated
 - [ ] New tests failed before the code and pass after; refactors pinned by a test that passes unmodified before and after
 - [ ] Tests appended to the existing `_test.go`; a new file only for a missing file or a separate build-tagged tier

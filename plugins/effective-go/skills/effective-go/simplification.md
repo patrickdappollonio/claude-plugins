@@ -96,6 +96,8 @@ FOR EACH SIMPLIFICATION:
 
 **A pin must be able to fail, and only for a change a caller can see.** A test that builds its expected value with the code's own formula, a production helper, or an imported constant passes whatever the code does; freeze a literal instead. A test that asserts call order, a constant's own value, or a whole output where one fact matters goes red on a harmless rewrite and forces a test edit, which destroys the proof; pin return values, errors, effects on collaborators, and the facts a message carries. The throwaway differential check (old against new) is fine: they are two implementations.
 
+**Flag existing tests that have either fault.** Check each test that covers the code in scope before relying on it. A tautological one (computed expected value) or a change detector is not a pin, so the function counts as uncovered until a test that can fail sits beside it. Report each one with file, test name, the fault, and the fix (the literal, or the observable fact to assert). Do not rewrite or delete it unasked; a test edited in the same diff as a refactor muddies the proof. Only tests covering code in scope; not a sweep of the suite.
+
 "Extracted four helpers" is four changes. If a refactor would touch more than ~500 lines, use tooling (`gofmt -r`, `gopls rename`, `gorename`, `sed` with review) rather than hand edits.
 
 **If the repository has no tests covering the code in scope, stop and ask before creating any.** A test file, framework, or dependency is a decision about their project. Ask once, with the specifics (which functions, where the tests live). Do not change first and ask after; silence is not consent; deadlines do not waive this. If the user declines, say the change is unproven, use a throwaway differential check (old vs new over the same inputs) as the best remaining evidence, report what it covered, and keep the change mechanical — a deleted script is not proof.
@@ -133,6 +135,7 @@ Finding is cheap; deciding is expensive. Locate candidates with `grep`/`rg`, `go
 
 - A test had to change for the simplification to pass
 - A pinning test computes its expected value, or would go red on a rewrite no caller can observe
+- You relied on an existing test without checking it for either fault, or found one and left it out of the report
 - An error message's wording changed inside a change that was supposed to be a pure refactor
 - An extracted helper has no test of its own — the original's table exercising it indirectly is not the same
 - The "simpler" version is longer or harder to follow
@@ -151,6 +154,7 @@ Finding is cheap; deciding is expensive. Locate candidates with `grep`/`rg`, `go
 
 - [ ] Scope is the code being changed, or what the user named
 - [ ] Every reshaped function is pinned by a test that existed before the change and passes after it, unmodified
+- [ ] Every existing test covering the code in scope was checked for both faults; each one found is reported with its fix and none was edited unasked
 - [ ] No tests in the repo → the user was asked before any were added; declined → reported as unproven
 - [ ] Complexity reported before and after any split; no helper more complex than what it replaced; every helper decides one nameable thing and has tests
 - [ ] Any merge was proposed with diff and caller count before being made; every caller updated
