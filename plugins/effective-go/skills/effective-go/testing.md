@@ -62,6 +62,7 @@ One source file, one test file, is the steady state. A package with `foo_test.go
 - Structural comparisons: `reflect.DeepEqual` is acceptable for plain data; if `github.com/google/go-cmp` is already a dependency, prefer `cmp.Diff`. Do not add an assertion library to a project that has none.
 - **`want` is written down, never worked out by the test.** A `want` built with the code's own formula, a production helper, or an exported constant (`want := price * (1 + TaxRate)`) moves with the code and cannot disagree with it. Put a literal in the table row, worked out from the rule on a small input; for a pinning test, freeze the original's output as a literal. This holds when the code is meant to reuse an existing helper: reuse it in the code, state the result in the test.
 - **Assert what a caller can observe, and only what the spec fixes.** A test that checks which helper ran, the order of calls the spec does not require, a constant against its own value, or every word of an output when one fact in it matters goes red on a rewrite with the same behavior. That is a change detector: it trains people to edit tests until they pass. Before keeping an assertion, name a behavior-preserving rewrite that would turn it red; if you can, loosen it.
+- **Flag existing tests that break either rule above.** When you edit or review code, check the tests that cover it: a tautological `want` (built with the code's formula, a production helper, or an exported constant) or a change-detector assertion. Report each one: file, test and row name, which fault, and the fix (the literal `want`, or the observable fact to assert instead). A row you are already changing gets the fix in that edit; leave the others unedited unless the user asks, and in a review list them as findings. A covering test with either fault does not pin the code, so a refactor still needs a pin that can fail. Check only the tests that cover the code in scope; this is not a sweep of the suite.
 - Don't compare against text whose formatting is not guaranteed stable (raw JSON, `fmt`-formatted structs, map iteration order). Compare decoded values.
 
 ## Test doubles
@@ -170,6 +171,7 @@ func TestClient_UploadFile(t *testing.T) {
 - [ ] Failure messages name the call, input, got, want — got first
 - [ ] Every `want` is a literal; none is built with the code's formula, a production helper, or an exported constant
 - [ ] No assertion on call order the spec does not require, a constant's own value, or a whole output where one fact matters
+- [ ] Existing tests covering the changed or reviewed code were checked for a computed `want` or a change-detector assertion; each one found is reported with its fix
 - [ ] Bug fix: the wrong row was corrected in place, or a genuine gap got a behavior-named row in the existing table; no ticket-named or duplicate test
 - [ ] `t.Errorf` by default, `t.Fatalf` only for preconditions
 - [ ] Errors checked with `errors.Is`/`errors.As`, never by string
