@@ -23,6 +23,7 @@ Model names change over time. The rule is about relative cost inside whichever p
 | Codebase mappers (step 0, one set of map sections each, in parallel) | cheap | each covers a fixed part of the repository and cites `path:line`; you check one cited line per section |
 | Exploration subagents (one bounded question each, in parallel) | cheap | the question is narrow, and the answer comes back with evidence |
 | Zero-context reviewer | most capable available | judgment with no context is the whole point |
+| Second opinion on your own decisions (step 11) | a different model family when offered, else cheap | fresh eyes from another model catch what the author's model shares; one subagent per batch |
 | Checks and spikes (`verification.md`) | cheap | one measurable question each, with the exact commands and targets allowed |
 | On-the-spot review panel and its verifier | cheap | narrow charters; fresh context is the value |
 | Installed `adversarial-review` skills | as the skill decides | run them as written |

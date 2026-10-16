@@ -102,10 +102,12 @@ Then dispatch **one verifier** (fresh, cheaper tier) with every finding, the bri
 
 ### After the review
 
-Every confirmed finding goes through the authority table in `SKILL.md`:
+A finding inside the ask is fixed, not asked:
 
-- Fix leaves user- and operator-visible behavior unchanged → rewrite the plan, log the decision with the reason and any drawback.
-- Fix changes what someone would experience, or `design_is_wrong` → a question for the user in the next batch, with the reviewer's suggested change as the recommendation.
+- Fix is technical or corrects a mistake, and the plan still does what the ask wants afterwards → rewrite the plan, log the decision with the reason and any drawback. Making the asked-for behavior actually happen counts: it is not a change in behavior.
+- Fix changes how the product behaves beyond the ask or a decision the user made (the business process, what users see or get, an operational policy such as a threshold), is large (a new dependency, a schema, a public API), or reaches outside the ask → a question for the user, with the reviewer's suggested change as the recommendation.
+
+A `design_is_wrong` finding takes the same test. When an installed review skill runs, its own question step does not: its findings come back here.
 
 Nothing about the review is written into the plan except the resulting decisions. Nothing about the review is reported in chat except, if asked, that it ran and whether the plan held.
 
