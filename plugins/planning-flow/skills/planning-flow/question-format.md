@@ -94,6 +94,10 @@ The question's heading sits **one level below the section that holds it**, so th
 
 A harness question tool (a multiple-choice prompt) has room for one line per option and none for a flow. These questions need the whole template, so they go in the message as markdown, and the user answers in their own words. This holds even when the harness has such a tool.
 
+## Approval is not a question
+
+Asking whether to approve the plan or start implementing never uses this template. It has no fact the user is missing, no trade-off, and no alternative worth a flow, so it never gets a `Question <N> of <M>` heading, the four labels, or a *Your call*, and it never counts toward the open questions. Once the last question is answered, the closing in `SKILL.md` ends with one plain line asking whether to implement.
+
 ## Never ask what the user already decided
 
 Before a question is written, read every message the user sent in this conversation, not only their replies to your questions, and the decisions section. When you can quote the user's own words that pick an action for the question, it is not a question: record it as their decision and do not ask it. Three shapes are easy to miss:
@@ -140,6 +144,7 @@ one existing freeze test already uses. Assert exactly one winner per job.
 
 ## Red flags — the question is not in shape
 
+- Approval to implement written as a numbered question, with a situation, fix, cost, or `accept?`
 - A bold label missing, renamed, reordered, or a heading without a number
 - A heading that is a topic ("Retry policy") instead of a claim
 - A sentence that stops making sense when its code names are taken out, a flow step that only a reader of the code could follow, or a reference to something only you saw

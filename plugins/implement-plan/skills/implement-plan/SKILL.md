@@ -84,7 +84,7 @@ Find the agreement: the visual plan's file, the plan-mode plan, the plan file, o
 
 ### 1. Record the starting point — G1
 
-Capture and state: `starting branch`, `starting commit`, clean or dirty tree. **Recommend a branch once** if the user is on `main` or a shared branch: *create a branch* (name it) / *stay on this branch*, with your recommendation; if they stay, that is the answer — no second nag. In the same stop, state the **testing depth** you will require (see *Testing*) so they can adjust it in the same reply. **Everything merges back into the starting branch, whatever it is.** Never push, never open a PR, unless asked.
+Capture and state: `starting branch`, `starting commit`, clean or dirty tree. **Recommend a branch once** if the user is on `main` or a shared branch: *create a branch* (name it) / *stay on this branch*, with your recommendation; if they stay, that is the answer — no second nag. In the same stop, state the **testing depth** you will require (see *Testing*) so they can adjust it in the same reply. **Everything merges back into the starting branch, whatever it is.** Never push, never open a PR, unless asked. You may recommend a push when a backup matters, such as before a risky step or to recover from one; say why in one plain line and push only on a yes. Commit as the work needs, never forced into one commit: the user can squash later, and separate commits let one slice be undone alone.
 
 ### 2. Capacity check
 
@@ -164,6 +164,8 @@ Exactly these bullets, short:
 - **What were the decisions you made** (technical, with the reason)
 - **What's pending for me to decide on** (functional/operational: each open question by its heading, one line, with the path and URL of the plan file where each stands in full — the chat asks them one at a time, never all here; any command or file still needed, in full)
 - **What's next**
+
+*What's next* never asks whether to open a pull request or push unless the user brought it up: they ask when they are ready, and an early offer is one more thing to answer. A push recommended as a backup is the one exception, as step 1 says.
 
 ## Testing and documentation — the floor is TDD plus current docs; the rest is the user's to size
 
