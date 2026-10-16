@@ -31,6 +31,7 @@ Then act on it: the executor's report is a lead, never the review.
 | Implementing a slice with TDD | cheap | bounded, fully specified by the packet |
 | Adversarial reviewers, verifier, validator | cheap (the review skills already do this) | narrow charters; fresh context is the value, not the model |
 | Applying validated review fixes | cheap | bounded — but the conformance re-check is premium |
+| Second opinion on your own decisions (step 9) | a different model family when offered, else cheap | another model catches what the author's model shares; one subagent per batch |
 | Tiny or tightly coupled work | premium, locally | coordination would cost more than delegation saves |
 
 ## If this session is not on a premium model

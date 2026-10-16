@@ -54,11 +54,11 @@ Every companion skill is optional: a distilled version ships here, the real one 
 |---|---|
 | Data structure, algorithm, file layout, naming, error type | What the user sees: output format, wording, new flags or syntax, defaults |
 | Which test framework pattern to follow; how to isolate a test | Whether a behavior the plan left open should exist at all |
-| How to fix a bug the review found, when the fix is invisible to users | A fix that changes user-visible behavior, an API, a schema, a stored format |
+| Fixing a bug the review found, or improving the code this run changed, when the application behaves as the plan agreed afterwards (making the agreed behavior actually happen counts) | A fix that changes how the application behaves beyond the plan — its business process, what users see or get, an operational policy — or a large one: a new dependency, a schema, a stored format, a public API |
 | Order of slices, worktree layout, which model executes | Anything the plan marks "not decided", "TBD", or "user to decide" |
 | Keeping a plan-specified detail when the plan's own example contradicts it | Deviating from what the plan specifies — even to "improve" it |
 
-**The tell:** if a reasonable user could say "I didn't want that", it is theirs. "The user pre-authorized fixing whatever the review finds" covers *how* to fix defects, never *whether* to change what the product does. Log every technical decision at the end of the plan; park every functional one under *Pending for you* and build the rest.
+**The tell:** if a reasonable user could say "I didn't want that", it is theirs. Behavior decides it, not whether the choice is technical: a choice that changes nothing a user or consumer (any person or system that uses the output) would notice is yours, technical or not; one that changes what they notice is theirs. Check every decision against the code as it is now, never your memory of it. "The user pre-authorized fixing whatever the review finds" covers *how* to fix defects, never *whether* to change what the product does. Log every technical decision at the end of the plan; park every functional one under *Pending for you* and build the rest.
 
 **A technical decision that changes what users or operators experience is no longer technical — it is the user's.** The consequence decides who owns it, not the category. Before any technical call, trace its effect: does it change output, ordering, timing, defaults, error behavior, what gets stored or where, how the thing is deployed, configured, monitored, or paid for? If yes, park it with your recommendation, even though it started life as "just an implementation detail". Across the line: a storage format that makes old files unreadable; a faster algorithm that reorders tied results; a retry policy that changes how long a failure takes to surface; a dependency that adds a runtime requirement or a cost; a cache that changes when data looks fresh. Still yours: the same behavior with a different internal structure, name, or test layout.
 
@@ -140,15 +140,17 @@ Read `adversarial-review-fallback.md`. The review runs **once**, on the whole me
 
 The line is hard: "one over" is over. The size sets the recommendation, never an automatic run. Stop at **G2** and ask in plain text: **quick, full, or none**, with your recommendation, the cost of each in plain words (full is roughly twice quick), and what "none" means (the recap names the angles nobody reviewed). Then run exactly what they chose, once.
 
-Prefer the installed skills — `adversarial-review-quick` or `adversarial-review` — **run as written**: their verifier and fix validator are part of the review, and your own reproduction never replaces them. Full chosen but only the quick skill installed: say so, run the quick one, name the uncovered angles in the recap. Neither installed → the on-the-spot panel from the fallback file. Every reviewer gets the plan as the brief, verbatim, plus the announced deviations.
+Prefer the installed skills — `adversarial-review-quick` or `adversarial-review` — **run as written**: their verifier and fix validator are part of the review, and your own reproduction never replaces them. Their last step, putting every finding to the user, does not run here: tell the review that `implement-plan` decides the findings, take the report and the validated fixes back, and decide each one in step 8. Full chosen but only the quick skill installed: say so, run the quick one, name the uncovered angles in the recap. Neither installed → the on-the-spot panel from the fallback file. Every reviewer gets the plan as the brief, verbatim, plus the announced deviations.
 
 ### 8. Fix what it found, then ask before any second review
 
-Fix every confirmed finding. A fix invisible to users → do it, log it. A fix that changes user-visible behavior, syntax, defaults, an API, or storage → **park it under *Pending* with the recommended fix**, unless the plan already decided that behavior. A `design_is_wrong` finding is always the user's. Fixes obey the comment and simplification rules of step 6 as written, because the pass does not run again. Re-run conformance on the fixes; that check is yours.
+The run exists to reach the plan's goal, so a finding inside that goal is fixed, not asked. **Fix without asking, and log it in one line,** every confirmed finding whose fix is technical or corrects a bug and leaves the application behaving as the plan agreed: a correction that makes the agreed behavior actually happen (an alert the plan promised that would never fire), a brittle or hollow test, duplication, an unsafe edge in the code this run changed. Making the agreed behavior happen is not a change in behavior. **Park it under *Pending* with the recommended fix** only when the fix changes how the application behaves for its users or consumers (any person or system that uses its output) beyond what the plan decided — the business process it runs, what users see or get, syntax, defaults, an operational policy such as a threshold or a schedule — or is a large change (a new dependency, a schema or stored format, a public API, a rewrite), or reaches code outside this run's change or into a non-goal. A `design_is_wrong` finding takes the same test: a technical fix that keeps the goal is yours, and a fix that changes behavior is the user's. Never ask whether to make the change do what the plan already agreed. Fixes obey the comment and simplification rules of step 6 as written, because the pass does not run again. Re-run conformance on the fixes; that check is yours.
 
 Then stop at **G2** again: say what was found, fixed, and parked, and ask whether to run a second review on the fixed diff; recommend one only when the fixes crossed the small-change line or touched a sensitive angle. **No second review without a yes**; a no ends the loop with the rest under *Pending*, a yes gets one more sized run and this step again. **You assess every fix; executors never grade themselves.**
 
 ### 9. Decisions log
+
+**Second opinion first.** Before writing the log, dispatch one fresh, one-shot subagent, on a different model family from yours when the harness offers one (a Codex agent from Claude, `claude -p` from Codex) and on the cheaper tier otherwise. Give it the plan, the merged diff, the repository, and every decision you made on the user's behalf during the run, the review fixes included, each with what was chosen and the alternative. Do not argue for your choices or say which ones you are sure of. Its charter: check each decision against the code as it is now and say whether it fits the plan, what caveat it carries, and whether it changes anything a user or consumer would notice. Its prompt ends with the single-task line. A confirmed decision stays. A caveat that changes nothing a user or consumer notices: adjust by your own judgement, conformance re-checks it, and log it. A decision that changes such behavior: revert it to what the plan says and park it under *Pending* as a question; when the plan says nothing, leave the code as built, park the question, and say plainly in the stop that it is open. One subagent covers the batch; a second review's fixes get a new one.
 
 Append a `## Decisions made during implementation` section at the **end of the plan file** (the visual plan when there is one — it live-reloads; otherwise the plan file; otherwise the chat summary). One bullet per technical decision, in plain language: what was chosen, the alternative, and why. Functional items waiting on the user follow the bullets, each a `question-format.md` question under its own `### Question <N> of <M> — <claim>` heading; in a visual plan its **Your call** line is a `question` fence so the answer comes back as a comment, with the prose parts as markdown above it, never inside it.
 
@@ -161,7 +163,7 @@ List every worktree and branch you created, with its merge status. **Ask**, in t
 Exactly these bullets, short:
 
 - **What was done**
-- **What were the decisions you made** (technical, with the reason)
+- **What were the decisions you made** (technical, with the reason; every decision is one line: what was decided, why, and its caveat; every review finding you fixed on your own is one of them, so the user can reverse it or ask for more)
 - **What's pending for me to decide on** (functional/operational: each open question by its heading, one line, with the path and URL of the plan file where each stands in full — the chat asks them one at a time, never all here; any command or file still needed, in full)
 - **What's next**
 
@@ -199,6 +201,10 @@ Minimum sufficient change. Read the real code and the tests that already cover i
 | "It's one file over the threshold, and asking would block for hours, so I ran the quick panel and named the gap" | One over is over, and no panel runs before the G2 answer. Recommend the full one, ask quick / full / none, and wait. |
 | "The quick panel needs no permission, so I'll run it now" | Every panel costs tokens the user has not agreed to spend. One question at G2, then at most one review. |
 | "Reviewing each slice as it merges catches problems early" | It also reviews the same code several times. Conformance is the per-slice check; the panel runs once, on the whole diff, after the cleanup pass. |
+| "The review skill says to put every finding to the user, and I run it as written" | As written covers its reviewers, verifier, and validator. Its findings come back to step 8, which fixes what is inside the goal and parks the rest. |
+| "The fix changes what operators see, so it's theirs" | Not when it only makes the plan's promised behavior happen. An alert the plan says must fire, fixed so it fires, is a correction. A new threshold is a change. |
+| "I'll ask, to be safe" | A question about a fix the goal already requires delays the goal and hands the user a decision they already made. Fix it, and give it one line in the recap. |
+| "My decisions are technical, so they need no second opinion" | You are the one who decided they are technical. One fresh subagent, not told which way to lean, checks the batch; a decision it shows changes what a user notices is reverted and parked. |
 | "I reproduced the findings myself, so the verifier was unnecessary" | Your reproduction is extra evidence. The review skill's verifier and validator run as written. |
 | "The fixes changed code, so they need their own panel" | They need conformance, which is yours. A second panel is the user's to buy: ask, recommend by the size of the fixes, and take no for an answer. |
 | "It's a technical choice — storage format, algorithm, retry policy — so it's mine" | Only while its effect stays invisible. The moment it changes what users or operators experience, it is theirs. Trace the consequence first. |
@@ -235,6 +241,9 @@ Minimum sufficient change. Read the real code and the tests that already cover i
 
 ## Red Flags — Stop and Re-read the Step
 
+- A decisions log written without a second opinion on the run's decisions, or a second-opinion prompt that argues for the choices
+- A review finding whose fix makes the plan's agreed behavior happen, parked or asked instead of fixed; a review skill's apply / defer / dismiss questions asked during a run
+- A review fix that changes the business process, an operational policy, or a default the plan did not decide, applied without asking
 - Any `git worktree remove`, `git branch -d/-D`, or `rm -rf` of a worktree before the G4 answer
 - A merge into any branch other than the recorded starting branch
 - A `git push`, a PR, or a commit to `main` the user did not ask for
@@ -283,7 +292,8 @@ Create a todo per item.
 - [ ] Step 6 pre-flight ticked: installed `appropriate-comments-code` / `code-simplification` checked first; the fallback file read fresh at that step only for a skill that is absent; conformance file re-opened
 - [ ] Comment and simplification passes run on the merged diff — the installed skill as written, else the fallback: every flagged comment rewritten or deleted, test-file comments left alone; behavior-preserving, tests unmodified and green, merges parked as proposals; code changes re-checked for conformance
 - [ ] G2 asked once, after the pass: change sized, quick / full / none offered in plain text with the cost of each; exactly the chosen review run once on the whole merged diff; fallback panel if no skill
-- [ ] Every finding fixed or parked by the authority split; conformance re-run on the fixes; a second review offered with a recommendation and run only on a yes
+- [ ] Every finding inside the goal fixed without asking and logged in one line; only behavior changes, large changes, and fixes outside the run's change parked; conformance re-run on the fixes; a second review offered with a recommendation and run only on a yes
+- [ ] Second opinion run on the run's decisions by one fresh unbiased subagent (different model family where possible); behavior changes it found reverted and parked
 - [ ] Decisions log appended at the end of the plan file; every parked decision there in the `question-format.md` shape, its facts and fix checked before it was asked, asked in chat one per stop
 - [ ] Worktree deletion asked (G4) — nothing removed before the answer
 - [ ] Four-bullet recap delivered

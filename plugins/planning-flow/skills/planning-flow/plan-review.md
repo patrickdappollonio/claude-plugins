@@ -1,4 +1,4 @@
-# Plan Review — the zero-context reviewer, the cold implementer, the adversarial review, spikes
+# Plan Review — the zero-context reviewer, the cold implementer, the adversarial review
 
 Four procedures. The first two always run, together. The third is offered. The fourth runs when the user accepts it.
 
@@ -102,20 +102,15 @@ Then dispatch **one verifier** (fresh, cheaper tier) with every finding, the bri
 
 ### After the review
 
-Every confirmed finding goes through the authority table in `SKILL.md`:
+A finding inside the ask is fixed, not asked:
 
-- Fix leaves user- and operator-visible behavior unchanged → rewrite the plan, log the decision with the reason and any drawback.
-- Fix changes what someone would experience, or `design_is_wrong` → a question for the user in the next batch, with the reviewer's suggested change as the recommendation.
+- Fix is technical or corrects a mistake, and the plan still does what the ask wants afterwards → rewrite the plan, log the decision with the reason and any drawback. Making the asked-for behavior actually happen counts: it is not a change in behavior.
+- Fix changes how the product behaves beyond the ask or a decision the user made (the business process, what users see or get, an operational policy such as a threshold), is large (a new dependency, a schema, a public API), or reaches outside the ask → a question for the user, with the reviewer's suggested change as the recommendation.
+
+A `design_is_wrong` finding takes the same test. When an installed review skill runs, its own question step does not: its findings come back here.
 
 Nothing about the review is written into the plan except the resulting decisions. Nothing about the review is reported in chat except, if asked, that it ran and whether the plan held.
 
-## 4. Spikes
+## 4. Before any review: pending checks
 
-A spike is a ticket whose title starts with `Spike:` and whose acceptance criteria are questions. The kinds:
-
-- **Cheap** — a subagent can close it in a minute or two: does this endpoint accept this call, does this library expose this function, does this path exist, what does this table look like, does this command run. Offer these when presenting the plan, in one plain-text list, and run the ones the user accepts as parallel subagents on the cheaper tier, each with one question, the instruction to report what it measured, not what it believes, and the line "This is a single task. Return your result when you are done and end; nobody will send you further instructions." A follow-up question is a new spike.
-- **Real** — needs an experiment, a prototype, or time the user must budget. These stay as tickets.
-
-**A spike must measure, not reason.** Its report says what was run and what it printed. A spike that could not measure says so, and the ticket stays.
-
-**Folding in a resolved spike.** Delete the spike ticket. Add a decisions entry that states the answer and how it was measured. Rewrite every ticket the answer affects. The plan then reads as if you always knew the fact. The reader has no earlier version to compare it against.
+No reviewer in this file sees a draft whose shape still hangs on a pending check, meaning a result that could add, remove, or resize a ticket. Run the check, or get the user's answer to its permission request, first; the exception is a check the user deferred. Checks, spikes, and their permission requests are defined in `verification.md`.
