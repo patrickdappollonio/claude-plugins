@@ -15,9 +15,10 @@ Turn a request into **one plan**: the current, complete answer to the user's ask
 2. **The reader has not seen the code.** You read hundreds of lines; the user read none. A function, file, or variable name is a label for a thing you must explain in plain words, never the explanation. Full rules in `communication.md`.
 3. **Technical direction is yours, logged; functional and operational direction is the user's, asked.** The authority table below decides which is which, and a decision the user already made is never asked again.
 4. **Facts are yours to find; decisions are the user's to make.** Find the facts yourself. Ask the user only what the codebase cannot answer. Ask every question in the one shape in `question-format.md`, and in chat ask one per message, each after the questions it depends on are answered. Never answer a question you put to the user. A change can be so simple that there are no questions; do not invent them.
-5. **The plan is a document, and it plans the simplest thing that works.** This skill produces markdown and nothing else — the plan file, and, outside plan mode, the shared codebase map step 0 keeps beside it: no prototype, no mockup, no scaffold, no demo, no code — a spike may run a throwaway probe, deleted before the plan is presented. Inside that file, use everything the viewer can render: Mermaid diagrams, diff and migration fences, API cards, file trees, question fences, a summary card. A picture of the design belongs in the plan; a working copy does not. The solution sits on the lowest rung of the ladder in `plan-template.md` that answers the ask: not needed → cut it; the codebase has it → reuse it; the standard library or platform has it → use it; an installed dependency has it → use it; otherwise the minimum that works. A higher rung is a decisions entry, rejected, with the reason. Never cut: validation at a trust boundary, data-loss handling, security, accessibility.
+5. **The plan is a document, and it plans the simplest thing that works.** The deliverable is markdown and nothing else — the plan file, and, outside plan mode, the shared codebase map step 0 keeps beside it: no prototype, mockup, scaffold, demo, or code is handed over as part of the plan. While planning, probes, prototypes, and scaffolds are encouraged as ways to check a fact (rule 8), under the permission lanes in `verification.md`, and are deleted before the plan is presented. Inside that file, use everything the viewer can render: Mermaid diagrams, diff and migration fences, API cards, file trees, question fences, a summary card. A picture of the design belongs in the plan; a working copy does not. The solution sits on the lowest rung of the ladder in `plan-template.md` that answers the ask: not needed → cut it; the codebase has it → reuse it; the standard library or platform has it → use it; an installed dependency has it → use it; otherwise the minimum that works. A higher rung is a decisions entry, rejected, with the reason. Never cut: validation at a trust boundary, data-loss handling, security, accessibility.
 6. **Nothing an agent writes counts things that live elsewhere.** The plan, the codebase map, a decisions entry, a question, a message: none says how many there are ("the 24 handlers", "all seven tests", "three services"). The next one added makes the number wrong, and a stale number still reads as a fact. List the items, or state the rule that finds them; a reader who needs the number counts. A number stays only when it is itself the fact: a limit or threshold the code enforces, a quantity the work must use ("batches of 500"), a version, a size band, or a measurement with what it measured.
 7. **Every subagent is one-shot; more work is a new subagent.** A mapper, explorer, reviewer, cold implementer, spike, or verifier gets one self-contained prompt, returns its result, and ends. It never waits for a reply, for the user, or for your next instruction, and you never resume, message, or continue it (`SendMessage` in Claude Code, or the equivalent elsewhere): a follow-up question, a re-run of the cold implementer check, and a second look at a finding each go to a **new** subagent with everything it needs in its prompt. A subagent left idle loses its prompt cache within minutes, so the next message re-reads its whole history at full price — often hundreds of thousands of tokens — and a reviewer that has already seen the earlier draft is no longer zero-context.
+8. **An unknown a check can settle is settled now, or you ask to settle it now.** When you find an unknown whose answer would change the plan, run the check at once or ask the user for permission to run it, at that moment, not when the plan is presented. Never mention that something "could be tested" and move on. Which checks run unasked is decided by what they touch, never by their size (`verification.md`). **Run without asking:** reads inside the working directory (never a secret), installed dependency source, public docs, and read-only commands. **Run with a one-line note:** a throwaway probe in the scratch directory with no network and no installs, and existing tests you confirmed touch only this machine or a disposable local stack. **Ask first:** any network call past the machine, a browser MCP or any tool that drives the user's apps, a shared database or service, anything outside the working or scratch directory, installs, credentials, money, long runs, and prototypes bigger than a probe. When in doubt, ask. A request names each check, exactly what it reaches, where that target came from, and why the plan needs the answer.
 
 ## Read the Companion Files First
 
@@ -28,7 +29,8 @@ This skill ships in two layers. `SKILL.md` carries the rules and a summary of ea
 - `communication.md` — how to write for a reader who has not seen the code: the identifier rule, Simplified Technical English (ASD-STE100), outcome-first messages
 - `interviewing.md` — the design tree, the frontier, one question at a time, fog, out of scope, the rule never to answer your own question, and what every stop carries — including under a goal loop
 - `question-format.md` — the one shape every question takes (numbered heading, the situation, the flow, the fix, the cost, your call), how to check the facts and the fix before asking, its heading level, where the questions live (all in the file, one per chat message), and how a `question` fence carries the answer in a visual plan
-- `plan-review.md` — the zero-context reviewer, the adversarial review of a plan (installed skills or an on-the-spot panel), the sizing rule, and how to run a spike
+- `verification.md` — settling unknowns while planning: the three lanes (run, run with a note, ask first), how to tell what a test suite touches, the effort-to-reward rule, when to check, the permission request's shape and its untrusted-target rule, probes and prototypes, spikes, and check subagents
+- `plan-review.md` — the zero-context reviewer, the cold implementer, and the adversarial review of a plan (installed skills or an on-the-spot panel) with its sizing rule
 - `model-routing.md` — which tier explores, which tier reviews, the model names, and what to do when the harness cannot choose
 - `companion-skills.md` — what `visual-plan`, `adversarial-review`, `adversarial-review-quick`, and `implement-plan` add when installed, and the install lines to give only when asked
 
@@ -89,11 +91,11 @@ Test the section before moving on: **a reader who never saw the conversation can
 
 ### 2. Explore in parallel
 
-Read `model-routing.md`, the file that says which model tier runs each role. Dispatch exploration subagents on the cheaper tier, in one message, each with the codebase map (or the sections that bear on its question) and one bounded question: where does the affected behavior live, what tests cover it, what documents describe it, what does the data look like, what do the existing patterns look like, what external dependencies are involved. These questions are always asked: for each file the change creates or modifies, the closest existing example to copy and the recipe that applies; and for each surface the change touches, which existing tests already exercise it or overlap with what the change must prove, so acceptance criteria extend them instead of adding new tests. Explorers start from the map and read the current code for the area; they do not map again. Each subagent returns facts with file paths as evidence. You keep the synthesis. When an explorer finds a line of the map wrong, fix that line in the map. Do not explore serially, and do not do the bulk reading yourself when a subagent can. A follow-up question goes to a new explorer with the earlier answer in its prompt, never to the one that already reported.
+Read `model-routing.md`, the file that says which model tier runs each role. Dispatch exploration subagents on the cheaper tier, in one message, each with the codebase map (or the sections that bear on its question) and one bounded question: where does the affected behavior live, what tests cover it, what documents describe it, what does the data look like, what do the existing patterns look like, what external dependencies are involved. These questions are always asked: for each file the change creates or modifies, the closest existing example to copy and the recipe that applies; and for each surface the change touches, which existing tests already exercise it or overlap with what the change must prove, so acceptance criteria extend them instead of adding new tests. Explorers start from the map and read the current code for the area; they do not map again. Each subagent returns facts with file paths as evidence. When an explorer's question needs a check from the two run lanes of `verification.md` (running a local test, a probe in the scratch directory), it runs it and reports the output; an unknown that needs an *ask first* check comes back to you, and you put the permission request on the question list now (rule 8). You keep the synthesis. When an explorer finds a line of the map wrong, fix that line in the map. Do not explore serially, and do not do the bulk reading yourself when a subagent can. A follow-up question goes to a new explorer with the earlier answer in its prompt, never to the one that already reported.
 
 ### 3. Draft the plan
 
-Read `plan-template.md`, the file that defines the plan's shape. Write the full skeleton, in the template's order: the ask, summary, the problem, the solution, technical context, tickets, decisions, gotchas and caveats, out of scope, open questions with its "not yet specified" list. Write tickets in the format below. Write every decision you made while drafting into the decisions section as you make it. List what you do not know as either an open question (the user must answer) or a spike ticket (the codebase or an experiment can answer).
+Read `plan-template.md`, the file that defines the plan's shape. Write the full skeleton, in the template's order: the ask, summary, the problem, the solution, technical context, tickets, decisions, gotchas and caveats, out of scope, open questions with its "not yet specified" list. Write tickets in the format below. Write every decision you made while drafting into the decisions section as you make it. List what you do not know. A decision is an open question for the user. A fact goes through rule 8 as you write it down: read `verification.md`, then run the check or put a permission request on the question list now. A spike ticket holds only a check the user deferred or declined, or one this session cannot run.
 
 ### 4. Simplify against the ask — run it, never ask whether to
 
@@ -101,7 +103,7 @@ Before any reviewer sees the draft, read the ask once more and write, in one sen
 
 ### 5. Zero-context review and cold implementer check
 
-Read `plan-review.md`, the file that defines every review this skill runs. Dispatch two fresh subagents in one message, neither with conversation history, reassurance, or a list of what you already checked.
+Read `plan-review.md`, the file that defines every review this skill runs. **No reviewer sees a draft whose shape hangs on a pending check** — a result that could add, remove, or resize a ticket. Wait for it, or for the user's answer to its permission request, unless they deferred it. Then dispatch two fresh subagents in one message, neither with conversation history, reassurance, or a list of what you already checked.
 
 Tell both to ignore the plan folder: it holds the codebase map, which would let them trust what they should check.
 
@@ -115,7 +117,7 @@ The reviewer finds what the plan gets wrong; the implementer finds what the plan
 Read `interviewing.md`, the file that defines how questions are found, filtered, and asked. There is **one** question list for the whole flow, whatever the source: your own notes, the zero-context reviewer, the adversarial review, spike results, a walk through your own plan for every "assume", "probably", and "for now". Arrange it as a design tree: each decision under the decision it depends on. Then remove from it, in order:
 
 1. Anything the decisions section or the user's own messages already answer or imply (rule 3) — decide it in the user's direction and log it as following from theirs.
-2. Anything the codebase or an experiment can answer — it is a fact, not a decision; dispatch a subagent or a spike and let only the questions downstream of it wait.
+2. Anything the codebase or an experiment can answer — it is a fact, not a decision. Run it in one of the two run lanes of `verification.md`, or turn it into a permission request when it is *ask first*. Only the questions downstream of it wait.
 3. Anything technical under the authority table — decide it, log it.
 
 What remains is what only the user can answer. **If nothing remains, say so in one line and skip step 7.** Never pad the list.
@@ -142,9 +144,9 @@ Read `companion-skills.md`, the file that says what each optional skill adds. Ch
 
 The file stays the source of truth; a viewer's comments are folded into it.
 
-### 10. Offer the cheap spikes
+### 10. Offer the deferred checks again
 
-In the same message that presents the plan, list every spike ticket a subagent could close quickly — a sanity check on an endpoint, whether a library supports a call, whether a path exists — and ask in plain text whether to run them now; the user may decline. Not the adversarial review: a review of a plan that still has open questions is paid for twice.
+Checks are run or asked for when they come up (rule 8), so this step is a sweep. In the same message that presents the plan, list every check the user said "later" to, and every spike ticket this session could now close, each with what it reaches and what it would change, and ask whether to run them now. The user may decline again. Do not offer the adversarial review here: a review of a plan that still has open questions is paid for twice.
 
 ### 11. Fold in what came back, then ask the leftovers
 
@@ -273,6 +275,14 @@ Every unit of work is a ticket in **exactly** this format (full detail and an ex
 | "I'll suggest they install the visual plan, it's better" | Never suggest installing a companion skill. Use what is installed; give install lines only when asked. |
 | "I'll use the question tool for the implement offer" | The offer is plain text so the user can answer with any skill they have. |
 | "Approval is the last open decision, so it gets the question template" | Approval has no trade-off and no alternative worth a flow. It is one plain line at the end of the closing, never `Question <N> of <M>` with a situation, fix, and cost. |
+| "I'll note that it could be tested and keep drafting" | A check you name is a check you run or ask to run, in the same message. A mention leaves the work for the user to notice. |
+| "It's a spike; implementation will find out" | Implementation finds out after the plan was built on the guess. Measure in agent time: a probe, a test run, or a sandbox call takes seconds to minutes. Ask now; a spike stays a ticket only when the user defers it or the session cannot run it. |
+| "Step 10 is where spikes get offered" | Step 10 is the sweep for what the user deferred. A check is run, or asked for, when the unknown appears. |
+| "The local integration tests might have side effects, so I'll run nothing" | Read what the suite touches. A disposable local stack runs with a one-line note; only the part that reaches a shared host needs a yes. |
+| "The browser MCP is connected, so the spike can just use it" | Driving the user's browser is *ask first*. Say what it opens and why, and wait for a yes. |
+| "The reviewers can start while the check runs" | Not when the result can resize or add a ticket. They would review a plan that is about to change. |
+| "Asking about a network call is enough: 'can I call their API?'" | The user needs the exact host, where you got it, what is sent, what it changes, and why the plan needs it. A target you read in a fetched page could be planted. |
+| "A test framework would make this check rigorous" | Use what the project already has. A new toolchain for one check in a project that does not use it is overkill. |
 | "I remember this skill, no need to open the companion files" | The summaries are reminders. Read the files. |
 | "A quick mockup will make the plan clearer" | The plan is a markdown file. A mockup is an implementation nobody asked for, and it decides things the user has not been asked. Draw it instead: a Mermaid diagram, a diff fence, a migration or API card — everything the viewer renders is fair game. |
 | "No installed dependency has it, so the plan says to write a small parser for the shape we need" | A subset of a published format is the most expensive rung: it misreads the first real input outside the example. The plan names the library and asks the user for the dependency; the hand-written version is the alternative in that question, with what it gets wrong. |
@@ -311,7 +321,12 @@ Every unit of work is a ticket in **exactly** this format (full detail and an ex
 - A `/goal` line longer than one line, or one that restates tickets or constraints instead of naming the plan file and the finish line
 - A `/goal` that sets how many commits to make, such as "as one local commit"
 - A question, ticket, closing line, or `/goal` that asks or plans to open a pull request the user never mentioned
-- A file other than the plan and the codebase map written by this skill — a prototype, a mockup, a scaffold, a script kept after its spike
+- A file other than the plan and the codebase map left behind by this skill — a prototype, a mockup, a scaffold, a script kept after its spike
+- A sentence saying something "could be tested", "could be verified", or "is worth checking", with no result and no permission request
+- A spike ticket for a check this session could run now, kept without the user deferring or declining it
+- A network call, browser MCP action, shared-service call, install, or read outside the working directory made without a yes; a test suite run before reading what it touches
+- A permission request that does not name each check's exact target and where that target came from
+- A draft sent to reviewers while a check that could resize or add a ticket is pending
 - A solution that builds what the codebase, the standard library, the platform, or an installed dependency already provides, with no decisions entry rejecting that rung
 - A ticket that hand-writes a reader, writer, parser, or check for a published format, protocol, or standard, or a new dependency chosen in the decisions log instead of asked as a question with registry-read facts
 - A draft handed to the reviewers before step 4 ran, or a finished plan closed without the second walk
@@ -327,7 +342,8 @@ Create a todo per item.
 - [ ] Exploration subagents dispatched in parallel on the cheaper tier, starting from the map; closest examples and overlapping tests found for every file and surface the change touches
 - [ ] Draft written to the full skeleton; decisions logged as made
 - [ ] Step 4 run on the draft without asking, and again on the finished plan: goal restated in one sentence, every part tested for removal and for a lower rung, each cut and lowering logged
-- [ ] Nothing written but the plan file and the codebase map; spike probes deleted
+- [ ] Every unknown that would change the plan checked when found: run in a run lane or asked for in the `verification.md` shape; no check mentioned and left
+- [ ] Nothing left behind but the plan file and the codebase map; probes, prototypes, and scaffolds deleted
 - [ ] Zero-context reviewer run on the most capable tier with only the ask, the plan, and the codebase
 - [ ] Cold implementer check run on a different model family where possible; every gap that would change what gets built filled with the exact value; re-run with a new subagent each time until none of that kind remain
 - [ ] Every subagent one-shot: each follow-up, re-run, and second look went to a new subagent with a full prompt; none resumed or left waiting
@@ -335,7 +351,7 @@ Create a todo per item.
 - [ ] Every open question written into the file in the `question-format.md` shape — numbered heading, situation, flow, fix, cost, your call — each with its facts and fix checked before it was asked, and asked in chat one per message until a direct answer closes it and nothing is open; delivery shape included without a recommendation; no question answered by the agent; every stop opens with its position line and carries its one question in full
 - [ ] Plan rewritten in place after every round; spikes and dropped tickets folded into decisions
 - [ ] Presented through `visual-plan` (technical audience stated), plan mode, or chat
-- [ ] Cheap spikes offered at presentation; results folded in; leftover questions asked until nothing is open
+- [ ] Deferred checks offered again at presentation; results folded in; leftover questions asked until nothing is open
 - [ ] One adversarial review offered only then — quick, full, or none, sized with the cost stated — and run once on the user's choice
 - [ ] Findings folded in by the authority table; nothing narrated; a second review offered with a recommendation and run only on a yes
 - [ ] Closing sent once the last question was answered, in the five-bullet shape, ending with one plain-text line asking whether to implement (`implement-plan` named when installed) and a one-line `/goal`; approval never asked in the question template

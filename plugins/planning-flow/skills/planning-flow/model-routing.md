@@ -4,11 +4,11 @@ Distilled from the `use-premium-models-efficiently` skill; if that skill is inst
 
 ## The rule
 
-The **premium** model makes every judgment. That is this session, when the session runs on a premium model. It combines what the explorers found, writes the plan, filters the question list, makes the technical decisions, folds in review findings, and writes the closing message. **Cheaper** models do bounded work: mapping one part of the codebase each, exploring one question each, running spikes, running the on-the-spot review panel and its verifier.
+The **premium** model makes every judgment. That is this session, when the session runs on a premium model. It combines what the explorers found, writes the plan, filters the question list, makes the technical decisions, folds in review findings, and writes the closing message. **Cheaper** models do bounded work: mapping one part of the codebase each, exploring one question each, running checks and spikes, running the on-the-spot review panel and its verifier.
 
 The **zero-context reviewer** is the one delegated role that does not run on a cheaper model. It runs on the **most capable tier your harness offers**. Its whole value is judgment against the ask with no context, and a weaker model finds the obvious gaps and misses the expensive ones.
 
-| Provider | Premium (judge, zero-context reviewer) | Cheaper (explorer, spike, panel) |
+| Provider | Premium (judge, zero-context reviewer) | Cheaper (explorer, check, panel) |
 |---|---|---|
 | Anthropic | Claude Fable, Claude Opus | Claude Sonnet, Claude Haiku |
 | OpenAI | GPT-5.6 Sol | GPT-5.6 Terra, GPT-5.6 Luna |
@@ -23,7 +23,7 @@ Model names change over time. The rule is about relative cost inside whichever p
 | Codebase mappers (step 0, one set of map sections each, in parallel) | cheap | each covers a fixed part of the repository and cites `path:line`; you check one cited line per section |
 | Exploration subagents (one bounded question each, in parallel) | cheap | the question is narrow, and the answer comes back with evidence |
 | Zero-context reviewer | most capable available | judgment with no context is the whole point |
-| Cheap spikes | cheap | one measurable question each |
+| Checks and spikes (`verification.md`) | cheap | one measurable question each, with the exact commands and targets allowed |
 | On-the-spot review panel and its verifier | cheap | narrow charters; fresh context is the value |
 | Installed `adversarial-review` skills | as the skill decides | run them as written |
 
