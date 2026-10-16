@@ -155,7 +155,7 @@ It prints a plain confirmation (`Updated N comment(s) to "acknowledged".`). The 
 
 ### 7. Approval gate
 
-The plan is approved when the user says so (in chat or via a comment). Only then move on to implementation. Keep the server running during implementation if a recap will follow — the same server can serve both documents.
+The plan is approved when the user says so (in chat or via a comment). Only then move on to implementation. Ask for approval in one plain line of chat, never as a `question` fence or an open question in the document: it has no trade-off to lay out. Keep the server running during implementation if a recap will follow — the same server can serve both documents.
 
 If the user wants to share or archive the plan (send it, attach it, keep a copy), offer `--export`: it builds one self-contained HTML file — no server needed to view it later — with the same rendering fidelity as the live page.
 

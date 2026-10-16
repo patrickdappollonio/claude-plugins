@@ -126,7 +126,7 @@ Read `question-format.md`, the file that defines the one shape every question ta
 
 Then ask **in chat, one question per message**: the first frontier question, word for word from the file, under the position line, with the count of what else is open and the file's path. Never through the harness's question tool — its fields cannot hold a flow — and never two at once. Wait. Fold the answer in (step 8), recompute the frontier, renumber the open questions (answered ones still count, so `Question 1 of 5` is followed by `Question 2 of 5`), ask the next one in the next message; as many rounds as it takes, until nothing is open. When `visual-plan` serves the file, each question's **Your call** line is a `question` fence, so the user may answer there instead; chat still carries one at a time. **Never answer your own question**: no likely answer filled in, no silence taken as consent.
 
-**Delivery shape is always on the frontier when the work is bigger than one small ticket:** one pull request for everything, or several. State the trade in one neutral line each — one PR is a single review and a single merge; several are smaller reviews and more coordination — and **give no recommendation**. Large tickets and large PRs are legitimate; writing code is cheap now and the user decides how to review it. Never nudge toward splitting.
+**Delivery shape is always on the frontier when the work is bigger than one small ticket:** one pull request for everything, or several. State the trade in one neutral line each — one PR is a single review and a single merge; several are smaller reviews and more coordination — and **give no recommendation**. Large tickets and large PRs are legitimate; writing code is cheap now and the user decides how to review it. Never nudge toward splitting. This question decides how the work is split, not when a pull request is opened. **Opening a PR is the user's call, made when they are ready**: no question, ticket, closing line, or `/goal` asks or plans to open one. Asked too early, it is one more thing they must answer instead of ignore. If they bring it up, answer it.
 
 ### 8. Rewrite the plan in place
 
@@ -160,7 +160,7 @@ When the fixes are in, ask before any second review: say what was found and what
 
 ### 13. Close
 
-When nothing is open and the user says the plan is approved, close as below.
+When the last question is answered and nothing else is open, send the closing below. **Asking for approval is not a question.** It has no trade-off for the user to weigh, so it never gets the question template: no `Question <N> of <M>` heading, no situation, flow, fix, cost, or *Your call*, and it never counts as an open question. The closing ends with one plain line asking whether to implement, and the user's yes to that line is the approval.
 
 ## Closing
 
@@ -174,7 +174,37 @@ The closing message is the plan, not its history. Exactly this shape, short:
 
 Never: how many revisions there were, what reviewers said, what changed since the draft.
 
-Then ask, **in plain text in the same message, never through a question tool**, whether they want to start implementing: name `implement-plan` as the recommended next step when it is installed, otherwise say the file is ready for whichever implementation step they prefer. Plain text lets them answer with any skill or command they have.
+Then ask, **in plain text in the same message, never through a question tool**, whether they want to start implementing: one line, with no template around it. Name `implement-plan` as the recommended next step when it is installed, otherwise say the file is ready for whichever implementation step they prefer. Plain text lets them answer with any skill or command they have.
+
+Under that line, give a one-line `/goal` the user can paste to run the build hands-free, with the plan's real path filled in:
+
+```text
+/goal Implement .plans/<file>.md with implement-plan; done when every ticket's acceptance criteria pass.
+```
+
+Drop `with implement-plan` when it is not installed. Keep the goal to one line of about 20 words. That is a target for simplicity, not a budget: whatever length limit the harness sets, never write toward it. The plan file already holds everything else, so the goal names the file and the finish line and nothing more: never tickets, constraints, test names, the plan's summary, or how to commit. Commands, field names, request shapes, and status codes are already in the plan, and repeating them in the goal makes it too long and lets it drift from the plan.
+
+**The goal never sets a commit count.** "As one local commit" forces a large, multi-ticket build into one commit that cannot be partly undone. Commits are free-form, and the user can squash them later. Pushing is different: nothing is pushed unless the user allows it, so the goal does not need to say so. The implementer may still recommend a push when a backup matters, such as before a risky step or to recover from one, and waits for a yes.
+
+Wrong, because it restates the plan:
+
+```text
+/goal Implement .plans/csv-export.md as one local commit: add an --export=csv flag to the report command (quote every field, UTF-8 with BOM, exit 2 on a write error) plus a per-user export_dir setting, passing go vet and go test ./...; no push.
+```
+
+Wrong, because it fixes the commit count:
+
+```text
+/goal Implement .plans/csv-export.md until every acceptance criterion passes and CI checks are green, as one local commit, no push.
+```
+
+The end of a closing, right:
+
+```markdown
+Ready to implement? I recommend `implement-plan`, which picks up the plan file.
+
+To run it hands-free: `/goal Implement .plans/csv-export.md with implement-plan; done when every ticket's acceptance criteria pass.`
+```
 
 ## Tickets
 
@@ -230,6 +260,7 @@ Every unit of work is a ticket in **exactly** this format (full detail and an ex
 | "The user answered something close to this earlier" | Close enough is decided. Decide it in their direction and log it as following from their answer. |
 | "This decision is technical, so it's mine" | Only while its effect stays invisible. Trace the consequence first. |
 | "Several PRs is best practice, I'll recommend it" | Delivery shape is the user's, with no recommendation. State both trades neutrally. |
+| "I'll ask whether to open a PR when the build is done" | The user asks for a PR when they want one. An early offer is a question they have to answer for nothing. |
 | "This ticket is 5,000 lines, I should split it" | XXL is a band, not an error. Split only when the user asks. |
 | "I'll leave the resolved spike ticket so the work is visible" | The answer is the work. It lives in decisions and in the tickets it changed. |
 | "The change is small, so I'll skip the zero-context reviewer" | Small changes get the same one reviewer; it is one subagent. Nothing gets no review. |
@@ -241,6 +272,7 @@ Every unit of work is a ticket in **exactly** this format (full detail and an ex
 | "The implementer wants every file's surrounding text pasted in" | That is what the implementer reads at edit time. A gap is a fact that changes the build: a string, a format, a rule, a location. Verbatim file contents are not. |
 | "I'll suggest they install the visual plan, it's better" | Never suggest installing a companion skill. Use what is installed; give install lines only when asked. |
 | "I'll use the question tool for the implement offer" | The offer is plain text so the user can answer with any skill they have. |
+| "Approval is the last open decision, so it gets the question template" | Approval has no trade-off and no alternative worth a flow. It is one plain line at the end of the closing, never `Question <N> of <M>` with a situation, fix, and cost. |
 | "I remember this skill, no need to open the companion files" | The summaries are reminders. Read the files. |
 | "A quick mockup will make the plan clearer" | The plan is a markdown file. A mockup is an implementation nobody asked for, and it decides things the user has not been asked. Draw it instead: a Mermaid diagram, a diff fence, a migration or API card — everything the viewer renders is fair game. |
 | "No installed dependency has it, so the plan says to write a small parser for the shape we need" | A subset of a published format is the most expensive rung: it misreads the first real input outside the example. The plan names the library and asks the user for the dependency; the hand-written version is the alternative in that question, with what it gets wrong. |
@@ -275,6 +307,10 @@ Every unit of work is a ticket in **exactly** this format (full detail and an ex
 - A second adversarial review started without a fresh yes
 - A closing message that counts revisions or quotes reviewers
 - The implementation offer made through a question tool
+- Approval asked as a numbered question with a situation, flow, fix, cost, or *Your call*, or counted among the open questions
+- A `/goal` line longer than one line, or one that restates tickets or constraints instead of naming the plan file and the finish line
+- A `/goal` that sets how many commits to make, such as "as one local commit"
+- A question, ticket, closing line, or `/goal` that asks or plans to open a pull request the user never mentioned
 - A file other than the plan and the codebase map written by this skill — a prototype, a mockup, a scaffold, a script kept after its spike
 - A solution that builds what the codebase, the standard library, the platform, or an installed dependency already provides, with no decisions entry rejecting that rung
 - A ticket that hand-writes a reader, writer, parser, or check for a published format, protocol, or standard, or a new dependency chosen in the decisions log instead of asked as a question with registry-read facts
@@ -302,5 +338,5 @@ Create a todo per item.
 - [ ] Cheap spikes offered at presentation; results folded in; leftover questions asked until nothing is open
 - [ ] One adversarial review offered only then — quick, full, or none, sized with the cost stated — and run once on the user's choice
 - [ ] Findings folded in by the authority table; nothing narrated; a second review offered with a recommendation and run only on a yes
+- [ ] Closing sent once the last question was answered, in the five-bullet shape, ending with one plain-text line asking whether to implement (`implement-plan` named when installed) and a one-line `/goal`; approval never asked in the question template
 - [ ] Approval received
-- [ ] Closing in the five-bullet shape; implementation offered in plain text, `implement-plan` named when installed
