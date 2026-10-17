@@ -9,23 +9,25 @@ An adversarial review is a review that **assumes the change is broken and tries 
 
 ## When it runs, and which one
 
-The review runs **once**, after every slice is merged and the comment and simplification pass is done, on the whole merged diff. Nothing runs before the user answers the G2 question. Size the change to form a recommendation, then ask — quick, full, or none — with the cost of each in plain words:
+The review runs **once**, after every slice is merged and the comment and simplification pass is done, on the whole merged diff. Nothing runs before the user answers the G2 question. Size the change to form a recommendation, then ask — fast, quick, full, or none — with the cost of each in plain words:
 
 | Change | Recommend at G2 |
 |---|---|
-| Small (≤ 300 lines and ≤ 5 files and one subsystem and no schema/auth/concurrency/external I/O) | the quick skill, `adversarial-review-quick` |
+| Small (≤ 500 lines and one subsystem and no schema/auth/concurrency/external I/O) | the fast skill, `adversarial-review-fast` |
+| Medium (≤ 2000 lines and one subsystem and no schema/auth/concurrency/external I/O) | the quick skill, `adversarial-review-quick` |
 | Large — one over on any of those, or one of those angles touched | the full skill, `adversarial-review` |
 
 | User chose | Skill installed | Run |
 |---|---|---|
-| Quick or full | that skill | that skill, once, as written |
+| Fast, quick, or full | that skill | that skill, once, as written |
+| Fast | not installed | the one-reviewer version below, once |
 | Full | only `adversarial-review-quick` | the quick skill; say the full one is not installed, give the install lines from `companion-skills.md` only if asked, name the uncovered angles in the recap — do not substitute the on-the-spot panel for the full one |
 | Quick or full | neither | the on-the-spot panel below, once |
 | None | any | nothing; name the unreviewed angles in the recap |
 
-Never a panel per slice, per fix round, or on the pass's diff alone. Run the skills **as written**: their verifier and fix validator are part of the review. Reproducing a finding yourself adds evidence; it does not replace them.
+Never a panel per slice, per fix round, or on the pass's diff alone. Run the skills **as written**: their verifier and fix validator — or, in the fast skill, the reviewer's self-check — are part of the review. Reproducing a finding yourself adds evidence; it does not replace them.
 
-Check what is installed by looking at the skill list your harness gives you: the quick panel is the `adversarial-review-quick` skill, the full panel is the `adversarial-review` skill, and both ship in the `adversarial-review` plugin — install commands are in `companion-skills.md`. The quick skill proposes the fewest reviewers that fit the change and asks which to run — answer from the sizing and the user's G2 choice rather than re-asking the user: confirm its proposal, and add the angles the sizing flagged.
+Check what is installed by looking at the skill list your harness gives you: the fast review is the `adversarial-review-fast` skill, the quick panel is the `adversarial-review-quick` skill, the full panel is the `adversarial-review` skill, and all three ship in the `adversarial-review` plugin — install commands are in `companion-skills.md`. The quick skill proposes the fewest reviewers that fit the change and asks which to run — answer from the sizing and the user's G2 choice rather than re-asking the user: confirm its proposal, and add the angles the sizing flagged.
 
 ## What to hand the review
 
@@ -60,6 +62,16 @@ For each confirmed finding, draft the **smallest root-cause fix**, then send the
 
 Report to the user in plain language: what was reviewed, whether it matches the plan, whether the plan held up, how many confirmed findings and how serious, then each finding as **What's wrong / The fix / Where / Severity**. Findings marked `design_is_wrong` lead, and they are the user's to decide.
 
+## One-reviewer version (fast chosen, skill not installed)
+
+Dispatch **one** fresh subagent on the cheap tier. Pick two or three domains from what the diff touches — never from where you suspect a bug — each a one-line charter. The first is always **the ask and the claims**: "Assume this is not what was asked, that what was asked is wrong for this case, and that every claim in comments, docs, names, and messages is false." Add one or two by trigger: what the user sees (markup, styles, output), calls across a boundary (API, network, database, disk, subprocess), data that outlives the call (writes, files, caches), inputs from outside, tests, failure signals (error paths, logs), or callers' promises (a signature, default, or behavior an existing caller relies on).
+
+Its prompt holds only: the domains, the brief (marked as such), the diff, the changed-file list, the scope rule above, and the output format above with two more fields — `evidence` holding the exact lines quoted from the location, the numbered trace from trigger to consequence, and where it looked for a guard that would already prevent it; and `fix_check` holding why the fix removes the cause and where every name the fix uses is defined. It ends with: "Before a finding goes in, fill every evidence field; a finding you cannot fill, or whose guard you found, you drop. This is a single task. Return your findings when you are done and end; nobody will send you further instructions."
+
+No verifier and no validator run. You check only that each quoted line is at its location, drop the findings where it is not, and say in the report that one reviewer checked its own findings and no second agent did.
+
+For the second review, on the fixes, hand it only what changed since the first review: `git diff <commit-the-first-review-saw>..HEAD`.
+
 ## After the review — the authority split still applies
 
-A finding inside the plan's goal is fixed, not asked. Fix, and log in one line, what is technical or corrects a bug and leaves the application behaving as the plan agreed — making the agreed behavior actually happen counts, as when an alert the plan promised would never fire. Park, with the validated fix as the recommendation, what changes behavior beyond the plan — the business process, output, ordering, defaults, syntax, an operational policy such as a threshold, timing, deployment, configuration, cost — or is large (a new dependency, an API, storage, a rewrite), or reaches outside the run's change. A `design_is_wrong` finding takes the same test. When an installed review skill runs, its own question step does not: its findings come back here. Then re-run the conformance review on the fixes. Do not start another panel on your own: report what was found, fixed, and parked, and ask whether to run a second review on the fixed diff, with a recommendation sized to the fixes. A no ends the loop with the parked items under *Pending*.
+A finding inside the plan's goal is fixed, not asked. Fix, and log in one line, what is technical or corrects a bug and leaves the application behaving as the plan agreed — making the agreed behavior actually happen counts, as when an alert the plan promised would never fire. Park, with the validated fix as the recommendation, what changes behavior beyond the plan — the business process, output, ordering, defaults, syntax, an operational policy such as a threshold, timing, deployment, configuration, cost — or is large (a new dependency, an API, storage, a rewrite), or reaches outside the run's change. A `design_is_wrong` finding takes the same test. When an installed review skill runs, its own question step does not: its findings come back here. Then re-run the conformance review on the fixes. Do not start another panel on your own: report what was found, fixed, and parked, and ask whether to run a second review on the fixes, with a recommendation sized to the fixes alone — usually fast, on what changed since the first review. A no ends the loop with the parked items under *Pending*.

@@ -4,7 +4,13 @@ A **hostile, bias-free review** of a code change — a PR, the last commit, or y
 
 Most reviews are friendly: the reviewer shares your context and quietly assumes the code works. This one doesn't. It dispatches a panel of **independent reviewers, each a fresh sub-agent with no knowledge of your conversation or your rationalizations.** Every reviewer is told one thing: *assume the change is broken and prove it.* A change that "looks fine" to the person who wrote it (or to the assistant that helped write it) gets attacked from every direction at once.
 
-This plugin ships **two skills** — the same method at two sizes. Pick by how much the change is worth.
+This plugin ships **three skills** — the same method at three sizes. Pick by how much the change is worth:
+
+| Skill | For |
+|---|---|
+| [Full panel](#the-full-panel) | Substantial work no full review has seen yet — over 2000 changed lines, more than one subsystem, or a database schema, sign-in, concurrency, or outside-service change |
+| [Quick panel](#the-quick-panel) | About 500 to 2000 changed lines in one subsystem, when you want to pick the reviewers |
+| [Fast review](#the-fast-review) | Up to about 500 changed lines in one subsystem, a test change, a small behavior change, and re-checking the fixes an earlier review produced |
 
 ## The full panel
 
@@ -21,6 +27,19 @@ It starts from an empty roster and adds a reviewer only when it can point at tha
 
 > [!NOTE]
 > **It is narrower, and it says so.** A four-reviewer run examines four angles, and the report's close names every reviewer that did not run — so a clean quick report only means those angles found nothing — it is not proof the change is safe. When a change deserves breadth, run [the full panel](#the-full-panel) instead; the quick skill offers that at the end too.
+
+## The fast review
+
+**`adversarial-review-fast`** — **one fresh reviewer**, with none of your session's reasoning, told to prove the change wrong. Ask for *"a fast adversarial review"*.
+
+Instead of the 18 named reviewers, the agent picks two or three **domains** from what the change touches — what the user sees, calls across a boundary, stored data, tests, and so on. The first domain is always the same: is this what was asked, was what was asked right, and is every claim the change makes true. Instead of a separate verifier and fix validator, the reviewer proves each finding and each fix against a checklist: the exact lines, the steps from trigger to consequence, where it looked for a guard that would already prevent it, and where every name in the fix is defined. A finding it cannot prove, it drops.
+
+Every review — full, quick, or fast — records a hidden git snapshot of the state it looked at, without touching your files, your staging area, or the stash. The fast review compares against that snapshot and reviews **only what changed since the last review**, which makes it the natural second look after you apply fixes. Ask for the whole change and it reviews that instead.
+
+It never starts a review on its own: when the agent thinks a change deserves one, it offers it and you decide. The one exception is a **sanity check** — mid-task, when the agent is about to rely on its own understanding of how some code behaves, it may send one agent to try to disprove that one claim before building on it.
+
+> [!NOTE]
+> **One reviewer checks its own work, and the report says so.** It costs one agent instead of a roster plus two checkers, and it is built for small changes. On a bigger change it tells you the quick panel covers more, then runs anyway if you asked for fast.
 
 ## What the reviewers are — and aren't — told
 
@@ -61,7 +80,7 @@ Each reviewer attacks from one narrow angle. The full panel runs all of them; th
 | **AI Anti-Slop Critic** | plausible-but-hollow generated code, hallucinated APIs |
 | **Fact-Checker** | every factual claim verified against primary sources via web search |
 
-A standalone **False-Positive Filter** runs last and gates everything before it reaches you — in both panels.
+A standalone **False-Positive Filter** runs last and gates everything before it reaches you — in the full and quick panels; the fast review's reviewer proves its own findings against a checklist instead.
 
 ## The report is written for you, not for the panel
 
@@ -78,12 +97,12 @@ Symbol names appear in exactly one place: a clickable `file:line` pointer under 
 /plugin install adversarial-review@patrickdappollonio
 ```
 
-That installs **both skills** — your agent picks the panel from how you ask.
+That installs **all three skills** — your agent picks the size from how you ask.
 
 **Any other agent** — Cursor, Codex, Copilot, opencode, Gemini, and 70+ more — via [`npx skills`](https://github.com/vercel-labs/skills), which installs one skill at a time, so name the ones you want:
 
 ```bash
-npx skills add patrickdappollonio/claude-plugins --skill adversarial-review --skill adversarial-review-quick
+npx skills add patrickdappollonio/claude-plugins --skill adversarial-review --skill adversarial-review-quick --skill adversarial-review-fast
 ```
 
 Each skill is self-contained, so either one works installed on its own. Add `-g` to install for your user instead of just this project, and `-a <agent>` to target one agent. Update later with `npx skills update`.
@@ -102,14 +121,15 @@ Ask for a smaller one and you get the quick panel:
 Run a smaller adversarial review on this change.
 ```
 
-Or invoke either explicitly with its slash command:
+Or invoke one explicitly with its slash command:
 
 ```
 /adversarial-review:adversarial-review
 /adversarial-review:adversarial-review-quick
+/adversarial-review:adversarial-review-fast
 ```
 
-Both work on uncommitted changes, the current branch's PR (via the `gh` CLI), or whatever you point it at. If both local changes and an open PR exist, it asks which you mean rather than guessing.
+All three work on uncommitted changes, the current branch's PR (via the `gh` CLI), or whatever you point it at. If both local changes and an open PR exist, it asks which you mean rather than guessing.
 
 If you approved a plan or a mock, point at it — *"review this against the plan we agreed"* — and the panel measures the implementation against it. If it can't find one, it asks what was agreed and what was deliberately left out; if there genuinely is no agreed scope, it runs anyway and tells you in the report that design drift went unchecked.
 

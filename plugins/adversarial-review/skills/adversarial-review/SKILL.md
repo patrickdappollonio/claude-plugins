@@ -1,7 +1,7 @@
 ---
 name: adversarial-review
 description: >-
-  Use when you want a hostile, bias-free review of a code change — a PR, the last commit, or local/uncommitted work — that attacks it from many independent angles (conformance to the approved design, whether that design was right in the first place, concurrency, failure injection, input and auth attacks, data integrity, resource exhaustion, observability, API contract, maintainability, simplicity and scope creep, root-cause/incomplete-fix consistency, rollback, tests, AI-slop, fact-checking). Especially for AI-generated code that looks right but may be hollow, when a change should be checked against a plan or mock that was signed off, or when you want claims in comments and commit messages fact-checked rather than trusted. This is the full panel and it is token-heavy: if the user asks for a smaller, quicker, lighter, or cheaper adversarial review, use the `adversarial-review-quick` skill instead.
+  Use when you want a hostile, bias-free review of a code change — a PR, the last commit, or local/uncommitted work — that attacks it from many independent angles (conformance to the approved design, whether that design was right in the first place, concurrency, failure injection, input and auth attacks, data integrity, resource exhaustion, observability, API contract, maintainability, simplicity and scope creep, root-cause/incomplete-fix consistency, rollback, tests, AI-slop, fact-checking). Especially for AI-generated code that looks right but may be hollow, when a change should be checked against a plan or mock that was signed off, or when you want claims in comments and commit messages fact-checked rather than trusted. This is the full panel and it is token-heavy: if the user asks for a smaller, quicker, lighter, or cheaper adversarial review, use the `adversarial-review-quick` skill instead, or `adversarial-review-fast` for a change of up to about 500 lines or a re-check of fixes.
 ---
 
 # Adversarial Review
@@ -10,13 +10,13 @@ description: >-
 
 Run a panel of **independent, hostile reviewers** against a change. Each reviewer assumes the code is broken and tries to prove it, from a single narrow angle. Because each runs as a fresh subagent, **none of them inherit the main session's reasoning or the author's rationalizations** — that is the whole point. A change that "looks fine" to the person who wrote it (or to the assistant that helped write it) gets attacked from 18 directions by reviewers who were never told why it should work.
 
-**This is the full panel, and it is token-heavy on purpose:** 18 reviewers plus two gate agents, each reading the diff and the surrounding code. If the user asked for a **smaller, quicker, lighter, or cheaper** review, stop and run the `adversarial-review-quick` skill instead. Run this full panel when the user asks for a thorough or complete review.
+**This is the full panel, and it is token-heavy on purpose:** 18 reviewers plus two gate agents, each reading the diff and the surrounding code. If the user asked for a **smaller, quicker, lighter, or cheaper** review, stop and run the `adversarial-review-quick` skill instead; for up to about 500 lines, or to re-check the fixes from an earlier review, run `adversarial-review-fast` (one reviewer). Run this full panel when the user asks for a thorough or complete review, or when no full review has run on substantial work — over 2000 changed lines, more than one subsystem, or a database schema, sign-in, concurrency, or outside-service change. A plan is sized by what it would build: when the change under review is a plan document, count the code its tickets would touch once built, never the plan's own lines — diagrams, examples, and questions make a plan long without making the change large.
 
 **Core principle:** the orchestrator gathers the change *and the brief* once, hands each reviewer the raw change, the brief, and a charter, collects findings, a separate verifier confirms each finding is real, and a separate validator confirms each proposed fix actually works — before anything reaches the user.
 
-### Companion file — read it first
+### Companion files — read them first
 
-`question-format.md` sits next to this file and defines the one shape every end-of-review question takes: the template, what goes in each part, the word cap, the alternatives, and the one-per-message rule. **Read it in full the first time this skill runs in a session, before step 1**, and read it again at the STOP step. The summary in that step is a reminder of text you have already read, never a substitute for it.
+`question-format.md` sits next to this file and defines the one shape every end-of-review question takes: the template, what goes in each part, the word cap, the alternatives, and the one-per-message rule. `review-snapshot.md` sits beside it and defines how to record the state this review looked at, so a later `adversarial-review-fast` run can review only what changed since. **Read both in full the first time this skill runs in a session, before step 1**; read `review-snapshot.md` again at step 1 and `question-format.md` again at the STOP step. The summaries in those steps are reminders of text you have already read, never a substitute for it.
 
 ### The one thing reviewers must know: what was agreed
 
@@ -75,16 +75,16 @@ gh pr view --json number,title  # is there an open PR for this branch? (ignore e
 ```
 
 Decision:
-- **Only local changes exist** → review the local diff (`git diff HEAD`, plus staged).
+- **Only local changes exist** → review the local diff: `git diff HEAD <snapshot-id>`, against the snapshot below, which unlike `git diff HEAD` includes new untracked files.
 - **Only a PR exists** (clean working tree, branch has a PR) → review the whole PR (`gh pr diff <n>`).
 - **Both exist** (uncommitted changes AND an open PR) → **ask the user** which to review (the PR as a whole, or just the local uncommitted changes). Use the harness's question tool when one exists — `AskUserQuestion` in Claude Code, or its equivalent elsewhere — and ask in plain text and wait for the reply when there is none. Do not guess.
-- **Neither** → tell the user there is nothing to review and stop.
+- **Neither** → if the branch has commits the default branch lacks, review those (`git diff <default>...HEAD`); otherwise tell the user there is nothing to review and stop.
 
 **If there's no `gh` CLI** recommend the user to install it. It might also be the user wants to review the last codebase here, not in the PR. Feel free to ask for guidance.
 
-Capture the scope once:
-- The diff (`git diff HEAD` / `gh pr diff <n>`).
-- The list of changed files (`git diff --name-only HEAD` / `gh pr diff <n> --name-only`).
+Capture the scope once, and take a snapshot of the state under review as `review-snapshot.md` says:
+- The diff (`git diff HEAD <snapshot-id>` / `gh pr diff <n>`).
+- The list of changed files (the same command with `--name-only`).
 
 ### 2. Assemble the brief — what this change was agreed to do
 
@@ -188,7 +188,7 @@ You hold code-level material: findings full of symbols, drafted fixes, validator
 3. **One line on whether the design held up** — separate from the line above, because the answers are independent: a change can match the plan exactly and still be wrong, and that is the case the user has least chance of catching alone. A clean conformance line never stands in for this one.
 4. **A one-line count** — "9 confirmed issues across 5 files; 3 serious, 4 moderate, 2 minor."
 5. **The findings, grouped** under short plain themes rather than charter names — *the plan itself has a problem*, *doesn't match what was agreed*, *could crash or break*, *security and access gaps*, *data ending up wrong*, *slow under heavy use*, *will confuse the next person*, *weak tests*, *claims that aren't true*.
-6. **A close** — which reviewers were skipped and why, then anything the brief had declared out of scope that a reviewer flagged anyway, listed separately as *deliberately left out — flagged anyway*, one line each. Hold deep technical detail until asked.
+6. **A close** — which reviewers were skipped and why, then anything the brief had declared out of scope that a reviewer flagged anyway, listed separately as *deliberately left out — flagged anyway*, one line each. Hold deep technical detail until asked. End with the `Last adversarial review:` line from `review-snapshot.md`, and write it to the scratchpad file when there is one.
 
 **Two groups lead, in this order, whenever they have anything in them:**
 
@@ -225,7 +225,7 @@ This register governs the questions in step 8 too, and any explanation the user 
 
 **Answers in their own words.** "Apply all of them", "just do everything", "the rest too" answer every remaining ordinary question at once: record it and stop asking those. Say "recorded as apply", never "applying now" — nothing is applied until the last question is answered, and the message must not claim otherwise. They never answer a `design_is_wrong` question, which is asked one by one regardless: "all of them" is an answer about the fixes they were offered, not approval of a design they have not been shown. Only a direct answer closes a question. Test every reply before you record it: a word of doubt — guess, think, probably, maybe, might, suppose, whatever, not sure — or a question mark at the end keeps the finding open even beside a "yes", "sure", or "ok" ("fine I guess, apply it?" is not an answer); a vague reply or a question back keeps it open too. Answer what they asked, say in one line what you could not tell, and put the same *Your call* again. An answer that partly settles a later finding narrows that question before it is asked; two answers that cannot both hold go back to the user with your recommendation, never resolved by you. Silence answers nothing: an unanswered finding stays undecided and nothing is applied, and every message says how many are open.
 
-**After the last answer, one short message before any code changes**: one line per finding — applied, deferred, dismissed with their reason, design revised or kept — then anything still open and why. Only then do you touch code, and only the accepted fixes and approved design changes.
+**After the last answer, one short message before any code changes**: one line per finding — applied, deferred, dismissed with their reason, design revised or kept — then anything still open and why. Only then do you touch code, and only the accepted fixes and approved design changes. Once they are in, offer in one line a fast review of them (`adversarial-review-fast`, one reviewer on what changed since this review); the harness's question tool is fine for that.
 
 This gate holds no matter what:
 

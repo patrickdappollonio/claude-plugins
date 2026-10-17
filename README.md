@@ -60,11 +60,11 @@ Add `-g` to install for your user instead of the current project, and `-a <agent
 
 To install several, repeat the flag — `--skill a --skill b`. A comma-separated list matches nothing and silently installs nothing, so don't use one.
 
-Each plugin below maps to one skill of the same name, except `adversarial-review`, `anti-slop`, and `visual-docs`, which provide two each. Every skill is self-contained, so installing one without its sibling works fine:
+Each plugin below maps to one skill of the same name, except `adversarial-review`, which provides three, and `anti-slop` and `visual-docs`, which provide two each. Every skill is self-contained, so installing one without its sibling works fine:
 
 | Plugin | `--skill` name(s) |
 |---|---|
-| adversarial-review | `adversarial-review`, `adversarial-review-quick` |
+| adversarial-review | `adversarial-review`, `adversarial-review-quick`, `adversarial-review-fast` |
 | anti-slop | `anti-slop-ui`, `anti-slop-text` |
 | appropriate-comments-code | `appropriate-comments-code` |
 | ask-me-again | `ask-me-again` |
@@ -95,6 +95,8 @@ A standalone false-positive filter re-checks every finding against the actual co
 
 Eighteen reviewers plus two gate agents is a lot of tokens, and most changes don't need all of it — so the plugin also ships a **quick panel** (`adversarial-review-quick`): it proposes the fewest reviewers that fit the change, shows you the full roster so you can add or drop any, and keeps the same verifier and the same fix validator. Ask for *"a smaller adversarial review"* and your agent runs that one instead. It names every reviewer that did not run, so a clean report never reads as a clean bill of health.
 
+For a small change — up to about 500 lines in one area of the code — or to re-check the fixes an earlier review produced, there is a **fast review** (`adversarial-review-fast`): one fresh reviewer attacks the change from two or three angles picked for it, proves each finding and fix against a checklist instead of handing them to separate checkers, and reviews only what changed since the last review. Ask for *"a fast adversarial review"*.
+
 ```text
 # Claude Code session — type this as a message
 /plugin install adversarial-review@patrickdappollonio
@@ -106,10 +108,10 @@ claude plugin install adversarial-review@patrickdappollonio
 codex plugin add adversarial-review@patrickdappollonio
 
 # Shell — npx skills
-npx skills add patrickdappollonio/claude-plugins --skill adversarial-review --skill adversarial-review-quick
+npx skills add patrickdappollonio/claude-plugins --skill adversarial-review --skill adversarial-review-quick --skill adversarial-review-fast
 ```
 
-Then just ask: *"Give this change an adversarial review."* — or *"a smaller adversarial review"* for the quick panel. [Read more →](plugins/adversarial-review)
+Then just ask: *"Give this change an adversarial review."* — or *"a smaller adversarial review"* for the quick panel, or *"a fast adversarial review"* for one reviewer. [Read more →](plugins/adversarial-review)
 
 ### anti-slop
 
@@ -251,7 +253,7 @@ Then just write Go — it loads itself. [Read more →](plugins/effective-go)
 
 ### implement-plan
 
-The "now build it" step after a plan is agreed. The agent splits the plan into independent slices, gives each a git worktree and a cheaper executor working under TDD with unit tests as the floor, existing tests extended before new ones are added, and every related document updated in the same diff — journey-style integration/E2E tests and real dependencies via testcontainers are recommended, and you size them — then checks every slice **against the plan, item by item** on the premium model, docs included. Once every slice is merged it runs one pass over the merged diff with the `appropriate-comments-code` and `code-simplification` skills when installed, or a distilled version of each when not: comments that narrate the session are rewritten or removed, and the code's shape is simplified without changing behavior. Then it asks which adversarial review you want — quick, full, or none, sized to the change (the `adversarial-review` skills when installed, an on-the-spot panel when not) — runs that one review once, fixes what it finds, and asks before any second review. Technical decisions are logged at the end of the plan in plain language; functional and operational ones are parked for you, never assumed. It estimates capacity before starting, hands you a `/goal` condition so the run is hands-free, merges back into the branch you started on, and never deletes a worktree without asking.
+The "now build it" step after a plan is agreed. The agent splits the plan into independent slices, gives each a git worktree and a cheaper executor working under TDD with unit tests as the floor, existing tests extended before new ones are added, and every related document updated in the same diff — journey-style integration/E2E tests and real dependencies via testcontainers are recommended, and you size them — then checks every slice **against the plan, item by item** on the premium model, docs included. Once every slice is merged it runs one pass over the merged diff with the `appropriate-comments-code` and `code-simplification` skills when installed, or a distilled version of each when not: comments that narrate the session are rewritten or removed, and the code's shape is simplified without changing behavior. Then it asks which adversarial review you want — fast, quick, full, or none, sized to the change (the `adversarial-review` skills when installed, an on-the-spot panel when not) — runs that one review once, fixes what it finds, and asks before any second review. Technical decisions are logged at the end of the plan in plain language; functional and operational ones are parked for you, never assumed. It estimates capacity before starting, hands you a `/goal` condition so the run is hands-free, merges back into the branch you started on, and never deletes a worktree without asking.
 
 ```text
 # Claude Code session — type this as a message
@@ -271,7 +273,7 @@ Then, once a plan is agreed: *"Implement the plan we agreed on."* [Read more →
 
 ### planning-flow
 
-Build a coding plan that ends as **one plan**, never a story of its revisions. The agent first maps the codebase — structure, features, end-to-end flows, routes and who may call them, the patterns to copy, and an inventory of what each test exercises — into a map that is stamped with its commit and refreshed only where files changed, then explores the change with parallel subagents, drafts to a fixed skeleton in a gitignored `.plans/` file, has a zero-context reviewer on the most capable model hold the draft against your original words, and asks you only what the code cannot answer — each question in one fixed shape (the situation, a numbered flow, the fix, its cost, your call), one per message, never repeating a decision you already made, and never recommending one pull request over several. Work is written as tickets with a what, a why in Simplified Technical English, acceptance criteria, dependencies by title, and a size guessed in lines of code rather than time; unknowns that would change the plan are checked as soon as they appear — local, throwaway checks just run, and anything that reaches the network, your browser, or a shared service asks first, saying exactly what it touches and why. Every decision is logged with its alternative, reason, and drawback. It presents through `visual-plan` or plan mode, asks the leftover questions until nothing is open, and only then offers one adversarial review of the finished plan — quick, full, or none, sized to the change — folds the findings in, asks before any second review, and closes with the plan, whether it covers the ask, and the gotchas — then asks in plain text whether to start building, naming `implement-plan` when installed.
+Build a coding plan that ends as **one plan**, never a story of its revisions. The agent first maps the codebase — structure, features, end-to-end flows, routes and who may call them, the patterns to copy, and an inventory of what each test exercises — into a map that is stamped with its commit and refreshed only where files changed, then explores the change with parallel subagents, drafts to a fixed skeleton in a gitignored `.plans/` file, has a zero-context reviewer on the most capable model hold the draft against your original words, and asks you only what the code cannot answer — each question in one fixed shape (the situation, a numbered flow, the fix, its cost, your call), one per message, never repeating a decision you already made, and never recommending one pull request over several. Work is written as tickets with a what, a why in Simplified Technical English, acceptance criteria, dependencies by title, and a size guessed in lines of code rather than time; unknowns that would change the plan are checked as soon as they appear — local, throwaway checks just run, and anything that reaches the network, your browser, or a shared service asks first, saying exactly what it touches and why. Every decision is logged with its alternative, reason, and drawback. It presents through `visual-plan` or plan mode, asks the leftover questions until nothing is open, and only then offers one adversarial review of the finished plan — fast, quick, full, or none, sized to what the plan would change once built — folds the findings in, asks before any second review, and closes with the plan, whether it covers the ask, and the gotchas — then asks in plain text whether to start building, naming `implement-plan` when installed.
 
 ```text
 # Claude Code session — type this as a message

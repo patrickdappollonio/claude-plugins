@@ -55,28 +55,35 @@ Fold the result in. Sort the pass-1 list into these kinds. A **build-changing ga
 
 ## 3. The adversarial review of the plan (once, at the end, the user's choice)
 
-An adversarial review assumes the change is broken and tries to prove it from several independent angles, by reviewers who share none of the author's context, with a separate reviewer that discards false findings. It is the most expensive step in this skill. It runs **once**, on the finished plan — no open question, no pending spike, no cold implementer gap — and only after the user picks quick or full; none is an answer. After the fixes, a second run needs a fresh yes. The review skill expects a code change. A plan works as one: it is a new file in which every line is an added line.
+An adversarial review assumes the change is broken and tries to prove it from several independent angles, by reviewers who share none of the author's context, with a separate reviewer that discards false findings. It is the most expensive step in this skill. It runs **once**, on the finished plan — no open question, no pending spike, no cold implementer gap — and only after the user picks fast, quick, or full; none is an answer. After the fixes, a second run needs a fresh yes. The review skill expects a code change. A plan works as one: it is a new file in which every line is an added line.
 
 **The review measures the plan against the user's ask, not against the plan.** A code review receives the plan as its standard (its "brief"). A plan review receives the **user's ask** — the plan's *The ask* section as written, which holds the task in one sentence and the user's own words for it, their constraints and non-goals included. If you hand the review the plan as its own standard, it checks the plan against itself and finds nothing. Tell the review the subject is a plan document, that the "was this design right" and "does it match the ask" angles carry the weight, and that it may skip charters that cannot apply to prose as long as it says which.
 
 ### Sizing
 
-Add up the line estimates of every ticket (the midpoint of each size band) and map the total onto the same bands. The sensitive areas are: the database schema, sign-in and permissions, work that runs at the same time, and outside services. The plan is **quick-sized only when all three hold**: one subsystem, no sensitive area touched, and a total at or under M (1500 lines). **Any one** of the following makes it full-sized: a second subsystem, a sensitive area, or a total in L or above.
+**Size the plan by what it would change once built, never by the plan file.** Diagrams, examples, API cards, question fences, and the decisions log make a plan long without making the change large, and a short plan can describe a large change. Estimate the finished diff from the tickets, and state the estimate in one line when you offer the review:
 
-| The plan | Review |
+- **Lines:** the code the tickets would touch, tests and docs included. Add up each ticket's size band at its midpoint. When the total lands near a limit below, the bands are too coarse to decide it: estimate those tickets from what they change in each file they name.
+- **Subsystems**, and whether any ticket touches a **sensitive area**: the database schema, sign-in and permissions, work that runs at the same time, and outside services.
+
+Then use the same lines as a code review, so a plan gets the review its finished code would get:
+
+| The finished change | Review |
 |---|---|
-| One subsystem **and** no sensitive area **and** total at or under M | **Quick** |
-| A second subsystem, **or** a sensitive area, **or** a total of L or larger | **Full** |
+| About 500 lines or fewer **and** one subsystem **and** no sensitive area | **Fast** |
+| 2000 lines or fewer **and** one subsystem **and** no sensitive area | **Quick** |
+| Over 2000 lines, **or** a second subsystem, **or** a sensitive area | **Full** |
 
-One line over the limit makes the plan full-sized. The size is the recommendation. Offer quick, full, or none in plain text, with what each costs, and run exactly what the user chose, once. If they ask for the other size, run that.
+One line over a limit moves the plan up a row. The size is the recommendation. Offer fast, quick, full, or none in plain text, with what each costs, and run exactly what the user chose, once. If they ask for the other size, run that.
 
 ### Which to run
 
 | Installed | Run |
 |---|---|
-| `adversarial-review-quick` (quick) or `adversarial-review` (full) | The skill, **as written**, its verifier and fix validator included. Hand it the plan file as the diff and the ask as the brief. |
+| `adversarial-review-fast` (fast), `adversarial-review-quick` (quick), or `adversarial-review` (full) | The skill, **as written**, its checks included — the verifier and fix validator, or fast's self-check. Hand it the plan file as the diff and the ask as the brief. |
+| Fast chosen, its skill not installed | The one-reviewer version below. |
 | Only the quick skill, full chosen | Run the quick skill, say the full one is not installed, name the angles left uncovered. Give install lines only if asked (`companion-skills.md`). |
-| Neither | The on-the-spot panel below. |
+| Quick or full chosen, neither of those installed | The on-the-spot panel below. |
 
 The quick skill proposes the fewest reviewers that fit the plan and asks which to run; answer from the sizing above rather than re-asking the user: confirm its proposal, and add the angles the sizing flagged.
 
@@ -99,6 +106,10 @@ Dispatch **one reviewer per charter below, all in one message**, each a fresh su
 5. **Feasibility and Scope Prosecutor** — "Find every claim the plan makes about the code that the code contradicts, every ticket whose acceptance criteria cannot be observed, every dependency between tickets the plan does not state, every piece of work in the plan the brief did not ask for, and every component, helper, or dependency the plan adds where the codebase, the standard library, the platform, or an installed dependency already provides it — name the existing thing — and every ticket that hand-writes part of a published format, protocol, or standard where a maintained library exists — name the library."
 
 Then dispatch **one verifier** (fresh, cheaper tier) with every finding, the brief, the plan, and the repository path: it returns *confirmed / not confirmed* with a one-line reason, and must point at the exact sentence or line for a "confirmed". Only confirmed findings proceed.
+
+### One-reviewer version (fast chosen, skill not installed)
+
+Dispatch **one** fresh subagent on the cheaper tier with: two or three of the charters above, picked by what the plan touches — always the *Ask Conformance Auditor* and the *Premise Auditor*, plus one more when its subject is in the plan — the ask (marked as the brief), the plan file, the repository path, the scope rule, and the output format above with one more field, `evidence`: the exact sentence it quotes from the plan, the code or file it checked that sentence against, and the numbered steps to the failure. Its prompt ends: "Before a finding goes in, fill its evidence; a finding you cannot fill, you drop. This is a single task. Return your result when you are done and end; nobody will send you further instructions." No verifier runs; check only that each quoted sentence is in the plan, and treat what survives as confirmed.
 
 ### After the review
 
