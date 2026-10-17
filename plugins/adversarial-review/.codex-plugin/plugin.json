@@ -1,6 +1,6 @@
 {
   "name": "adversarial-review",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "description": "Hostile, bias-free review using independent reviewers, false-positive verification, and validated fixes.",
   "author": { "name": "Patrick D'appollonio", "email": "patrickdappollonio@gmail.com" },
   "homepage": "https://gist.github.com/patrickdappollonio/2fc5af4d714b97802072e97422823bc4",
@@ -10,10 +10,10 @@
   "interface": {
     "displayName": "Adversarial Review",
     "shortDescription": "Challenge a change from independent angles.",
-    "longDescription": "Runs full and quick adversarial review panels, verifies proposed findings, and reports only confirmed problems with validated fixes.",
+    "longDescription": "Runs full, quick, and fast adversarial reviews, verifies proposed findings, and reports only confirmed problems with validated fixes.",
     "developerName": "Patrick D'appollonio",
     "category": "Developer Tools",
     "capabilities": ["Review", "Analyze"],
-    "defaultPrompt": ["Give this change an adversarial review.", "Run a quick adversarial review."]
+    "defaultPrompt": ["Give this change an adversarial review.", "Run a quick adversarial review.", "Run a fast adversarial review of what changed since the last review."]
   }
 }

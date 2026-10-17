@@ -1,6 +1,6 @@
 ---
 name: adversarial-review-quick
-description: Use when you want a smaller, quicker, cheaper adversarial review of a code change — "a smaller adversarial review", "a quick adversarial review", "a light adversarial review", "adversarial review but don't burn tokens" — or when you want to choose which adversarial reviewers run. Proposes the fewest reviewers that strictly fit the change, shows the full roster, and lets the user add or drop any before anything runs. It keeps the same verifier and fix validator as the full panel. Prefer this over `adversarial-review` whenever the user asks for a smaller/quick/light/cheap one or wants to pick reviewers; use the full skill when they ask for a thorough or complete review.
+description: Use when you want a smaller, quicker, cheaper adversarial review of a code change — "a smaller adversarial review", "a quick adversarial review", "a light adversarial review", "adversarial review but don't burn tokens" — or when you want to choose which adversarial reviewers run. Proposes the fewest reviewers that strictly fit the change, shows the full roster, and lets the user add or drop any before anything runs. It keeps the same verifier and fix validator as the full panel. Prefer this over `adversarial-review` whenever the user asks for a smaller/quick/light/cheap one or wants to pick reviewers; use the full skill when they ask for a thorough or complete review, and `adversarial-review-fast` for a change of up to about 500 lines, a re-check of fixes, or a one-reviewer fast review.
 ---
 
 # Adversarial Review — Quick Panel
@@ -11,7 +11,7 @@ The same hostile review as the full `adversarial-review` skill, on **as few revi
 
 This skill saves tokens by running fewer reviewers, never by skipping the verifier or the validator. It proposes a roster built only from what the diff actually contains, shows the user every reviewer it did not pick, and runs exactly what the user confirms. **The verifier and the fix validator are not cut** — they are what makes the output trustworthy, and they cost two agents.
 
-The full `adversarial-review` skill runs every reviewer with no picking. It exists for the change that deserves breadth. This skill does not try to replace it: when the user wants everything, send them there.
+This panel fits changes of about 500 to 2000 changed lines in one subsystem, with no database schema, sign-in, concurrency, or outside-service change. The full `adversarial-review` skill runs every reviewer with no picking; it exists for the change that deserves breadth, and for substantial work no full review has seen yet — when the user wants everything, send them there. The `adversarial-review-fast` skill runs one reviewer; it exists for changes up to about 500 lines and for re-checking the fixes a review produced. A plan is sized by what it would build: when the change under review is a plan document, count the code its tickets would touch once built, never the plan's own lines — diagrams, examples, and questions make a plan long without making the change large.
 
 **Every subagent is one-shot, and a second round is always a new subagent.** Each reviewer, the verifier, and the validator gets one self-contained task, returns its result, and ends: it never waits for a reply, a follow-up, or the user, and it is never resumed, messaged again, or continued (`SendMessage` in Claude Code, or the equivalent elsewhere) — not to re-validate a revised fix, not to "check one more thing", not to explain a finding. When the review needs more, dispatch a **fresh** subagent with everything it needs in its prompt, including the earlier result. Two reasons, both binding: a subagent left idle loses its prompt cache within minutes, so the next message re-reads its whole history at full price, often hundreds of thousands of tokens; and an agent that has already argued a position is no longer independent. **Claude: do not use dynamic workflows** either — more token consumption for no functional gain. Plain one-shot subagents, dispatched in parallel.
 
@@ -21,9 +21,9 @@ Before the review runs, this skill asks the user three procedural things at most
 
 The decisions after the report are different. Each confirmed finding is put to the user in plain text, one per message, in the shape defined in `question-format.md` — never through the question tool, whose fields cannot hold that shape. Step 9 summarizes it; the file defines it.
 
-### Companion file — read it first
+### Companion files — read them first
 
-`question-format.md` sits next to this file and defines the one shape every end-of-review question takes: the template, what goes in each part, the word cap, the alternatives, and the one-per-message rule. **Read it in full the first time this skill runs in a session, before step 1**, and read it again at the STOP step. The summary in that step is a reminder of text you have already read, never a substitute for it.
+`question-format.md` sits next to this file and defines the one shape every end-of-review question takes: the template, what goes in each part, the word cap, the alternatives, and the one-per-message rule. `review-snapshot.md` sits beside it and defines how to record the state this review looked at, so a later `adversarial-review-fast` run can review only what changed since. **Read both in full the first time this skill runs in a session, before step 1**; read `review-snapshot.md` again at step 1 and `question-format.md` again at the STOP step. The summaries in those steps are reminders of text you have already read, never a substitute for it.
 
 ### The one thing reviewers must know: what was agreed
 
@@ -59,14 +59,14 @@ git status --porcelain          # uncommitted / staged changes present?
 gh pr view --json number,title  # open PR for this branch? (ignore errors if no gh / no PR)
 ```
 
-- **Only local changes** → review the local diff (`git diff HEAD`, plus staged).
+- **Only local changes** → review the local diff: `git diff HEAD <snapshot-id>`, against the snapshot below, which unlike `git diff HEAD` includes new untracked files.
 - **Only a PR** → review the whole PR (`gh pr diff <n>`).
 - **Both** → **ask** which to review. Do not guess.
-- **Neither** → say there is nothing to review and stop.
+- **Neither** → if the branch has commits the default branch lacks, review those (`git diff <default>...HEAD`); otherwise say there is nothing to review and stop.
 
 No `gh` CLI: recommend installing it, or ask whether to review local work instead.
 
-Capture once: the diff, and the list of changed files (`git diff --name-only HEAD` / `gh pr diff <n> --name-only`).
+Capture once, first a snapshot of the state under review, taken as `review-snapshot.md` says, then the diff and the list of changed files (the same command with `--name-only`).
 
 ### 2. Assemble the brief
 
@@ -185,7 +185,7 @@ You hold code-level material. **The report is not that material — it is a plai
 3. **One line on whether the design held up** — separate from the line above, because the answers are independent. A clean conformance line never stands in for this one.
 4. **A one-line count** — "6 confirmed issues across 4 files; 2 serious, 3 moderate, 1 minor."
 5. **The findings, grouped** under short plain themes rather than charter names — *the plan itself has a problem*, *doesn't match what was agreed*, *could crash or break*, *data ending up wrong*, *invisible when it fails*, *weak tests*, *the same bug is still elsewhere*, *breaks a promise to callers*.
-6. **A close.** List which reviewers ran and which did not. For each one that did not run, say whether it was *left off the proposal* (name the missing trigger) or *dropped by the user*. Then list anything the brief declared out of scope that a reviewer flagged anyway, labeled *deliberately left out — flagged anyway*. A clean report from a short roster means those angles found nothing, and the close is where that is said.
+6. **A close.** List which reviewers ran and which did not. For each one that did not run, say whether it was *left off the proposal* (name the missing trigger) or *dropped by the user*. Then list anything the brief declared out of scope that a reviewer flagged anyway, labeled *deliberately left out — flagged anyway*. A clean report from a short roster means those angles found nothing, and the close is where that is said. End with the `Last adversarial review:` line from `review-snapshot.md`, and write it to the scratchpad file when there is one.
 
 **Two groups lead, in this order, whenever they have anything in them:**
 
@@ -224,7 +224,7 @@ This register governs the questions in step 9 too, and any explanation the user 
 
 **After the last answer, one short message before any code changes**: one line per finding — applied, deferred, dismissed with their reason, design revised or kept — then anything still open and why. Only then do you touch code, and only the accepted fixes and approved design changes.
 
-**Then offer the wider review, in one line.** Once the last finding is decided — or right after the report, when no finding survived verification — offer to review again with the reviewers left off this run, or with the full `adversarial-review` skill for all of them. This is a procedural ask, not a finding: one plain line, and the harness's question tool is fine for it.
+**Then offer the wider review, in one line.** Once the last finding is decided — or right after the report, when no finding survived verification — offer a fast review of the fixes once they are in (`adversarial-review-fast`, one reviewer on what changed since this review), to review again with the reviewers left off this run, or the full `adversarial-review` skill for all of them. This is a procedural ask, not a finding: one plain line, and the harness's question tool is fine for it.
 
 | The pull you'll feel | The reality |
 |---|---|
@@ -474,7 +474,7 @@ Be strict. A fix is valid only if you can point at the specific code that makes 
 ## Common Mistakes
 
 - **Asking the user about every finding when another skill started the review.** When `implement-plan`, `planning-flow`, or another skill that decides findings itself ran this review, hand the findings back after the report. That skill fixes what its goal already requires; asking whether to make the change do what was agreed only delays it.
-- **Running this when the user asked for a thorough review.** This panel is the small one. "Complete", "thorough", "full", "don't miss anything" means the full `adversarial-review` skill.
+- **Running this when the user asked for a thorough review.** This panel is the small one. "Complete", "thorough", "full", "don't miss anything" means the full `adversarial-review` skill. Up to about 500 lines, or a re-check of fixes, means `adversarial-review-fast`.
 - **Proposing a reviewer because its charter *could* apply.** The proposal starts empty and a reviewer joins it only when you can point at its trigger in the diff or the brief. There is no default panel to start from and prune. Every reviewer earns its place with a stated trigger.
 - **Proposing a reviewer because you already spotted a bug in its area.** That is you reviewing before the reviewers. Name the trigger, not the bug, and keep your finding out of every prompt.
 - **Dispatching without the roster question.** The user confirms or edits the roster on every run, tool or no tool. A proposal you did not show them is a panel they did not choose.

@@ -10,15 +10,16 @@ Count agent-runs before you start. Each is one subagent dispatch:
 executors   = slices × expected rounds (assume 2: build + one fix round)
 conformance = 0 agent-runs (you do it) — but budget your own reading
 review      = none: 0 (the user's choice at G2)
+              fast:  1 reviewer, no separate checkers ≈ 1
               quick: the reviewers that fit the change (often 4–8) + 1 verifier + 1 validator ≈ 6–10
               full:  18 + 2 ≈ 20
               fallback panel: 6 + 2 ≈ 8
-              runs once, after the cleanup pass; a second run only on a yes
+              runs once, after the cleanup pass; a second run only on a yes, usually fast
 fix rounds  = 1 executor per round, conformance by you; assume 1 round
 total       ≈ executors + review + fix rounds
 ```
 
-A three-slice plan with a quick review is roughly 6 + 10 + 1 ≈ 17 agent-runs; with a full review ≈ 27; with none ≈ 7. Each executor run on a real codebase commonly costs in the low hundreds of thousands of tokens; reviewers less. This is an estimate — label it as one.
+A three-slice plan with a quick review is roughly 6 + 10 + 1 ≈ 17 agent-runs; with a full review ≈ 27; with a fast review ≈ 8; with none ≈ 7. Each executor run on a real codebase commonly costs in the low hundreds of thousands of tokens; reviewers less. This is an estimate — label it as one.
 
 ## Check real usage — informational, never a gate
 

@@ -26,6 +26,7 @@ Claude Code and Codex install a whole **plugin** (every skill in it). `npx skill
 |---|---|---|---|
 | `adversarial-review` | `adversarial-review` | The full 18-reviewer hostile panel with a standalone verifier and fix validator — recommended for large changes; runs once, when the user picks it at G2 | `adversarial-review-fallback.md` |
 | `adversarial-review-quick` | `adversarial-review` | The small panel — it proposes the fewest reviewers that fit the change, lets the user add or drop any, and keeps the same verifier and validator — recommended for small changes; runs once, when the user picks it at G2 | `adversarial-review-fallback.md` |
+| `adversarial-review-fast` | `adversarial-review` | One fresh reviewer that attacks the change from two or three domains picked for it and checks its own findings and fixes against a checklist; reviews only what changed since the last review — recommended for changes up to about 500 lines and for the second review of the fixes; runs only when the user picks it at G2 | `adversarial-review-fallback.md` |
 | `visual-plan` | `visual-docs` | Renders the plan in the browser with diagrams and a comment loop; the decisions log appended at the end live-reloads there, and each parked decision's *Your call* line is a `question` fence (`question-format.md`) that collects the user's answer as a comment | step 0 and step 6 of `SKILL.md` |
 | `appropriate-comments-code` | `appropriate-comments-code` | The full comment discipline — seven tenets, the review-a-diff procedure with labels, the ratio check, and the test-file rules — run over the merged diff at step 6 | `appropriate-comments-fallback.md` |
 | `code-simplification` | `code-simplification` | The full behavior-preserving simplification procedure — evidence gathering on the cheap tier, cyclomatic counting and splitting, the equivalent-functions merge proposal — run over the merged diff at step 6 | `code-simplification-fallback.md` |
@@ -33,7 +34,7 @@ Claude Code and Codex install a whole **plugin** (every skill in it). `npx skill
 | `use-premium-models-efficiently` | `use-premium-models-efficiently` | The general delegation pattern: premium model judges, cheap models do bounded work, handoff packets, vetting delegated reports | `model-routing.md` |
 | `use-claude-limits-efficiently` | `use-claude-limits-efficiently` | The pause-and-resume loop for 5-hour and weekly usage windows, with chained wakeups | `capacity-check.md` |
 
-Installing the `adversarial-review` plugin brings **both** review skills; with `npx skills`, name each one you want.
+Installing the `adversarial-review` plugin brings **all three** review skills; with `npx skills`, name each one you want.
 
 ## When the user asks
 
