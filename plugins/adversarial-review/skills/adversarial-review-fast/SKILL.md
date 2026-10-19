@@ -22,7 +22,7 @@ Three skills, one method, three sizes:
 
 **A plan is sized by what it would build.** When the change under review is a plan document, count the code its tickets would touch once built, never the plan's own lines: diagrams, examples, and questions make a plan long without making the change large.
 
-**Every subagent is one-shot.** The reviewer gets one self-contained task, returns its result, and ends. It never waits for a reply, a follow-up, or the user, and it is never resumed, messaged again, or continued (`SendMessage` in Claude Code, or the equivalent elsewhere). More work — a second look, a revised fix, a follow-up question — is a **new** subagent with everything it needs in its prompt, the earlier result included. A subagent left idle loses its prompt cache within minutes, so the next message re-reads its whole history at full price, and an agent that has already argued a position is no longer independent. **Claude: do not use dynamic workflows** for this. One plain subagent.
+**Every subagent is one-shot.** The reviewer gets one self-contained task, returns its result, and ends. It never waits for a reply, a follow-up, or the user, and it is never resumed, messaged again, or continued (`SendMessage` in Claude Code, or the equivalent elsewhere). More work — a second look, a revised fix, a follow-up question — is a **new** subagent with everything it needs in its prompt, the earlier result included. A subagent left idle loses its prompt cache within minutes, so the next message re-reads its whole history at full price, and an agent that has already argued a position is no longer independent. A command that may run past three minutes (a test suite, a build) runs in the background with output to a log, and the subagent checks it with a wait capped at three minutes until it finishes: a silent wait past five minutes expires its cache just the same. **Claude: do not use dynamic workflows** for this. One plain subagent.
 
 ### Companion files — read them first
 
@@ -95,7 +95,7 @@ The prompt contains, and only contains, in this order:
 3. The brief, under a heading that says what it is, plus the approved artifact or its path.
 4. The diff, and the list of changed files. "Open any file you need, in or around the change."
 5. The scope rule, the self-check, and the output format below, verbatim.
-6. "This is a single task. Return your findings when you are done and end; nobody will send you further instructions."
+6. "This is a single task. Return your findings when you are done and end; nobody will send you further instructions. If a command may run longer than three minutes, run it in the background and check it with a wait capped at three minutes, again and again, until it finishes; report only once it has."
 
 Nothing else. No framing, no hypotheses, no reassurance.
 
@@ -204,7 +204,7 @@ For the mid-task check described above. One subagent, `model: "sonnet"` (elsewhe
 >
 > Try to prove the claim false. Read the code, and run commands when they settle it — only commands that change nothing: no writes, no installs, no tests that touch files or services. Do not modify anything. Return: a **verdict** — holds, false, or can't tell; the **evidence** — the exact lines you read, the commands you ran and what they printed; and, when it holds, **what would make it false** — the input, config, or caller that would break it.
 >
-> This is a single task. Return your result when you are done and end; nobody will send you further instructions.
+> This is a single task. Return your result when you are done and end; nobody will send you further instructions. If a command may run longer than three minutes, run it in the background and check it with a wait capped at three minutes, again and again, until it finishes; report only once it has.
 
 Then use the verdict. *False* or *can't tell* → stop building on the claim and find out. If the answer changes something the user agreed, tell them in plain words before going on. No snapshot, no report, no questions.
 

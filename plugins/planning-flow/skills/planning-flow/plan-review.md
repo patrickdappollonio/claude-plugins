@@ -25,7 +25,7 @@ It does not receive the conversation, your exploration notes, or any reassurance
 >
 > Return two lists. **Findings:** each with what is wrong, why it matters, the evidence (a file and line, or the sentence of the request or plan), and whether fixing it changes what a user or operator would experience. **Questions for the requester:** each one a decision only they can make, with the options and the consequence of each. Do not ask anything the repository answers; answer it yourself and cite where. Return empty lists if the plan holds; do not invent problems.
 >
-> This is a single task. Return your result when you are done and end; nobody will send you further instructions.
+> This is a single task. Return your result when you are done and end; nobody will send you further instructions. If a command may run longer than three minutes, run it in the background and check it with a wait capped at three minutes, again and again, until it finishes; report only once it has.
 
 Merge its findings into the plan through the authority table in `SKILL.md` and its questions into the question list, then filter that list as `SKILL.md` step 6 describes.
 
@@ -49,7 +49,7 @@ Dispatch one subagent **on a different model family from the one that wrote the 
 >
 > Tickets: <section>
 >
-> This is a single task. Return your result when you are done and end; nobody will send you further instructions.
+> This is a single task. Return your result when you are done and end; nobody will send you further instructions. If a command may run longer than three minutes, run it in the background and check it with a wait capped at three minutes, again and again, until it finishes; report only once it has.
 
 Fold the result in. Sort the pass-1 list into these kinds. A **build-changing gap** is a fact that decides what gets built: an exact string, a format, a rule, a severity, a path, a convention, a command, a place where an edit goes. Each one becomes a stated fact in *Technical context*, with the exact value. An **edit-time read** is the surrounding text of a file the implementer will open anyway to make the edit: the current wording around an insertion point, the formatting of a config file, the version of an action in a workflow. Those are not gaps; a plan that pasted them would be a copy of the repository. Every pass-2 correction is a fix. Every item that only the user can answer goes to the question list. Then run the check again, with a **new** subagent given the rewritten sections — never the earlier one resumed: it has read the old text, so it is no longer cold, and its prompt cache has expired while it sat idle, so a message to it re-reads its whole history at full price. **It passes when the pass-1 list holds no build-changing gap.** A grade is not a pass; a list with only edit-time reads on it is.
 
@@ -89,7 +89,7 @@ The quick skill proposes the fewest reviewers that fit the plan and asks which t
 
 ### On-the-spot panel (no review skill installed)
 
-Dispatch **one reviewer per charter below, all in one message**, each a fresh subagent on the cheaper tier, each receiving only: its charter, the ask (marked as the brief), the plan file, the repository path, the scope rule, the output format, and the line "This is a single task. Return your result when you are done and end; nobody will send you further instructions." Every panel agent, the verifier included, is one-shot: a second look at anything is a new agent, never one resumed or messaged.
+Dispatch **one reviewer per charter below, all in one message**, each a fresh subagent on the cheaper tier, each receiving only: its charter, the ask (marked as the brief), the plan file, the repository path, the scope rule, the output format, and the line "This is a single task. Return your result when you are done and end; nobody will send you further instructions. If a command may run longer than three minutes, run it in the background and check it with a wait capped at three minutes, again and again, until it finishes; report only once it has." Every panel agent, the verifier included, is one-shot: a second look at anything is a new agent, never one resumed or messaged.
 
 **Scope rule (verbatim in every prompt):**
 
@@ -109,7 +109,7 @@ Then dispatch **one verifier** (fresh, cheaper tier) with every finding, the bri
 
 ### One-reviewer version (fast chosen, skill not installed)
 
-Dispatch **one** fresh subagent on the cheaper tier with: two or three of the charters above, picked by what the plan touches — always the *Ask Conformance Auditor* and the *Premise Auditor*, plus one more when its subject is in the plan — the ask (marked as the brief), the plan file, the repository path, the scope rule, and the output format above with one more field, `evidence`: the exact sentence it quotes from the plan, the code or file it checked that sentence against, and the numbered steps to the failure. Its prompt ends: "Before a finding goes in, fill its evidence; a finding you cannot fill, you drop. This is a single task. Return your result when you are done and end; nobody will send you further instructions." No verifier runs; check only that each quoted sentence is in the plan, and treat what survives as confirmed.
+Dispatch **one** fresh subagent on the cheaper tier with: two or three of the charters above, picked by what the plan touches — always the *Ask Conformance Auditor* and the *Premise Auditor*, plus one more when its subject is in the plan — the ask (marked as the brief), the plan file, the repository path, the scope rule, and the output format above with one more field, `evidence`: the exact sentence it quotes from the plan, the code or file it checked that sentence against, and the numbered steps to the failure. Its prompt ends: "Before a finding goes in, fill its evidence; a finding you cannot fill, you drop. This is a single task. Return your result when you are done and end; nobody will send you further instructions. If a command may run longer than three minutes, run it in the background and check it with a wait capped at three minutes, again and again, until it finishes; report only once it has." No verifier runs; check only that each quoted sentence is in the plan, and treat what survives as confirmed.
 
 ### After the review
 

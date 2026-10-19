@@ -177,7 +177,7 @@ Finding (which functions are complex, which pairs share a shape, who calls what)
 - **Ask the user once** how many subagents may run in parallel and which model tiers are available, before fanning out. Their tokens, their machine.
 - **Cheap tiers find, premium tiers decide.** Pattern finding goes to Haiku, Sonnet, or Luna; equivalence judgment, the change itself, and verification stay on Opus, Fable, Sol, or Terra (medium–max). On a single-model harness, find with `grep`/`rg` and the project's complexity tool instead of reading.
 - **Verify every finding yourself.** A subagent's report is a lead, not a fact: open the location, recount the number, re-diff the pair, re-run the test. A finding you have not reproduced is a hypothesis.
-- **Every subagent is one-shot.** One task, one report, then it ends. A follow-up goes to a new subagent with the earlier result in its prompt; never resume or message one that has reported, and never leave one waiting — an idle agent's cache expires within minutes, and the next message pays for its whole history again.
+- **Every subagent is one-shot.** One task, one report, then it ends. A follow-up goes to a new subagent with the earlier result in its prompt; never resume or message one that has reported, and never leave one waiting — an idle agent's cache expires within minutes, and the next message pays for its whole history again. A finder running a slow tool (a full build, a long analyzer run) starts it in the background with output to a log and checks it with a wait capped at three minutes until it finishes.
 
 **Read `evidence-gathering.md` before spawning any subagent** — it has the routing table, the handoff-packet template, and the stop conditions.
 

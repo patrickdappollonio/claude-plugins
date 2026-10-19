@@ -2,7 +2,7 @@
 
 The prompt every executor receives. Executors have **no chat context**: nothing you know reaches them unless it is in the packet. Write it as if to a capable contractor who has never seen the project or the conversation.
 
-**Every executor is one-shot.** It runs the packet, returns its evidence, and ends. Nobody replies to it: a pause is the end of its run, not a wait. When the slice needs more — a gap from conformance, the user's answer to a pause, a fix after the review — a **new** executor gets a new packet with that gap or answer in it, plus the slice branch and the commits already on it. Never resume, message, or continue a finished executor (`SendMessage` in Claude Code, or the equivalent elsewhere): its prompt cache expires within minutes of going idle, so every message to it re-reads its whole history at full price.
+**Every executor is one-shot.** It runs the packet, returns its evidence, and ends. Nobody replies to it: a pause is the end of its run, not a wait. When the slice needs more — a gap from conformance, the user's answer to a pause, a fix after the review — a **new** executor gets a new packet with that gap or answer in it, plus the slice branch and the commits already on it. Never resume, message, or continue a finished executor (`SendMessage` in Claude Code, or the equivalent elsewhere): its prompt cache expires within minutes of going idle, so every message to it re-reads its whole history at full price. The same expiry hits an executor that sits silent on a slow command inside its run, which is why the discipline block carries the long-command heartbeat.
 
 ## What goes in, in this order
 
@@ -103,6 +103,8 @@ Include verbatim:
 > - Do not design for rare or future cases nobody asked about.
 > - Remove code you replace. Keep an old path only when compatibility is an   explicit requirement.
 >
+> **Long commands keep a heartbeat no more than three minutes apart.** Your prompt cache expires about five minutes after your last model request, and while you wait on a command you make no requests, so a silent wait past five minutes re-reads your whole history at full price. Any command that may run past three minutes (the full test suite, a build, an E2E run, a container start) starts in the background with its output and exit code going to a log, for example `( <command>; echo "EXIT=$?" ) > <log> 2>&1 &`. Check it with a foreground loop capped at three minutes, `for i in $(seq 18); do grep -q '^EXIT=' <log> && break; sleep 10; done; tail -n 3 <log>`, and repeat until the log shows `EXIT=`. A bare `sleep` may be refused by the tool; the loop is not. Never wait on a monitor or notification with no cap, and never end your run while the command is still going. If the expected wait is longer than about 40 minutes, skip the checks: one cold restart is cheaper.
+>
 > **Pause and report — do not proceed — before:**
 > - Materially expanding scope or touching files outside the stated set
 > - Adding a dependency, framework, service, new test infrastructure, or a gate (coverage threshold, required CI job, lint rule, hook), or changing the version of a dependency, runtime, or tool. This pause is never a reason to write the thing yourself: the pause and the ladder do not "point the same direction". When the library rung holds, build the plan items that are complete without it, leave out whole every item that is not — never ship a command, endpoint, or option that exists but does not yet do what the plan says, because a check that prints nothing and exits 0 is invented behavior — and report: the library you recommend and one alternative, each with its current version, last release date, license, and open security advisories, read from the package registry with a query that installs nothing (`npm view <pkg> version license` and then `npm view <pkg> "time[<that version>]"` for its release date — `time.modified` is when the metadata changed, not a release; `pip index versions <pkg>`, `go list -m -versions <module>`, `cargo search <crate>`; advisories from a public advisory database queried by package and version, such as osv.dev or the GitHub advisory database) — try the query before saying you cannot; a figure you did not read there is written "not checked", never recalled from memory; what it replaces; what integrating and maintaining each path costs, the hand-written path included, with the inputs it would get wrong. The user chooses; your run ends with this report.
@@ -151,6 +153,7 @@ Stopping ends the run: commit what is done on the slice branch, return the evide
 You are implementing one slice of an agreed plan in <worktree path>, branch <slice-branch>.
 Work only inside that directory. Do not push. Do not touch other branches.
 This is a single run: when you finish or hit a stop condition, return your report and end. Nobody will reply to you.
+If a command may run longer than three minutes, run it in the background and check it with a wait capped at three minutes, again and again, until it finishes; report only once it has.
 
 ## The plan section you are implementing (verbatim — this is the spec)
 <paste>

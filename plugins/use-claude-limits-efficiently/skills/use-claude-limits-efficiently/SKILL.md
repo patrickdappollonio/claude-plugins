@@ -57,7 +57,7 @@ Make every wake prompt self-contained — the resumed turn cannot rely on conver
 - **Background sleep or watcher** for fixed timers a process can observe.
 - **Cron / recurring schedules** only for recurring fresh-session work.
 
-Don't short-poll for things the host will notify you about (subagent or background-task completion). For budget pauses, a prompt-cache miss after a long sleep is acceptable — preserving the limit matters more.
+Don't short-poll for things the host will notify you about (subagent or background-task completion). The exception is a subagent waiting on its own slow command: it checks the command with a wait capped at three minutes until it finishes, because a silent wait past five minutes expires its prompt cache and the next request re-reads its whole history at full price. For budget pauses, a prompt-cache miss after a long sleep is acceptable — preserving the limit matters more.
 
 ## Reporting
 

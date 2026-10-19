@@ -53,7 +53,7 @@ This comes from a second real failure, the mirror of the one above: a bug surviv
 
 Both come from a reviewer trusting a document instead of reasoning. The brief tells reviewers **what to look at**. It must never tell them **what to conclude**.
 
-**Every subagent is one-shot, and a second round is always a new subagent.** Each reviewer, the verifier, and the validator gets one self-contained task, returns its result, and ends: it never waits for a reply, a follow-up, or the user, and it is never resumed, messaged again, or continued (`SendMessage` in Claude Code, or the equivalent elsewhere) — not to re-validate a revised fix, not to "check one more thing", not to explain a finding. When the review needs more, dispatch a **fresh** subagent with everything it needs in its prompt, including the earlier result. Two reasons, both binding: a subagent left idle loses its prompt cache within minutes, so the next message re-reads its whole history at full price, often hundreds of thousands of tokens; and an agent that has already argued a position is no longer independent. **Claude: do not use dynamic workflows** either — more token consumption for no functional gain. Plain one-shot subagents, dispatched in parallel.
+**Every subagent is one-shot, and a second round is always a new subagent.** Each reviewer, the verifier, and the validator gets one self-contained task, returns its result, and ends: it never waits for a reply, a follow-up, or the user, and it is never resumed, messaged again, or continued (`SendMessage` in Claude Code, or the equivalent elsewhere) — not to re-validate a revised fix, not to "check one more thing", not to explain a finding. When the review needs more, dispatch a **fresh** subagent with everything it needs in its prompt, including the earlier result. Two reasons, both binding: a subagent left idle loses its prompt cache within minutes, so the next message re-reads its whole history at full price, often hundreds of thousands of tokens; and an agent that has already argued a position is no longer independent. A command that may run past three minutes (a test suite, a build) runs in the background with output to a log, and the subagent checks it with a wait capped at three minutes until it finishes: a silent wait past five minutes expires its cache just the same. **Claude: do not use dynamic workflows** either — more token consumption for no functional gain. Plain one-shot subagents, dispatched in parallel.
 
 ## When to Use
 
@@ -139,7 +139,7 @@ Each reviewer prompt contains, and ONLY contains:
 3. The raw diff.
 4. The list of changed files (the reviewer may open those files and surrounding code for context).
 5. The scope rule (below) and the shared output format (below).
-6. This line, verbatim: "This is a single task. Return your findings when you are done and end; nobody will send you further instructions."
+6. This line, verbatim: "This is a single task. Return your findings when you are done and end; nobody will send you further instructions. If a command may run longer than three minutes, run it in the background and check it with a wait capped at three minutes, again and again, until it finishes; report only once it has."
 
 Do **not** add your own framing, hypotheses, or reassurances. The brief says what the job was; you do not get to say how well it was done. The isolation is the value.
 
