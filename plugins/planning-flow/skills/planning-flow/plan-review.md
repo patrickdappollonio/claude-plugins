@@ -93,19 +93,19 @@ Dispatch **one reviewer per charter below, all in one message**, each a fresh su
 
 **Scope rule (verbatim in every prompt):**
 
-> The brief is the request this plan must satisfy. Something the brief lists as a non-goal is not a finding. The brief bounds scope; it never establishes correctness: if the plan does exactly what the request asks and the result would still be wrong, report it and set `design_is_wrong: true`. Assume the plan is broken and prove it; return `[]` if you cannot.
+> The brief is the request this plan must satisfy. Something the brief lists as a non-goal is not a finding. A decision in the brief covers the subject it was made about, read with the question it answered: a plan that carries it to another subsystem, another kind of item, or a shared helper's other callers is work nobody agreed to, even when the decision's words could stretch that far — report it, high severity when a user or another system would notice. The brief bounds scope; it never establishes correctness: if the plan does exactly what the request asks and the result would still be wrong, report it and set `design_is_wrong: true`. Assume the plan is broken and prove it; return `[]` if you cannot.
 
 **Output format (verbatim):** a JSON array of `{title, reviewer, location "section or path:line", severity "high|medium|low", what_is_wrong, what_could_go_wrong, evidence, suggested_change, changes_user_visible_behavior, design_is_wrong}`.
 
 **Charters:**
 
-1. **Ask Conformance Auditor** — "Enumerate every requirement in the brief before reading the plan, then check each one: addressed, missing, different, or added unasked. Find where anything the brief asked for and the plan dropped would end up."
+1. **Ask Conformance Auditor** — "Enumerate every requirement in the brief before reading the plan, then check each one: addressed, missing, different, or added unasked — including a ticket that carries a decision past what it was about. Find where anything the brief asked for and the plan dropped would end up."
 2. **Premise Auditor** — "Assume the plan is the mistake. It does exactly what the brief asks; show the concrete case where it still goes wrong: a state with nowhere to live, the empty or first-run case, existing data that does not fit, a false assumption about the world, a cost nobody priced." Every finding is `design_is_wrong: true`, and every finding is a concrete failing case, not taste.
 3. **Unstated-Assumption Hunter** — "List what must be true for this plan to work that nobody wrote down: ordering, uniqueness, encoding, size, permissions, the presence of a file or a service, the behavior of a dependency. Check each one against the repository and break it."
 4. **Data and Contract Guardian** — "Find where data ends up wrong or lost under this plan: partial writes, overwrites, lossy conversions, migrations that cannot roll back, a stored format or an interface others depend on that silently changes."
 5. **Feasibility and Scope Prosecutor** — "Find every claim the plan makes about the code that the code contradicts, every ticket whose acceptance criteria cannot be observed, every dependency between tickets the plan does not state, every piece of work in the plan the brief did not ask for, and every component, helper, or dependency the plan adds where the codebase, the standard library, the platform, or an installed dependency already provides it — name the existing thing — and every ticket that hand-writes part of a published format, protocol, or standard where a maintained library exists — name the library."
 
-Then dispatch **one verifier** (fresh, cheaper tier) with every finding, the brief, the plan, and the repository path: it returns *confirmed / not confirmed* with a one-line reason, and must point at the exact sentence or line for a "confirmed". Only confirmed findings proceed.
+Then dispatch **one verifier** (fresh, cheaper tier) with every finding, the brief, the plan, and the repository path: it returns *confirmed / not confirmed* with a one-line reason, and must point at the exact sentence or line for a "confirmed". It never rejects a finding that the plan carries a decision past its subject on the grounds that the decision's words could cover it. Only confirmed findings proceed.
 
 ### One-reviewer version (fast chosen, skill not installed)
 
