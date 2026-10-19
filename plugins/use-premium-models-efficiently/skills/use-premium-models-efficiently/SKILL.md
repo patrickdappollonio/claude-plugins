@@ -61,9 +61,11 @@ Every subagent gets one self-contained packet, does it, returns its report, and 
 
 - **Never resume, message, or continue a subagent that has reported** (`SendMessage` in Claude Code, or the equivalent elsewhere). A follow-up, a correction, a retry, or a second round is a **new** subagent whose packet carries everything it needs, including the earlier report.
 - **Never tell a subagent to wait** for your next instruction, for another subagent, or for the user. A question it cannot answer ends its run: it reports the question, and the answer goes to a new subagent.
-- **End every packet with:** "This is a single task. Return your report when you are done and end; nobody will send you further instructions."
+- **End every packet with:** "This is a single task. Return your report when you are done and end; nobody will send you further instructions. If a command may run longer than three minutes, run it in the background and check it with a wait capped at three minutes, again and again, until it finishes; report only once it has."
 
 Why: a subagent's prompt cache can expire within minutes while it sits idle, far sooner than the orchestrator's. The next message to it then re-reads its whole history at full price — hundreds of thousands of tokens per turn on a codebase-heavy task. A fresh packet costs a fraction of that, and it carries only what the next step needs.
+
+**Long commands keep a heartbeat no more than three minutes apart.** Inside its run, a subagent's prompt cache expires about five minutes after its last model request, and while it waits on a command it makes no requests, so a silent wait past five minutes re-reads its whole history at full price. Any command that may run past three minutes (a full test suite, a build, an E2E run, a container start) starts in the background with its output and exit code going to a log, for example `( <command>; echo "EXIT=$?" ) > <log> 2>&1 &`. The subagent checks it with a foreground loop capped at three minutes, `for i in $(seq 18); do grep -q '^EXIT=' <log> && break; sleep 10; done; tail -n 3 <log>`, and repeats until the log shows `EXIT=`. A bare `sleep` may be refused by the tool; the loop is not. It never waits on a monitor or notification with no cap, and never ends its run while the command is still going. If the expected wait is longer than about 40 minutes, it skips the checks: one cold restart is cheaper. Do not act on a subagent until its final report arrives; a notice that it is still waiting on its own work is not a result.
 
 ## Vet Delegated Work
 
