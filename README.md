@@ -22,6 +22,18 @@ claude plugin marketplace add patrickdappollonio/claude-plugins
 
 That registers this marketplace under the name `patrickdappollonio`. You only do this once. Afterwards, install individual plugins either from inside Claude Code with `/plugin install …` or from your shell with `claude plugin install …`, as shown below.
 
+To install every plugin at once, install the `all` bundle. It has no skills of its own and lists every other plugin as a dependency, so Claude Code installs and enables them all:
+
+```text
+/plugin install all@patrickdappollonio
+```
+
+```bash
+claude plugin install all@patrickdappollonio
+```
+
+Uninstalling the bundle keeps the plugins it installed; use `claude plugin uninstall all --prune` to remove them too. While the bundle is enabled, Claude Code will not disable any one of its plugins, so to leave some out, install the plugins one by one instead. [Read more →](plugins/all)
+
 ### Codex CLI
 
 Register this repository as a Codex plugin marketplace from your regular shell:
@@ -41,6 +53,8 @@ codex plugin add appropriate-comments-code@patrickdappollonio
 
 Replace `appropriate-comments-code` with any plugin name in the table below. Codex installs that plugin's own `skills/` directory, not the rest of this collection. Start a new Codex session before using an installed or updated plugin. Run `codex plugin marketplace upgrade patrickdappollonio` from your shell to fetch updates, then reinstall the plugin to refresh it.
 
+Codex has no plugin dependencies and installs one plugin per command, so there is no `all` bundle for it. To install every plugin, run `codex plugin add` once for each name in the table below, or install every skill with `npx skills add patrickdappollonio/claude-plugins --all -a codex` as shown in the next section.
+
 ### Any other AI agent — Cursor, Copilot, opencode, Gemini, Windsurf…
 
 Run [`npx skills`](https://github.com/vercel-labs/skills), Vercel's open skills installer, from your regular shell. It supports 75+ agents and reads this repository's marketplace file directly, so nothing extra is needed on your side:
@@ -54,6 +68,9 @@ npx skills add patrickdappollonio/claude-plugins --skill adversarial-review
 
 # everything, into every agent it detects
 npx skills add patrickdappollonio/claude-plugins --all
+
+# everything, into one agent
+npx skills add patrickdappollonio/claude-plugins --skill '*' -a cursor
 ```
 
 Add `-g` to install for your user instead of the current project, and `-a <agent>` to target one agent (`npx skills add … -a cursor`). Update later with `npx skills update`.
@@ -412,6 +429,8 @@ Or run the equivalent Claude Code command from your shell:
 ```bash
 claude plugin marketplace update patrickdappollonio
 ```
+
+Claude Code can also update these plugins for you, but auto-update is off by default for any marketplace that is not Anthropic's own. To turn it on, type `/plugin` in a session, open the **Marketplaces** tab, select `patrickdappollonio`, and select **Enable auto-update**. Claude Code then checks for new versions a few minutes after your first message in a session, and the new versions load after `/reload-plugins` or on your next launch. A plugin updates when its version number changes, so each plugin, and each plugin the `all` bundle installed, updates on its own.
 
 Codex CLI — run this from your shell, then reinstall the plugins you want to refresh:
 
