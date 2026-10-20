@@ -430,6 +430,8 @@ Or run the equivalent Claude Code command from your shell:
 claude plugin marketplace update patrickdappollonio
 ```
 
+Claude Code can also update these plugins for you, but auto-update is off by default for any marketplace that is not Anthropic's own. To turn it on, type `/plugin` in a session, open the **Marketplaces** tab, select `patrickdappollonio`, and select **Enable auto-update**. Claude Code then checks for new versions a few minutes after your first message in a session, and the new versions load after `/reload-plugins` or on your next launch. A plugin updates when its version number changes, so each plugin, and each plugin the `all` bundle installed, updates on its own.
+
 Codex CLI — run this from your shell, then reinstall the plugins you want to refresh:
 
 ```bash
