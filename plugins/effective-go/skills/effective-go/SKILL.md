@@ -99,7 +99,7 @@ A chain must read as a sentence: `failed to load configuration: failed to parse 
 - `t.Context()` (Go 1.24+; the pre-1.24 equivalent is in `testing.md`), `t.TempDir()`, `t.Setenv()`, `t.Cleanup()`, `t.Helper()`, `t.Parallel()` where safe.
 - Messages: `t.Errorf("Func(%v) = %v, want %v", in, got, want)` — got before want. `t.Fatalf` only when continuing is meaningless.
 - Errors asserted with `errors.Is`/`errors.As`, never by string.
-- `want` is a literal, never built with the code's own formula, helper, or exported constant. Assert what a caller observes and the spec fixes, never call order, a constant's own value, or a whole output where one fact matters. Existing tests that cover code you edit or review get the same check: report each tautological `want` or change detector with its fix, fix a row you are already changing, and leave the rest unedited unless asked. A bug fix corrects the wrong table row in place or adds a behavior-named row for a genuine gap; no `TestIssue…`, no second test on an input already covered.
+- `want` is a literal, never built with the code's own formula, helper, or exported constant. Assert what a caller observes and the spec fixes, never call order, a count of queries or calls no consumer or upstream dependency is promised (for work that must not grow with input, assert equal counts on one row and on many), a constant's own value, or a whole output where one fact matters. Existing tests that cover code you edit or review get the same check: report each tautological `want` or change detector with its fix, fix a row you are already changing, and leave the rest unedited unless asked. A bug fix corrects the wrong table row in place or adds a behavior-named row for a genuine gap; no `TestIssue…`, no second test on an input already covered.
 - Mocks are hand-written structs with one `Fn` field per method. A nil `Fn` returns `errors.New("mockT.Method: methodFn not implemented")`; a method without an error return panics with the same text. Add call counters when the code under test swallows errors.
 - `httptest` for HTTP; real or in-memory implementations for stores; no mocking or assertion libraries added to a project that has none; no `sqlmock`.
 - Tests are cheap when the agent writes them: cover every reachable branch, edge and error path. Red → green for new code; for a refactor, a pinning test that passes before and after with no edits.
@@ -207,7 +207,7 @@ Reshape only the code in scope, with behavior preserved exactly and proven by a 
 - A new `_test.go` beside an existing one for the same source file, with no build tag and no separate tier
 - A new `Test…` function that repeats 60% or more of the setup and action steps an existing test on the same function already performs
 - A feature change with no journeys proposed to the user
-- An existing test covering the code you touched or reviewed has a computed `want` or asserts call order, and your report does not mention it
+- An existing test covering the code you touched or reviewed has a computed `want` or asserts call order or an unpromised call count, and your report does not mention it
 - `git push` in your plan without a user message approving *that* push; a commit the user has not asked for
 - You reached step 3 without checking whether `use-modern-go` is available, or you are recommending it for the second time this session
 - You have not opened `errors.md`, `testing.md`, `style.md`, `comments.md` and `simplification.md` this session
