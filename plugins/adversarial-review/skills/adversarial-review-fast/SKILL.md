@@ -80,7 +80,7 @@ The first domain is **always on**. Add one or two more from the table, each with
 | **Calls across a boundary** | calls an API, the network, a database, disk, a subprocess, or a library it did not use before | "Assume every call fails, times out, or returns something unexpected, and that the request or the response shape is not what the code believes." |
 | **Data that outlives the call** | writes or reads back a query, a file, a cache, a schema, a setting | "Assume stored data ends up wrong, lost, duplicated, or unreadable by the code that reads it later." |
 | **Inputs** | parses or forwards data from outside the process | "Find the input — empty, huge, malformed, hostile, a boundary value — that crashes it or slips past validation." |
-| **Tests** | adds, edits, or deletes a test | "Show the bug these tests let through: a test that computes its own expected value, pins how instead of what, mocks the thing under test, or covers only the happy path." |
+| **Tests** | adds, edits, or deletes a test | "Show the bug these tests let through: a test that computes its own expected value, pins how instead of what (a count of queries or calls nobody outside the code is promised is how), mocks the thing under test, or covers only the happy path." |
 | **Failure signals** | adds or changes an error path, a log, or a metric | "Assume this fails silently at 3am: find the swallowed error, the log with no context, the failure nobody would see." |
 | **Callers' promises** | changes a signature, an exported name, a default, a flag's meaning, or documented behavior an existing caller relies on | "Find the existing caller this change quietly breaks." |
 
