@@ -173,6 +173,18 @@
       },
       "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/anti-slop",
       "license": "MIT"
+    },
+    {
+      "name": "all",
+      "source": "./plugins/all",
+      "description": "Installs every plugin in this marketplace in one step. It has no skills of its own; it lists the other plugins as dependencies, and Claude Code installs and enables each of them. Claude Code only — Codex has no plugin dependencies.",
+      "category": "bundle",
+      "keywords": ["bundle", "all", "collection"],
+      "author": {
+        "name": "Patrick D'appollonio"
+      },
+      "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/all",
+      "license": "MIT"
     }
   ]
 }

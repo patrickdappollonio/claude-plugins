@@ -1,0 +1,35 @@
+name: Marketplace
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".claude-plugin/marketplace.json"
+      - ".agents/plugins/marketplace.json"
+      - "plugins/*/.claude-plugin/plugin.json"
+      - "scripts/check-marketplaces.mjs"
+      - ".github/workflows/marketplace.yml"
+  pull_request:
+    paths:
+      - ".claude-plugin/marketplace.json"
+      - ".agents/plugins/marketplace.json"
+      - "plugins/*/.claude-plugin/plugin.json"
+      - "scripts/check-marketplaces.mjs"
+      - ".github/workflows/marketplace.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Check marketplaces and the all bundle
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+
+      - name: Check marketplaces
+        run: npm run lint:marketplace

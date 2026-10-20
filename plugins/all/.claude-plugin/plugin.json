@@ -1,0 +1,28 @@
+{
+  "name": "all",
+  "description": "Installs every plugin in the patrickdappollonio marketplace in one step. It has no skills of its own; it lists the other plugins as dependencies, and Claude Code installs and enables each of them.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Patrick D'appollonio",
+    "email": "patrickdappollonio@gmail.com"
+  },
+  "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/all",
+  "license": "MIT",
+  "keywords": ["bundle", "all", "collection"],
+  "dependencies": [
+    "appropriate-comments-code",
+    "effective-communicator",
+    "effective-go",
+    "adversarial-review",
+    "code-simplification",
+    "implement-plan",
+    "planning-flow",
+    "read-the-docs-first",
+    "recap",
+    "use-claude-limits-efficiently",
+    "use-premium-models-efficiently",
+    "visual-docs",
+    "ask-me-again",
+    "anti-slop"
+  ]
+}
