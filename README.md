@@ -90,6 +90,7 @@ Each plugin below maps to one skill of the same name, except `adversarial-review
 | effective-go | `effective-go` |
 | implement-plan | `implement-plan` |
 | planning-flow | `planning-flow` |
+| planning-flow-quick | `planning-flow-quick` |
 | read-the-docs-first | `read-the-docs-first` |
 | recap | `recap` |
 | use-claude-limits-efficiently | `use-claude-limits-efficiently` |
@@ -307,6 +308,26 @@ npx skills add patrickdappollonio/claude-plugins --skill planning-flow
 ```
 
 Then: `/planning-flow:planning-flow <what you want built, with context>`. [Read more →](plugins/planning-flow)
+
+### planning-flow-quick
+
+A short plan for a small change — a renamed title, a corrected message, a one-function fix — in one file with one ticket. Instead of mapping the whole repository, it reuses a `planning-flow` codebase map when one exists, or sends two cheap explorers to find the patterns and the tests around the change, so the new code follows the repository and every acceptance criterion names the test it extends. Unknowns that would change the plan are checked on the spot, only the decisions the code cannot answer are asked, one per message, and one fresh subagent checks the plan cold and then against the code. When the change stops being small — more than one ticket, a second subsystem, a sensitive area, no pattern to follow, many unknowns or decisions — it warns, and recommends `planning-flow` when that is installed, which picks up the quick plan and runs every step the quick flow skipped.
+
+```text
+# Claude Code session — type this as a message
+/plugin install planning-flow-quick@patrickdappollonio
+
+# Shell — Claude Code
+claude plugin install planning-flow-quick@patrickdappollonio
+
+# Shell — Codex CLI
+codex plugin add planning-flow-quick@patrickdappollonio
+
+# Shell — npx skills
+npx skills add patrickdappollonio/claude-plugins --skill planning-flow-quick
+```
+
+Then: `/planning-flow-quick:planning-flow-quick <the small change, with context>`. [Read more →](plugins/planning-flow-quick)
 
 ### read-the-docs-first
 

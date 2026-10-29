@@ -45,6 +45,12 @@
       "category": "Productivity"
     },
     {
+      "name": "planning-flow-quick",
+      "source": { "source": "local", "path": "./plugins/planning-flow-quick" },
+      "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
+      "category": "Productivity"
+    },
+    {
       "name": "read-the-docs-first",
       "source": { "source": "local", "path": "./plugins/read-the-docs-first" },
       "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },

@@ -1,0 +1,19 @@
+{
+  "name": "planning-flow-quick",
+  "version": "1.0.0",
+  "description": "A quick plan for a small coding change — one short plan file with one ticket, the repository's patterns and the tests to extend found by two scoped explorers instead of a full codebase map, unknowns checked on the spot, only the user's decisions asked, one fresh check of the plan, and a warning whenever the change outgrows a quick plan, recommending the full planning-flow skill when it is installed.",
+  "author": { "name": "Patrick D'appollonio", "email": "patrickdappollonio@gmail.com" },
+  "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/planning-flow-quick",
+  "license": "MIT",
+  "keywords": ["planning", "plan", "quick", "small-changes", "tickets", "decisions", "tests"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Planning Flow Quick",
+    "shortDescription": "A short, checked plan for a small change.",
+    "longDescription": "Plans a small change in one short file with one ticket. It reuses a planning-flow codebase map when one exists, and otherwise sends two scoped explorers to find the patterns and the tests around the change, so the new code follows the repository and every acceptance criterion names the test it extends. Unknowns that would change the plan are checked on the spot (asking before any check leaves the machine), only the decisions the code cannot answer are asked, one at a time, and one fresh subagent checks the plan cold and then against the code. When the change grows past a quick plan — more than one ticket, a second subsystem, a sensitive area, no pattern to follow, many unknowns or decisions — it warns, and recommends the full planning-flow skill when it is installed.",
+    "developerName": "Patrick D'appollonio",
+    "category": "Productivity",
+    "capabilities": ["Plan", "Research", "Review"],
+    "defaultPrompt": ["Make a quick plan for the following small change."]
+  }
+}
