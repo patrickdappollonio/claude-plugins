@@ -91,6 +91,18 @@
       "license": "MIT"
     },
     {
+      "name": "planning-flow-quick",
+      "source": "./plugins/planning-flow-quick",
+      "description": "A quick plan for a small coding change — one short plan file with one ticket, the repository's patterns and the tests to extend found by two scoped explorers instead of a full codebase map, unknowns checked on the spot, only the user's decisions asked, one fresh check of the plan, and a warning whenever the change outgrows a quick plan, recommending the full planning-flow skill when it is installed.",
+      "category": "planning",
+      "keywords": ["planning", "plan", "quick", "small-changes", "tickets", "decisions", "tests"],
+      "author": {
+        "name": "Patrick D'appollonio"
+      },
+      "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/planning-flow-quick",
+      "license": "MIT"
+    },
+    {
       "name": "read-the-docs-first",
       "source": "./plugins/read-the-docs-first",
       "description": "Docs-first discipline for anything involving third-party APIs, packages, providers, or fast-moving product behavior — the agent web-searches for current official docs and reads primary sources before assuming from memory, grounding answers in what the docs actually say.",

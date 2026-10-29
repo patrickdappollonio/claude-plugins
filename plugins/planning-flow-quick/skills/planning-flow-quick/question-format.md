@@ -1,0 +1,177 @@
+# Question Format — how every decision is put to the user
+
+A question to the user is a decision only they can make, written so they can make it away from the code, in one reading. Every such question — in the plan file, in a visual plan, in chat — has the same shape. The shape matters as much as the content: a reader who has seen one question can read all of them, and a reader who has seen none can still answer.
+
+## The template
+
+```markdown
+### Question <N> of <M> — <the claim, in one plain sentence>
+
+**The situation.** <What exists, what the plan says, what is unsettled, and
+why the codebase cannot settle it. Two to four sentences.>
+
+**The flow.**
+
+1. <Step one: what the person or system that uses this code does first.>
+2. <Step two.>
+3. <The last step: the consequence they would notice.>
+
+**The fix.** <What you recommend, in one to three sentences.>
+
+**Cost.** <What the fix costs — lines, a migration (a change to the
+database structure), a dependency, a change someone would notice — or
+`None`.>
+
+**Your call:** <the question, in a few words>
+
+- <The fix (recommended): its consequence, on one line. Bullets only when
+  the decision is a choice; none when the question is `accept?`.>
+- <The next alternative and its consequence. Two to four bullets in all.>
+```
+
+The four bold labels **The situation.**, **The flow.**, **The fix.**, and **Cost.** are mandatory, in this order, spelled exactly like this, and are followed by *Your call*: a bold **Your call:** line in chat and in a file nobody is serving, a `question` fence in a file that `visual-plan` is serving (below). A question missing one part is not finished. Every question is numbered in its heading.
+
+**Count the words; do not judge length by feel.** The prose of a question — from its heading to the end of *Cost*, not counting *Your call* — is at most **200 words**; on the rare flow that must run past five steps, each step past the fifth adds 15 words to the limit. Inside that: the heading at most 15 words; the situation two to four sentences; the flow three to five steps of one line each (one or two when that is the whole story, more than five only when absolutely needed, never past ten); the fix one to three sentences; the cost one or two. *Your call* is one sentence plus at most four alternatives of one line each. A fact stated in the situation is not repeated in the fix or the cost. As soon as you finish a question, count the prose words — `wc -w` on the text, or by hand — and write the count in your notes before starting the next one. Over the limit: cut, starting with anything that describes an alternative outside *Your call*.
+
+## What goes in each part
+
+- **The heading** is the claim: what goes wrong, or what is undecided, as one sentence a reader can agree or disagree with. "The two 'at the same time' tests could pass without ever running in parallel", not "Test parallelism". Never a bare topic, never a code identifier alone.
+- **The situation** gives the facts the decision rests on: what the plan or the code does today, what is not settled, and why it is the user's to settle rather than yours (the table in `SKILL.md` that says which decisions are the user's and which are yours). Write it for a reader who knows the product and has not seen the code. You opened the files and ran the commands; the user did not, and many harnesses fold your tool calls into a one-line summary, so they often never saw what you read or edited. Say what the product does, in the words its users and operators use. A function, file, or flag named here is explained in the same sentence, and the sentence must still make sense with the name taken out. Never point at something only you saw ("the function I edited earlier", "as the output above shows").
+- **The flow** is a numbered walk, step by step, through what the consumer of the code — a user, an operator, the next process, the implementer — does and what they hit. It ends at the consequence they would notice. It is the part that lets the reader see what the decision does, instead of working it out from a description. **Three to five steps, one line each.** A flow with only one or two real steps is the written exception: write it as it is, and never pad a flow to reach three. Go past five only when it is absolutely needed: removing any step would hide how the consequence comes about. Never go past ten. A flow that needs eleven steps is two questions, or a situation that says too little. Write `**The flow.** N/A` only when no person or system would ever notice the decision. `N/A` is for a flow that does not exist, never for one you did not write.
+- **The fix** is your recommendation: the one path you would take and why, in plain words, checked before it is asked (*Check the fix before you ask*, below). It names no other path; the alternatives live in *Your call*.
+- **Cost** is what the fix costs, and only the fix: lines, a migration, a new dependency, a new background process, a behavior someone would notice. Not what the alternative would cost, not what the fix saves. `None` is a legitimate value and is written out, never left blank.
+- **Your call** is the question itself, in a few words: `accept?`, or the alternatives when the decision is a choice — two to four, each with its consequence on the same line. The user may answer in their own words; the alternatives are a convenience, not a form.
+
+## Check the fix before you ask
+
+The user reads **The fix.** as "this works". Before a question is written into the file or asked in chat, check it, as far as what can be wrong requires:
+
+- **Every fact in the situation is true right now.** Open the file or run the command again; your memory of an earlier read is not evidence.
+- **The fix works.** The function, flag, option, endpoint, or command it names exists in the version that is installed (read its source or its docs, not your memory of it); the change fits in the place you say it goes; the behavior you promise is the behavior it has. When a small probe would settle it — a throwaway script or test in a scratch directory — run it, read what it printed, and delete it. A fix that is a choice of wording needs no check; a fix that names an API, a version, a config option, a command, a number, or how another system behaves always does.
+- **Never change the user's files, install anything, call or write to a service outside the machine, or put heavy load on the machine to check a fix without a yes.** Reading public documentation is allowed. A check that needs one of these is a permission request (`verification.md`), asked before the question it supports; until it is answered, that part of the fix carries a `Not verified:` line.
+
+If a fact was wrong, correct the situation, or drop the question when nothing is left to decide. If the fix does not work, find one that does and check that one; if you find none, say so in the situation and never present an unchecked fallback as working. If the check shows the question was a fact and not a decision, it is not asked; record what you found where the skill records facts. If a part cannot be checked from here (it needs production access, a credential, a system you cannot reach), end **The fix.** with `Not verified: <what>, because <why>.`; those words count toward the limit.
+
+## Numbering
+
+`Question <N> of <M>`: `M` is the questions answered so far, across every round, plus the ones open right now. `N` is the number answered so far plus this question's position among the open ones, in the order they appear in the file. Answering a question deletes it from the file but still counts it, so an answer does not change `M`: after the user answers `Question 1 of 5`, the next heading is `Question 2 of 5`, never `Question 1 of 4`. A new question raises `M`, and one dropped or settled by another answer before it was asked lowers it; update the headings of every open question when that happens, and say so in one line in the next message. A question is referred to by its heading text, never by its number, because the number can change.
+
+Order the open questions so the ones that can be answered now come first, and among those, put the question that unblocks the most other questions first; a question whose answer waits on another open question comes after it and says so in its first sentence ("Waits on the reclaim question above.").
+
+## Heading level
+
+The question's heading sits **one level below the section that holds it**, so the questions read as part of the document instead of breaking its outline. Under a `## Open questions` section, each question is an `###`. If the document's major sections are `###`, the questions are `####`. In chat, where nothing encloses the question, use the level it has in the file, so the heading needs no change when the text moves between the two.
+
+## Where the questions live, and how many at a time
+
+- **The plan file holds every open question, in full.** They live in the file's open-questions section, one after another, all of them, in the template. A reader who opens the file sees everything that is waiting on them.
+- **A visual plan shows the same file**, so it too shows every open question. **When the `visual-plan` skill is serving the file, the *Your call* line in the file is a `question` fence** — not the bold line — so the answer comes back as a comment. Write it that way the first time; do not write the bold line and convert later. The fence's first line is `Your call:` followed by the question, the alternatives (when any) are its `- ` option lines, and there is no description line — the situation, flow, fix, and cost stay as ordinary markdown above the fence, because the fence's description renders as one inline line and would flatten a numbered flow into a run-on sentence. A pure "accept?" fence has no options; the viewer's free-text box takes the answer. Never put a heading inside the fence.
+
+  ````markdown
+  ### Question 2 of 3 — A crashed worker leaves its wallet claimed forever
+
+  **The situation.** …
+
+  **The flow.**
+
+  1. …
+
+  **The fix.** …
+
+  **Cost.** …
+
+  ```question
+  Your call: a janitor that reclaims after ten minutes, or a by-hand command?
+  - The janitor (recommended): nobody is paged for a crash
+  - A by-hand command: no migration, but every crash is a page
+  ```
+  ````
+
+- **Chat asks one question per message.** A stop in chat carries exactly one question, in full, in the template, under the stop's opening line (`Step <n> of 7; <k> questions open`), plus how many more are open and the file's path. Never two, never the whole list. Ask it, stop, wait for the answer, say it back with your take (see *Say the answer back, then give your take*), update the plan file with the answer, and ask the next one in the next message. Rounds are as many as it takes; there is no cap on rounds and no batching inside one. The file is where a reader goes to see them all; the chat is where they answer one at a time without facing a long block of text.
+- **The chat question and the file question are the same words**, from the heading to the end of the cost. Write it once, into the file; the chat message repeats it. The one difference is the last part: a fence in the file becomes, in chat, the bold **Your call:** line followed by its alternatives as a bulleted list — a fence in chat is a code block nobody can click.
+
+## The harness question tool is not used for these
+
+A harness question tool (a multiple-choice prompt) has room for one line per option and none for a flow. These questions need the whole template, so they go in the message as markdown, and the user answers in their own words. This holds even when the harness has such a tool.
+
+## Approval is not a question
+
+Asking whether to approve the plan or start implementing never uses this template. It has no fact the user is missing, no trade-off, and no alternative worth a flow, so it never gets a `Question <N> of <M>` heading, the four labels, or a *Your call*, and it never counts toward the open questions. Once the last question is answered, the closing in `SKILL.md` ends with one plain line asking whether to implement.
+
+## Never ask what the user already decided
+
+Before a question is written, read every message the user sent in this conversation, not only their replies to your questions, and the decisions section. When you can quote the user's own words that pick an action for the question, it is not a question: record it as their decision and do not ask it. Three shapes are easy to miss:
+
+- **An instruction given before you asked.** "Use a 3-node cluster" settles the question it answers, even when you had not written that question yet.
+- **A conditional instruction.** "If X works, do Y" is a decision with a fact attached. Check the fact. When it holds, the decision is the user's and closed, and you do not ask them to confirm it. When it fails, ask, and say in the situation what the check found.
+- **Words of scope.** "All", "every", "the rest", and "wherever it is missing" cover everything that fits them, including what your checks turned up after the user spoke. The items you had named before were examples inside that scope, not its edge. They reach as far as the subject the user was talking about and no further: "every invoice" covers invoices you found later, not receipts. Carrying a decision to another subsystem or another kind of item is a new question.
+
+A decision the user made is fixed for every question after it. A cost, a risk, or more places it applies, found later, is one line in your next message, not a reason to ask again. When the new fact leaves a decision of its own, such as how to guard against the risk, that is a new question: its situation states the user's decision as settled, and its *Your call* never lists undoing that decision as an alternative. The user can still name that direction; you never offer it. Ask about the user's decision again only when a check shows it cannot be followed as given, because its condition is false, it is impossible, or it would break something else the user asked for.
+
+## Say the answer back, then give your take
+
+Every reply to an answer opens this way, in plain prose, before the next question and before the answer is written into the plan:
+
+- **Talk before you touch anything.** After the user replies, the first thing in your turn is text to them, before any command, file read, search, or edit. Many harnesses fold tool calls into a single line, so a turn that opens with tools looks to the user like silence: they cannot tell whether you are checking their answer, could not understand it, or went off on something else. Say the answer back first. When you are about to check something, say in the same breath what and why ("Before I sign off on that, I want to see whether the nightly job reads the same setting"), run the check, then give your take on what it found. A reply that is not an answer gets the same treatment: answer it, or say what you are about to look up, before the first tool call.
+- **Say it back as what will happen.** One sentence, in your own words, on what the answer means for the product or the work: "So uploads stay pending until storage confirms the copy", not "You said yes." The user should be able to read it and say "that's not what I meant" before anything is built.
+- **Then your take.** When the user took your recommendation, saying it back is enough: you gave your reasons in **The fix.** When they chose another alternative or a direction of their own, say what you think of it in a sentence or two. When you agree, say why in a few words and go on.
+- **When you have a concern, check it before you raise it.** A concern is something the answer would break, a cost the user does not seem to expect, an answer that pulls against an earlier one, or a gap between the answer and the goal the user stated. Wanting a different option for taste is not a concern: say so in passing, at most. Settle what you can at once, in the lanes `verification.md` sets: a read or a throwaway probe runs now; a check in *ask first* does not run without a yes, so say what you suspect, that you could not confirm it, and what the check would take, and offer running it as one of the alternatives.
+- **A concern that holds keeps the question open.** Say what you found, in the product's words, and what you would do instead. Then put a short *Your call* that turns the question toward solving the concern: the ways out, your recommendation first, and the user's own answer still listed, as they gave it, with its consequence. Do not repeat the full template. A concern your check cleared is gone: say so in a few words and close the question.
+- **Push back once.** When the user hears the concern and keeps their answer in direct words, it is their decision: close it as they stated it and never raise the same concern again. Their reply goes through the same doubt test as any other.
+- **Write it the way you would say it.** No labels — no "How I read it:", "My take:", or bold lead-ins — no stock opener ("Got it!", "Great choice"), and no praise. Two or three sentences that run into each other are enough. The point is a conversation, not a form.
+
+## Never answer your own question
+
+A question put to the user is answered by the user. Do not fill in a likely answer and proceed, do not treat silence as consent, do not pick the fix because the user is away. Only a direct answer closes a question: the user accepts the fix, rejects it, or names a different direction, in words that leave no doubt. A vague, partial, or hedged reply ("sure, whatever you think", "fine I guess", "ok" to a question with several alternatives) or a question back does not: answer what they asked, say in one line what you could not tell, and put the same *Your call* part again, alternatives included. If a question is unanswered, it stays open in the file, and every stop says how many are open.
+
+## The worked example
+
+Nothing in it can be removed without losing something the reader needs.
+
+```markdown
+### Question 24 of 31 — The two "at the same time" tests could pass without ever running in parallel
+
+**The situation.** Two acceptance tests exist to prove the design is safe
+with several workers: "three workers process three wallets of one bulk
+request at once", and "two janitors on the same rows don't fight". The plan
+names the tests but not how they must run. This codebase's habit for
+"simulate several copies" is to call the function twice, one after the other
+— which proves nothing about racing.
+
+**The flow.**
+
+1. Implementer writes the three-workers test as three sequential calls. Green.
+2. The claim step has a subtle flaw: two workers can both win the same job
+   under real contention.
+3. Never seen in tests. Seen in production as a wallet submitted twice.
+
+**The fix.** Both tests must launch real parallel workers with a shared start
+gate and a small injected delay to widen the race window — the exact pattern
+one existing freeze test already uses. Assert exactly one winner per job.
+
+**Cost.** None. It's a requirement on the test, not on the code.
+
+**Your call:** accept?
+```
+
+## Red flags — the question is not in shape
+
+- Approval to implement written as a numbered question, with a situation, fix, cost, or `accept?`
+- A bold label missing, renamed, reordered, or a heading without a number
+- A heading that is a topic ("Retry policy") instead of a claim
+- A sentence that stops making sense when its code names are taken out, a flow step that only a reader of the code could follow, or a reference to something only you saw
+- A flow written as prose instead of numbered steps, a flow padded with a step that describes nothing real, a flow over five steps that was not absolutely needed, a flow over ten steps, or `N/A` on a decision that has a consumer who would notice it
+- A question asked before its facts and its fix were checked; a fix that names an API, flag, version, command, or number you did not look up; an unchecked part with no `Not verified:` line
+- A question treated as answered after a reply that was vague, partial, or a question back
+- A question whose answer you can quote from the user's own earlier words; a *Your call* that lists undoing a decision the user already made
+- A cost left blank, a cost that prices the alternative, or a fix that describes a second path
+- Two questions in one chat message, or a chat message that lists every open question
+- A question in chat whose heading, situation, flow, fix, or cost differs by a word from the file's
+- A question asked through the harness question tool
+- A question written without its word count noted, or a fact repeated between the situation and the fix or cost
+- A bold *Your call* line in a file that `visual-plan` is serving; the situation, flow, fix, or cost inside a `question` fence; a heading inside one; a fence pasted into chat
+- A question whose prose runs over its word limit, or whose *Your call* has more than four alternatives
+- An answer recorded with no sentence saying back what it means, or a different alternative or direction of the user's own recorded with no take on it
+- A concern kept to yourself, raised unchecked when a read could have settled it, or raised a second time after the user kept their answer
+- A turn after the user's reply that opens with a command, a file read, or an edit instead of text to the user
+- A reply to an answer written with labels ("How I read it:", "My take:"), a stock opener, or praise

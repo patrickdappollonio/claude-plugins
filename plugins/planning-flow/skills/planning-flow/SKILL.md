@@ -43,6 +43,10 @@ Every companion skill is optional. This skill works alone. When one is installed
 
 - The user asks for a plan, a design, an approach, or "how would we do X" for a coding change, and no plan exists yet — or invokes `/planning-flow`.
 
+**A small ask, with `planning-flow-quick` installed:** before step 0, when the ask clearly fits one ticket and shows none of these signs — more than one ticket, a second subsystem, a sensitive area (a database schema or stored format, sign-in or permissions, work that runs at the same time, a public API, an outside service), no existing pattern to follow, more than two unknowns that need a check, more than three decisions only the user can make — say so in one plain line and offer the quick skill instead. Lines of code are not a sign. On a yes, load `planning-flow-quick` with the ask; on a no or no answer, carry on from step 0. When the quick skill is not installed, say nothing about it.
+
+**A quick plan handed over:** when the user points you at a plan file whose first line is `<!-- planning-flow-quick -->`, or `planning-flow-quick` hands one over because the change outgrew it, follow *Picking up a quick plan* below.
+
 **When NOT to use:** a plan already exists and the user wants it built — that is implementation; point at the `implement-plan` skill if installed, or the harness's own execution, and stop. Or the user asked a question, not for a plan: answer it.
 
 ## Two Authorities
@@ -70,6 +74,15 @@ The plan is one markdown file, and the file is the single source of truth. Viewe
   ```
   prints the file to append to (create it if missing; skip the line if it is already there). If the user says they want the plan committed, remove the line and tell them.
 - **Not a git repository:** write to the scratchpad or temp directory your harness gives you, and tell the user the path.
+
+### Picking up a quick plan
+
+A plan from `planning-flow-quick` is a head start, never a shortcut: it skipped the codebase map, the parallel exploration, the separate reviewers, the design tree, the delivery-shape question, and the second opinion, and ran lighter versions of the rest. Read it in full, then run **every step below from step 0**, in order, as for a new ask. Never skip a step or shorten one because the quick plan ran a lighter version of it.
+
+- **Keep the file.** Rewrite it in place into the full skeleton in `plan-template.md`: delete the `<!-- planning-flow-quick -->` line, add the sections it lacks, and split its one ticket into as many as the work needs. Its path stays, so links to it keep working.
+- **Carry what was settled.** *The ask* stays, with any later words of the user's added. Every entry in its decisions section is settled and is never asked again; the user's decision to keep going after a warning, or to switch, is logged with the sign it was about. Questions it already asked and the user answered are decisions, and are not counted in `Question <N> of <M>`; questions still open move to the one question list in step 6.
+- **Treat its facts as leads.** Its *Technical context* and its checks' results are where the explorers in step 2 start, and each fact is confirmed against the code before the full plan relies on it. The signs it listed under *Gotchas and caveats* name the areas the explorers must cover first.
+- **Its check is not a review.** Step 5's zero-context reviewer and cold implementer run on the full plan, fresh, whatever the quick plan's check found.
 
 Name the file after the task in kebab-case, short and without filler words: "add rate limiting to the public API" becomes `add-api-rate-limiting.md`. Start fresh for every new ask; only revise an existing file when the user points you at it and it describes this change.
 
@@ -341,6 +354,7 @@ Every unit of work is a ticket in **exactly** this format (full detail and an ex
 - A ticket that hand-writes a reader, writer, parser, or check for a published format, protocol, or standard, or a new dependency chosen in the decisions log instead of asked as a question with registry-read facts
 - A draft handed to the reviewers before step 4 ran, or a finished plan closed without the second walk
 - Reaching the closing without having read the companion files this session
+- A quick plan picked up with a step skipped or shortened because the quick flow ran a lighter version of it, or with one of its decisions asked again
 - A check or spike subagent told to run a slow suite as one blocking command, or a prompt without the long-command heartbeat; a "still waiting on its own work" notice read as the result
 
 ## Checklist
