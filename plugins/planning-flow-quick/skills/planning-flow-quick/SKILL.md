@@ -110,7 +110,7 @@ Then walk the plan once with the ladder in `plan-template.md`: for each part, wo
 
 Read `question-format.md`. Remove from the question list anything the user's own messages already answer (decide it their way and log it), anything the code or a check can answer (it is a fact; find it), and anything technical (decide it and log it). If nothing remains, say so in one line and go on.
 
-Write every remaining question into the plan's *Open questions* section in the one shape: `### Question <N> of <M> — <the claim>`, **The situation.**, **The flow.** (numbered steps to the consequence someone would notice), **The fix.**, **Cost.**, *Your call*, prose at most 200 words. Check each question's facts and fix before asking. Ask **in chat, one per message**, word for word from the file, never through the harness's question tool, and never two at once. Fold each answer in as a decision (theirs), rewrite the sections it touches, delete the question, and check the signs again before asking the next one. Only a direct accept, reject, or different direction closes a question.
+Write every remaining question into the plan's *Open questions* section in the one shape: `### Question <N> of <M> — <the claim>`, **The situation.**, **The flow.** (numbered steps to the consequence someone would notice), **The fix.**, **Cost.**, *Your call*, prose at most 200 words. Check each question's facts and fix before asking. Ask **in chat, one per message**, word for word from the file, never through the harness's question tool, and never two at once. Open your reply to each answer by saying back, in one plain sentence, what it means for the plan, then your take when it was not your recommendation; say it before any command, file read, or edit, and say what a check is about before you run it, because harnesses fold tool calls into one line and a turn that opens with tools looks like silence. A concern is checked first, as far as `verification.md` allows without a yes; when it holds, it keeps the question open with a short *Your call* aimed at solving it. Raise it once; after that the user's word stands. No labels such as "My take:". Then fold the answer in as a decision (theirs), rewrite the sections it touches, delete the question, and check the signs again before asking the next one. Only a direct accept, reject, or different direction closes a question.
 
 ### 5. Check the plan with one fresh subagent
 
@@ -183,6 +183,7 @@ Add `with implement-plan` after the path only when it is installed. The goal nam
 - A line count used as a sign
 - More than one ticket in a plan that is still being called quick, with no warning given
 - Two questions in one chat message, a question through the harness question tool, or a question the agent answered itself
+- A reply to an answer that opens with a command or a file read, or records the answer with no sentence saying back what it means
 - A question the user's earlier words already answer
 - A subagent resumed, messaged, or continued after it returned; a prompt template without the one-shot line and the heartbeat
 - A plan review run without the user choosing it, or a second one
