@@ -116,7 +116,7 @@ Nothing else. No framing, no hypotheses, no reassurance.
 > Then prove the fix. Fill every `fix` field, or set `fix` to `null` with one line in `no_fix_reason` on what you tried.
 >
 > 1. **change** — the smallest change that removes the cause, in plain words. No refactor, no cleanup, no new abstraction.
-> 2. **root_cause** — why it removes the cause, not the symptom.
+> 2. **root_cause** — why it removes the cause, not the symptom. When the fix is not at the point where the faulty thing is first decided (when the data is written, at its source), why it beats the fix there; a fix that only documents the gap, or works the answer out where the symptom shows, rarely removes the cause.
 > 3. **names_checked** — every function, field, flag, or key the fix uses, and the file where each is defined. A name you cannot find makes the fix invalid.
 > 4. **callers_checked** — the callers and tests you checked the fix against, and why none breaks.
 > 5. **requires_design_decision** — `true` when the fix leaves what the brief agreed. For a `design_is_wrong` finding that is expected; never water the fix down to fit the old design.

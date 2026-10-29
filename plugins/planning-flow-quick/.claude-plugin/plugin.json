@@ -1,7 +1,7 @@
 {
   "name": "planning-flow-quick",
   "description": "A quick plan for a small coding change — one short plan file with one ticket, the repository's patterns and the tests to extend found by two scoped explorers instead of a full codebase map, unknowns checked on the spot, only the user's decisions asked, one fresh check of the plan, and a warning whenever the change outgrows a quick plan, recommending the full planning-flow skill when it is installed.",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": {
     "name": "Patrick D'appollonio",
     "email": "patrickdappollonio@gmail.com"
