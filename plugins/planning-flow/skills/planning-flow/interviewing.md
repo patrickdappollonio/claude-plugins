@@ -30,7 +30,7 @@ Work like this:
 
 - Write **every** open question into the plan's *Open questions* section, in the shape `question-format.md` defines, frontier first, ordered so the decisions that unblock the most downstream decisions come first; a blocked question sits below the one it waits on and says so in its first sentence. The file always holds the whole list.
 - Ask **one question per chat message**: the first frontier question, word for word as it stands in the file, under the position line. Never two, never the whole list, never through the harness's question tool — its fields have no room for the flow. When `visual-plan` is serving the file, the user may instead answer the question's fence there.
-- Wait for the answer. Fold it into the plan as a decision (the user's), rewrite the sections it touches, delete the question, renumber the rest. The answered question still counts: the next one is `Question 2 of 5`, never `Question 1 of 4`.
+- Wait for the answer. Before any command or edit, say it back in one plain sentence as what it means for the plan, and give your take when it was not your recommendation; a concern is checked first and, when it holds, keeps the question open (`question-format.md`, *Say the answer back, then give your take*). Then fold it into the plan as a decision (the user's), rewrite the sections it touches, delete the question, renumber the rest. The answered question still counts: the next one is `Question 2 of 5`, never `Question 1 of 4`.
 - Each answer settles a decision and makes the questions that depended on it askable. Recompute the frontier and ask the next one in the next message. There is no cap on how many rounds this takes.
 - Stop when the frontier is empty: every branch visited, nothing left silently assumed.
 

@@ -1,20 +1,21 @@
 ---
 name: ask-me-again
 description: >-
-  Use when the user says "/ask-me-again", "ask me again", "ask me that properly", or "one question at a time". Also use when the user says the agent's questions were unclear, too technical, too many at once, "a wall of text", or squeezed into a multiple-choice prompt with no room for context. The skill takes every question the agent has open. It checks the facts behind each one, and it checks that each recommended fix really works. Then it asks the questions again in plain chat, one per message, in one fixed shape - a numbered heading that states the claim, the situation, a numbered flow to the consequence, the fix, its cost, and your call. Only a direct answer (apply, reject, or a different direction) closes a question. After a doubtful or vague reply, the agent asks the user to say which they mean. It builds nothing until the last question is closed.
+  Use when the user says "/ask-me-again", "ask me again", "ask me that properly", or "one question at a time". Also use when the user says the agent's questions were unclear, too technical, too many at once, "a wall of text", or squeezed into a multiple-choice prompt with no room for context. The skill takes every question the agent has open. It checks the facts behind each one, and it checks that each recommended fix really works. Then it asks the questions again in plain chat, one per message, in one fixed shape - a numbered heading that states the claim, the situation, a numbered flow to the consequence, the fix, its cost, and your call. Only a direct answer (apply, reject, or a different direction) closes a question. After each answer it says back what it understood and gives its own take, checking any concern first. After a doubtful or vague reply, the agent asks the user to say which they mean. It builds nothing until the last question is closed.
 ---
 
 # Ask Me Again
 
 You have questions open for the user, and the way you asked them did not work: too many at once, too much jargon, a bare "A or B?" with no picture of what each one does, or a multiple-choice prompt with one line per option. This skill asks them again. **The goal of the run is to end uncertainty:** when it is over, you and the user know the answers to what you needed to know. The format serves that goal and is not the goal. Each question becomes a decision the user can make away from the code, in one reading, and every question has the same shape, so a reader who has seen one can read them all.
 
-## The five rules
+## The six rules
 
 1. **Facts are yours to find; decisions are the user's to make.** Before asking anything, check whether the codebase, the docs, or a command can answer it. A question that a fact answers is not asked.
 2. **A fix you recommend is a fix you have checked.** The user reads **The fix.** as "this works". Verify it before the first question goes out (step 2). A fix you could not check says so, in its own text.
 3. **One question per message, in plain chat, in the template.** Never the question tool of the harness (the program that runs you, such as Claude Code or Codex) — `AskUserQuestion` or its equivalent — even when the harness has one: it has room for one line per option and none for a flow. Never two questions in one message, never the list of them.
 4. **Only a direct answer closes a decision.** The user applies the fix, rejects it, or sends you in a different direction, in words that leave no doubt. Anything else keeps the question open, and you ask the user to say which they mean. Never answer your own question, and never treat silence or a vague reply as consent. A direct answer counts wherever the user gave it, in this run or in any earlier message, and a decision the user already made is never asked again (step 1). The checks in step 2 are work you do now. Building anything the questions decide waits until the last one is closed, unless the user tells you to start earlier.
 5. **The user has not seen what you have seen.** You opened the files and ran the commands. The user did not, and many harnesses fold your tool calls into a one-line summary, so the user often never saw the file you read, the output you got, or the edit you made. Never write as if they watched. The user does know the product: what it does, who uses it, how it behaves. Write every question from that side, in the words its users and operators use. A name from the code is a label for a reader who can look it up. It is never the explanation.
+6. **Say back every answer, and say what you think of it.** After each reply, before you run, read, or edit anything, tell the user in your own words what their answer means for the work, so a misreading shows up now and not in the build. Then give your take. When you think the answer heads the wrong way, say so before the question closes, and check the concern first wherever you can. Your job is to help the user reach their goal, not to take dictation. The user still decides: one honest pushback, then their word stands (step 5).
 
 ## The process
 
@@ -69,8 +70,8 @@ The first message holds, in this order: one line for each decision the user's ea
 |---|---|
 | Accepts the fix in direct words ("yes", "accept", "do it", "go with the second one") | Closed: apply |
 | Rejects the fix in direct words ("no", "leave it as it is", "skip this") | Closed: reject. The fix is not done; nothing replaces it unless the user said what |
-| Names another direction, one of the alternatives or their own | One of the listed alternatives: closed. A direction of their own: closed as they stated it. Do not stop to check it now; note it as *to check* and go on. You check it after the last question (step 6), unless the user asks you to check it now |
-| A yes with a condition ("A, if it supports X") | Closed as stated. Note the condition as *to check* and go on. You check it after the last question (step 6), unless the user asks you to check it now |
+| Names another direction, one of the alternatives or their own | One of the listed alternatives: closed, unless you have a concern about it. A direction of their own: check it now, before you reply, as far as the checks below allow. When it holds, it is closed as they stated it; when it does not, that is a concern, handled as below. A part you may not check without asking is noted as *to check* for step 6, and your reply says so |
+| A yes with a condition ("A, if it supports X") | Check the condition now, the same way. When it holds, closed as stated. When it fails, say what you found and put **Your call** again in the light of it. When you may not check it without asking, close it as stated, note the condition as *to check* for step 6, and say so |
 | An instruction that settles a question you have not asked yet | When it is direct, that question is closed: record it, lower `M`, and do not ask it |
 | A direct answer plus a question that does not change it ("yes, do it — how long will it take?") | Closed. Answer their question after the record line |
 | A hedged yes — a yes with a word of doubt attached — also to a plain `accept?` ("fine by me I guess", "I think so", "probably", "go for it, maybe?") | Still open, and handled like the vague reply below: doubt is not a direct answer. Say in one line that the reply read as unsure, and put the same **Your call** part again |
@@ -80,7 +81,28 @@ The first message holds, in this order: one line for each decision the user's ea
 | "You decide", for this question or for the rest | A direct instruction, and the user's to give. Confirm it back in one line, list the fix you will apply for each question it covers, and proceed |
 | "Stop asking" | Stop. It does not hand you the decisions. The remaining questions stay open, their fixes are not built, and the work that depends on them stays blocked. List them in one message, one line each |
 
-**Test every reply before you write `Recorded:`.** Does it hold a word of doubt — guess, think, probably, maybe, might, suppose, whatever, not sure — or end in a question mark? Then the question is still open and you ask the user to say which they mean, even when the same reply also holds "yes", "sure", or "ok" ("mm probably, sure" is not an answer). Beyond that test, judge whether the reply picks an action beyond doubt, not whether it contains a certain word. Doubt keeps the question open, whether it comes with a yes, a no, or a direction of their own ("no, probably leave it").
+**Test every reply before you close a question.** Does it hold a word of doubt — guess, think, probably, maybe, might, suppose, whatever, not sure — or end in a question mark? Then the question is still open and you ask the user to say which they mean, even when the same reply also holds "yes", "sure", or "ok" ("mm probably, sure" is not an answer). Beyond that test, judge whether the reply picks an action beyond doubt, not whether it contains a certain word. Doubt keeps the question open, whether it comes with a yes, a no, or a direction of their own ("no, probably leave it").
+
+**Say the answer back, then give your take.** Every reply to an answer opens this way, in plain prose, before anything else in the message:
+
+- **Talk before you touch anything.** After the user replies, the first thing in your turn is text to them, before any command, file read, search, or edit. Many harnesses fold tool calls into a single line, so a turn that opens with tools looks to the user like silence: they cannot tell whether you are checking their answer, could not understand it, or went off on something else. Say the answer back first. When you are about to check something, say in the same breath what and why ("Before I sign off on that, I want to see whether the nightly job reads the same setting"), run the check, then give your take on what it found. A reply that is not an answer gets the same treatment: answer it, or say what you are about to look up, before the first tool call.
+- **Say it back as what will happen.** One sentence, in your own words, on what the answer means for the product or the work: "So the export keeps the five-minute cache, like every other report", not "You said yes." The user should be able to read it and say "that's not what I meant" before anything is built.
+- **Then your take.** When the user took your recommendation, saying it back is enough: you gave your reasons in **The fix.** When they chose another alternative or a direction of their own, say what you think of it in a sentence or two. When you agree, say why in a few words and go on to the next question.
+- **When you have a concern, check it before you raise it.** A concern is something the answer would break, a cost the user does not seem to expect, an answer that pulls against an earlier one (the rule below sets how to raise that one), or a gap between the answer and the goal the user stated. Wanting a different option for taste is not a concern: say so in passing, at most, and close the question. Settle what you can now. Read the code, the config, the installed source of a dependency, the history, or the public docs; run a read-only command; or run a throwaway probe in a scratch directory that uses no network, installs nothing, writes nothing outside that directory, and is deleted once it has printed its answer. Anything past that — a network call, an install, a shared or outside service, a credential, a change to the user's files, a prototype bigger than a probe, or a long or heavy run — needs the user's word first: say what you suspect, that you could not confirm it, and what the check would take, and offer running it as one of the alternatives.
+- **A concern that holds keeps the question open.** Say what you found, in the product's words, and what you would do instead. Then put a short **Your call** that turns the question toward solving the concern: the ways out, your recommendation first, and the user's own answer still listed, as they gave it, with its consequence. Do not repeat the full template. A concern that your check cleared is gone: say so in a few words and close the question.
+- **Push back once.** When the user hears the concern and keeps their answer in direct words, it is their decision: close it as they stated it and never raise the same concern again. A reply to the concern goes through the same doubt test as any other reply.
+- **Write it the way you would say it.** No labels — no "How I read it:", "My take:", "Understanding:", or bold lead-ins — no stock opener ("Got it!", "Great choice", "Just to confirm"), and no praise. Two or three sentences that run into each other are enough. The point is a conversation, not a form.
+
+Example, after the user answered the tests question below with "no, just run each test fifty times in a loop":
+
+```markdown
+So instead of starting the workers together, each test would run its three calls fifty times in a row and count on one run hitting the race. I don't think it would catch it: I read the claim step, and a double win needs two workers inside it at the same moment. Fifty runs one after another never put two there, so all fifty would pass with the flaw still in.
+
+**Your call:** how should the tests run?
+
+- Start the workers together behind a shared gate (recommended): catches a double win
+- Loop fifty times, as you said: cheap to write, but never runs two workers at once
+```
 
 **Answers touch other questions. Carry them forward.**
 
@@ -90,15 +112,15 @@ The first message holds, in this order: one line for each decision the user's ea
 
 When the user's question makes you change your recommendation, say that it changed and why, and move `(recommended)` to the new option in the **Your call** list.
 
-A message that asks again does not repeat the full template. It holds only these things: the answer to what they asked (when they asked something), one line that says the question is still open and why, and the **Your call** part. The still-open line is never left out, also when the reply held a question: a user who wrote "ok, but what about X?" may believe they have answered. No new issue, no second question.
+A message that asks again does not repeat the full template. It holds only these things: the answer to what they asked (when they asked something), one line that says the question is still open and why (for a concern, the concern is that line), and the **Your call** part. The still-open line is never left out, also when the reply held a question: a user who wrote "ok, but what about X?" may believe they have answered. No new issue, no second question.
 
-**Do not go and investigate in the middle of the run unless the user asks you to.** You checked everything before the first question; the run itself is for asking. When a reply needs checking — a direction of the user's own, a condition, a later question whose facts the answer changed — note it and keep asking. All of those checks happen once, after the last question (step 6). A request from the user, in any form ("can you check whether it supports X?", or a plain question whose answer you do not have), is the one reason to look into something now.
+**Investigate in the middle of the run only for the answer in front of you.** You checked everything before the first question; the run itself is for asking. Two things send you back to the code now: a request from the user, in any form ("can you check whether it supports X?", or a plain question whose answer you do not have), and the reply you are answering — a direction of the user's own, a condition, or a concern you need to check before you give your take. Keep those checks to what the reply needs. A later question whose facts the answer changed is rewritten from what you already know, and its new checks wait for step 6, as does any check you may not run without asking.
 
-When a question closes, the next message opens with one record line — `Recorded: <the decision, in plain words>.`, with `I will check it after the last question.` added when it is noted *to check* — and then holds the next question in full. If the answer changed a later question, rewrite that question from what you already know; leave new checks to step 6. After the last answer, step 6 takes the place of that line. Do not build anything between questions unless the user tells you to; a later answer can change it.
+When a question closes, the next message opens with the answer said back and your take, as above, written as a few sentences of prose, with `I will check it after the last question.` worked in when part of it is noted *to check*. Then it holds the next question in full. If the answer changed a later question, rewrite that question from what you already know; leave new checks to step 6. After the last answer, step 6 takes the place of that line. Do not build anything between questions unless the user tells you to; a later answer can change it.
 
 ### 6. After the last question: come back once, then build
 
-First do the checks you noted as *to check*: each direction of the user's own, each condition, and each later question an answer changed, checked as you checked the fix in step 2. One that holds stays closed. One that does not comes back to the user: reopen that question, one per message, with its heading text, one line on what your check found, and a **Your call** part that fits what you now know. A new question that the checks turned up is asked now too, in the full template. The same reply rules apply to these.
+First do the checks you noted as *to check*: each part of a direction or condition you could not check during the run, and each later question an answer changed, checked as you checked the fix in step 2. A check that needs the user's word still needs it: ask for it in one plain line before you run it. One that holds stays closed. One that does not comes back to the user: reopen that question, one per message, with its heading text, one line on what your check found, and a **Your call** part that fits what you now know. A new question that the checks turned up is asked now too, in the full template. The same reply rules apply to these.
 
 Then send one short message that shows what the run settled. For each thing you needed to know when the run began, and each one that came up during it, one line in plain words: the decision the user made, or the fact you found, or that it is still open and why. If the run settled nothing, say that plainly; do not dress it up. Then do the work the questions were blocking, exactly as decided. Build an applied fix as it was described. Do not build a rejected fix. Build a different direction as the user stated it. Work that depends on a question that stayed open stays blocked; say which. Never add a question of your own asking whether to start: it is not one of the decisions the run was for, and it never gets the template. If the work needs a go-ahead, ask for it in one plain line at the end of that message.
 
@@ -183,7 +205,7 @@ Nothing in it can be removed without losing something the reader needs. The agen
 | "The question tool is quicker for the user" | It cannot hold the situation or the flow, and those are what make the question answerable. Plain chat, every time |
 | "These three are small; I'll ask them together" | One per message. Three small questions in one message is the long, hard-to-read message the user invoked this skill to avoid |
 | "I'm fairly sure the fix works" | "Fairly sure" is a belief. Check it, or write `Not verified:` in the fix |
-| "It was only an `accept?`, and they said 'fine I guess' — close enough" | "I guess" is the user telling you they are not sure. Ask them to say which they mean; a wrong "Recorded:" costs far more than one line |
+| "It was only an `accept?`, and they said 'fine I guess' — close enough" | "I guess" is the user telling you they are not sure. Ask them to say which they mean; closing it on a guess costs far more than one line |
 | "The code already follows a pattern, so no decision is needed" | You offered the user a choice, so the choice is theirs. The pattern is why you recommend one option. Put it in **The fix.** and ask |
 | "The user is a developer, so function names are fine" | Technical is not the same as having read the code. They did not see what you opened; the harness may have shown them one line. Say what the product does |
 | "They said 'sounds fine', that's a yes" | A yes names the thing it agrees to. When you cannot tell, the question is open; ask the **Your call** part again |
@@ -194,6 +216,11 @@ Nothing in it can be removed without losing something the reader needs. The agen
 | "Their condition held, so I'll check they still want it" | The condition was theirs to set and yours to check. It held, so the decision is closed |
 | "The check found a new cost, so they should decide again" | Report the cost in one line. Ask only about a decision the cost leaves open, and never list undoing their decision among its alternatives |
 | "They said 'all', but they only knew about the ones I named" | "All" is their scope. What you found afterwards is inside it |
+| "They answered; saying it back just wastes their time" | One sentence is how they catch a misreading before it is built. Skip the take when they took your recommendation, never the sentence |
+| "It's their call, so I'll keep my doubts to myself" | It is their call made with what you know, or without it. Say the concern once, checked; then their word stands |
+| "I think their direction is wrong, but checking would take a few reads" | A take you did not check is a guess you are asking them to act on. Read the code first, then say what you found |
+| "I raised it and they kept their answer, but it still bothers me" | Once is the rule. Close it as they stated it and do not bring it back |
+| "I'll write **How I read it:** and **My take:** so it is clear" | Labels turn a reply into a form. Say it the way you would say it to a colleague |
 | "I'll start applying the first answer while I ask the second" | A later answer can change it. Work starts after the last answer, unless the user says otherwise |
 
 ## Red flags — stop and fix
@@ -210,7 +237,7 @@ Nothing in it can be removed without losing something the reader needs. The agen
 - A question closed "by a fact" when the fact was only today's value and the decision was whether to keep it; an "A or B?" question closed by you because the code follows a pattern; a question invented out of a fact you just confirmed
 - `No recommendation` in **The fix.** with `(recommended)` in the list below it
 - A message that asks again without saying what you could not tell, or that raises a new issue
-- Stopping in the middle of the run to investigate something the user did not ask you to look into
+- Stopping in the middle of the run to investigate something that neither the user asked about nor the answer in front of you needs
 - Two answers that cannot both hold, and you picked one or said nothing; a later question asked as written after an earlier answer already settled part of it
 - A question that came up during the run held back to keep the list short, or asked with no recommendation and no reason
 - A closing message that lists what was asked instead of what is now known
@@ -221,7 +248,13 @@ Nothing in it can be removed without losing something the reader needs. The agen
 - A reference to something only you saw: "the function I edited earlier", "as the output above shows", "the second call site"
 - A cost left blank, a cost that prices the alternative, or a fix that describes a second path
 - Prose over the word limit, more than four alternatives, or a fact repeated between the situation and the fix or cost
-- A `Recorded:` line after a reply that holds a word of doubt; a number or estimate in an answer that nothing you checked supports
+- An answer closed with no sentence saying back what it means for the work, or said back only as "you said yes"
+- A different alternative or a direction of the user's own closed with no word on what you think of it; a concern kept to yourself, or raised after the last question when it was clear at the answer
+- A concern raised that a read of the code could have confirmed or cleared, unread; a check past a read or a scratch probe run without asking
+- The same concern raised a second time after the user kept their answer in direct words
+- A turn after the user's reply that opens with a command, a file read, or an edit instead of text to the user; a check run with no word beforehand on what it is checking and why
+- A reply to an answer written with labels ("How I read it:", "My take:") or bold lead-ins, a stock opener, or praise
+- A question closed after a reply that holds a word of doubt; a number or estimate in an answer that nothing you checked supports
 - Moving to the next question, or doing blocked work, after a reply that was vague, partial, or a question back
 - Text after the **Your call** part of a message
 
@@ -233,7 +266,9 @@ Nothing in it can be removed without losing something the reader needs. The agen
 - [ ] Ordered so the answerable and most-unblocking come first; numbered `N of M`
 - [ ] Every question written for a reader who knows the product and has not seen the code: behavior in plain words, the delete test passed, nothing that points at something only you saw
 - [ ] One question per message, plain chat, full template, flow of three to five steps (one or two when that is the whole story, more only when absolutely needed), words counted
-- [ ] Every question closed by a direct apply, reject, or different direction; doubtful or vague replies asked again on the spot; the user's own directions and conditions noted, checked once after the last question, and brought back only when a check fails
+- [ ] Every question closed by a direct apply, reject, or different direction; doubtful or vague replies asked again on the spot
+- [ ] Every reply from the user met with text before any tool call, saying what a check is about before it runs
+- [ ] Every answer said back in plain prose as what it means for the work, with your take when it was not your recommendation; the user's own directions, conditions, and your concerns checked at the answer as far as you may without asking, raised once, and the user's word kept after that; the rest checked once after the last question
 - [ ] Answers that partly settled or pulled against other answers were carried forward: later questions rewritten, conflicts put to the user with a recommendation and its reason
 - [ ] The run ended uncertainty: everything you needed to know is now a decision, a fact you found, or named as still open with the reason. A run that settled nothing is reported as that
 - [ ] Work resumed exactly as decided
