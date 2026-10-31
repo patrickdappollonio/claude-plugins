@@ -58,7 +58,7 @@ Dispatch **one reviewer per charter below, all in one message**, each its own fr
 
 Then dispatch **one verifier** (fresh, cheap tier) with every finding, the brief, the diff, and the files: it returns *confirmed / not confirmed* with a one-line reason, and must reproduce or point at the exact lines for a "confirmed". Only confirmed findings proceed.
 
-For each confirmed finding, draft the **smallest root-cause fix**, then send the fixes with the findings and the diff to **one validator** (fresh, cheap tier) that returns *valid / invalid* with a reason. Re-draft rejected fixes and send them, with the previous validator's reason, to a **new** validator; never resume the old one.
+For each confirmed finding, draft the **smallest root-cause fix**, compared first with the fix where the faulty thing is first decided (when the data is written, at its source) and held against the rules the system states for itself, since a fix that documents the gap or patches where the symptom shows usually leaves the cause. Then send the fixes with the findings and the diff to **one validator** (fresh, cheap tier) that returns *valid / invalid* with a reason. Re-draft rejected fixes and send them, with the previous validator's reason, to a **new** validator; never resume the old one.
 
 Report to the user in plain language: what was reviewed, whether it matches the plan, whether the plan held up, how many confirmed findings and how serious, then each finding as **What's wrong / The fix / Where / Severity**. Findings marked `design_is_wrong` lead, and they are the user's to decide.
 

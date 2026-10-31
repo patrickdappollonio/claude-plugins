@@ -166,7 +166,7 @@ Only **confirmed** findings reach the user. Keep the rest in case the user asks.
 
 ### 7. Propose a fix for each confirmed finding — and validate it (standalone)
 
-1. **Draft a fix**: the *smallest* change that resolves the **root cause**, not the symptom. Small and root-cause are not opposites. No refactoring, no cleaning up adjacent code, no new abstraction, no guarding impossible cases. When the same defect lives in sibling paths, each site is its own finding with its own minimal fix. Describe only — **do not edit any code.**
+1. **Draft a fix**: the *smallest* change that resolves the **root cause**, not the symptom. Small and root-cause are not opposites. No refactoring, no cleaning up adjacent code, no new abstraction, no guarding impossible cases. When the same defect lives in sibling paths, each site is its own finding with its own minimal fix. Describe only — **do not edit any code.** Small is not the same as first: compare the fix with at least one other candidate, always including the fix where the faulty thing is first decided (when the data is written, at its source), and hold each against the rules the system states for itself (history is never rewritten, one source of truth). A fix that only documents the gap, or works the answer out where the symptom shows, usually leaves the cause in place.
 
    Three rules bind fixes. A fix must **stay inside the brief** — if the only real fix breaks an agreed constraint or builds a declared non-goal, present it as a decision, not a patch. A fix for a **conformance** finding is *restore what was approved*, not a third design. A fix for a **`design_is_wrong`** finding is the exception: the agreed design is the defect, so the fix necessarily leaves the brief. Draft it anyway, as small as it can be, and carry it as a **design decision to make**. Never water it down to fit the old design — a fix that stays inside a broken design keeps the bug.
 
@@ -452,7 +452,7 @@ Be strict. A finding survives only if you can point at the specific code — or,
 
 You receive the brief (what the change was agreed to do and not do), the confirmed findings, the fix drafted for each, the diff, and the list of changed files. You did not write these fixes and you owe them nothing. **Assume each fix is wrong until you can show it is right.** You do not modify any code — you reason against what is actually there. For each fix:
 
-1. Does it resolve the **root cause**, or only hide the symptom the finding pointed at?
+1. Does it resolve the **root cause**, or only hide the symptom the finding pointed at? Compare it with the fix where the faulty thing is first decided: when that one exists and breaks no rule the system states for itself, a fix that documents the gap or patches where the symptom shows is invalid, and the reason names the better candidate.
 2. Does every API, method, field, import, flag, or config key it names **actually exist** and behave as assumed, in the versions in use? A fix that calls something imaginary is invalid.
 3. Does it reach the **layer where the bug originates**, or patch a downstream symptom and leave the source broken? (The same defect in *sibling* paths or parallel call sites is a separate finding with its own fix — this fix only needs to be complete for the finding it belongs to, not sweep every site.)
 4. Does it **break anything nearby** — a contract a caller relies on, an assumption elsewhere in the code, a test that currently passes?
