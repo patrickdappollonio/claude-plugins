@@ -16,7 +16,7 @@ A quick plan that stops being quick is the failure this skill watches for. The *
 
 1. **The plan never describes its own earlier versions.** Every revision rewrites the file in place, so it reads as if written fresh today. The decisions section is the only memory: a choice, its alternative, and its reason. No "revisited", no "Edit:", no "after the check", no struck text.
 2. **The reader has not seen the code.** A function, file, or variable name is a label for a thing you explain in plain words, never the explanation (`communication.md`).
-3. **Technical direction is yours, logged; functional and operational direction is the user's, asked.** The test: if a reasonable user could say "I didn't want that", the decision is theirs. Output, wording, defaults, ordering, error behavior, what is stored and where, and how the thing is deployed or configured are the user's. A decision the user already made in chat is never asked again: log it with their words.
+3. **Technical direction is yours, logged; functional and operational direction is the user's, asked.** The test: if a reasonable user could say "I didn't want that", the decision is theirs. Output, wording, defaults, ordering, error behavior, what is stored and where, and how the thing is deployed or configured are the user's. A decision the user already made in chat is never asked again: log it with their words. A choice with one workable answer is not a question either — list the alternatives first, and when every one but one fails the ask, decide it and log it — and a principle the user settled in this feature is followed, not asked again (`question-format.md`).
 4. **Facts are yours to find; decisions are the user's to make.** Ask only what the codebase cannot answer, in the one shape in `question-format.md`, one question per chat message. Never answer a question you put to the user. A change may have no questions; do not invent them.
 5. **The new code looks like the code around it.** The plan names the pattern the change follows and the closest existing example, and every acceptance criterion names the test it extends. A small change that ignores the repository's conventions is not small; someone pays for it in review.
 6. **An unknown a check can settle is settled now, or you ask to settle it now.** If an answer would change the plan, run the check at once or ask permission at once (`verification.md`). Never write that something "could be tested" and move on. A quick plan that turns out impossible at implementation time saves nothing.
@@ -85,7 +85,7 @@ Do every step in order. Between steps, keep chat to one-line status notes. Every
 
 ### 1. Capture the ask
 
-Write the plan's *The ask* section: the task in one sentence (what is to be fixed, built, or changed, and for whom), then each message of the user's that states the task, a constraint, or a non-goal, quoted verbatim. Never the request for a plan ("plan this", the command that loaded the skill). If you cannot tell what "this" points at, ask in one plain line before exploring.
+Write the plan's *The ask* section: the task in one sentence (what is to be fixed, built, or changed, and for whom), then each message of the user's that states the task, a constraint, or a non-goal, quoted verbatim, then the house rules that bear on the task, each quoted with its source: read a section headed *House rules* in the repository's `CLAUDE.md` or `AGENTS.md` or in the user's own instructions file, and take any standing rule the user stated here (how the team deploys, rolls back, tests, or sizes a limit). They reach every reviewer through *The ask*, and a question against one is never asked. Never the request for a plan ("plan this", the command that loaded the skill). If you cannot tell what "this" points at, ask in one plain line before exploring.
 
 ### 2. Learn the area around the change
 
@@ -173,6 +173,7 @@ Add `with implement-plan` after the path only when it is installed. The goal nam
 
 ## Red Flags — Stop and Re-read the Step
 
+- A question with one workable answer, a question on wording users will see, or a question on a principle the user already decided in the same feature; *The ask* written without reading the *House rules* sections
 - A plan with no named pattern or closest example for the code it changes, or an acceptance criterion with no test clause
 - A full repository map built or refreshed by this skill, or explorers reading past the area of the change with no fact that sent them there
 - A ticket edit that writes or keeps something the repository's rules forbid, such as a user-facing string typed inline where the rules keep strings in one place

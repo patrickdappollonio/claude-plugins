@@ -63,6 +63,8 @@ Every companion skill is optional. This skill works alone. When one is installed
 
 **Never ask a question the user has already answered.** An instruction the user gives in chat is a decision: write it into the decisions section when they give it, quoting their words and naming what it was about, so a later reader cannot stretch it past that subject. Before asking anything, read the decisions section and every message the user sent. If their words settle the question, or lets you infer the answer with confidence, decide it yourself in the direction the user already chose, and log it as a decision that follows from theirs. Asking twice is the failure this rule prevents. A conditional instruction whose condition you checked and found true is settled. "All" covers what you found after the user said it. A new cost of their decision is a line in your message; it is never an alternative that undoes the decision.
 
+**A choice with one workable answer is not a question, and neither is a principle the user already settled in this feature** (`question-format.md` has both in full). Before asking, list the alternatives in your notes: when every one but one fails the ask, or the only other is not building what was asked, decide it and log it. Wording users will see goes into the plan, where the user can edit it, not into a question. When a decision of the user's rests on the same principle in the same feature ("ship without the button" for one screen, asked again for the next), follow it and log it as following from theirs; in another subsystem it is still a question, and its situation names the earlier decision.
+
 ## Where the Plan Lives
 
 The plan is one markdown file, and the file is the single source of truth. Viewers (plan mode, a visual plan) show the file's content; they never hold content the file lacks. The file is also the only thing this skill writes, besides the codebase map in the same folder (step 0): a request for a plan is never a request for a working example, a page that shows the idea, or a starting scaffold, however small. Describe, and draw with every fence the `visual-plan` viewer renders — diagrams, diffs, migration and API cards, file trees, question fences — but do not build.
@@ -100,6 +102,7 @@ Write the plan file's *The ask* section. **The ask is the task the plan is for �
 
 - **The task, in one sentence.** What is to be fixed, built, or changed, and for whom. Use the user's wording when they stated it. When the task took shape across the conversation and the user never stated it, state it yourself from the problem they raised or confirmed: this sentence is yours to write, and leaving it out to avoid a paraphrase leaves a section nobody can measure against. An approach you proposed and the user did not accept is not part of the task; it enters the draft as a decision or a question.
 - **The user's words, verbatim, under it.** Every message of theirs that states the task, a constraint, or a non-goal, each as its own quote, in order, from wherever in the conversation it sits. Never reworded. When the message that called the skill also carries the task ("/planning-flow add rate limiting to the public API"), quote the task and drop the command.
+- **The house rules that bear on the task, quoted.** Read a section headed *House rules* in the repository's `CLAUDE.md` or `AGENTS.md` or in the user's own instructions file, and take any standing rule the user stated in this conversation: how the team deploys, rolls back, tests, or sizes a limit. Quote each that bears on the task with its source; leave the part out when there are none, and never infer one. They are facts about how the work is done, so every reviewer that gets *The ask* gets them too, and a question that would go against one is never asked. When the user states a rule that reads as standing — "we never roll back", "everything is test-first" — offer once, in one plain line, to add it to the *House rules* section of the repository's `CLAUDE.md` or `AGENTS.md`, and write it only on a yes.
 
 Test the section before moving on: **a reader who never saw the conversation can tell from it what is to be built or fixed.** A section that would fit above any other plan unchanged holds the invocation, not the ask. If you cannot tell what "this" points at, ask in one plain line before exploring. The reviewer in step 5 and the final self-check both measure against this section.
 
@@ -314,6 +317,8 @@ Every unit of work is a ticket in **exactly** this format (full detail and an ex
 
 ## Red Flags — Stop and Re-read the Step
 
+- A question with one workable answer, a question on wording users will see, or a question on a principle the user already decided in the same feature
+- *The ask* written without reading the *House rules* sections, a house rule inferred rather than quoted, or a question asked against a house rule
 - A plan closed without a second opinion on the decisions made on the user's behalf, or a second-opinion prompt that argues for the choices
 - A review finding whose fix makes the asked-for behavior happen, asked instead of rewritten in; a review skill's apply / defer / dismiss questions asked during planning
 - A draft written before step 0 ran this session, or a map reused without checking its stamp against the current commit
@@ -364,7 +369,7 @@ Create a todo per item.
 
 - [ ] Read every companion file (first use in this session)
 - [ ] Step 0: codebase map reused if its stamp matches, refreshed where files changed, or built by the parallel mappers (services and access included when the repository serves requests); one cited line per section checked
-- [ ] Plan location chosen; *The ask* holds the task in one sentence and the user's words that state it, verbatim; the request for a plan is nowhere in it
+- [ ] Plan location chosen; *The ask* holds the task in one sentence, the user's words that state it, verbatim, and the house rules that bear on it, quoted; the request for a plan is nowhere in it
 - [ ] Exploration subagents dispatched in parallel on the cheaper tier, starting from the map; closest examples and overlapping tests found for every file and surface the change touches
 - [ ] Draft written to the full skeleton; decisions logged as made
 - [ ] Step 4 run on the draft without asking, and again on the finished plan: goal restated in one sentence, every part tested for removal and for a lower rung, each cut and lowering logged

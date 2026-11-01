@@ -19,6 +19,13 @@ shape across the conversation. Never the request for a plan.>
 > constraint, or a non-goal, as its own quote, in order. Not the message
 > that asked for the plan.>
 
+House rules:
+
+> <Each standing rule that bears on this task, from the *House rules*
+> section of the repository's or the user's CLAUDE.md or AGENTS.md, or
+> stated by the user, quoted with its source. Leave this part out when
+> there are none.>
+
 ## Summary
 
 <Two to four plain sentences: what is wrong or missing, what we will do about
