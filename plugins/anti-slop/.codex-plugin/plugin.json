@@ -1,6 +1,6 @@
 {
   "name": "anti-slop",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Keeps the UI and prose the agent writes from reading as AI slop.",
   "author": { "name": "Patrick D'appollonio", "email": "patrickdappollonio@gmail.com" },
   "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/anti-slop",
