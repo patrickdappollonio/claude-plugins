@@ -19,6 +19,13 @@ the conversation. Never the request for a plan.>
 > <The user's words, verbatim: each message that states the task, a
 > constraint, or a non-goal, as its own quote, in order.>
 
+House rules:
+
+> <Each standing rule that bears on this task, from the *House rules*
+> section of the repository's or the user's CLAUDE.md or AGENTS.md, or
+> stated by the user, quoted with its source. Leave this part out when
+> there are none.>
+
 ## Summary
 
 <Two or three plain sentences: what is wrong or missing, what changes, and

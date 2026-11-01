@@ -43,6 +43,16 @@ The four bold labels **The situation.**, **The flow.**, **The fix.**, and **Cost
 - **Cost** is what the fix costs, and only the fix: lines, a migration, a new dependency, a new background process, a behavior someone would notice. For a design finding this is where the size of the change to the plan goes, because it asks the user to revisit a decision rather than approve a patch. Not what the alternative would cost, not what the fix saves. `None` is a legitimate value and is written out, never left blank.
 - **Your call** is the question itself, in a few words, then the alternatives, each with its consequence on the same line. An ordinary finding offers three: **apply** the validated fix (recommended, unless there is no confirmed fix); **defer** to a follow-up (recorded, nothing changes now); **dismiss** as a non-issue (they say why; the reason is recorded). A `design_is_wrong` finding never offers *apply*, because applying its fix would be you re-deciding a design on the user's behalf: it offers **revise the design** (you write down what the design becomes, they approve or amend it, that becomes the new brief, and the change is then measured against it), **keep the design** (recorded as an accepted trade-off with their reasoning; the finding closes), or **defer**. Explaining is not an alternative because it is always available: the user asks in their own words. The user may answer in their own words too; the alternatives are a convenience, not a form.
 
+## Plain words, from a person's screen
+
+The user reads the question away from the code, so it is told in the words of what a person sees. These rules hold for every part of the question, not only the situation:
+
+- **The flow follows a named person.** Each step is what a customer, an operator, the person on call, or the developer who runs the tests next does, sees, or gets. A lock, a worker, a queue, a cache, or a table appears only inside a person's step, as the reason for what that person sees — never as the subject of a step of its own.
+- **No internal word without its meaning.** A file, function, table, column, flag, or state name, and any internal term — lock, replica, cursor, token, worker, migration — appears only when the same sentence says in everyday words what it is. The `path:line` in the situation's last sentence is the one exception.
+- **Name what is on screen by its label and its page.** "The Retry button on the Requests page", never "the button": the user cannot see the screen you have in mind.
+- **One concrete example.** Use real-looking values — "wallet W, frozen at 9:00:00 and unfrozen at 9:00:02" — rather than a general description of the case.
+- **One decision per question.** Context from another branch, a second choice, or a design for something else goes in its own question or nowhere. When your recommendation changed since the user last saw this subject, say so in one line.
+
 ## Numbering and order
 
 `Question <N> of <M>`: `N` counts the findings you have asked about, from 1; asking the same one again does not raise it. `M` is the findings already asked about plus the ones still undecided. A decision does not change `M`: after the user answers `Question 1 of 6`, the next heading is `Question 2 of 6`, never `Question 1 of 5`. A finding closed before it is asked (an earlier answer settled it) lowers `M`, and the next message says so in one line. The order is the report's order: `design_is_wrong` findings first, because every other finding is measured against a plan they say was wrong; then conformance findings; then the rest from serious to minor. A finding is referred to by its heading text, never by its number.
@@ -119,6 +129,8 @@ case without touching any other path.
 - A question sent without the line saying how many more wait after it
 - A heading that is a topic ("Retry policy"), a charter name, or a code identifier instead of a claim
 - A sentence that stops making sense when its code names are taken out, a flow step that only a reader of the code could follow, or a reference to something only you saw
+- A flow step whose subject is a lock, a worker, a table, or another process instead of what a person does or sees; an internal term with no everyday meaning in the same sentence; a screen element named without its label and its page
+- Two decisions in one question, or another branch's design carried into it
 - A flow written as prose instead of numbered steps, a flow padded with a step that describes nothing real, a flow over five steps that was not absolutely needed, a flow over ten steps, or `N/A` on a defect that someone would notice
 - A question treated as answered after a reply that was vague, partial, hedged with a word of doubt, or a question back
 - Two answers that cannot both hold, resolved by you instead of put back to the user

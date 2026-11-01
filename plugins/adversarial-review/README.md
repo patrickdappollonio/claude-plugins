@@ -14,10 +14,10 @@ This plugin ships **three skills** — the same method at three sizes. Pick by h
 
 ## The full panel
 
-**`adversarial-review`** — all **18 reviewers**, plus the verifier and the fix validator. Everything below describes this one.
+**`adversarial-review`** — the **17 standing reviewers**, plus the verifier and the fix validator. The Karpathy Minimalist, an 18th, runs only when you ask for it. Everything below describes this one.
 
 > [!WARNING]
-> **This is token-intensive.** Twenty agents each read the diff and the code around it, in parallel. That breadth is the value, but it is not free, and most changes don't need it. For a cheaper pass, run [the quick panel](#the-quick-panel) instead — it runs only the reviewers that fit the change and keeps both verification gates.
+> **This is token-intensive.** Nineteen agents each read the diff and the code around it, in parallel. That breadth is the value, but it is not free, and most changes don't need it. For a cheaper pass, run [the quick panel](#the-quick-panel) instead — it runs only the reviewers that fit the change and keeps both verification gates.
 
 ## The quick panel
 
@@ -49,6 +49,21 @@ That line matters in both directions. Without the brief, nobody on the panel is 
 
 This comes from a real miss: three reviewers hunted bugs well on a piece of UI work and all three passed it. The build had silently dropped a column the approved mock had, and a value ended up rendered in the wrong place. **A correct implementation of the wrong design has no bugs in it** — so a bug-hunting charter will pass it every time.
 
+## House rules
+
+Some facts about how your team works hold for every change: you take the service down to deploy, you roll forward instead of back, you measure before adding a limit. Write them in a section headed `House rules` in your repository's `CLAUDE.md` or `AGENTS.md`, or in your own instructions file, and every review quotes them in the brief. Reviewers then stop filing findings that only matter if a rule were false, such as a rollback path for a team that never rolls back. A house rule can also name the findings to fix without asking; the review then asks only about the rest.
+
+```markdown
+## House rules
+
+- We deploy with full downtime; old and new versions never run side by side.
+- We roll forward, never back.
+- Add a limit, cap, or index only for a volume we have measured.
+- Fix docs, tests, and naming findings from a review without asking.
+```
+
+`planning-flow` and `planning-flow-quick` read the same section and quote it in the plan, so the plan's reviewers get it too.
+
 ## The brief bounds scope. It never establishes correctness.
 
 There's a mirror image of that miss, and the panel is built to catch it too. Once a plan is written down and handed to reviewers, it starts to read as settled: a reviewer sees something wrong, checks the brief, finds the behaviour was agreed, and quietly files it under *out of scope* rather than *bug*. That's how a defect survives round after round while everybody works honestly — and it happens the same way every time, so re-running the review doesn't help.
@@ -57,7 +72,7 @@ So the brief is allowed to tell reviewers what's in bounds, and never allowed to
 
 ## The reviewer panel
 
-Each reviewer attacks from one narrow angle. The full panel runs all of them; the quick panel proposes the ones the change triggers and lets you edit the list.
+Each reviewer attacks from one narrow angle. The full panel runs all of them except the Karpathy Minimalist, which runs only when you ask for it; the quick panel proposes the ones the change triggers and lets you edit the list.
 
 | Reviewer | Attacks |
 |---|---|
@@ -76,7 +91,7 @@ Each reviewer attacks from one narrow angle. The full panel runs all of them; th
 | **Authorization Attacker** | what a valid-but-unauthorized user can reach |
 | **Resource Exhaustion Adversary** | unbounded growth, leaks, quadratic blowups |
 | **Maintainability Cynic** | what the next reader will misread |
-| **Karpathy Minimalist** | speculative complexity, scope creep (doing *too much*), and hand-written copies of what the standard library, a declared dependency, or a repo helper already provides |
+| **Karpathy Minimalist** (opt-in) | speculative complexity, scope creep (doing *too much*), and hand-written copies of what the standard library, a declared dependency, or a repo helper already provides |
 | **AI Anti-Slop Critic** | plausible-but-hollow generated code, hallucinated APIs |
 | **Fact-Checker** | every factual claim verified against primary sources via web search |
 
