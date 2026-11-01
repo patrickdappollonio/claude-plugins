@@ -6,7 +6,7 @@ A plan that rests on an unchecked fact can fall apart at the first ticket, and t
 
 **When you find an unknown that a check can settle, and the answer would change the plan, you do one of two things at once: run the check, or ask the user for permission to run it.** "Change the plan" means a ticket's size, shape, or existence, a question's fix, or a premise the solution depends on. A sentence that says something "could be tested", "could be verified", or "is worth checking", followed by neither a result nor a request, is the failure this file exists to stop. A check whose answer would change nothing is not run and not mentioned.
 
-In a quick plan, count the unknowns as you find them. More than two that each need a check, or one whose answer would change the approach rather than a detail, is the *Many unknowns* sign in `SKILL.md`: warn as that section says, and keep checking.
+In a quick plan, count the unknowns as you find them. More than two that each need a check, or one whose answer would change the approach rather than a detail, is the *Many unknowns* sign in `SKILL.md`: judge it as that section says, and keep checking.
 
 ## The three lanes
 

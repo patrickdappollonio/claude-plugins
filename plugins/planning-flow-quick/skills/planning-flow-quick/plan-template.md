@@ -93,7 +93,7 @@ is true when this is done, and who benefits.>
 
 - **Title.** A plain imperative phrase. No ticket numbers or codes. A spike's title starts with `Spike:` and its acceptance criteria are the questions it must answer.
 - **Acceptance criteria.** Observable: "the settings page title reads 'Account settings'", not "the title is correct". Each ends with the test that proves it. A criterion with no test clause is a research gap.
-- **Size.** A guess at lines touched, tests and docs included: XS under 200, S 200 to 750, M 750 to 1500. Size is not a sign that a plan is too big for this skill; the signs in `SKILL.md` are. A ticket above M is usually more than one ticket, which is a sign.
+- **Size.** A guess at lines touched, tests and docs included: XS under 200, S 200 to 750, M 750 to 1500. Size is not a sign that a plan is too big for this skill; the signs in `SKILL.md` are. A ticket above M usually splits into tickets; when they must land in order, that is a sign.
 
 ## The decisions format
 
@@ -103,7 +103,7 @@ is true when this is done, and who benefits.>
   <"Reversible: yes/no/with cost".>
 ```
 
-A decision the user made quotes their words and names what it was about, so nobody stretches it past that subject. A decision that follows from the user's says so ("Follows the user's choice to…"). A check that settled a fact is a decision entry that says what was run and what it showed. A choice to keep going after a too-big warning is the user's decision, logged with the sign it was about. A decision that reverses an earlier one replaces it.
+A decision the user made quotes their words and names what it was about, so nobody stretches it past that subject. A decision that follows from the user's says so ("Follows the user's choice to…"). A check that settled a fact is a decision entry that says what was run and what it showed. A no to switching to the full flow, whether given to an offer or said up front ("keep this quick"), is the user's decision for the whole session, logged with their words. A decision that reverses an earlier one replaces it.
 
 ## The ladder
 

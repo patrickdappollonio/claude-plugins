@@ -1,7 +1,7 @@
 ---
 name: planning-flow-quick
 description: >-
-  Use when the user wants a quick plan for a small coding change — "quick plan", "plan this small fix", "/planning-flow-quick <ask>" — such as a renamed title, a corrected message, a one-function bug fix, or a small option, where the change still needs to follow the repository's patterns and name the tests it extends, but a full codebase map, parallel exploration, several reviews, and an interview tree would cost more than the work. Writes one short plan file with one ticket, settles unknowns with checks on the spot, asks only what the code cannot answer, and warns when the change has grown past what a quick plan handles, recommending the full `planning-flow` skill when it is installed.
+  Use when the user wants a quick plan for a small coding change — "quick plan", "plan this small fix", "/planning-flow-quick <ask>" — such as a renamed title, a corrected message, a one-function bug fix, or a small option, where the change still needs to follow the repository's patterns and name the tests it extends, but a full codebase map, parallel exploration, several reviews, and an interview tree would cost more than the work. Writes one short plan file with one ticket, settles unknowns with checks on the spot, asks only what the code cannot answer, and notes where the quick plan is thinnest.
 ---
 
 # Planning Flow — Quick
@@ -10,7 +10,7 @@ description: >-
 
 Turn a small request into **one short plan**: the change, where it goes, the pattern it copies, the tests it extends, and the decisions behind it. It is the lighter version of the `planning-flow` skill: it skips the full codebase map, the parallel exploration, the separate reviewers, the second opinion, and the delivery-shape question. It keeps the parts that stop a small change from going wrong: following the repository's patterns, extending the right tests, settling unknowns before they are built on, and leaving the user's decisions to the user.
 
-A quick plan that stops being quick is the failure this skill watches for. The *Too big for a quick plan* section below names the signs, and each one gets a warning when it shows.
+A quick plan that stops being quick is one failure this skill watches for; a small change interrupted by switch offers the user did not want is the other. The *Too big for a quick plan* section below names the signs, how to judge them, and the one offer to switch, which a user's no ends for the session.
 
 **These rules bind everything below:**
 
@@ -44,30 +44,36 @@ Every other skill is optional. This skill works alone. When a companion skill is
 
 - The user asks for a quick plan, or invokes `/planning-flow-quick`, or asks for a plan for a change that fits one ticket: a renamed title, a corrected message, a small bug fix, a small new option, a test gap.
 
-**When NOT to use:** the user asked for a full plan, or the ask already shows a sign from *Too big for a quick plan* — say so in one line and recommend `planning-flow` if installed (below). A plan already exists and the user wants it built: that is implementation. The user asked a question, not for a plan: answer it.
+**When NOT to use:** the user asked for a full plan, or the ask itself has clearly outgrown a quick plan by the judgment in *Too big for a quick plan* (and the user has not said they want it quick) — say so in one line and recommend `planning-flow` if installed (below). A plan already exists and the user wants it built: that is implementation. The user asked a question, not for a plan: answer it.
 
 ## Too big for a quick plan
 
-Lines of code are **not** a sign. An agent writes five hundred lines it understands quickly; what makes a change slow and risky is how often the work must stop to decide or find out something. Check these signs after exploration (step 2), after every answer, and after the plan check (step 5):
+Lines of code are **not** a sign. An agent writes five hundred lines it understands quickly; what makes a change slow and risky is how often the work must stop to decide or find out something, and how much of what others rely on it changes. **Judge each sign by what the change alters, never by what code it sits near.**
 
-**Any one of these is a sign:**
+**The signs:**
 
-- **More than one ticket.** The work splits into parts that could ship or be reviewed apart, or into steps where one must land before another.
-- **A second subsystem.** The change reaches a part of the codebase with its own owners, its own tests, or its own patterns beyond the one it started in.
-- **A sensitive area.** The database schema or a migration, a stored file format, sign-in or permissions, work that runs at the same time as other work, a public API or another contract that other systems use, or a call to an outside service.
+- **It changes what others rely on.** It removes, renames, or changes the meaning or type of a field, an endpoint, a flag, or a message another system or person reads; it changes a stored file format or the shape of data already stored (anything that needs a migration or a read of two shapes); or it changes the rules that decide who is allowed in (who can sign in, what a role may do, which requests are refused).
+- **New concurrency.** It adds work that runs at the same time as other work, in an area that had none.
+- **Tickets that must land in order.** The work splits into parts where one must ship before another, or into parts in different subsystems that need separate review.
 - **No pattern to follow.** The codebase has no example of this kind of thing, so the plan must invent a shape: a new kind of module, a new layer, a new way to configure or test something.
 - **Many unknowns.** More than two unknowns that each need a check to settle, or one check whose answer would change the approach, not only a detail.
 - **Many decisions.** More than three questions only the user can answer, or one answer that opens new questions of its own.
 - **The plan does not converge.** The second plan check still finds a gap that would change what gets built.
 
-**Not a sign on its own:** the line count, the number of files that change in the same way, or a new dependency. A small, well-known dependency (an ID generator, a small parsing library) is a question for the user (`plan-template.md`, *The ladder*), and it counts toward the decisions; a framework or a replacement for something the project already uses is a second subsystem.
+**Not a sign:** the line count; the number of files that change in the same way; code that runs before or after a sign-in or permission check without changing it; an optional field added to a response, with nothing removed or changed; a new call through a client the project already uses for that service; one more caller of an existing mechanism, used the way an existing caller already uses it; a second small ticket that can ship on its own; a small piece in another repository that follows that repository's own pattern. A small, well-known dependency (an ID generator, a small parsing library) is a question for the user (`plan-template.md`, *The ladder*), and it counts toward the decisions; a framework, or a replacement for something the project already uses, is the *No pattern to follow* sign.
 
-**When a sign shows, warn at once, in one plain line naming the sign** ("This change touches the database schema, which is more than a quick plan handles well."), and then:
+**When to check.** After exploration (step 2), check only what the request and the code already fix; a sign that comes from a design you picked before the user weighed in waits until their answers settle the design. Check again after the questions are answered (step 4) and after the plan check (step 5).
 
-- **`planning-flow` installed** (it is in your harness's skill list): this is a stop. Save the plan file as it stands, recommend switching, say the file carries over, and wait for the answer; work done past this point would be redone by the full flow. On the user's yes, load the `planning-flow` skill and tell it the path of the quick plan file; it picks up from there and runs every step the quick flow did not. On a no, keep going and log the user's choice as a decision. A later **new** sign gets its own warning and its own recommendation.
-- **`planning-flow` not installed:** this is never a stop. Warn in the next message you send anyway and keep going. Never suggest installing it, and never wait for it. Repeat the one-line warning each time a **new** sign shows, and list every sign that showed under *Gotchas and caveats* in the plan and in the closing, so the user knows where the quick plan is thinnest.
+**A sign is evidence; your verdict decides.** When a sign shows, judge whether the change has outgrown a quick plan. It has when a sign changes what others rely on, or when two or more signs show together; even then, once the user has said no (next paragraph), the verdict goes under caveats and is never an offer. When you judge that it still fits, say so in one line with the reason ("This adds an optional field to the response and removes nothing, so the quick plan still fits.") and list the sign under *Gotchas and caveats*. Offer the switch only when you believe in it; a switch recommended for a change you yourself call small is a contradiction the user has to untangle.
 
-A warning never becomes a numbered question: switching is not a trade-off in the plan, it is a choice of tool. The recommendation to switch is one plain line and a yes-or-no.
+**The user's no lasts for the session.** The user has declined the full flow when they said no to an offer, or when, before any offer, they said they want the quick flow and not the full one ("keep this quick", "don't use the full flow", "no switching"). Invoking `/planning-flow-quick` alone is not a no. After a no, **never offer the switch again in this session**, whatever new sign shows and however serious it looks: log the no as the user's decision with their words, list every later sign under *Gotchas and caveats*, and when a sign changes the plan, say so in one line of status. Never as a question, never as "this is a new sign".
+
+**The offer, when you make one** (at most once per session, and never after a no):
+
+- **`planning-flow` installed** (it is in your harness's skill list): save the plan file as it stands and send the offer as its own message, opening with the `Step <n> of 7; <k> questions open` line like any stop: one plain line naming the sign and why it outgrows a quick plan, then a yes-or-no. The plan file carries over, so nothing done so far is lost. Nothing else goes in that message; the next open question waits for the answer. On a yes, load the `planning-flow` skill and tell it the path of the quick plan file; it picks up from there and runs every step the quick flow did not. On a no, log it and ask the next open question.
+- **`planning-flow` not installed:** never a stop. Say in one line in the next message you send that the change has outgrown a quick plan and why, and keep going. Never suggest installing it, and never wait for it.
+
+Either way, every sign that showed is listed under *Gotchas and caveats* in the plan and in the closing, so the user knows where the quick plan is thinnest. The offer never becomes a numbered question: switching is not a trade-off in the plan, it is a choice of tool.
 
 ## Where the Plan Lives
 
@@ -81,7 +87,7 @@ Name the file after the task in short kebab-case: "fix the title on the settings
 
 ## The Process
 
-Do every step in order. Between steps, keep chat to one-line status notes. Every stop that asks the user something opens with `Step <n> of 7; <k> questions open` and carries its one question in full, never a pointer to an earlier message. Under a goal loop (the user said so, or the conversation holds `A session-scoped Stop hook is now active`, `Stop hook feedback:`, `Goal check-in:`, or a Codex `<objective>` block), every stop is the last message the user reads; a re-prompt with nothing changed gets the same message again, word for word.
+Do every step in order. Between steps, keep chat to one-line status notes. Every stop that asks the user something opens with `Step <n> of 7; <k> questions open` (when it follows an answer, the sentence saying the answer back comes right after that line) and carries its one question in full, never a pointer to an earlier message. Under a goal loop (the user said so, or the conversation holds `A session-scoped Stop hook is now active`, `Stop hook feedback:`, `Goal check-in:`, or a Codex `<objective>` block), every stop is the last message the user reads; a re-prompt with nothing changed gets the same message again, word for word.
 
 ### 1. Capture the ask
 
@@ -160,11 +166,16 @@ Add `with implement-plan` after the path only when it is installed. The goal nam
 | "The change is small, so the unknown can wait for implementation" | Implementation finds out after the plan was built on the guess. Run the check, or ask to, now. |
 | "It's 400 lines, so it's too big for a quick plan" | Lines are not a sign. Stops are: tickets, subsystems, sensitive areas, unknowns, decisions, a missing pattern. |
 | "It needs a new dependency, so it's a big change" | A small, well-known dependency is one question for the user. A framework, or a replacement for one the project uses, is a second subsystem. |
-| "A sign showed, but switching feels like overkill" | Warn anyway, in one line. The user decides; you never decide silently. |
-| "I'll keep drafting while the user decides whether to switch" | With `planning-flow` installed, the switch is a stop: the full flow would redo the work. |
+| "A sign showed, so I have to recommend switching" | A sign is evidence, not a verdict. When the change still fits, say so in one line with the reason, list the sign under caveats, and keep going. Offer the switch only when you believe in it. |
+| "It's small, but the skill makes me recommend switching" | Then do not recommend it. Say why it still fits; the caveats carry the sign. |
+| "It runs right before the auth check / touches the API / calls Etherscan, so it's a sensitive area" | Judge what it changes. Who is allowed in, a field others read, the shape of stored data: those count. Sitting near them, adding an optional field, or one more call through an existing client does not. |
+| "A sign showed, but switching feels like overkill" when it changes what others rely on | Offer the switch, once, in its own message. If the user has already said no, it goes under caveats instead. |
+| "I'll keep drafting while the user decides whether to switch" | With `planning-flow` installed, the offer waits for its answer; the plan file carries over either way. |
 | "I'll poll until the explorers report" | A subagent's report arrives by notification. The capped wait loop is for slow commands only. |
 | "`planning-flow` isn't installed, so I'll suggest installing it" | Never. Warn, keep going, and list the signs under caveats. |
-| "The user said no to switching, so I'll stop warning" | Their no covers the signs that had shown. A new sign gets its own one-line warning. |
+| "The user said no, but this is a new sign" | Their no covers the whole session. The new sign goes under caveats and, if it changes the plan, into one line of status. Never another offer. |
+| "The user asked for quick up front, but they haven't seen this sign yet" | Saying they want it quick is a no. Respect it; list the sign under caveats. |
+| "This sign is serious enough to override their no" | The user owns the choice of tool. Make the risk plain in the caveats and the closing; do not ask again. |
 | "The check is cheap, I'll message the same subagent with the fixes" | A re-check is a new subagent with the rewritten plan. The old one has read the old text and its cache has expired. |
 | "Three questions in one message is faster" | One per message. The file holds them all; the chat asks one, waits, asks the next. |
 | "The user is away, so I'll take my recommendation" | A question put to the user is answered by the user. |
@@ -180,10 +191,13 @@ Add `with implement-plan` after the path only when it is installed. The goal nam
 - *Technical context* that says "see the map" or "follow the existing pattern" without stating the pattern and its example
 - A sentence saying something "could be tested" or "is worth checking", with no result and no permission request
 - A network call, browser action, shared-service call, install, or read outside the working directory made without a yes
-- A sign from *Too big for a quick plan* that showed with no warning, a warning that suggested installing `planning-flow`, or a flow that stopped to wait for an install
-- A warning turned into a numbered question
+- A sign from *Too big for a quick plan* that showed and is missing from *Gotchas and caveats*, a message that suggested installing `planning-flow`, or a flow that stopped to wait for an install
+- A switch offered after the user said no or said they want it quick, in any words, or a second offer in the same session
+- A switch recommended for a change you called small in the same message
+- A sign counted because the code sits near sign-in, an API, or an outside service, not because the change alters what others rely on
+- A switch offer in the same message as a plan question, or an offer turned into a numbered question
 - A line count used as a sign
-- More than one ticket in a plan that is still being called quick, with no warning given
+- Tickets that must land in order in a plan still being called quick, with no verdict given
 - Two questions in one chat message, a question through the harness question tool, or a question the agent answered itself
 - A reply to an answer that opens with a command or a file read, or records the answer with no sentence saying back what it means
 - A question the user's earlier words already answer
@@ -201,7 +215,7 @@ Create a todo per item.
 - [ ] Read every companion file (first use in this session)
 - [ ] *The ask* holds the task in one sentence and the user's words, verbatim; the request for a plan is nowhere in it
 - [ ] Area learned: an existing codebase map used and its facts confirmed against the code, a small area read directly, or the two scoped explorers run in one message; pattern, closest example, and covering tests found for every surface the change touches
-- [ ] Signs from *Too big for a quick plan* checked after exploration, after every answer, and after the plan check; each new sign warned about in one line, with `planning-flow` recommended only when installed
+- [ ] Signs from *Too big for a quick plan* judged by what the change alters, after exploration (request and code only), after the questions, and after the plan check; each one either judged to fit (one line with the reason) or offered as a switch, at most once per session and never after the user's no; every sign listed under *Gotchas and caveats*
 - [ ] Draft written to the short skeleton, first line `<!-- planning-flow-quick -->`; every acceptance criterion names the test it extends or says why it needs a new one
 - [ ] Every unknown that would change the plan checked when found, or asked for in the `verification.md` shape; nothing left behind but the plan
 - [ ] Ladder walked once over the draft; every cut logged

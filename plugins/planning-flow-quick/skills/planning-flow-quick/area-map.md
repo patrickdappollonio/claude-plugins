@@ -67,5 +67,5 @@ Three to five examples per pattern are enough. Never read a range twice. Never r
 
 - Copy the values into the plan's *Technical context*: the pattern in words with its example, the exact strings, the commands, and the tests to extend with what each does. Never a pointer: the plan check and the implementer do not get the explorers' reports.
 - A follow-up question goes to a **new** explorer with the earlier answer in its prompt, never to one that already reported.
-- When an explorer reports that the area has no example of the thing the change creates, that is the *No pattern to follow* sign in `SKILL.md`. When its answer reaches a second subsystem or a sensitive area, that is a sign too. Warn as `SKILL.md` says.
+- When an explorer reports that the area has no example of the thing the change creates, that is the *No pattern to follow* sign in `SKILL.md`. When its answer shows the change altering what others rely on (a field others read, stored data, who is allowed in), that is a sign too; code that only sits near those is not. Judge it as `SKILL.md` says.
 - When an explorer finds the same thing in more places than the ask named, and the ask said "all" or "every", those places are inside the ask. When it did not, whether to change them is a question for the user.

@@ -30,7 +30,7 @@ It receives exactly: the plan's *The ask* section as written, the path of the pl
 > 4. Every acceptance criterion whose named test does not exercise that surface, or that adds a new test where an existing one already performs most of its setup and actions.
 > 5. Cases the plan does not handle: empty input, first run, existing data, an error from something it calls.
 > 6. Anything the plan builds that the codebase, the standard library, or an installed dependency already provides.
-> 7. Signs the change is bigger than one small ticket: it needs more than one ticket, reaches a second part of the codebase, touches a database schema, a stored format, sign-in or permissions, work that runs at the same time, a public API, or an outside service, or has no existing example to follow.
+> 7. Signs the change is bigger than one small ticket, judged by what it changes, never by what code it sits near: it removes or changes a field, endpoint, or format another system reads; changes data already stored; changes the rules that decide who is allowed in; adds work that runs at the same time where there was none; needs tickets that must land in order; or has no existing example to follow. An optional field added, a new call through a client the project already uses, or code that runs before or after a permission check without changing it is not a sign.
 > 8. For each of these decisions made on the requester's behalf, whether it fits the request and whether it changes anything a user or another system would notice: <decisions, each with the alternative>.
 >
 > Return: the pass-1 list; then the pass-2 findings, each with what is wrong, the evidence (file and line, or the plan's sentence), and whether fixing it changes what a user or another system would notice. Return empty lists if the plan holds; do not invent problems.
@@ -45,7 +45,7 @@ For each pass-2 finding:
 
 - A correction, or a fix that keeps the plan doing what the ask wants (making the asked-for behavior actually happen counts): rewrite the plan and log it as your decision with the reason.
 - A fix that changes what a user or another system would notice beyond the ask, or a decision of yours the check shows changes such behavior: it goes on the question list, in the `question-format.md` shape, with the suggested fix as the recommendation.
-- A sign from item 7: warn as *Too big for a quick plan* in `SKILL.md` says.
+- A sign from item 7: judge it as *Too big for a quick plan* in `SKILL.md` says. When the user has already declined the full flow, it goes under *Gotchas and caveats*, never into another offer.
 
 Never write "the check found" anywhere in the plan.
 
