@@ -58,6 +58,18 @@ ASK BEFORE EVERY CHANGE:
 
 "Semantically equivalent" is a claim, and a claim is proven by a test that existed before the edit and still passes after it — see *Prove Equivalence With a Test That Predates the Change*. Reasoning about equivalence, however careful, is not proof.
 
+### Dead code the change itself added goes out with its test
+
+When the scope is a branch or a diff, find its base: the starting commit the user or a plan names, else `git merge-base HEAD <default branch>`. Code and tests that are not on the base are the change's own draft. Nobody outside it has ever relied on them. "Behavior" is what the callers in the code can reach, and "existing tests" are the tests on the base.
+
+When the diff adds a path that no call site in the code can reach — a guard for a state no caller passes, a fallback for a value no caller produces, a branch no input reaches — and a test the diff also adds is the only thing that reaches it, that test is not a caller. It is part of the dead path. Remove the path and that test in one change, run the remaining tests, and name the deleted test in the report. This is the *Dead code* row below, not bending a test, and it is not a question for the user: no user, caller, or test on the base can see it go. Confirm three things first:
+
+1. `git log -S'<a line of the path>' <base>..HEAD` shows the diff added it.
+2. Every call site outside the tests is listed, each with the reason it cannot reach the path: what it passes, read from the code. Judge "cannot reach" from the values the code builds and stores, such as an id set by the constructor or a key the store assigns. "A record might arrive malformed someday" is not a call site.
+3. Every test on the base passes unchanged afterwards.
+
+Two cases stay as they are. A test on the base is a pin and passes unmodified, always. A branch-new test of behavior a caller can reach is a pin too: never edit its expected value to make a reshape pass.
+
 ### 2. Follow Project Conventions
 
 Simplification means making code more consistent with **this** codebase, not imposing external preferences. Before simplifying, read the project's instructions file (CLAUDE.md, AGENTS.md, CONTRIBUTING, style guides) and study how neighboring code handles similar patterns — imports, declaration style, naming, error handling, type/annotation depth. Match them, even where you'd personally write it differently.
@@ -75,7 +87,7 @@ Simplification has a failure mode: over-simplification. Watch for these traps:
 - **Inlining too aggressively** — removing a helper that gave a concept a name makes the call site harder to read
 - **Combining unrelated logic** — two simple functions merged into one complex function is not simpler
 - **Removing "unnecessary" abstraction** — some abstractions exist for extensibility or testability, not complexity
-- **Removing error handling or validation** — cleaner-looking is not a reason; behavior must hold
+- **Removing error handling or validation** — cleaner-looking is not a reason; behavior must hold. A check that no call site can trip, added by the change in scope, is dead code, not validation; see *Dead code the change itself added goes out with its test*
 - **Optimizing for line count** — fewer lines is not the goal; faster comprehension is
 
 ### 5. Scope to What Changed
@@ -133,7 +145,7 @@ Scan for these patterns — each is a concrete signal, not a vague smell:
 | Pattern | Signal | Simplification |
 |---------|--------|----------------|
 | Duplicated logic | Same 5+ lines in multiple places | Extract to a shared function |
-| Dead code | Unreachable branches, unused variables, commented-out blocks | Remove (after confirming it's truly dead) |
+| Dead code | Unreachable branches, unused variables, commented-out blocks, a guard no call site can trip | Remove (after confirming it's truly dead); a branch-new test that only reaches it goes with it |
 | Unnecessary wrappers | A layer that adds no value over what it wraps | Inline it; call the underlying thing directly |
 | Over-engineered patterns | Factory-for-a-factory, strategy-with-one-strategy, config nobody sets | Replace with the simple direct approach |
 | Manual re-implementation | Hand-rolled loop/branching for something the language or stdlib does idiomatically | Use the idiom the codebase already uses elsewhere |
@@ -275,6 +287,10 @@ Same errors, same behavior, same edge cases — only the shape changed.
 | "The original author must have had a reason" | Maybe — check the history (Chesterton's Fence). But complexity is often just the residue of iteration under pressure. |
 | "I'll refactor while adding this feature" | Mixed changes are harder to review, revert, and understand in history. Separate them. |
 | "The tests need a small tweak to pass" | Tests failing means you changed behavior. Revert the simplification, don't bend the tests. |
+| "Removing the guard deletes a test, so the user has to approve it" | Not when the guard and the test are both new in the change and no call site reaches the guard. That test is part of the dead path, not a pin. Remove both, run the rest, and report it. |
+| "It changes what the function does when called directly" | Only the test calls it that way. Behavior is what the code's own callers reach. |
+| "I can't prove the state is impossible, data comes from elsewhere" | Read what the call sites pass and how the code stores it. "Someday a record might arrive malformed" is not a caller. |
+| "I don't delete tests without asking" | That covers tests on the base. A test this change wrote for a path this change wrote is its own draft. |
 | "There are no tests and we ship tomorrow, so I'll just be careful" | Careful is not proof. Ask the user for permission to add pinning tests; if they decline, say the change is unproven. Pressure is when refactors break things. |
 | "I built the expected value with the project's own helper, so the test stays consistent" | Then the test and the code share one source and cannot disagree. Freeze a literal. |
 | "A test already covers this function, so it's pinned" | Only if it can fail. Check it for both faults first; a tautological test or change detector is flagged in the report and leaves the function uncovered. |
@@ -295,6 +311,7 @@ Same errors, same behavior, same edge cases — only the shape changed.
 ## Red Flags — Stop and Reassess
 
 - A simplification requires modifying tests to pass (you likely changed behavior)
+- You are about to ask the user whether to remove a guard, fallback, or branch that this change added, no call site reaches, and only a branch-new test exercises
 - A pin that asserts how many times a query, helper, or mock ran, where no consumer or upstream dependency is promised that number
 - The "simplified" code is longer and harder to follow than the original
 - You're renaming things to match your preferences rather than project conventions
@@ -324,7 +341,7 @@ Same errors, same behavior, same edge cases — only the shape changed.
 After completing a simplification pass:
 
 - [ ] All four companion files were read on first use this session, and the relevant one re-read at its step
-- [ ] All existing tests pass **without modification**
+- [ ] All tests on the base pass **without modification**; any test deleted was branch-new and reached only a dead path the change added, and the report names it
 - [ ] Every reshaped function is pinned by a test that existed **before** the change and passes after it
 - [ ] Every expected value in a test you wrote is a literal, and no pin asserts call order, a count of internal work no consumer or upstream is promised, a constant's own value, or a whole output where one fact matters
 - [ ] Every existing test covering the code in scope was checked for both faults; each one that has either is in the report with its fix, and none was edited unasked

@@ -10,10 +10,10 @@ Either way, the scope is the merged change only: `git diff <starting-commit>..HE
 
 ## The five principles
 
-1. **Preserve behavior exactly.** Same output for every input, same error behavior, same side effects and ordering, same edge cases. Every existing test passes **unmodified**. A test that needs a tweak to pass means the behavior changed: revert the simplification, never bend the test.
+1. **Preserve behavior exactly.** Same output for every input, same error behavior, same side effects and ordering, same edge cases. Every test on the starting commit passes **unmodified**. A test that needs a tweak to pass means the behavior changed: revert the simplification, never bend the test. Behavior is what the code's own call sites reach: a guard, fallback, or branch this run added that no call site can reach is dead code, and a test this run added only to reach it is part of that dead path. Remove both in one change, after `git log -S'<a line of it>' <starting-commit>..HEAD` shows this run added them and every non-test call site is listed with why it cannot reach the path (read from what it passes, not from data that might arrive malformed someday). Log the deleted test. This is not a question for the user.
 2. **Follow project conventions.** Read the project's instructions file and the neighbouring code first; match its naming, declaration style, error handling, and idioms even where you would write it differently. Simplification that breaks consistency is churn.
 3. **Prefer clarity over cleverness.** A five-line conditional a reader scans in two seconds is simpler than a one-line nested ternary. When in doubt, write the boring version.
-4. **Maintain balance.** Do not inline a helper that names a concept, merge unrelated logic into one function, remove an abstraction that exists for testability, or remove validation because the result looks cleaner. Fewer lines is not the goal; faster comprehension is.
+4. **Maintain balance.** Do not inline a helper that names a concept, merge unrelated logic into one function, remove an abstraction that exists for testability, or remove validation because the result looks cleaner. A check no call site can trip, added by this run, is dead code, not validation (principle 1). Fewer lines is not the goal; faster comprehension is.
 5. **Scope to what changed.** Every changed line traces back to a simplification you can name, inside the merged diff.
 
 ## The pass
