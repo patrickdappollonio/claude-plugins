@@ -116,6 +116,18 @@ The question's heading sits **one level below the section that holds it**, so th
 
 A harness question tool (a multiple-choice prompt) has room for one line per option and none for a flow. These questions need the whole template, so they go in the message as markdown, and the user answers in their own words. This holds even when the harness has such a tool.
 
+## Code this run wrote is the run's to fix
+
+Before a question about code is written, find out where the code came from: `git log -S'<a line of it>' <starting-commit>..HEAD`, or `git diff <starting-commit>..HEAD` (the base is the starting commit, else `git merge-base HEAD <default branch>`). Code and tests that are not on the starting commit are this run's own draft, and nobody outside the run has relied on them.
+
+When the code in question is the run's own draft and the fix leaves what a user or consumer gets as agreed, or as it was on the starting commit, it is not a question. Examples are removing a guard no call site can trip together with the test that only trips it, a wrapper left passing calls straight through once that guard is gone, or a check this run added that a house rule forbids. This covers the code a finding names and what its fix leaves behind. It is not a licence to widen the pass: a helper that names an idea, or code no finding touches, stays as it is. Make the fix, run the tests, and list it in one line of your next message: what you removed or changed, that this branch added it, and that nothing a user sees changes. This holds in every pass that finds it: a house-rules review, a simplification, a second opinion, a review the user asked for after the plan was done. It also holds when the user asked to discuss findings before fixing them. That request covers behavior that was there before this run, not tidying or undoing the run's own unfinished work, and the one-line list is how they still see it.
+
+Measure against the starting commit, never against the branch. Undoing or trimming something this run added, so the code behaves as it did on the starting commit, is always the run's call, whatever file the addition sits in, and is never a question: never undo your own addition and then ask whether to keep it undone. A review tool's "needs a design decision" flag on a fix to the run's own code is settled the same way; write the call and its reason in the decisions log, so nothing is left open. Ask only when reaching the goal needs a change to behavior that was on the starting commit and the plan did not already agree to it. When you do ask about code, the first sentence of **The situation.** says whether it is new on this branch or was already there.
+
+## A typo guard is not a question
+
+When a decision's worst case is someone typing a value nobody would set on purpose (a 20-digit setting, a negative count, a date centuries away), it does not get this template. Fix it with a plain ceiling or floor well above any real value, falling back to the existing default, choose the number yourself, and state it in one line ("Ceilings: 600 minutes, 100 reports; anything above uses the default."). Several such numbers share that one line. It becomes a question only when the bound would refuse a value someone might really use.
+
 ## A choice with one workable answer is not a question
 
 Before a question is written, list its alternatives in your notes. When every alternative but one fails the ask, or the only other one is not building what was asked, there is nothing to choose: decide it, log it as a decision that follows from the ask, and do not ask it. A question whose *Your call* could only be `accept?` with no real alternative behind it is never asked. Wording the user will see — labels, messages, help text — goes into the plan as written, where the user can edit it during review, not into a question.
@@ -189,6 +201,7 @@ one existing freeze test already uses. Assert exactly one winner per job.
 - A sentence that stops making sense when its code names are taken out, a flow step that only a reader of the code could follow, or a reference to something only you saw
 - A flow step whose subject is a lock, a worker, a table, or another process instead of what a person does or sees; an internal term with no everyday meaning in the same sentence; a screen element named without its label and its page
 - Two decisions in one question, or another branch's design carried into it
+- A question about code this run wrote, whose fix leaves what users get unchanged; an addition of the run's own undone and then put to the user as a question; a question about code whose situation does not say whether the code is new on this branch
 - A question with one workable answer, or whose only alternative is not building what was asked; wording the user will see asked as a question instead of written into the plan
 - A question about a feature where the user already decided the same principle, asked without naming that decision
 - A flow written as prose instead of numbered steps, a flow padded with a step that describes nothing real, a flow over five steps that was not absolutely needed, a flow over ten steps, or `N/A` on a decision that has a consumer who would notice it

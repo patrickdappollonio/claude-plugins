@@ -118,7 +118,7 @@ A finding inside the ask is fixed, not asked:
 - Fix is technical or corrects a mistake, and the plan still does what the ask wants afterwards → rewrite the plan, log the decision with the reason and any drawback. Making the asked-for behavior actually happen counts: it is not a change in behavior.
 - Fix changes how the product behaves beyond the ask or a decision the user made (the business process, what users see or get, an operational policy such as a threshold), is large (a new dependency, a schema, a public API), or reaches outside the ask → a question for the user, with the reviewer's suggested change as the recommendation.
 
-A `design_is_wrong` finding takes the same test. When an installed review skill runs, its own question step does not: its findings come back here.
+A finding reachable only through a value nobody sets on purpose (a 20-digit setting, a negative count) is a typo guard, not an operational policy: write a plain ceiling or floor well above any real value into the plan, falling back to the existing default, pick the number, and log it as a decision. A `design_is_wrong` finding takes the same test. When an installed review skill runs, its own question step does not: its findings come back here.
 
 Nothing about the review is written into the plan except the resulting decisions. Nothing about the review is reported in chat except, if asked, that it ran and whether the plan held.
 
