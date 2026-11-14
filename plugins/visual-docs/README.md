@@ -111,7 +111,7 @@ node <skill-dir>/server/bin/visual-docs-server.js --export ./my-notes plan.md
 # self-contained — open in any browser or attach anywhere.
 ```
 
-Pass `--out <file>` to control the output path. Referenced local images are inlined as `data:` URIs (through the same access gate the server itself uses); comments, live reload, and the `question` fence's answer form aren't part of the export — questions render read-only.
+Pass `--out <file>` to control the output path. Referenced local images are inlined as `data:` URIs (through the same access gate the server itself uses); comments, live reload, and the `question` fence's answer form aren't part of the export — questions render read-only. The file is plain UTF-8 with no raw control characters and no U+FFFD replacement character (the bundled libraries' own are written as escapes), so publishing tools that reject those as signs of a damaged file accept it.
 
 ## Running the server yourself
 

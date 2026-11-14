@@ -218,6 +218,8 @@ Before serving, you can check a doc against these guidelines:
 node "${CLAUDE_PLUGIN_ROOT}/server/bin/visual-docs-lint.js" path/to/doc.md
 ```
 
+Besides the rules above, the linter reports as an error any U+FFFD replacement character (a character lost to an earlier edit or paste, or a file not saved as UTF-8) and any raw control character, with the line and column. Retype the intended text rather than deleting the mark.
+
 `${CLAUDE_PLUGIN_ROOT}` is the directory this plugin is installed in — Claude Code sets it automatically; on any other agent platform, substitute the plugin's install path.
 
 It flags: missing/duplicate H1, a structured fence with no one-sentence intent above it, empty or malformed fences (e.g. an `openapi` that does not parse as YAML or JSON, has no `paths:`, or has a value cut short by an unquoted comma; a `migration` with no `-- up`/`-- down`), unknown admonition types, and obvious unredacted secrets. Errors exit non-zero; `--strict` also fails on warnings.

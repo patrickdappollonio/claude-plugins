@@ -55,6 +55,7 @@ jobs:
         run: |
           node --check bin/visual-docs-server.js
           node --check lib/server.js
+          node --check lib/export.js
           node --check assets/app.js
           node --check scripts/update-vendor.mjs
 
@@ -66,3 +67,21 @@ jobs:
           curl -sf http://127.0.0.1:8123/assets/vendor/mermaid.min.js -o /dev/null
           curl -sf http://127.0.0.1:8123/ | grep -q '<div id="app">'
           echo "smoke test passed"
+
+      - name: Exported HTML carries no raw control or replacement characters
+        run: |
+          node bin/visual-docs-server.js --export examples demo-plan.md --out "$RUNNER_TEMP/demo-plan.html"
+          node -e '
+            const fs = require("fs");
+            const vm = require("vm");
+            const html = fs.readFileSync(process.argv[1], "utf8");
+            const bad = html.match(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F\uFFFD]/g) || [];
+            if (bad.length) {
+              const codes = [...new Set(bad.map(c => "U+" + c.charCodeAt(0).toString(16).toUpperCase().padStart(4, "0")))];
+              console.error(`Export holds ${bad.length} raw character(s) that lib/export.js should have escaped: ${codes.join(", ")}`);
+              process.exit(1);
+            }
+            let scripts = 0;
+            for (const m of html.matchAll(/<script>([\s\S]*?)<\/script>/g)) { new vm.Script(m[1]); scripts++; }
+            console.log(`Export is clean; ${scripts} inlined scripts still compile after escaping.`);
+          ' "$RUNNER_TEMP/demo-plan.html"
