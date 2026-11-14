@@ -12,6 +12,8 @@
  *   - structured fences are non-empty and parse for their type
  *   - admonition markers are a known type
  *   - fences are balanced; obvious secrets are redacted
+ *   - no U+FFFD replacement characters (a character lost to a bad edit, or a
+ *     file that is not UTF-8) and no raw control characters
  *   - hardcoded diagram colors are flagged for a both-themes check (the
  *     viewer themes diagrams for light AND dark mode; a color tuned for
  *     one background breaks the other — deliberate mid-tones may stay)
@@ -133,10 +135,26 @@ function audienceSymbols(line) {
   return hits;
 }
 
+// C0 controls other than tab/LF/CR, DEL, and C1 controls. A CR is only
+// legitimate as the line ending, which the trailing-CR lookahead allows.
+const CONTROL_RE = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]|\r(?!$)/;
+
 function lintText(text, file) {
   const findings = [];
   const add = (line, sev, msg) => findings.push({ file, line, sev, msg });
   const lines = text.split('\n');
+
+  // --- damaged or invisible characters, anywhere (fences included) ---
+  lines.forEach((l, i) => {
+    const lost = l.indexOf('\uFFFD');
+    if (lost !== -1) {
+      add(i + 1, 'error', `Replacement character (U+FFFD, shown as "\uFFFD") at column ${lost + 1} — a character was lost here by an earlier edit or paste, or the file is not saved as UTF-8. Retype the intended text.`);
+    }
+    const ctl = l.match(CONTROL_RE);
+    if (ctl) {
+      add(i + 1, 'error', `Raw control character (U+${ctl[0].charCodeAt(0).toString(16).toUpperCase().padStart(4, '0')}) at column ${ctl.index + 1} — it is invisible in the rendered page and usually a paste or encoding accident. Delete it, or write it as an escape (such as \\x1b) if the text is about that character.`);
+    }
+  });
 
   // --- one H1, at the top ---
   const h1s = [];

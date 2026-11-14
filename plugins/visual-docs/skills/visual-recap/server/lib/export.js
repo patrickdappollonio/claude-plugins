@@ -51,8 +51,38 @@ function extractImageRefs(markdown) {
   return [...refs].filter((h) => !isExternalOrRooted(h));
 }
 
+// Characters the exported file never carries as raw bytes: C0 controls other
+// than tab/LF/CR, DEL, C1 controls, and U+FFFD. The vendored libraries hold
+// them as ordinary string literals (mermaid's entity decoder returns a literal
+// U+FFFD, js-yaml's escape table a literal U+0085), but publishing tools and
+// upload validators read a raw one as a file damaged by a lost character and
+// refuse it. Each is written as an escape for the context it sits in instead.
+const UNSAFE_CHARS = '\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F\\u007F-\\u009F\\uFFFD';
+const UNSAFE_RE = new RegExp(`[${UNSAFE_CHARS}]`, 'g');
+const UNSAFE_JS_RE = new RegExp(`(\\\\*)([${UNSAFE_CHARS}])`, 'g');
+
+const hex4 = (c) => c.charCodeAt(0).toString(16).toUpperCase().padStart(4, '0');
+
+/** For JavaScript source and JSON, where these characters only occur inside
+    string, template, and regex literals: a `\uXXXX` escape means the same
+    character. One already behind an odd run of backslashes is an identity
+    escape (`\` + char), so that backslash is dropped rather than doubled into
+    an escaped backslash followed by the text "uXXXX". */
+export function escapeUnsafeJs(src) {
+  return src.replace(UNSAFE_JS_RE, (_, slashes, c) => `${slashes.length % 2 ? slashes.slice(1) : slashes}\\u${hex4(c)}`);
+}
+
+/** For CSS: a hex escape, terminated by the space the syntax allows. */
+function escapeUnsafeCss(src) {
+  return src.replace(UNSAFE_RE, (c) => `\\${c.charCodeAt(0).toString(16)} `);
+}
+
+/** For HTML text: U+FFFD becomes a character reference; control characters
+    have no valid reference and no visible form, so they are dropped. */
 function escapeHtml(s) {
-  return String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  return String(s)
+    .replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]))
+    .replace(UNSAFE_RE, (c) => (c === '\uFFFD' ? '&#xFFFD;' : ''));
 }
 
 /** The output filename stem for a doc path: "sub/dir/plan.md" -> "plan". */
@@ -111,9 +141,9 @@ export async function buildExportHtml(rootDir, docPath) {
     fs.readFile(join(ASSETS_DIR, 'vendor', 'diff2html.min.css'), 'utf8'),
     fs.readFile(join(ASSETS_DIR, 'vendor', 'hljs-github.min.css'), 'utf8'),
     fs.readFile(join(ASSETS_DIR, 'vendor', 'hljs-github-dark.min.css'), 'utf8'),
-  ]);
-  const vendorJs = await Promise.all(VENDOR_JS.map((f) => fs.readFile(join(ASSETS_DIR, 'vendor', f), 'utf8')));
-  const appJs = await fs.readFile(join(ASSETS_DIR, 'app.js'), 'utf8');
+  ].map(async (p) => escapeUnsafeCss(await p)));
+  const vendorJs = await Promise.all(VENDOR_JS.map(async (f) => escapeUnsafeJs(await fs.readFile(join(ASSETS_DIR, 'vendor', f), 'utf8'))));
+  const appJs = escapeUnsafeJs(await fs.readFile(join(ASSETS_DIR, 'app.js'), 'utf8'));
 
   // Answers to ```question fences live in the comment store, so an export
   // carries them — the page shows "your answer" exactly like the live viewer,
@@ -139,7 +169,7 @@ export async function buildExportHtml(rootDir, docPath) {
   // </script>-safe: none of the vendored/first-party sources contain a literal
   // "</script" (checked at write time), but the embedded JSON can legitimately
   // contain "<" inside markdown/image-path strings, so escape defensively.
-  const dataJson = JSON.stringify(exportData).replace(/</g, '\\u003c');
+  const dataJson = escapeUnsafeJs(JSON.stringify(exportData).replace(/</g, '\\u003c'));
 
   const warningComment = rejected.length
     ? `<!-- visual-docs export: ${rejected.length} image reference(s) not inlined (blocked by the access gate or unreadable): ${rejected.map(escapeHtml).join(', ')} -->\n`
