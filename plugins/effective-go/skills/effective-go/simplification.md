@@ -95,9 +95,11 @@ FOR EACH SIMPLIFICATION:
 4. Pass → keep, next.  Fail → revert the change. Never edit the test to pass.
 ```
 
-**A pin must be able to fail, and only for a change a caller can see.** A test that builds its expected value with the code's own formula, a production helper, or an imported constant passes whatever the code does; freeze a literal instead. A test that asserts call order, a call or query count no consumer or upstream dependency is promised, a constant's own value, or a whole output where one fact matters goes red on a harmless rewrite and forces a test edit, which destroys the proof; pin return values, errors, effects on collaborators, and the facts a message carries. The throwaway differential check (old against new) is fine: they are two implementations.
+**A pin must be able to fail, and only for a change a caller can see.** A test that builds its expected value with the code's own formula, a production helper, or an imported constant passes whatever the code does; freeze a literal instead. A test that asserts call order, a call or query count no consumer or upstream dependency is promised, a constant's own value, or a whole output where one fact matters goes red on a harmless rewrite and forces a test edit, which destroys the proof; pin return values, errors, effects on collaborators, and the facts a message carries. A test that no edit to the code can turn red guards nothing: it asserts what the compiler already guarantees, tests the stdlib, asserts what a fake of the unit under test returns, or checks that removed code is still gone. The throwaway differential check (old against new) is fine: they are two implementations.
 
-**Flag existing tests that have either fault.** Check each test that covers the code in scope before relying on it. A tautological one (computed expected value) or a change detector is not a pin, so the function counts as uncovered until a test that can fail sits beside it. Report each one with file, test name, the fault, and the fix (the literal, or the observable fact to assert). Do not rewrite or delete it unasked; a test edited in the same diff as a refactor muddies the proof. Only tests covering code in scope; not a sweep of the suite.
+**Flag existing tests that have any of the three faults, and copies.** Check each test that covers the code in scope before relying on it. A tautological one (computed expected value), a change detector, or an empty one (guards nothing that can change) is not a pin, so the function counts as uncovered until a test that can fail sits beside it. A test that guards the same behavior as another sound test is a copy. Report each one with file, test name, the fault, and the fix: the literal, the observable fact to assert, or deletion together with any production code that exists only for it (an `export_test.go` hook or a reset func). A test that also covers behavior a caller relies on is rewritten against that behavior, never deleted. Do not rewrite or delete it unasked; a test edited in the same diff as a refactor muddies the proof. Only tests covering code in scope; not a sweep of the suite.
+
+**When the user asks to clean up the tests themselves,** the report becomes the change, scoped to the tests they name. Apply each fix as its own step with `go test ./...` after it. Done means every remaining test fails on a regression and only on one, no two guard the same behavior, and no production code exists only for tests.
 
 "Extracted four helpers" is four changes. If a refactor would touch more than ~500 lines, use tooling (`gofmt -r`, `gopls rename`, `gorename`, `sed` with review) rather than hand edits.
 
@@ -136,7 +138,7 @@ Finding is cheap; deciding is expensive. Locate candidates with `grep`/`rg`, `go
 
 - A test had to change for the simplification to pass
 - A pinning test computes its expected value, or would go red on a rewrite no caller can observe
-- You relied on an existing test without checking it for either fault, or found one and left it out of the report
+- You relied on an existing test without checking it for all three faults, or found one and left it out of the report
 - An error message's wording changed inside a change that was supposed to be a pure refactor
 - An extracted helper has no test of its own — the original's table exercising it indirectly is not the same
 - The "simpler" version is longer or harder to follow
@@ -155,7 +157,7 @@ Finding is cheap; deciding is expensive. Locate candidates with `grep`/`rg`, `go
 
 - [ ] Scope is the code being changed, or what the user named
 - [ ] Every reshaped function is pinned by a test that existed before the change and passes after it, unmodified
-- [ ] Every existing test covering the code in scope was checked for both faults; each one found is reported with its fix and none was edited unasked
+- [ ] Every existing test covering the code in scope was checked for all three faults and for copies; each one found is reported with its fix and none was edited unasked
 - [ ] No tests in the repo → the user was asked before any were added; declined → reported as unproven
 - [ ] Complexity reported before and after any split; no helper more complex than what it replaced; every helper decides one nameable thing and has tests
 - [ ] Any merge was proposed with diff and caller count before being made; every caller updated
