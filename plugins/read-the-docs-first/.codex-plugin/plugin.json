@@ -1,6 +1,6 @@
 {
   "name": "read-the-docs-first",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Docs-first discipline for external APIs, packages, providers, and fast-moving product behavior.",
   "author": { "name": "Patrick D'appollonio", "email": "patrickdappollonio@gmail.com" },
   "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/read-the-docs-first",

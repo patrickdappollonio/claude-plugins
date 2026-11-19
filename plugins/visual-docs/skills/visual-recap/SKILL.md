@@ -1,6 +1,7 @@
 ---
 name: visual-recap
-description: Use when the user wants a visual summary of work that was done — "visual recap", "recap this PR/branch/commit visually", "show me what changed in the browser" — for a PR, branch, commit range, or uncommitted changes. Generates a markdown recap grounded in the real diff and serves it locally (bundled zero-dependency server) with Mermaid diagrams, annotated rich diffs, DB migration cards, API call cards, live reload, and a comment feedback loop. Fully local; no remote services.
+description: >-
+  Use when the user wants a visual summary of work that was done — "visual recap", "recap this PR/branch/commit visually", "show me what changed in the browser" — for a PR, branch, commit range, or uncommitted changes. Served locally; no remote services.
 ---
 
 # Visual Recap

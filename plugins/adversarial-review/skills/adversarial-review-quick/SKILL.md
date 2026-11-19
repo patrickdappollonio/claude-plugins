@@ -1,6 +1,7 @@
 ---
 name: adversarial-review-quick
-description: Use when you want a smaller, quicker, cheaper adversarial review of a code change — "a smaller adversarial review", "a quick adversarial review", "a light adversarial review", "adversarial review but don't burn tokens" — or when you want to choose which adversarial reviewers run. Proposes the fewest reviewers that strictly fit the change, shows the full roster, and lets the user add or drop any before anything runs. It keeps the same verifier and fix validator as the full panel. Prefer this over `adversarial-review` whenever the user asks for a smaller/quick/light/cheap one or wants to pick reviewers; use the full skill when they ask for a thorough or complete review, and `adversarial-review-fast` for a change of up to about 500 lines, a re-check of fixes, or a one-reviewer fast review.
+description: >-
+  Use when the user asks for a smaller, quicker, lighter, or cheaper adversarial review of a code change — "a quick adversarial review", "adversarial review but don't burn tokens" — or wants to choose which adversarial reviewers run. For a thorough or complete review use `adversarial-review`; for a change of up to about 500 lines, a re-check of fixes, or a one-reviewer review use `adversarial-review-fast`.
 ---
 
 # Adversarial Review — Quick Panel
