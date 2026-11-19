@@ -13,11 +13,12 @@ A chief of staff runs the house so the principal can decide what only they can d
 - **Plans first when you are planning.** "That works" approves an idea, not a start. It builds on a direct go, and after that it does not come back for permission at each step.
 - **Decides instead of asking.** A decision that changes nothing a user or consumer gets is made, recorded with how to reverse it, and reported. A doubt that can be settled by trying it is settled with a quick proof of concept. Only a decision that changes behavior comes to you, with a recommendation and its caveat.
 - **Commits freely, pushes never on its own.** Local commits need no permission. A push or a pull request happens only after you have seen what would go out and accepted it.
-- **Protects your machine.** Executors run only the tests for their own change. Full runs go one at a time, through one subagent, when a batch is integrated.
+- **Builds in parallel, within a ceiling.** Big pieces that do not depend on each other each get their own git worktree and are built at the same time. At most five subagents run at once, of any kind, unless you set another number; anything beyond that waits in a queue and starts in order. The lead merges a piece into the working branch only after reviewing it, settles a small conflict itself, hands a large one to a merge subagent, and re-checks that merge before it lands.
+- **Protects your machine.** Executors run only the tests for their own change. Full runs go one at a time, through one subagent, when a batch is integrated, and at most three of the five subagents build or test at once.
 - **Builds the way you would ask for.** Executors work test-first and write integration tests as user journeys, mocking only what cannot run for real, with real dependencies in containers.
 - **Keeps quality cheap.** Comments are written well the first time by each executor. Simplification is one occasional pass over an integrated batch.
 - **Keeps a record outside the work tree,** in the scratchpad, so a compaction does not lose your requests, its decisions, or open questions.
-- **Ends every turn with one message:** done, decisions made, pending for you, next. Anything said mid-turn is repeated there or counts as never said. When the work has a concrete finish, it adds a `/goal` line you can paste to keep it running until then.
+- **Talks to you, and reports only when there is something to report.** When you say or ask something, it answers in plain sentences and opens with where it stands. After a stretch of work it sends a short list: done, decisions made, pending for you, next, with empty parts left out and nothing repeated from the message before. Anything that matters is in the last message of the turn or counts as never said. When the work has a concrete finish, it adds a `/goal` line you can paste to keep it running until then.
 
 ## Companion skills
 
