@@ -1,6 +1,7 @@
 ---
 name: use-claude-limits-efficiently
-description: Use when long-running or parallel agent work must respect 5-hour and weekly usage limits by checking usage between waves, pausing near the cap, and resuming only when the window is clear.
+description: >-
+  Use when long-running or parallel agent work must stay within Claude's 5-hour and weekly usage limits instead of hitting the cap mid-task.
 ---
 
 # Use Claude Limits Efficiently

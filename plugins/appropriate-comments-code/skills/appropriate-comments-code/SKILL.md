@@ -1,6 +1,7 @@
 ---
 name: appropriate-comments-code
-description: Use when writing, editing, or reviewing code in any language and about to add, change, or review a comment, docstring, doc comment, or TODO — especially one that narrates history or a past attempt, restates the line below, explains a feature rather than the code, tells a future editor what to do or not do, cites a ticket, finding, task, or wave ID, counts tests, callers, or fields, or sits in a test file.
+description: >-
+  Use when writing, editing, or reviewing code in any language and about to add, change, or review a comment, docstring, or TODO — especially one that narrates history, restates the code, instructs a future editor, cites a ticket or task ID, or sits in a test file.
 ---
 
 # Appropriate Comments in Code

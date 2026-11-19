@@ -1,6 +1,6 @@
 {
   "name": "effective-communicator",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Plain-language communication for readers who cannot see the code, using Simplified Technical English and outcome-first explanations.",
   "author": { "name": "Patrick D'appollonio", "email": "patrickdappollonio@gmail.com" },
   "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/effective-communicator",

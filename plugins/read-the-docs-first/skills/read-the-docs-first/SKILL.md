@@ -1,6 +1,7 @@
 ---
 name: read-the-docs-first
-description: Use when implementing, integrating, upgrading, debugging, or answering anything involving third-party APIs, libraries, frameworks, CLIs, cloud services, model/provider SDKs, fast-moving product behavior, user requests for latest/current/official behavior, unfamiliar repo docs/specs, errors that may indicate API drift, or high-stakes auth, security, billing, data, migration, deployment, compliance, or privacy behavior. Forces the agent to web-search for current official docs and read primary docs before assuming from memory.
+description: >-
+  Use when implementing, integrating, upgrading, debugging, or answering anything involving third-party APIs, libraries, frameworks, CLIs, cloud services, or model/provider SDKs; when the user asks for latest, current, or official behavior; when an error may indicate API drift; or when auth, security, billing, data, migration, or deployment behavior is high-stakes — before assuming anything from memory.
 ---
 
 # Read The Docs First

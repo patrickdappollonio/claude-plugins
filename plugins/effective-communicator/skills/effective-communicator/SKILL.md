@@ -1,6 +1,7 @@
 ---
 name: effective-communicator
-description: Use when writing any message a person will read — answers, status updates, findings from a review, scan, audit, or debug, plans, recaps, or summaries — especially when the reader may not be able to see the code, files, or systems you are describing, or when another skill (adversarial-review, improve, a code review, a scanning pass) has produced results full of file names, function names, and variable names. Also use when a person says your explanation was too technical, jargon-heavy, or "means nothing to me," or asks you to explain something plainly.
+description: >-
+  Use when writing any message a person will read — answers, status updates, review or debug findings, plans, recaps, summaries — especially when the reader cannot see the code or systems described, or the results are full of file, function, and variable names. Also use when a person says an explanation was too technical, jargon-heavy, or "means nothing to me," or asks for it in plain terms.
 ---
 
 # Effective Communicator

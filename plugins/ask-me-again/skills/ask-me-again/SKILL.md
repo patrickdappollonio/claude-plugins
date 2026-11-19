@@ -1,7 +1,7 @@
 ---
 name: ask-me-again
 description: >-
-  Use when the user says "/ask-me-again", "ask me again", "ask me that properly", or "one question at a time". Also use when the user says the agent's questions were unclear, too technical, too many at once, "a wall of text", or squeezed into a multiple-choice prompt with no room for context. The skill takes every question the agent has open. It checks the facts behind each one, and it checks that each recommended fix really works. Then it asks the questions again in plain chat, one per message, in one fixed shape - a numbered heading that states the claim, the situation, a numbered flow to the consequence, the fix, its cost, and your call. Only a direct answer (apply, reject, or a different direction) closes a question. After each answer it says back what it understood and gives its own take, checking any concern first. After a doubtful or vague reply, the agent asks the user to say which they mean. It builds nothing until the last question is closed.
+  Use when the user says "/ask-me-again", "ask me again", "ask me that properly", or "one question at a time", or says the agent's questions were unclear, too technical, too many at once, "a wall of text", or squeezed into a multiple-choice prompt with no room for context.
 ---
 
 # Ask Me Again

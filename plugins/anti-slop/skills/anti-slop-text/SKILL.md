@@ -1,6 +1,7 @@
 ---
 name: anti-slop-text
-description: "Use when writing, editing, or reviewing prose people will read — a README, docs, a commit message, a PR description, release notes, a blog post, an email, a report, a chat reply, an article, or long UI copy — especially when asked to make it sound professional, engaging, or polished, or when text reads as AI-generated. Covers invented details, inflated significance (stands as a testament, plays a pivotal role, evolving landscape), promotional tone, participle tails (highlighting, underscoring, showcasing), weasel attributions (experts argue), not-X-but-Y contrasts in any wording (it's not X it's Y, it could be X but), rule of three, here's the thing, stacked rhetorical questions, delve, tapestry, meticulous, and other AI vocabulary, performative honesty, chat residue (Certainly!, I hope this helps), knowledge-cutoff disclaimers, title case, bold everywhere, emoji bullets, em-dash punch, conclusion sections that restate, placeholders, and commit or PR text about what was preserved or left unchanged."
+description: >-
+  Use when writing, editing, or reviewing prose people will read — a README, docs, a commit message, a PR description, release notes, a blog post, an email, a report, or UI copy — especially when asked to make it sound professional, engaging, or polished, or when text reads as AI-generated: inflated significance, promotional tone, not-X-but-Y contrasts, rule of three, AI vocabulary (delve, tapestry), chat residue (Certainly!), em-dash punch, bold everywhere, or emoji bullets.
 ---
 
 # Anti-Slop Text
