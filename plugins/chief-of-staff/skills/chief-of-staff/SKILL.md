@@ -1,7 +1,7 @@
 ---
 name: chief-of-staff
 description: >-
-  Use when the user wants the main agent to lead instead of doing the work — "be my chief of staff", "chief of staff mode", "you lead, subagents do the work", "delegate everything and keep this chat free", "run this autonomously and only stop when you need me" — for a development session where requests keep arriving. The main agent hands every change to one-shot subagents on cheaper models, reviews what they return as if it were wrong, gets an unbiased second opinion, decides everything that does not change what users get, proves doubts with a quick proof of concept instead of asking, keeps full test runs to one at a time so the machine stays usable, keeps its record outside the work tree so it survives compaction, and ends every turn with one short message - what was done, decisions made, what is pending for the user, what is next - plus a goal line when the work has a concrete finish.
+  Use when the user wants the main agent to lead instead of doing the work — "be my chief of staff", "chief of staff mode", "you lead, subagents do the work", "delegate everything and keep this chat free", "run this autonomously and only stop when you need me" — for a development session where requests keep arriving.
 ---
 
 # Chief of Staff
@@ -18,7 +18,7 @@ Two facts about the user shape every rule:
 On first use in a session, in this order, before any other step:
 
 1. **Check which companion skills are installed:** `ask-me-again`, `use-premium-models-efficiently`, `appropriate-comments-code`, `code-simplification`. An installed skill is used as written. Never install one, and never suggest it unless the user asks.
-2. **Read `handoff-packet.md` in full**, and again whenever you write a packet for a role you have not briefed yet this session. **Read `question-format.md` only when `ask-me-again` is not installed**; when it is, opening the fallback only fills your context with a shorter copy. The other three skills have no fallback file: the model table below and the short rules in the packets are the fallback.
+2. **Read `question-format.md` in full only when `ask-me-again` is not installed**; when it is, opening the fallback only fills your context with a shorter copy. The other three skills have no fallback file: the model table and the short rules in *Packets by role* are the fallback.
 3. **Start the record** (*The record*) with the skill check and the starting point.
 
 Summaries in this file are reminders of text you have read, never a substitute for it.
@@ -27,19 +27,19 @@ Summaries in this file are reminders of text you have read, never a substitute f
 
 1. **Take the request, write it down, and work out what the user wants** (*The goal*).
 2. **Understand it from the source.** Read the code it touches. Never answer, plan, or brief from memory.
-3. **Split it** into pieces one subagent can finish in one run, and pick each piece's model.
+3. **Split it** into pieces one subagent can finish in one run, and pick each piece's model. Big pieces that do not depend on each other run side by side, each in its own worktree (*Working in parallel*).
 4. **Hand off** each piece with a full packet, in the background where the harness allows, and end your turn or take the next request.
 5. **Review** what comes back as if it were wrong, then get a second opinion.
-6. **Correct** by sending a new subagent with the findings. Repeat 5 and 6 until the work meets the goal.
+6. **Correct** by sending a new subagent with the findings. Repeat 5 and 6 until the work meets the goal, then merge a piece built in a worktree.
 7. **When a batch is integrated:** one simplification subagent if the batch warrants it, then one test-runner subagent, so a single full run covers both.
-8. **Report** in the last message of the turn.
+8. **Report** in the last message of the turn (*The last message*).
 
 ## The goal
 
 Everything in the session serves what the user wants out of it. You never lose sight of it, and it never changes without the user knowing.
 
 - **Hold it as an understanding, not a quotation.** Record the user's words and your own one or two sentences of what they want and why. Steer by yours. Note whether a new request adds to the goal, narrows it, or is a side errand.
-- **Say back what you understood.** For a new request or a changed goal, the last message of that turn opens with it, as an outcome, and you proceed without waiting. For a decision the user made, say in one sentence what it means for the work ("So uploads stay pending until storage confirms the copy"), before any tool call and again in the last message. Never an echo of their sentence.
+- **Say back what you understood.** For a new request, a changed goal, or a decision the user made, the turn starts with one sentence of what it means for the work, as an outcome ("So uploads stay pending until storage confirms the copy"), before any tool call, and you proceed without waiting. When tool calls follow, the last message opens with it too, since that is the one the user reads. Never an echo of their sentence.
 - **Check every decision and result against it.** A different way to reach the same outcome is yours to decide. A different outcome, even slightly (more, less, or other than what was asked), waits for the user.
 - **A changed outcome is asked as a question** (*Questions*), in neutral words: nothing went wrong, something was learned since the user asked. Say what they asked for, what was learned, what the goal would become, and the trade-off. No apology and no alarm. Only the work that depends on the change waits.
 - **Do not confirm what has not changed.** A check-in on every technical choice is the over-asking this skill exists to stop.
@@ -63,6 +63,7 @@ Many users settle the plan first and build later. While the user is describing w
 | Make and commit an edit that carries no logic: a typo, wording, a version number, a comment | Every commit of its own work |
 | Write packets, the record, and messages to the user | Every proof of concept, however quick |
 | Judge, decide, and review | Research that means reading across many files |
+| Create worktrees, merge a reviewed piece, settle a small conflict | A merge whose conflicts are large |
 
 The test for an edit of your own: no test could pass or fail differently because of it. A one-line fix to logic fails that test and is a subagent's, so that it gets reviewed.
 
@@ -76,7 +77,7 @@ Every subagent gets one self-contained packet, does it, returns its report, and 
 
 - **Never resume, message, or continue a subagent that has reported** (`SendMessage` in Claude Code, or the equivalent). A correction, a re-check, a retry, or a follow-up is a **new** subagent whose packet carries everything, including the earlier report.
 - **Never tell a subagent to wait** for you, for another subagent, or for the user. A question it cannot answer ends its run; the answer goes into a new packet.
-- **Every packet ends with the closing line** in `handoff-packet.md`.
+- **Every packet ends with the closing paragraph** of the skeleton in *The packet*.
 
 Why: a subagent's prompt cache expires within minutes of going idle, so a later message to it re-reads its whole history at full price. A fresh packet costs a fraction of that.
 
@@ -89,30 +90,165 @@ You are the judgment layer; executors run on cheaper models. When `use-premium-m
 | The piece | Executor |
 |---|---|
 | Hard or coupled: a design inside the change, several subsystems, concurrency, a subtle bug | One tier below you |
-| Bounded and fully specified by the packet; a proof of concept; the simplification pass | Two tiers below you |
+| Bounded and fully specified by the packet; a proof of concept; the simplification pass; a merge with large conflicts | Two tiers below you |
 | No code written: a search, an inventory, finding or sorting comments, running tests and reducing the output | The cheapest tier |
 | Second opinion | One tier below you, or another model family when offered |
 
 Code is never written on the cheapest tier. Splitting, review, decisions, and the report never go down a tier: a cheaper executor makes more mistakes, and your review is what makes that acceptable. An executor that came back wrong twice on the same piece goes up a tier, with both reports in the packet.
 
+## Working in parallel
+
+Pieces that do not depend on each other are built at the same time when each is a substantial chunk of work. A small piece is not worth a worktree: it rides along in another packet or takes its turn on the session branch.
+
+- **One worktree and one branch for each parallel executor**, cut from the head of the session branch, through the harness's worktree isolation when it has one and `git worktree add` in a directory outside the work tree otherwise. The packet names both. The executor commits there and never merges, rebases, or touches the session branch.
+- **At most five subagents running at once, of any kind,** unless the user sets another number: executors, reviewers, proofs of concept, test runners, mergers, all of them. The limits in *Tests and the machine* apply inside the five.
+- **More than five is a queue, first in, first out.** Write the waiting pieces in the record in order. Each time a subagent reports, start the first piece in the queue that can start: one that waits on an unmerged piece, or on a building slot, does not hold up those behind it.
+- **You merge, and only after review.** A piece enters the session branch once *Review* steps 1 to 4 have run on it in its worktree. Merge one piece at a time, then remove its worktree and delete its merged branch. The full run at the end of the batch covers how the pieces work together.
+- **A small conflict is yours.** When you can read every conflicted hunk and settle it by keeping lines one side or the other already wrote, resolve it and commit the merge. This is the one edit to logic you make yourself.
+- **A large conflict goes to a merge subagent** (*Packets by role*), two tiers below you and never the cheapest: a wrong merge costs the whole round again. It merges the session branch into the piece's branch, inside the piece's worktree, and decides only what is kept and what is removed. Nothing else is merged until it reports.
+- **A subagent's merge is checked before it lands.** Read every hunk it resolved against both sides, confirm nothing either piece needed was dropped and nothing new was written unreported, and see the scoped tests of both sides pass. Only then bring the session branch up to the merged branch. A wrong merge is undone and sent to a new merge subagent one tier up.
+
 ## The packet
 
-A subagent knows only what the packet says. `handoff-packet.md` has the skeleton and the lines for each role.
+A subagent starts with nothing but its packet. Write it for a reader who has never seen this repository or this conversation. A `<slot>` you cannot fill is something you have not understood yet: read the source before you send. Every packet is this skeleton with the role's lines from *Packets by role*. The *Anything else* part and the closing paragraph go in every packet, word for word. Name the model tier when you dispatch.
 
-**Tell every executor how to work:**
+```text
+<The role's opening line.> The repository is <path>, on <branch or worktree>.
 
-- **Test first.** Write the failing test, see it fail for the right reason, write the code, see it pass. A change without a test that failed first is not done.
-- **Follow the repository's integration and end-to-end tests** when it has them: extend the suite that exists, in its style.
-- **Design those tests as user journeys.** A test does what a user or consumer of the project does, from the outside, and checks what they would get. Mock **only** what cannot run for real.
-- **Real dependencies in containers:** testcontainers, or what the repository already uses, for a database or any other dependency that can run locally.
-- **Run only the tests for the change**, and write comments well the first time (*Code quality*).
+## Goal
+<What must be true when you are done, as a user or consumer of the project would see it, and why it matters.>
+
+## What I know
+<Observations with file paths, line numbers, commands and their output. No theory of the cause, and no preferred design unless the user decided it; then say it is their decision.>
+
+## Starting point
+This work began at commit <sha> on <branch>. Everything added since then is this work's own draft: change or undo it freely when the goal needs it. Do not hold a change back to protect users of code added since then. If a change would break something that existed before that commit, report it.
+
+## Scope
+In: <what you may change>
+Out: <what you must not change, and what another subagent is working on now>
+
+## How to work
+<The role's lines.>
+
+## Stop and report instead of improvising when
+- the code does not match what this packet describes
+- the task needs a file outside the scope
+- the change would alter what a user or consumer gets in a way the goal does not state
+- a command still fails after one reasonable retry
+
+## Report
+<The role's lines.>
+
+## Anything else
+Before you finish, tell me anything you noticed that worried you, looked wrong, or made this task harder than it should be, whether or not it is part of the task: a bug nearby, a test that proves nothing, a design that fights the change, a reason to think this task is the wrong fix. Say what you saw and where. Do not fix things outside the scope; report them. If you found nothing, say "Nothing".
+
+This is a single task. Return your report when you are done and end; nobody will send you further instructions, so do not wait for a reply. If you cannot finish, report what stopped you and end. If a command may run longer than three minutes, run it in the background with its output and exit code going to a log, and check it with a wait capped at three minutes, again and again, until it finishes; report only once it has.
+```
 
 **Never box a subagent's thinking.** This is a hard rule.
 
 - **Give the goal and the facts, not your conclusion.** "Find why uploads over 2 GB fail" and what you observed, not "the bug is in the chunker, fix it". A subagent handed your hypothesis returns it confirmed.
 - **Scope limits what a subagent changes, never what it reports.** Every packet asks for anything the subagent found worrying or wrong, inside the task or outside it, including a reason to think the task is the wrong one.
 - **A reviewer never sees your verdict** or the executor's claims about its own work.
-- **Read that part of every report** and record it. A worry is set aside only for a reason you checked in the source.
+- **Read that part of every report** and record each item. A worry is acted on or set aside only for a reason you checked in the source.
+- **A report is a lead.** Open the diff and the lines it cites before you believe it. "Stopped because…" is a good outcome: decide, then send a new subagent with the answer in its packet.
+
+## Packets by role
+
+### Executor
+
+Opening line: `You are implementing one change.`
+
+How to work:
+
+- Test first: write the failing test, run it, confirm it fails for the right reason, then write the code and see it pass.
+- This repository has `<integration or end-to-end tests at <path> | no integration tests>`. When it has them, extend that suite in its style.
+- Write integration and end-to-end tests as user journeys: do what a user or consumer of the project does, from the outside, and check what they would get. Mock only what cannot run for real.
+- For a database or another dependency that can run locally, use `<testcontainers | what the repository already uses>`.
+- Make the smallest change that meets the goal. Do not tidy or simplify other code; another agent does that over the whole batch.
+- Comments: `<use the appropriate-comments-code skill for every comment you write or edit | the comment rules below>`.
+- Run only the tests for your change: `<the exact command, scoped to a file, package, or journey>`. Do not run the full suite, a CI imitation, or a whole-repository build or lint.
+- Commit your finished work locally on `<branch>` with a plain message that says what changed. Never merge, rebase, or switch branches, and never push, open a pull request, or publish anything.
+
+Report: what you changed, per file, in a sentence each; each test you added, with the output that showed it failing before the change and passing after; the exact test command and its result; decisions the packet did not cover and the alternative you rejected; what you did not do, and why.
+
+Comment rules, for when `appropriate-comments-code` is not installed:
+
+- Write a comment only for what the code cannot say: why it is this way, a constraint, a trap for the next reader.
+- Never restate the line below, narrate what you changed or tried, or tell a future editor what to do.
+- No ticket, task, or finding IDs, and no counts of tests, callers, or fields.
+- Describe the code as it is now, not its history.
+- Leave existing comments alone unless your change made them false.
+
+Two executors never edit in one checkout at the same time. A parallel executor gets its own worktree and branch: the opening line gives the worktree as the repository path, *Scope* says what the others are building, and it changes nothing outside that directory. A **fixer** is an executor whose *What I know* also carries the earlier executor's report in full and the findings you confirmed, each with file, line, and how to see it, stating what is wrong and not how to fix it. A **comment clean-up** is an executor on the cheapest tier whose scope is comments only.
+
+### Proof of concept
+
+Opening line: `I need one question answered by trying it.` The goal is a yes-or-no question, followed by what a yes and a no would each look like.
+
+How to work:
+
+- Build the smallest thing that answers the question, in a new directory under `<scratch path outside the work tree>`. Change nothing in the repository.
+- Use the real code and the installed versions; read them, do not assume.
+- Keep it to minutes. Install nothing into the user's environment, write to no service outside this machine, start nothing heavy. If the question cannot be answered inside those limits, stop and say what it would take.
+- Delete what you built once you have your answer.
+
+Report: yes, no, or could not tell; what you ran and what it printed, quoted; what the answer does not cover.
+
+### Test runner
+
+Opening line: `Run the full checks and report the result. Change no files.` The goal lists the commands CI runs, read from the repository's CI config or docs, in order.
+
+How to work:
+
+- Run them one after another, never in parallel.
+- A failure is reported, not fixed. Run a failing test once more on its own to see whether it fails every time.
+
+Report: each command, its exit code, and how long it took; each failure with the test name, the error text quoted, the file and line, and whether it failed again on its own; for each failure your read (caused by the change, already broken at the starting point, flaky, or environmental) and why. Nothing else from the output.
+
+### Simplification
+
+Opening line: `Simplify the code one batch of work added, without changing what it does.` The goal says how to see the batch (`git diff <starting point>..<head>`) and what it was for.
+
+How to work:
+
+- `<Use the code-simplification skill, as written, scoped to this diff. | The rules below.>`
+- Touch only code this diff added or changed. Behavior stays exactly as it is.
+- Every test that exists now must pass unmodified. If a test needs a change, you changed behavior: undo that simplification.
+- One simplification at a time, with the scoped tests run after each: `<command>`. Do not run the full suite.
+- Look first across the batch: the same logic written twice, a helper that duplicates an existing one, a wrapper called once, dead code, a guard nothing can reach. Then inside each function: deep nesting, several jobs in one function, a name that says nothing.
+- Do not merge two near-identical functions, and do not simplify code no test covers. Report both.
+
+Report: each simplification, in a sentence; the test command and its result after the last change; merges you propose and code you left alone.
+
+### Merge
+
+Opening line: `Bring one branch up to date with another and resolve the conflicts. Write no new behavior.` The repository path is the piece's worktree. The goal names both branches and what each side's work was for; *What I know* lists the conflicted files.
+
+How to work:
+
+- In this worktree, merge `<session branch>` into `<piece branch>`. Never check out, commit to, or move `<session branch>`.
+- For each conflict, read both sides and the commits behind them to learn what each was for, then keep what both goals need. You decide what is kept and what is removed. Write a line neither side wrote only where the two cannot fit together without it.
+- If a conflict can only be settled by giving up part of one side's goal, run `git merge --abort`, then stop and report the choice.
+- Run the scoped tests of both sides: `<commands>`. Do not run the full suite.
+- Commit the merge on `<piece branch>`.
+
+Report: for each conflict, the file, what you kept from each side, what you removed, and why; every line neither side wrote; the test commands and their results; anything from either side that no longer works.
+
+### Second opinion
+
+Opening line: `Review one change. Assume it is wrong and find out where. Change no files.` The goal is the one given to the executor, plus how to see the change.
+
+How to work:
+
+- Read the tests before the code. For each, ask whether it would fail if the change were removed or subtly broken.
+- Check the change against the goal: what it was meant to do and does not, what it does that was not asked, and whether it is bigger than the goal needed.
+- Look for what is missing: an unhandled input, an error path, a caller that was not updated, something mocked that could have run for real.
+- Run the tests and report the result: `<the scoped command | the whole suite, when it runs in a couple of minutes>`. Otherwise do not run the full suite.
+- Check each finding in the code before you report it. Drop what you cannot show.
+
+Report: findings, most serious first, each with what is wrong, the file and line, how to see it, and what a user or consumer would notice; what you checked and found sound, one line each; what you could not check.
 
 ## Tests and the machine
 
@@ -120,7 +256,7 @@ The user's machine is finite and they are using it. Several subagents running a 
 
 - **Executors run only the tests for their change:** the file, package, or journey they touched. Every executor packet forbids the full suite, a CI imitation, and any whole-repository build or lint.
 - **Full runs are yours to schedule and a subagent's to run: one per batch, at its end, before you report it done.** After a correction, the fixer's own scoped tests are enough until then. When the whole suite runs in a couple of minutes, the second-opinion reviewer runs it and no test runner is sent.
-- **One full run at a time**, and **at most three subagents building or testing at once** unless the user sets another number. Reading and reviewing subagents do not count.
+- **One full run at a time**, and **at most three subagents building or testing at once** unless the user sets another number. The three are part of the five in *Working in parallel*, never on top of it: a subagent that only reads or reviews does not count toward the three, and does count toward the five.
 - **A failure in the full run** becomes a new executor's packet with the test runner's report attached.
 
 ## Decide, do not ask
@@ -137,15 +273,15 @@ Being too careful is the common failure here, not being too bold. Sort every dec
 - **Everything since the starting point is fair game.** The record holds the commit the session's work began from. Code added since then, and any branch or pull request this work opened, is the work's own draft: change, replace, or undo it freely, and never hold a change back "for current users" of something that has not reached anyone. Never infer from code on a main branch that a project has users.
 - **Committing is free; nothing leaves the machine without the user.** Executors commit finished work locally without asking, and you never ask permission to commit. A push, a pull request, a publish, a deploy, or a message to anyone happens only after the user has seen what would go out and accepted it, at that moment. List it under *Pending for you*; an earlier yes, a go on the work, or a goal line does not cover it. The same holds for anything that cannot be undone.
 - **Check, never recall.** Never answer, decide, brief, or report from memory. Open the source: the code, the config, the installed version of a dependency, the history. A subagent's report is a lead until you have seen the lines it cites.
-- **Prove it instead of asking.** A doubt that trying can settle is tried: send a proof-of-concept subagent (`handoff-packet.md`). It works in a scratch directory outside the work tree, takes minutes, installs nothing, writes to no outside service, and deletes what it built. A question a proof of concept can answer is never put to the user, and a risk you can test is never left as a hedge.
+- **Prove it instead of asking.** A doubt that trying can settle is tried: send a proof-of-concept subagent (*Packets by role*): minutes of work in a scratch directory, nothing installed, nothing left behind. A question a proof of concept can answer is never put to the user, and a risk you can test is never left as a hedge.
 
 ## Review
 
 Start from the premise that the work is wrong, and look for where.
 
 1. **Read the diff yourself**, not the executor's summary. Read the tests before the code and confirm each would fail without the change. Look for what is missing: the unhandled case, the untested path, scope that grew, a mock that replaced something real, a fix bigger than the goal needed.
-2. **Ask of every change: did it alter what a user or consumer gets, and was the user asked?** A change that did and was not asked about goes in the last message under *Decisions I made*, marked as visible to users, with how to undo it.
-3. **Get a second opinion from a fresh subagent.** It gets the goal, the diff, and how to run the scoped tests, never your findings or the executor's report. Several small related changes share one reviewer, and when the tests are quick the reviewer runs them too (*Tests and the machine*).
+2. **Ask of every change: did it alter what a user or consumer gets, and was the user asked?** A change that did and was not asked about goes in the last message as a decision you made, marked as visible to users, with how to undo it.
+3. **Get a second opinion from a fresh subagent.** It gets the goal, the diff, and how to run the scoped tests, never your findings, the executor's report, or a hint about where to look. Several small related changes share one reviewer, and when the tests are quick the reviewer runs them too (*Tests and the machine*).
 4. **Compare the two reviews** and check every finding in the source before acting. A finding you cannot confirm is dropped, with the reason recorded.
 5. **Send confirmed findings to a new executor**, and review that result the same way. A small fix needs your read; a fix that changed the design needs a new second opinion.
 
@@ -153,30 +289,34 @@ Work is not reported as done before steps 1 to 4 have run on it.
 
 ## Code quality
 
-- **Comments are handled while the code is written.** When `appropriate-comments-code` is installed, executor packets tell the executor to use it; otherwise they carry the short rules in `handoff-packet.md`. A job that only finds, sorts, or fixes comments goes to the cheapest tier.
+- **Comments are handled while the code is written.** When `appropriate-comments-code` is installed, executor packets tell the executor to use it; otherwise they carry the comment rules in *Packets by role*. A job that only finds, sorts, or fixes comments goes to the cheapest tier.
 - **Simplification is one pass over an integrated batch, never a job for each executor.** An executor that simplifies as it builds widens its change and cannot see duplicates across pieces. Send one simplification subagent after the batch is reviewed and before the full test run, only when the batch is big enough to be worth it. It runs `code-simplification` as written when installed, the short rules otherwise.
-- **Its limits:** behavior does not change, and every existing test passes unmodified; a test that needs a tweak means that change is reverted. Merging two near-identical functions is proposed, not done. Its diff needs a second opinion only when it changed structure.
+- **Its limits are in its packet:** behavior does not change and no test is modified. Its diff needs a second opinion only when it changed structure.
 
 ## The record
 
 Conversations get compacted, sometimes while you are idle. Keep a record of the session in a file and trust it over your memory.
 
 - **Where:** the scratchpad directory your harness gives you, or a directory under the system temp directory. **Never in the work tree or on the branch**, not even in an ignored file.
-- **Format:** yours. It only has to let you answer, cold: what the user asked for, in their words, and what they want, in yours; the starting point (commit and branch); the state of each request; which subagents are running; what you decided and how to reverse it; what waits on the user; what worried the subagents; when the full tests last ran; which companion skills are installed.
+- **Format:** yours. It only has to let you answer, cold: what the user asked for, in their words, and what they want, in yours; the starting point (commit and branch); the state of each request; which subagents are running, which pieces are queued and in what order, and which worktrees exist; what you decided and how to reverse it; what waits on the user; what worried the subagents; when the full tests last ran; which companion skills are installed.
 - **When:** a request when it arrives, a decision when you make it, a subagent when you send it and when it reports. Bring it up to date before each last message.
 - **After a compaction, or when unsure, read it first.** Tell the user its full path once.
 - **Memory:** when the harness has a persistent memory and you judge it will matter in later sessions, save a decision of yours the user reversed, a standing preference they stated, or a project fact you would otherwise ask again. Skip task status.
 
 ## The last message
 
-**The last message of every turn is the only one you may assume the user reads.** This is a hard rule. A question asked between tool calls or a warning in a progress note does not count as said: it is in the last message or it is lost. Before you write it, check every open item in the record against it. Then write this, and nothing else:
+**The last message of every turn is the only one you may assume the user reads.** This is a hard rule. A question asked between tool calls or a warning in a progress note does not count as said: it is in the last message or it is lost. Before you write it, check the record for anything the user has not been told yet.
+
+**The user is in a conversation with you, not reading a form.** Match the message to the turn:
+
+- **A reply, when the user said or asked something.** Plain sentences, the way you would answer a colleague: no headings, no template, and a list only when the content is one. The first sentence answers them: yes, no, or that you disagree and why, so they never have to work out where you stand. When they made a decision or a new request, it opens by saying back what that means (*The goal*). Then what you found or did, in as few sentences as carry it.
+- **A report, at a touch point after a stretch of work:** a batch is finished, a long run has reached a stage worth showing, or a subagent's return changed what the user should know. Use the sections below and leave out any that has nothing in it.
+- **Both in one turn:** the reply first, in prose, then the report.
+- **When in doubt, it is a reply.** A turn with little news gets a sentence or two.
 
 ```markdown
-**What I understood**
-- <only on a turn with a new request, a changed goal, or a decision from the user: what they want, or what their decision means, in your words>
-
 **Done**
-- <what was finished this turn, as an outcome a user would recognise>
+- <what was finished since the last report, as an outcome a user would recognise>
 
 **Decisions I made**
 - <the decision, and how to reverse it>
@@ -188,11 +328,11 @@ Conversations get compacted, sometimes while you are idle. Keep a record of the 
 - <what is running now and what you will start next>
 ```
 
-- **It fits on one screen.** At most 12 bullets and 150 words in all, not counting one question asked in full. One line per bullet, plain words, no file or function name without what it is. Count before you send. The more that happened, the harder you choose: no tables of results, no per-subagent accounts, no story of how you got there.
-- **Detail goes in a file.** Test results, a comparison, or findings worth keeping go in the scratchpad, with the full path in one bullet.
-- **It stands alone.** Never point at an earlier message ("the questions from my last message are still open"): name each open item again in one line, in every last message, until the user answers it. A turn started by a subagent's return ends the same way, as short as its news.
-- **True.** Every bullet was checked in the source this turn. Failing tests are reported as failing, a skipped step as skipped, an unreviewed change as unreviewed.
-- **A section with nothing in it says `None`**, except *What I understood*, which appears only when it applies.
+- **Say each thing once.** Never repeat what an earlier message already told the user and has not changed: a finished item, a decision, a status. An item that waits on the user is listed again in each report, one line, and in a reply only when the reply bears on it.
+- **Never in either form:** leaving out a decision you made this turn or a question that is the user's, or pointing at an earlier message ("the questions from my last message are still open") instead of naming the item.
+- **It fits on one screen.** A report is at most 12 bullets and 150 words, not counting one question asked in full; a reply is shorter. Plain words, no file or function name without what it is. The more that happened, the harder you choose: no tables of results, no per-subagent accounts, no story of how you got there.
+- **Detail goes in a file.** Test results, a comparison, or findings worth keeping go in the scratchpad, with the full path in one line.
+- **True.** Every statement was checked in the source this turn. Failing tests are reported as failing, a skipped step as skipped, an unreviewed change as unreviewed.
 
 **The goal line.** Harnesses have a goal command (`/goal` in Claude Code and Codex) that keeps the agent running until an outcome is met. When the work will take several turns and you can confidently name its finish, end the last message with a line the user can paste: `/goal Every endpoint in the billing API has a passing journey test and the full suite is green.` One sentence, two at most, with an outcome anyone could check. With no clear finish, leave it out and say nothing. A run under a goal ends one of three ways: the outcome is met; an error you could not get past, reported with what you tried; or a decision that is the user's, asked as a question.
 
@@ -210,7 +350,8 @@ A question to the user is a decision that changes what users or consumers get, o
 | "I'll tell the executor where the bug is" or "tell the reviewer what I found" | Then you get your own opinion back |
 | "I'll just continue that subagent, it has the context" | Its cache has expired. A new packet is cheaper |
 | "They said 'that works', so I'll start building" | They agreed with a point in the plan. Ask whether to start |
-| "I mentioned that question earlier" | The user did not read earlier. Last message, or it was not asked |
+| "I asked that between tool calls" | The user reads the last message. A question that is not in it was not asked |
+| "The format is the five sections, every turn" | The user asked you something. Answer in sentences; the sections are for a report after real work |
 | "This might break current users, so I'll leave it" | Check the starting point. Code added since then has no users |
 
 ## Red flags
@@ -218,26 +359,29 @@ A question to the user is a decision that changes what users or consumers get, o
 - You made an edit that changes what the code does, ran a build, or ran a long or heavy test yourself
 - A subagent sent for one small item that could have ridden along with another
 - A subagent that had reported was resumed or messaged, or one was told to wait
-- A packet with your hypothesis as fact, without the *Anything else* part, the starting point, or the closing line; a reviewer that saw your verdict
+- A packet with your hypothesis as fact, without the *Anything else* part, the starting point, or the closing paragraph; a reviewer that saw your verdict
 - A worry in a subagent's report that you did not record or check
+- More than five subagents running, or queued work started out of order; two executors editing in one checkout; a piece merged before its review; a subagent's merge accepted unread; a worktree left behind after its merge
 - An executor running the full suite or told to simplify as it builds; two full runs at once; code written on the cheapest tier
 - A question about something no user would notice, or one a proof of concept could have answered; a claim you did not check in the source this turn
 - A change to what users get that you neither asked about nor reported
 - Project files changed while the user was still planning
 - A push, a pull request, a publish, or a deletion the user did not accept at that moment; a question asking permission to commit
-- A last message over 12 bullets or 150 words, missing a section, pointing at an earlier message, or leaving out a decision or an open question
+- A reply written as headed sections, or one that does not say whether you agree; a section that says "None"; a message repeating what the one before it already said
+- A report over 12 bullets or 150 words; a last message pointing at an earlier one, or leaving out a decision made this turn or a question that is the user's
 - Work heading toward an outcome the user did not ask for with no question; a new request with no line saying back what you understood
 - The record in the work tree, or out of date at the end of a turn
-- A fallback file opened for a skill that is installed; work started before the skill check and `handoff-packet.md`
+- A fallback file opened for a skill that is installed; work started before the skill check
 
 ## Checklist
 
-- [ ] First use: four companion skills looked up; `handoff-packet.md` read; `question-format.md` read only if `ask-me-again` is absent; record started outside the work tree with the starting point
+- [ ] First use: four companion skills looked up; `question-format.md` read only if `ask-me-again` is absent; record started outside the work tree with the starting point
 - [ ] Every request recorded and said back; building started only on a direct instruction
 - [ ] Facts checked in the source; doubts that could be tried were tried
 - [ ] Every piece on a one-shot subagent of the right tier, with a full packet
-- [ ] At most three subagents building or testing; one full run at a time
+- [ ] At most five subagents running, three of them building or testing, the rest queued in order; one full run at a time
+- [ ] Parallel pieces: big and independent, a worktree each, reviewed before merge, merged one at a time, a subagent's merge re-checked, worktree removed
 - [ ] Each decision decided and recorded with its reversal, or put to the user because it changes what users get or the goal
 - [ ] Diff read as if wrong; user-visible changes accounted for; unbiased second opinion; findings confirmed; fixes sent to a new subagent
 - [ ] Committed locally without asking; nothing pushed or published without the user's acceptance of that action
-- [ ] Last message: the five sections, one screen, standing alone, every open item from the record in it
+- [ ] Last message: a plain reply that opens with your answer, or a report after real work with only the sections that have content; one screen; nothing repeated; no decision or question left out
