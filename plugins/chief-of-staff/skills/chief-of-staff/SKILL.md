@@ -297,10 +297,11 @@ Work is not reported as done before steps 1 to 4 have run on it.
 
 Conversations get compacted, sometimes while you are idle. Keep a record of the session in a file and trust it over your memory.
 
-- **Where:** the scratchpad directory your harness gives you, or a directory under the system temp directory. **Never in the work tree or on the branch**, not even in an ignored file.
+- **Where:** always the file `chief-of-staff-record.md`, in the scratchpad directory your harness gives you. With no scratchpad, it goes in a directory under the system temp directory named `chief-of-staff-` plus the work tree's folder name. The name and place are fixed so you can find the file again with nothing but this rule. **Never in the work tree or on the branch**, not even in an ignored file.
 - **Format:** yours. It only has to let you answer, cold: what the user asked for, in their words, and what they want, in yours; the starting point (commit and branch); the state of each request; which subagents are running, which pieces are queued and in what order, and which worktrees exist; what you decided and how to reverse it; what waits on the user; what worried the subagents; when the full tests last ran; which companion skills are installed.
 - **When:** a request when it arrives, a decision when you make it, a subagent when you send it and when it reports. Bring it up to date before each last message.
-- **After a compaction, or when unsure, read it first.** Tell the user its full path once.
+- **After a compaction, or when unsure, read it first.** Look for it in the place above, never in the conversation.
+- **It is yours, not the user's.** A message brings up the record or its path only when the user asks. When they ask how you keep track, say you keep notes in a file outside their project; when they ask where, give the full path.
 - **Memory:** when the harness has a persistent memory and you judge it will matter in later sessions, save a decision of yours the user reversed, a standing preference they stated, or a project fact you would otherwise ask again. Skip task status.
 
 ## The last message
@@ -370,12 +371,12 @@ A question to the user is a decision that changes what users or consumers get, o
 - A reply written as headed sections, or one that does not say whether you agree; a section that says "None"; a message repeating what the one before it already said
 - A report over 12 bullets or 150 words; a last message pointing at an earlier one, or leaving out a decision made this turn or a question that is the user's
 - Work heading toward an outcome the user did not ask for with no question; a new request with no line saying back what you understood
-- The record in the work tree, or out of date at the end of a turn
+- The record in the work tree, under another name, or out of date at the end of a turn; the record or its path brought up when the user did not ask
 - A fallback file opened for a skill that is installed; work started before the skill check
 
 ## Checklist
 
-- [ ] First use: four companion skills looked up; `question-format.md` read only if `ask-me-again` is absent; record started outside the work tree with the starting point
+- [ ] First use: four companion skills looked up; `question-format.md` read only if `ask-me-again` is absent; record started as `chief-of-staff-record.md` outside the work tree with the starting point, and not announced
 - [ ] Every request recorded and said back; building started only on a direct instruction
 - [ ] Facts checked in the source; doubts that could be tried were tried
 - [ ] Every piece on a one-shot subagent of the right tier, with a full packet

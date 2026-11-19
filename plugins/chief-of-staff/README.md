@@ -17,7 +17,7 @@ A chief of staff runs the house so the principal can decide what only they can d
 - **Protects your machine.** Executors run only the tests for their own change. Full runs go one at a time, through one subagent, when a batch is integrated, and at most three of the five subagents build or test at once.
 - **Builds the way you would ask for.** Executors work test-first and write integration tests as user journeys, mocking only what cannot run for real, with real dependencies in containers.
 - **Keeps quality cheap.** Comments are written well the first time by each executor. Simplification is one occasional pass over an integrated batch.
-- **Keeps a record outside the work tree,** in the scratchpad, so a compaction does not lose your requests, its decisions, or open questions.
+- **Keeps a record outside the work tree,** in the scratchpad, so a compaction does not lose your requests, its decisions, or open questions. The record is its own working file: it does not announce it, and gives you the path only when you ask.
 - **Talks to you, and reports only when there is something to report.** When you say or ask something, it answers in plain sentences and opens with where it stands. After a stretch of work it sends a short list: done, decisions made, pending for you, next, with empty parts left out and nothing repeated from the message before. Anything that matters is in the last message of the turn or counts as never said. When the work has a concrete finish, it adds a `/goal` line you can paste to keep it running until then.
 
 ## Companion skills
