@@ -1,7 +1,7 @@
 ---
 name: adversarial-review-quick
 description: >-
-  Use when the user asks for a smaller, quicker, lighter, or cheaper adversarial review of a code change — "a quick adversarial review", "adversarial review but don't burn tokens" — or wants to choose which adversarial reviewers run. For a thorough or complete review use `adversarial-review`; for a change of up to about 500 lines, a re-check of fixes, or a one-reviewer review use `adversarial-review-fast`.
+  Use when the user asks for a smaller, quicker, lighter, or cheaper adversarial review of a code change — "a quick adversarial review", "adversarial review but don't burn tokens" — or wants to choose which adversarial reviewers run. For a thorough or complete review use `adversarial-review`; for a small change, a re-check of fixes, or a one-reviewer review use `adversarial-review-fast`.
 ---
 
 # Adversarial Review — Quick Panel

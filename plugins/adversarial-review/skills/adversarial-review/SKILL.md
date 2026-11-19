@@ -1,7 +1,7 @@
 ---
 name: adversarial-review
 description: >-
-  Use when a code change needs a hostile, bias-free, thorough review — a PR, the last commit, or uncommitted work — especially AI-generated code that looks right but may be hollow, a change that must match a signed-off plan or mock, or claims in comments and commit messages that need fact-checking. This is the full, token-heavy panel: for a smaller, quicker, lighter, or cheaper adversarial review use `adversarial-review-quick`; for a change of up to about 500 lines or a re-check of fixes use `adversarial-review-fast`.
+  Use when a code change needs a hostile, bias-free, thorough review — a PR, the last commit, or uncommitted work — especially AI-generated code that looks right but may be hollow, a change that must match a signed-off plan or mock, or claims in comments and commit messages that need fact-checking. This is the full, token-heavy panel: for a smaller, quicker, lighter, or cheaper adversarial review use `adversarial-review-quick`; for a small change or a re-check of fixes use `adversarial-review-fast`.
 ---
 
 # Adversarial Review
