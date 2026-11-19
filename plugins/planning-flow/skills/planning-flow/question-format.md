@@ -29,9 +29,36 @@ database structure), a dependency, a change someone would notice — or
 - <The next alternative and its consequence. Two to four bullets in all.>
 ```
 
-The four bold labels **The situation.**, **The flow.**, **The fix.**, and **Cost.** are mandatory, in this order, spelled exactly like this, and are followed by *Your call*: a bold **Your call:** line in chat and in a file nobody is serving, a `question` fence in a file that `visual-plan` is serving (below). A question missing one part is not finished. Every question is numbered in its heading.
+In the full template, the four bold labels **The situation.**, **The flow.**, **The fix.**, and **Cost.** are mandatory, in this order, spelled exactly like this, and are followed by *Your call*: a bold **Your call:** line in chat and in a file nobody is serving, a `question` fence in a file that `visual-plan` is serving (below). A question missing one part is not finished. Every question is numbered in its heading.
 
 **Count the words; do not judge length by feel.** The prose of a question — from its heading to the end of *Cost*, not counting *Your call* — is at most **200 words**; on the rare flow that must run past five steps, each step past the fifth adds 15 words to the limit. Inside that: the heading at most 15 words; the situation two to four sentences; the flow three to five steps of one line each (one or two when that is the whole story, more than five only when absolutely needed, never past ten); the fix one to three sentences; the cost one or two. *Your call* is one sentence plus at most four alternatives of one line each. A fact stated in the situation is not repeated in the fix or the cost. As soon as you finish a question, count the prose words — `wc -w` on the text, or by hand — and write the count in your notes before starting the next one. Over the limit: cut, starting with anything that describes an alternative outside *Your call* (the delivery-shape question's two neutral lines stay).
+
+## The short form
+
+Some decisions need three lines, not the full template. The short form is the exception: the full template is the default, and when in doubt you use it.
+
+```markdown
+### Question <N> of <M> — <the claim, in one plain sentence>
+
+<What is unsettled and what you found, in one or two plain sentences.>
+
+**The trade-off.** <What the way you recommend gains and what it costs, in one sentence.>
+
+**Your call:** <the question, in a few words>
+
+- <The way you recommend (recommended): what a person would notice>
+- <The other way: what a person would notice>
+```
+
+Use it only when every one of these holds. Read the draft once against them before you send it; write nothing down.
+
+1. The user has already talked about this subject in this conversation. A first mention gets the full template.
+2. Every term in it is one the user has used, or is explained in the same sentence.
+3. Nothing in it points at an earlier message or at something only you saw.
+4. There are exactly two ways to go, and each line says what a person would notice.
+5. The user can decide without knowing how the thing happens step by step. A decision that needs a flow gets the full template.
+
+Never use it once the user has said a question was unclear or asked to be asked again: from then on every question gets the full template. When the reply to a short-form question asks for context or more detail, ask that question again in the full template at once. At most 60 words come before **Your call**. Everything else applies unchanged: the numbering, the checks before asking, one question per message, and how replies are read.
 
 ## What goes in each part
 
@@ -220,3 +247,4 @@ one existing freeze test already uses. Assert exactly one winner per job.
 - A concern kept to yourself, raised unchecked when a read could have settled it, or raised a second time after the user kept their answer
 - A turn after the user's reply that opens with a command, a file read, or an edit instead of text to the user
 - A reply to an answer written with labels ("How I read it:", "My take:"), a stock opener, or praise
+- A short-form question on a subject the user had not raised, with a term they never used, with more than two ways to go, or sent again in the short form after they asked for context

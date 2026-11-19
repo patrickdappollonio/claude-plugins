@@ -1,6 +1,6 @@
 # Capacity Check, `/goal`, the Resume Block, and Goal Loops
 
-Distilled from the `use-claude-limits-efficiently` skill; if it is installed, read it too — it owns the pause-and-resume mechanics for hitting the cap mid-run. Here the capacity check is **advisory**: it produces one line of context for the user and never pauses the pipeline.
+If the `use-claude-limits-efficiently` skill is installed, read it too — it owns the pause-and-resume mechanics for hitting the cap mid-run. Here the capacity check is **advisory**: it produces one line of context for the user and never pauses the pipeline.
 
 ## Back-of-the-napkin estimate
 

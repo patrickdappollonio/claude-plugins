@@ -157,7 +157,34 @@ Then send one short message that shows what the run settled. For each thing you 
 - <The next alternative and its consequence. Two to four bullets in all; none when the question is `accept?`.>
 ```
 
-The four bold labels **The situation.**, **The flow.**, **The fix.**, and **Cost.** are mandatory, in this order, spelled exactly like this, followed by a bold **Your call:** line. A question missing one part is not finished. Every question is numbered in its heading. The heading is `###`. Write each part as one unbroken line; do not wrap prose at a column.
+In the full template, the four bold labels **The situation.**, **The flow.**, **The fix.**, and **Cost.** are mandatory, in this order, spelled exactly like this, followed by a bold **Your call:** line. A question missing one part is not finished. Every question is numbered in its heading. The heading is `###`. Write each part as one unbroken line; do not wrap prose at a column.
+
+## The short form
+
+Some decisions need three lines, not the full template. The short form is the exception: the full template is the default, and when in doubt you use it.
+
+```markdown
+### Question <N> of <M> — <the claim, in one plain sentence>
+
+<What is unsettled and what you found, in one or two plain sentences.>
+
+**The trade-off.** <What the way you recommend gains and what it costs, in one sentence.>
+
+**Your call:** <the question, in a few words>
+
+- <The way you recommend (recommended): what a person would notice>
+- <The other way: what a person would notice>
+```
+
+Use it only when every one of these holds. Read the draft once against them before you send it; write nothing down.
+
+1. The user has already talked about this subject in this conversation. A first mention gets the full template.
+2. Every term in it is one the user has used, or is explained in the same sentence.
+3. Nothing in it points at an earlier message or at something only you saw.
+4. There are exactly two ways to go, and each line says what a person would notice.
+5. The user can decide without knowing how the thing happens step by step. A decision that needs a flow gets the full template.
+
+Never use it when the user invoked this skill themselves: they asked because a shorter question failed them, so every question in that run gets the full template. When the reply to a short-form question asks for context or more detail, ask that question again in the full template at once. At most 60 words come before **Your call**. Everything else applies unchanged: the numbering, the checks before asking, one question per message, and how replies are read.
 
 ## What goes in each part
 
@@ -273,6 +300,7 @@ Nothing in it can be removed without losing something the reader needs. The agen
 - A question closed after a reply that holds a word of doubt; a number or estimate in an answer that nothing you checked supports
 - Moving to the next question, or doing blocked work, after a reply that was vague, partial, or a question back
 - Text after the **Your call** part of a message
+- A short-form question on a subject the user had not raised, with a term they never used, with more than two ways to go, or sent again in the short form after they asked for context
 
 ## Checklist
 
