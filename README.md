@@ -85,6 +85,7 @@ Each plugin below maps to one skill of the same name, except `adversarial-review
 | anti-slop | `anti-slop-ui`, `anti-slop-text` |
 | appropriate-comments-code | `appropriate-comments-code` |
 | ask-me-again | `ask-me-again` |
+| chief-of-staff | `chief-of-staff` |
 | code-simplification | `code-simplification` |
 | effective-communicator | `effective-communicator` |
 | effective-go | `effective-go` |
@@ -185,7 +186,7 @@ Then just write code — it loads itself. [Read more →](plugins/appropriate-co
 
 For when an agent's questions make no sense: four at once, each a line of jargon, or a multiple-choice prompt with one line per option and no picture of what each choice does. Say `/ask-me-again` and the agent collects every question it has open — the assumptions it made without asking included — and first **checks the facts behind each one and that the fix it recommends really works**: the function or flag exists in the installed version, the change fits where it says, a throwaway probe runs when that would settle it. A question that a fact answers is dropped; a part that cannot be checked is marked `Not verified:`.
 
-Then it asks again in plain chat, **one question per message**, never through the multiple-choice question tool that some agent programs offer, each in the same shape: a numbered heading that states the claim, **the situation**, **the flow** (a numbered walk of three to five steps, ending at the consequence someone would notice), **the fix**, its **cost**, and **your call**. The prose is capped at 200 counted words. Only a direct answer closes a question — apply, reject, or a different direction. After a doubtful or vague reply, the agent asks you to say which you mean. A direction of your own is noted and checked once after the last question, so the questions are not interrupted by investigation unless you ask for it. Nothing is built until the last question is closed. It is the same question shape `planning-flow` and `implement-plan` use, as a standalone skill for any conversation.
+Then it asks again in plain chat, **one question per message**, never through the multiple-choice question tool that some agent programs offer, each in the same shape: a numbered heading that states the claim, **the situation**, **the flow** (a numbered walk of three to five steps, ending at the consequence someone would notice), **the fix**, its **cost**, and **your call**. The prose is capped at 200 counted words. Only a direct answer closes a question — apply, reject, or a different direction. After a doubtful or vague reply, the agent asks you to say which you mean. A direction of your own is noted and checked once after the last question, so the questions are not interrupted by investigation unless you ask for it. Nothing is built until the last question is closed. It is the same question shape `planning-flow` and `implement-plan` use, as a standalone skill for any conversation. When another skill asks through it, a decision that passes five checks (a subject you already raised, only terms you have used, two ways to go) may come in a three-line short form; when you invoke it yourself, every question is in full.
 
 ```text
 # Claude Code session — type this as a message
@@ -202,6 +203,28 @@ npx skills add patrickdappollonio/claude-plugins --skill ask-me-again
 ```
 
 Then, when the questions are a wall of text: *"/ask-me-again"*. [Read more →](plugins/ask-me-again)
+
+### chief-of-staff
+
+For a development session where you want the main agent to lead and stay available while requests keep arriving. The agent stops doing the work itself: every change to what the code does, every build and long test run, and every proof of concept goes to a **one-shot subagent on a cheaper model**, briefed with the goal and what was observed and never the lead's own theory, so a subagent can still report what worried it. Executors work test-first, write integration tests as user journeys with real dependencies in containers, and run only the tests for their own change; **full runs go one at a time through the lead**, so the machine stays usable. The lead reads every result as if it were wrong and takes a second opinion from a fresh subagent that never sees its verdict.
+
+It decides everything that does not change what a user or consumer gets, settles doubts with a quick proof of concept instead of a question, and asks only about the rest. Its record of requests, decisions, and open questions lives in the scratchpad, never in the work tree, so it survives compaction. **Every turn ends with one short message** — done, decisions made, pending for you, next — plus a `/goal` line when the work has a concrete finish. It uses `ask-me-again`, `use-premium-models-efficiently`, `appropriate-comments-code`, and `code-simplification` when they are installed, and a short built-in version of each when they are not.
+
+```text
+# Claude Code session — type this as a message
+/plugin install chief-of-staff@patrickdappollonio
+
+# Shell — Claude Code
+claude plugin install chief-of-staff@patrickdappollonio
+
+# Shell — Codex CLI
+codex plugin add chief-of-staff@patrickdappollonio
+
+# Shell — npx skills
+npx skills add patrickdappollonio/claude-plugins --skill chief-of-staff
+```
+
+Then say: *"Be my chief of staff for this session."* [Read more →](plugins/chief-of-staff)
 
 ### code-simplification
 

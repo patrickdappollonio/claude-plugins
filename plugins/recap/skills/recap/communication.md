@@ -1,6 +1,6 @@
 # Communication — writing for a reader who never saw the code
 
-Distilled from the `effective-communicator` skill. Read this file only when that skill is not installed; when it is, invoke it instead. These rules govern every sentence of the recap.
+These rules govern every sentence of the recap.
 
 ## Core principle
 

@@ -187,6 +187,18 @@
       "license": "MIT"
     },
     {
+      "name": "chief-of-staff",
+      "source": "./plugins/chief-of-staff",
+      "description": "Turns the main agent into a chief of staff for a development session: it hands every change to one-shot subagents on cheaper models, reviews what they return as if it were wrong, takes an unbiased second opinion, decides everything that does not change what users get, proves doubts with a quick proof of concept instead of asking, keeps full test runs to one at a time so the machine stays usable, keeps its record outside the work tree, and ends every turn with one short message: what was done, decisions made, what is pending for you, and what is next.",
+      "category": "orchestration",
+      "keywords": ["orchestration", "subagents", "delegation", "autonomy", "review", "tdd"],
+      "author": {
+        "name": "Patrick D'appollonio"
+      },
+      "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/chief-of-staff",
+      "license": "MIT"
+    },
+    {
       "name": "all",
       "source": "./plugins/all",
       "description": "Installs every plugin in this marketplace in one step. It has no skills of its own; it lists the other plugins as dependencies, and Claude Code installs and enables each of them. Claude Code only — Codex has no plugin dependencies.",

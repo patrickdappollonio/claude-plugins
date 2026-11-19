@@ -1,6 +1,6 @@
 # Model Routing — who explores, who reviews
 
-Distilled from the `use-premium-models-efficiently` skill; if that skill is installed, read it too — it governs the general delegation pattern.
+If the `use-premium-models-efficiently` skill is installed, read it too — it governs the general delegation pattern.
 
 ## The rule
 

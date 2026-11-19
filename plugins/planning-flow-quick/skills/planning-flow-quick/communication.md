@@ -1,6 +1,6 @@
 # Communication — writing for a reader who has not seen the code
 
-Distilled from the `effective-communicator` skill. If that skill is installed, read it too; it is the fuller version. This file governs every sentence in the plan and every message that delivers it.
+If the `effective-communicator` skill is installed, read it too; it is the fuller version. This file governs every sentence in the plan and every message that delivers it.
 
 ## Core principle
 
