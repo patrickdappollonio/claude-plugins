@@ -42,7 +42,7 @@ Drop a candidate question when a fact answers it, when trying it answers it, whe
 
 ## The short form
 
-The full form is the default. A decision may take three lines instead only when every one of these holds; read the draft once against them, and write nothing down.
+A decision takes three lines instead whenever every one of these holds; read the draft once against them, and write nothing down. One that fails a check, which is usually a detail the user has not yet talked through, takes the full form.
 
 1. The user has already talked about this subject in this conversation.
 2. Every term in it is one the user has used, or is explained in the same sentence.
@@ -70,7 +70,7 @@ At most 60 words come before *Your call*. Never use it once the user has said a 
 - **One question in full per message**, at the end of the last message, under *Pending for you*. The other open questions follow as one line each.
 - **Every open question is named in every last message** until the user answers it.
 - **An open question blocks only the work that depends on it.**
-- Asking whether to continue is not a question in this format. It is one plain line.
+- Asking whether to continue, or whether to start building, is not a question in this format. It is one plain line, with no number, no recap, and no options.
 
 ## After the answer
 
