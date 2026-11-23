@@ -1,7 +1,7 @@
 ---
 name: adversarial-review-fast
 description: >-
-  Use when you want the cheapest adversarial review of a small code change — "a fast adversarial review", "the fastest review", "a one-reviewer review", "just review what changed since the last review", "re-check the fixes" — up to about 500 changed lines in one subsystem, a test change, or a small behavior change, often right after a full or quick review whose fixes now need checking. Also use mid-task, without being asked, when you are about to build on your own understanding of how some code or system behaves and want one unbiased agent to try to disprove it first. One fresh reviewer attacks the change from two or three domains picked for it and checks its own findings. For a bigger change, or to choose from the 18 named reviewers, use `adversarial-review-quick`; for a thorough review, use `adversarial-review`.
+  Use when a small code change needs the cheapest adversarial review — "a fast adversarial review", "a one-reviewer review", "just review what changed since the last review", "re-check the fixes" — a change that stays inside one subsystem, often right after a larger review whose fixes need checking. Also use mid-task, without being asked, before building on your own understanding of how some code or system behaves, so one unbiased agent tries to disprove it first. For a bigger change or to pick reviewers use `adversarial-review-quick`; for a thorough review use `adversarial-review`.
 ---
 
 # Adversarial Review — Fast

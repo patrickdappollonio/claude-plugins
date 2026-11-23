@@ -1,7 +1,7 @@
 ---
 name: planning-flow-quick
 description: >-
-  Use when the user wants a quick plan for a small coding change — "quick plan", "plan this small fix", "/planning-flow-quick <ask>" — such as a renamed title, a corrected message, a one-function bug fix, or a small option, where the change still needs to follow the repository's patterns and name the tests it extends, but a full codebase map, parallel exploration, several reviews, and an interview tree would cost more than the work. Writes one short plan file with one ticket, settles unknowns with checks on the spot, asks only what the code cannot answer, and notes where the quick plan is thinnest.
+  Use when the user wants a quick plan for a small coding change — "quick plan", "plan this small fix", "/planning-flow-quick <ask>" — such as a renamed title, a corrected message, a one-function bug fix, or a small option, where full codebase research, several reviews, and an interview would cost more than the work.
 ---
 
 # Planning Flow — Quick

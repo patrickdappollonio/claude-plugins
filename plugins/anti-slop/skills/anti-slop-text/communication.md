@@ -1,6 +1,6 @@
 # Communication — writing for a reader who has not seen what you saw
 
-Distilled from the `effective-communicator` skill. Read this file only when that skill is not installed; when it is, invoke it instead. These rules decide who the text is for and how it is structured; `SKILL.md` and `tells-catalog.md` decide which patterns it must not contain. Both apply to every sentence.
+These rules decide who the text is for and how it is structured; `SKILL.md` and `tells-catalog.md` decide which patterns it must not contain. Both apply to every sentence.
 
 ## Core principle
 

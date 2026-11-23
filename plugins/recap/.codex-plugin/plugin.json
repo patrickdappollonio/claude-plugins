@@ -1,6 +1,6 @@
 {
   "name": "recap",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "End-of-session recap that reports the result, not the journey, in plain language for a reader who never saw the code.",
   "author": { "name": "Patrick D'appollonio", "email": "patrickdappollonio@gmail.com" },
   "homepage": "https://github.com/patrickdappollonio/claude-plugins/tree/main/plugins/recap",

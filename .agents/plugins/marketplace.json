@@ -91,6 +91,12 @@
       "source": { "source": "local", "path": "./plugins/anti-slop" },
       "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
       "category": "Developer Tools"
+    },
+    {
+      "name": "chief-of-staff",
+      "source": { "source": "local", "path": "./plugins/chief-of-staff" },
+      "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
+      "category": "Productivity"
     }
   ]
 }

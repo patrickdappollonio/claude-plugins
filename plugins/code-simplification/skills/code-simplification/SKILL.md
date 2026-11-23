@@ -1,6 +1,7 @@
 ---
 name: code-simplification
-description: Use when code works but is harder to read, maintain, or extend than it should be — after a feature lands, when review flags complexity, or when you hit deep nesting, long functions, high cyclomatic complexity, functions too tangled to test, two functions that do nearly the same thing, duplicated logic, dead code, unclear names, comments that narrate instead of inform, or tests that guard no behavior — and you want the complexity reduced without changing behavior.
+description: >-
+  Use when code works but is harder to read, maintain, or extend than it should be — after a feature lands, when review flags complexity, or on deep nesting, long functions, high cyclomatic complexity, near-duplicate functions, dead code, unclear names, or tests that guard no behavior — and the complexity should come down without changing behavior.
 ---
 
 # Code Simplification

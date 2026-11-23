@@ -1,6 +1,7 @@
 ---
 name: anti-slop-ui
-description: "Use when building, restyling, polishing, or reviewing a user interface — an HTML page, a web or mobile app screen, a dashboard, a component, CSS or Tailwind classes — especially when asked to make it look modern, polished, clean, or better, or when a UI looks generic, cheap, AI-generated, or vibe-coded. Covers gradients everywhere, purple gradients, rainbow palettes, pulsing or glowing badges, status dots, cards with a colored fingernail stripe, emoji as icons, misaligned icons or SVGs, Inter or JetBrains Mono by default, // decoration, fake terminal chrome, uppercase or small-caps labels, middle-dot separators, numbered sections, fade-in on scroll, carousels, filler sections, everything the same size and weight, missing empty, loading, or error states, every panel shown at once, glassmorphism, taglines, marketing hype on working screens, and text that repeats the brief or chat instead of serving the user."
+description: >-
+  Use when building, restyling, polishing, or reviewing a user interface — an HTML page, a web or mobile app screen, a dashboard, a component, CSS or Tailwind classes — especially when asked to make it look modern, polished, clean, or better, or when a UI looks generic, cheap, AI-generated, or vibe-coded: purple gradients, glowing badges, emoji as icons, glassmorphism, filler sections, marketing hype, or missing empty, loading, and error states.
 ---
 
 # Anti-Slop UI
