@@ -14,6 +14,7 @@ It works on patterns, not on any one language's idioms:
 And it's disciplined about *how*, not just *what*:
 
 - **Behavior is preserved exactly, and proven** — every change is pinned by a test written *before* the change that still passes, unmodified, after it. If the tests need "a small tweak" to pass, the simplification changed behavior and gets reverted, not the tests.
+- **Tests that guard nothing get flagged.** Before trusting a test as proof, it checks it for three faults: it works out its own answer, it pins how instead of what, or no edit to the code can turn it red (it tests the platform, the type system, a mock of the unit under test, or that removed code is still gone). Copies of another test are flagged too. It reports each one with its fix and leaves it alone unless you ask; ask it to clean up the tests and it applies the fixes one at a time, deleting any production code that existed only for those tests.
 - **No tests? It asks first.** If the repository has no tests covering the code in scope, it asks before creating any — even under deadline pressure. If you decline, it says the change is unproven instead of pretending a deleted throwaway script counts as evidence.
 - **Chesterton's Fence** — nothing is changed or removed before understanding why it exists (including checking git history).
 - **One change at a time** — each simplification is applied and tested individually, so a failure points at exactly one edit.

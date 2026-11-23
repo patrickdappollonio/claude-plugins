@@ -165,6 +165,7 @@ Opening line: `You are implementing one change.`
 How to work:
 
 - Test first: write the failing test, run it, confirm it fails for the right reason, then write the code and see it pass.
+- For a removal, the test-first step uses the tests that exist. Where one runs an input whose result the removal changes, change its expected value to the new result first and watch it fail. Delete the tests that only exercised the removed code, with any production code that existed only for them. Add no assertion that a deleted function, flag, file, or module is gone or absent: removed code does not change, so that assertion can never fail again. The same holds for a test of the platform, of what the type system already guarantees, or of what a mock of the code under test returns: if no edit to the code could turn a test red, do not write it.
 - This repository has `<integration or end-to-end tests at <path> | no integration tests>`. When it has them, extend that suite in its style.
 - Write integration and end-to-end tests as user journeys: do what a user or consumer of the project does, from the outside, and check what they would get. Mock only what cannot run for real.
 - For a database or another dependency that can run locally, use `<testcontainers | what the repository already uses>`.
