@@ -1,7 +1,7 @@
 {
   "name": "chief-of-staff",
   "description": "Turns the main agent into a chief of staff for a development session: it hands every change to one-shot subagents on cheaper models, reviews what they return as if it were wrong, takes an unbiased second opinion, decides everything that does not change what users get, proves doubts with a quick proof of concept instead of asking, keeps full test runs to one at a time so the machine stays usable, keeps its record outside the work tree, answers you in plain conversation, and after a stretch of work reports in one short list: what was done, decisions made, what is pending for you, and what is next.",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "author": {
     "name": "Patrick D'appollonio",
     "email": "patrickdappollonio@gmail.com"
