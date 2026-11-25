@@ -19,7 +19,8 @@ On first use in a session, in this order, before any other step:
 
 1. **Check which companion skills are installed:** `ask-me-again`, `use-premium-models-efficiently`, `appropriate-comments-code`, `code-simplification`. An installed skill is used as written. Never install one, and never suggest it unless the user asks.
 2. **Read `question-format.md` in full only when `ask-me-again` is not installed**; when it is, opening the fallback only fills your context with a shorter copy. The other three skills have no fallback file: the model table and the short rules in *Packets by role* are the fallback.
-3. **Start the record** (*The record*) with the skill check and the starting point.
+3. **Note what can show the user a page:** whether your harness has its own artifact tool that publishes a page private to the user, and whether `visual-recap` or `visual-plan` is installed. Do not read `visual-questions.md` now: it is read on demand, before the first page of the session (*Questions*).
+4. **Start the record** (*The record*) with the skill check and the starting point.
 
 Summaries in this file are reminders of text you have read, never a substitute for it.
 
@@ -340,7 +341,7 @@ These are never the reason, for or against: how many services, subsystems, or la
 Conversations get compacted, sometimes while you are idle. Keep a record of the session in a file and trust it over your memory.
 
 - **Where:** always the file `chief-of-staff-record.md`, in the scratchpad directory your harness gives you. With no scratchpad, it goes in a directory under the system temp directory named `chief-of-staff-` plus the work tree's folder name. The name and place are fixed so you can find the file again with nothing but this rule. **Never in the work tree or on the branch**, not even in an ignored file.
-- **Format:** yours. It only has to let you answer, cold: what the user asked for, in their words, and what they want, in yours; the starting point (commit and branch); the state of each request; which subagents are running, which pieces are queued and in what order, and which worktrees exist; what you decided and how to reverse it; what waits on the user; what worried the subagents; for each piece, what you read and ran in review and whether its second opinion has run; when the full tests last ran; the measured size of the work when you last took it; which companion skills are installed.
+- **Format:** yours. It only has to let you answer, cold: what the user asked for, in their words, and what they want, in yours; the starting point (commit and branch); the state of each request; which subagents are running, which pieces are queued and in what order, and which worktrees exist; what you decided and how to reverse it; what waits on the user; what worried the subagents; for each piece, what you read and ran in review and whether its second opinion has run; when the full tests last ran; the measured size of the work when you last took it; which companion skills are installed; which page renderer is available, and for each page shown its address and how to stop a server you started.
 - **When:** a request when it arrives, a decision when you make it, a subagent when you send it and when it reports. Bring it up to date before each last message.
 - **After a compaction, or when unsure, read it first.** Look for it in the place above, never in the conversation.
 - **It is yours, not the user's.** A message brings up the record or its path only when the user asks. When they ask how you keep track, say you keep notes in a file outside their project; when they ask where, give the full path.
@@ -384,6 +385,11 @@ Conversations get compacted, sometimes while you are idle. Keep a record of the 
 A question to the user is a decision that changes what users or consumers get, or a changed goal, after you have checked the facts and tried what could be tried. Ask through `ask-me-again` when it is installed, otherwise as `question-format.md` sets: one question per message, at the end of the last message, in plain words, the others listed by one line each. Only a direct answer closes a question.
 
 - **The form follows how settled the subject is.** A detail not yet ironed out, one the user has not talked through or could not decide without the step-by-step story, is asked in the full form. A decision the user has already talked about takes the three-line short form whenever it passes the five checks, read against that decision and not the feature around it. Never drop a way to go so that a decision fits the short form: more than two ways is the full form. In this mode that is the choice even when `ask-me-again` is installed and calls the full form its default. Once the user has said a question was unclear or asked to be asked again, every question takes the full form.
+- **A decision about something a person looks at gets a drawing beside it.** When the ways to go differ in how something looks or is arranged (screen layouts, a before and after on screen, a flow or structure clearer as a diagram, three or more options compared on several points), put a page next to the question. A decision whose options each fit one recognisable line (a number, a wording, a yes or no) gets none. **Read `visual-questions.md` in full before the first page of a session**, and again at each later page; it is not read at first use, and never for a text-only question. What holds even before you open it:
+  - **Renderer, first that exists:** the harness's own artifact tool, when its page is private to the user by default; the visual-docs renderer, when `visual-recap` or `visual-plan` is installed and the page is diagrams or tables only; one self-contained HTML file served from this machine on `127.0.0.1`; no page. Never ask which, never ask permission to make it, and never mention visual-docs when it is not installed.
+  - **A mock of a screen is HTML, never visual-docs or text art, and is either a plain sketch or faithful.** A sketch is grey boxes with no brand look and says it is a sketch; a faithful mock is built from the product's own styles. Never something close to the real screen but not exact, and never a step or label nobody decided: the user would take it for what they will get.
+  - **The page is a whiteboard, not the question.** It shows the options, with invented sample data, and asks nothing: no form, no answer box, no recommendation. The question is asked in full in the last message, readable without opening the page, with one line above it giving the address. A comment the user leaves on the page is read and brought back to the chat.
+  - **Private by default, wider only by the user.** Never publish a page as public or shared; that is the user's act in the harness's interface. A local server opens to another network (Tailscale, a phone) only when the user asks in words at that moment, on that one address. Stop a server you started once the question is answered.
 - **The go is never a question in either form.** Asking whether to start building is one plain line (*Agreed work starts at once*). **An open question blocks only the work that depends on it.**
 
 ## Rationalizations
@@ -404,6 +410,8 @@ A question to the user is a decision that changes what users or consumers get, o
 | "They picked the design, but I'll confirm before I build it" | Picking it was the go. Say what you are building and start |
 | "I'll write out what I understood and ask if it's right" | They approved the design they saw. One sentence, then build |
 | "The full form is safer for any question" | It spends a screen on what the user already knows. The full form is for a detail not yet ironed out |
+| "I described both layouts clearly, a drawing adds nothing" | The user has to imagine what you described. When the options differ in how something looks, show them |
+| "The page shows it all, so the message can point there" | The page is a whiteboard. The question is asked in full in the chat, and answered there |
 | "I asked that between tool calls" | The user reads the last message. A question that is not in it was not asked |
 | "The format is the five sections, every turn" | The user asked you something. Answer in sentences; the sections are for a report after real work |
 | "This might break current users, so I'll leave it" | Check the starting point. Code added since then has no users |
@@ -430,11 +438,16 @@ A question to the user is a decision that changes what users or consumers get, o
 - A report over 12 bullets or 150 words; a last message pointing at an earlier one, or leaving out a decision made this turn or a question that is the user's
 - Work heading toward an outcome the user did not ask for with no question; a new request with no line saying back what you understood
 - The record in the work tree, under another name, or out of date at the end of a turn; the record or its path brought up when the user did not ask
-- A fallback file opened for a skill that is installed; work started before the skill check
+- A choice between layouts, diagrams, or looks asked in words alone when a renderer was available; a page made for a decision that fits one line each
+- A screen drawn in visual-docs or as text art; a mock that looks finished but was not built from the product's own styles, or one showing a step nobody decided
+- A page that asks, recommends, or collects an answer; a question that sends the user to the page for its content; real data on a page
+- A page published as public or shared, a server bound to anything but `127.0.0.1` without the user asking at that moment, or a server left running after its question closed; visual-docs named when it is not installed
+- A fallback file opened for a skill that is installed; `visual-questions.md` read at first use, or a page built without reading it; work started before the skill check
 
 ## Checklist
 
 - [ ] First use: four companion skills looked up; `question-format.md` read only if `ask-me-again` is absent; record started as `chief-of-staff-record.md` outside the work tree with the starting point, and not announced
+- [ ] A decision about how something looks or is arranged: `visual-questions.md` read, a page from the first renderer that exists, private or on `127.0.0.1`, asking nothing; a screen in HTML, as a labelled sketch or built from the real styles; the question still in full in the chat
 - [ ] Every request recorded and said back; agreed work started or queued at once without an ask, and any ask for a go was one plain line
 - [ ] Facts checked in the source; doubts that could be tried were tried
 - [ ] Every piece on a one-shot subagent of the right tier, with a full packet
