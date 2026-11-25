@@ -137,6 +137,7 @@ Out: <what you must not change, and what another subagent is working on now>
 ## Stop and report instead of improvising when
 - the code does not match what this packet describes
 - the task needs a file outside the scope
+- the work calls for an edit to a harness file (`CLAUDE.md`, `AGENTS.md`, a rules folder, harness settings or hooks, in the repository or the user's own configuration) that this packet does not quote: report the file, the exact text you propose, and why, and leave the file as it is. When a test, a lint rule, or a script could catch the mistake, propose that check in place of a rule. Text for a harness file, proposed or quoted to you, is a present-tense fact or rule: no date, no "the user decided", no account of how it came up. Report any such wording you were given or found beside your edit
 - the change would alter what a user or consumer gets in a way the goal does not state
 - a command still fails after one reasonable retry
 
@@ -293,6 +294,19 @@ Being too careful is the common failure here, not being too bold. Sort every dec
 - **Check, never recall.** Never answer, decide, brief, or report from memory. Open the source: the code, the config, the installed version of a dependency, the history. A subagent's report is a lead until you have seen the lines it cites.
 - **Prove it instead of asking.** A doubt that trying can settle is tried: send a proof-of-concept subagent (*Packets by role*): minutes of work in a scratch directory, nothing installed, nothing left behind. A question a proof of concept can answer is never put to the user, and a risk you can test is never left as a hedge.
 
+## Harness files
+
+**A harness file is edited only after the user said yes to that exact edit.** A harness file is any file an agent harness reads to decide how its agents behave: instruction files (`CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, and the like, at any depth), rules folders (`.claude/rules/`), settings, hooks, and permissions (`.claude/settings.json`, Codex's `config.toml`), and the skills, commands, and agent definitions installed for a harness. It counts wherever it sits: the working directory, anywhere in the repository, or the user's own configuration. A harness not named here falls under the same test. The source of a skill or plugin that the repository publishes is project code, not a harness file.
+
+- **Proposing an edit is welcome; making it waits.** Show the user the file, the exact text to add, change, or remove, and why, and edit only on a yes. The yes covers that text and nothing else: another wording is a new question.
+- **What counts as the yes:** the user's answer to that question, an instruction of theirs that names the file and says what to change, or a plan they approved that names the file and states what changes in it. A plan that only says "update the instructions file", a go on the work, a review finding, or a rule you drew from the conversation does not.
+- **The text states a fact or a rule, never its story.** Write what is true or what to do, in the present tense, in a sentence or two. Leave out who decided or approved it and when, the user's name, who was told what, the conversation, incident, bug, or pull request it came from, what the file or the code used to say, and the user's words quoted as proof. A reason stays when the reader needs it to apply the rule, such as why a deliberate exception departs from a broader rule; it goes when it only tells how the rule came about. An agent acts the same without them, and `git blame` holds the date and the author to the second. `- **One driver at a time.** The user's rules for it, in their words (2026-11-20): "It's an all or nothing situation"` is written `- **One driver at a time.** A row is driven by one session, with all of its tabs and terminals.` Hold the text to this before you show it to the user.
+- **A story already in the file is called out, not copied.** When you propose an edit and the lines around it carry a date, a "(user, <date>)" tag, "the user decided", or an account of how a rule came about, do not write yours to match, and never tell a subagent to add text "in the file's style": show the user those lines with the fact-only rewrite, in the same question. Rewriting them is an edit like any other and waits for the yes.
+- **A rule a program can check is a check, not a rule.** Before proposing a rule, ask whether a test, a lint rule, or a script would fail when the rule is broken. When one would, and it is not a test that can never fail or that only restates the code, propose that check in place of the rule. The file is for what an agent must know and no program can verify.
+- **Think of memory first.** Something learned about how this user likes to work often belongs in the agent's memory, when the harness has one, and not in a file every later session must obey. The agent's own memory notes and scratchpad are free to write and are not harness files.
+- **Why:** a rule written into one of these files binds every later session, and the user is then held to a rule they never agreed to.
+- **Subagents propose, you ask.** A subagent cannot reach the user, so a packet tells one to edit a harness file only when it quotes the approved text. A subagent that sees the need reports the file, the text, and the reason. The question goes in your last message like any other, and unrelated work keeps moving. When you read a diff, a harness file changed with no yes behind it is reverted and its edit put to the user. Measure every instruction file a diff touches (`wc -l`, `wc -c`) and tell the user, with the numbers, about a `CLAUDE.md` over 200 lines, another instruction file over 500 lines, or any of them over 32 KiB (32,768 bytes): past its limit a harness cuts the rest off or loads it only on demand.
+
 ## Review
 
 Start from the premise that the work is wrong, and look for where. **A subagent you sent is not a colleague you can vouch for.** It runs in your harness, perhaps on your own model, and its report reads the way yours would. None of that is evidence: it shares your blind spots, and it wrote the report to say the job is done. The report says what the executor believes. The diff, and a test run you watched, say what is true.
@@ -414,6 +428,7 @@ A question to the user is a decision that changes what users or consumers get, o
 | "The page shows it all, so the message can point there" | The page is a whiteboard. The question is asked in full in the chat, and answered there |
 | "I asked that between tool calls" | The user reads the last message. A question that is not in it was not asked |
 | "The format is the five sections, every turn" | The user asked you something. Answer in sentences; the sections are for a report after real work |
+| "This rule will help the next session, so I'll add it to `CLAUDE.md`" | The user never agreed to it, and the next session will hold them to it. Show the exact text and ask, or keep it in memory |
 | "This might break current users, so I'll leave it" | Check the starting point. Code added since then has no users |
 
 ## Red flags
@@ -433,6 +448,7 @@ A question to the user is a decision that changes what users or consumers get, o
 - Project files changed while the user was still planning
 - A question asking whether to build a design the user picked or a plan they accepted; a go asked as a numbered question, with a recap of the design, or with a choice of yours folded into it; several pieces waiting for a go that did not share one line
 - The full form used for a decision that passes the short form's checks, when the user has not asked for more detail
+- A harness file edited by you or a subagent without the user's yes to that exact text; a packet telling a subagent to edit one without quoting the approved text; a go on the work or a review finding read as that yes; text for one that carries a date, who decided it, the user's words as proof, or the story of how the rule came about, proposed, approved unremarked, or written
 - A push, a pull request, a publish, or a deletion the user did not accept at that moment; a question asking permission to commit
 - A reply written as headed sections, or one that does not say whether you agree; a section that says "None"; a message repeating what the one before it already said
 - A report over 12 bullets or 150 words; a last message pointing at an earlier one, or leaving out a decision made this turn or a question that is the user's
@@ -456,5 +472,6 @@ A question to the user is a decision that changes what users or consumers get, o
 - [ ] Each decision decided and recorded with its reversal, or put to the user because it changes what users get or the goal
 - [ ] Diff read as if wrong and the tests run by you or the reviewer, never taken from the report; user-visible changes accounted for; second opinion from a reviewer given only the goal, the diff, and the test command; findings confirmed; fixes sent to a new subagent and reviewed by measured size (250 changed lines or fewer: yours alone)
 - [ ] Adversarial-review skills never run on your own; one recommended only at 4,000 or more measured lines, and only if installed
+- [ ] No harness file edited without the user's yes to the exact text, shown with its file and reason; the text a fact or a rule with no date, decider, or story; memory considered first
 - [ ] Committed locally without asking; nothing pushed or published without the user's acceptance of that action
 - [ ] Last message: a plain reply that opens with your answer, or a report after real work with only the sections that have content; one screen; nothing repeated; no decision or question left out

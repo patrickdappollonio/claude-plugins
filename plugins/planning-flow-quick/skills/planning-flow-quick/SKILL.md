@@ -75,6 +75,19 @@ Lines of code are **not** a sign. An agent writes five hundred lines it understa
 
 Either way, every sign that showed is listed under *Gotchas and caveats* in the plan and in the closing, so the user knows where the quick plan is thinnest. The offer never becomes a numbered question: switching is not a trade-off in the plan, it is a choice of tool.
 
+## Harness Files
+
+**A harness file is edited only after the user said yes to that exact edit.** A harness file is any file an agent harness reads to decide how its agents behave: instruction files (`CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, and the like, at any depth), rules folders (`.claude/rules/`), settings, hooks, and permissions (`.claude/settings.json`, Codex's `config.toml`), and the skills, commands, and agent definitions installed for a harness. It counts wherever it sits: the working directory, anywhere in the repository, or the user's own configuration. A harness not named here falls under the same test. The source of a skill or plugin that the repository publishes is project code, not a harness file.
+
+- **Proposing an edit is welcome; making it waits.** Show the user the file, the exact text to add, change, or remove, and why, and edit only on a yes. The yes covers that text and nothing else: another wording is a new question.
+- **What counts as the yes:** the user's answer to that question, an instruction of theirs that names the file and says what to change, or a plan they approved that names the file and states what changes in it. A plan that only says "update the instructions file", a go on the work, a review finding, or a rule you drew from the conversation does not.
+- **The text states a fact or a rule, never its story.** Write what is true or what to do, in the present tense, in a sentence or two. Leave out who decided or approved it and when, the user's name, who was told what, the conversation, incident, bug, or pull request it came from, what the file or the code used to say, and the user's words quoted as proof. A reason stays when the reader needs it to apply the rule, such as why a deliberate exception departs from a broader rule; it goes when it only tells how the rule came about. An agent acts the same without them, and `git blame` holds the date and the author to the second. `- **One driver at a time.** The user's rules for it, in their words (2026-11-20): "It's an all or nothing situation"` is written `- **One driver at a time.** A row is driven by one session, with all of its tabs and terminals.` Hold the text to this before you show it to the user.
+- **A story already in the file is called out, not copied.** When you propose an edit and the lines around it carry a date, a "(user, <date>)" tag, "the user decided", or an account of how a rule came about, do not write yours to match, and never tell a subagent to add text "in the file's style": show the user those lines with the fact-only rewrite, in the same question. Rewriting them is an edit like any other and waits for the yes.
+- **A rule a program can check is a check, not a rule.** Before proposing a rule, ask whether a test, a lint rule, or a script would fail when the rule is broken. When one would, and it is not a test that can never fail or that only restates the code, propose that check in place of the rule. The file is for what an agent must know and no program can verify.
+- **Think of memory first.** Something learned about how this user likes to work often belongs in the agent's memory, when the harness has one, and not in a file every later session must obey. The agent's own memory notes and scratchpad are free to write and are not harness files.
+- **Why:** a rule written into one of these files binds every later session, and the user is then held to a rule they never agreed to.
+- **In a plan:** this skill writes the plan file and never a harness file. When the work needs such an edit (a new house rule, a hook, a setting), the ticket's *What* names the file and quotes the exact text with the reason, and the message that presents the plan lists each such edit on its own line, so that approving the plan is a yes the user gave knowingly. The plan's decisions section records who decided what and when; the text quoted for a harness file never does. Never fold one into "update the docs". Something learned about the user while planning goes to memory or the decisions section.
+
 ## Where the Plan Lives
 
 One markdown file, the single source of truth. The first line of the file is `<!-- planning-flow-quick -->`, so `planning-flow` and `implement-plan` can tell a quick plan from a full one.
@@ -158,6 +171,7 @@ Add `with implement-plan` after the path only when it is installed. The goal nam
 
 | Excuse | Reality |
 |---|---|
+| "This rule will help the next session, so I'll add it to `CLAUDE.md`" | The user never agreed to it, and the next session will hold them to it. Show the exact text and ask, or keep it in memory |
 | "It's a one-line change, I don't need to look at patterns" | A one-line change in the wrong style, or with no test, is a review comment and a second round. The scoped explorers cost two cheap subagents. |
 | "The skill says explorers, so I'll send them for a five-file area" | A small area is read directly; explorers are for an area too big to read in a few calls. |
 | "No map exists, so I'll map the repository first" | That is `planning-flow`'s step 0. Read the area the change touches, its neighbors, its tests, and the repository's rules; stop there. |
@@ -184,6 +198,7 @@ Add `with implement-plan` after the path only when it is installed. The goal nam
 
 ## Red Flags — Stop and Re-read the Step
 
+- A harness file (`CLAUDE.md`, `AGENTS.md`, a rules folder, harness settings or hooks) edited by this skill; a ticket that edits one without naming the file and quoting the exact text and the reason; a plan presented without listing each such edit; text quoted for one that carries a date, a "(user, <date>)" tag, who decided it, or the story of how the rule came about
 - A question with one workable answer, a question on wording users will see, or a question on a principle the user already decided in the same feature; *The ask* written without reading the *House rules* sections
 - A plan with no named pattern or closest example for the code it changes, or an acceptance criterion with no test clause
 - A full repository map built or refreshed by this skill, or explorers reading past the area of the change with no fact that sent them there
@@ -213,6 +228,7 @@ Add `with implement-plan` after the path only when it is installed. The goal nam
 Create a todo per item.
 
 - [ ] Read every companion file (first use in this session)
+- [ ] No harness file edited; every harness-file edit the plan calls for names the file, quotes the exact text and the reason, and is listed when the plan is presented; the quoted text is a fact or a rule with no date, decider, or story
 - [ ] *The ask* holds the task in one sentence and the user's words, verbatim; the request for a plan is nowhere in it
 - [ ] Area learned: an existing codebase map used and its facts confirmed against the code, a small area read directly, or the two scoped explorers run in one message; pattern, closest example, and covering tests found for every surface the change touches
 - [ ] Signs from *Too big for a quick plan* judged by what the change alters, after exploration (request and code only), after the questions, and after the plan check; each one either judged to fit (one line with the reason) or offered as a switch, at most once per session and never after the user's no; every sign listed under *Gotchas and caveats*
