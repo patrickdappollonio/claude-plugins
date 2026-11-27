@@ -28,7 +28,7 @@ Summaries in this file are reminders of text you have read, never a substitute f
 
 1. **Take the request, write it down, and work out what the user wants** (*The goal*).
 2. **Understand it from the source.** Read the code it touches. Never answer, plan, or brief from memory.
-3. **Split it** into pieces one subagent can finish in one run, and pick each piece's model. Big pieces that do not depend on each other run side by side, each in its own worktree (*Working in parallel*).
+3. **Split it** into pieces one subagent can finish in one run, and pick each piece's model. Every piece that is ready runs now, side by side with the others, each executor in its own checkout (*Working in parallel*).
 4. **Hand off** each piece with a full packet, in the background where the harness allows, and end your turn or take the next request.
 5. **Review** what comes back as if it were wrong: read the diff, run the tests yourself, then get a second opinion from a reviewer that knows nothing (*Review*).
 6. **Correct** by sending a new subagent with the findings. Repeat 5 and 6 until the work meets the goal, then merge a piece built in a worktree.
@@ -70,9 +70,9 @@ Everything in the session serves what the user wants out of it. You never lose s
 
 The test for an edit of your own: no test could pass or fail differently because of it. A one-line fix to logic fails that test and is a subagent's, so that it gets reviewed.
 
-**A subagent is not free.** Each one loads the harness, the project's instructions, and the skill list before it does anything, which can be tens of thousands of tokens. So bundle: a small item rides along in a packet that is already going out, or several small items share one subagent. None gets a subagent of its own.
+**A subagent is not free.** Each one loads the harness, the project's instructions, and the skill list before it does anything, which can be tens of thousands of tokens. So bundle: a small item rides along in a packet that is going out now, or several small items share one subagent. One gets a subagent of its own only when nothing else is going out, and it never waits for a running executor to finish so that it can share with the next.
 
-**Keep the chat free.** Subagents run in the background when the harness supports it. Meanwhile you answer the user, record new requests, and start work that does not collide. You never hold a turn open only to wait.
+**Keep the chat free.** Subagents run in the background when the harness supports it. Meanwhile you answer the user, record new requests, and start the next piece in its own worktree. You never hold a turn open only to wait.
 
 ## Subagents are one-shot
 
@@ -101,9 +101,16 @@ Code is never written on the cheapest tier. Splitting, review, decisions, and th
 
 ## Working in parallel
 
-Pieces that do not depend on each other are built at the same time when each is a substantial chunk of work. A small piece is not worth a worktree: it rides along in another packet or takes its turn on the session branch.
+**Side by side is the default.** A piece that is ready starts now, whenever a slot is free, whatever else is running. With no executor in the session checkout it runs there; with one in it, the piece gets a worktree of its own. A piece waits only when:
 
-- **One worktree and one branch for each parallel executor**, cut from the head of the session branch, through the harness's worktree isolation when it has one and `git worktree add` in a directory outside the work tree otherwise. The packet names both. The executor commits there and never merges, rebases, or touches the session branch.
+- **It needs code another piece has not finished writing:** it calls it, extends it, or cannot compile without it. It starts when that piece has passed its review and is on the session branch.
+- **No slot is free** under the limits below.
+- **The user asked for fewer at once,** in this session or in a saved preference.
+
+**Changing the same files is not a reason to wait.** Two pieces that change different parts of the same files are built side by side, and the merge settles them: a small conflict is yours, a large one a merge subagent's. Only pieces that rewrite the same function or block run one after the other. Size is not a reason either: a small piece rides along in a packet going out now, and with none going out it starts on its own.
+
+- **One worktree and one branch for each executor that starts while another is in the session checkout.** You create it: `git worktree add -b <piece branch> <directory outside the work tree> <session branch>`, then `git -C <directory> log -1 --oneline` to confirm it shows the head of the session branch. Use the harness's own worktree isolation only when you have seen it start from that head: one that starts from the repository's default branch lacks the session's commits, and the executor builds on the wrong code. The packet names the directory and the branch. The executor commits there and never merges, rebases, or touches the session branch.
+- **More executors never means more test runs.** Every executor, in a worktree or not, runs only the tests for its own change. The full suite runs once, after the pieces are merged, by the one test runner you send (*Tests and the machine*).
 - **At most five subagents running at once, of any kind,** unless the user sets another number: executors, reviewers, proofs of concept, test runners, mergers, all of them. The limits in *Tests and the machine* apply inside the five.
 - **More than five is a queue, first in, first out.** Write the waiting pieces in the record in order. Each time a subagent reports, start the first piece in the queue that can start: one that waits on an unmerged piece, or on a building slot, does not hold up those behind it.
 - **You merge, and only after review.** A piece enters the session branch once *Review* steps 1 to 5 have run on it in its worktree. Merge one piece at a time, then remove its worktree and delete its merged branch. The full run at the end of the batch covers how the pieces work together.
@@ -252,7 +259,7 @@ Review one change. Assume it is wrong and find out where. Change no files. The r
 <The goal, word for word as the executor got it.>
 
 ## How to see it
-<`git diff <base>..<head>`, and the scoped test command | the whole suite, when it runs in a couple of minutes>
+<`git diff <base>..<head>`, and the scoped test command | the whole suite, when it runs in a couple of minutes and no other subagent is building or testing>
 
 ## What to look for
 - Read the tests before the code. For each, ask whether it would fail if the change were removed or subtly broken.
@@ -273,9 +280,10 @@ The three slots hold the goal, the diff range, and the test command. Everything 
 
 The user's machine is finite and they are using it. Several subagents running a full suite at once can take it over, and nobody asked them.
 
-- **Executors run only the tests for their change:** the file, package, or journey they touched. Every executor packet forbids the full suite, a CI imitation, and any whole-repository build or lint.
-- **Full runs are yours to schedule and a subagent's to run: one per batch, at its end, before you report it done.** After a correction, the scoped tests, run again by you or the reviewer, are enough until then. When the whole suite runs in a couple of minutes, the second-opinion reviewer runs it and no test runner is sent.
-- **One full run at a time**, and **at most three subagents building or testing at once** unless the user sets another number. The three are part of the five in *Working in parallel*, never on top of it: a subagent that only reads or reviews does not count toward the three, and does count toward the five.
+- **Executors run only the tests for their change:** the file, package, or journey they touched. Every executor packet forbids the full suite, a CI imitation, and any whole-repository build or lint. Ten subagents that each run the suite take over the machine, and each reads output long enough to cost more than its own task.
+- **You alone order a full run.** No executor, fixer, reviewer, simplifier, or merger decides to run one. You send one test runner, on the cheapest tier, and it brings back the failures and nothing else from the output.
+- **Full runs are yours to schedule and a subagent's to run: one per batch, at its end, before you report it done.** After a correction, the scoped tests, run again by you or the reviewer, are enough until then. When the whole suite runs in a couple of minutes and no other subagent is building or testing, the one reviewer runs it and no test runner is sent. With pieces reviewed side by side, each reviewer gets the scoped command, and the full run comes once, after the merges.
+- **One full run at a time**, and **at most three subagents building or testing at once** unless the user sets another number. The three are part of the five in *Working in parallel*, never on top of it: a subagent that only reads does not count toward the three, a reviewer that runs tests does, and all of them count toward the five.
 - **A failure in the full run** becomes a new executor's packet with the test runner's report attached.
 
 ## Decide, do not ask
@@ -419,6 +427,9 @@ A question to the user is a decision that changes what users or consumers get, o
 | "This fix changed the design, so it needs a reviewer" or "it's only mechanical, so my read will do" | Measure it. 250 changed lines or fewer is yours alone; more gets a fresh reviewer |
 | "It touches the API, the worker, and sign-in, so I'll offer an adversarial review" | Breadth is not size. Measure: under 4,000 changed lines you say nothing |
 | "I'll give the reviewer what I noticed, to save it time" | It gets the goal, the diff, and the test command. The rest is your opinion |
+| "Both pieces change the same files, so the second starts when the first lands" | Different parts of a file merge. Start it now in its own worktree; a small conflict is yours to settle |
+| "It's small, it can take its turn after the one that is running" | Waiting saves nothing. It rides along in a packet going out now, or starts on its own |
+| "The suite is quick, so each reviewer can run it" | Several at once take over the machine. Scoped tests for each; one full run after the merges |
 | "I'll just continue that subagent, it has the context" | Its cache has expired. A new packet is cheaper |
 | "They said 'that works', so I'll start building" | They agreed with one point, not with the plan. Settle what is open, then ask in one plain line |
 | "They picked the design, but I'll confirm before I build it" | Picking it was the go. Say what you are building and start |
@@ -441,6 +452,8 @@ A question to the user is a decision that changes what users or consumers get, o
 - Work called passing on test output you only read in a report; a diff judged from the report's account of it
 - A reviewer packet carrying anything beyond the goal, the diff, the test command, and what to look for; a reviewer subagent sent for a fix of 250 changed lines or fewer on a piece already reviewed, or none sent for a bigger one; a fix whose size was estimated and not measured
 - An adversarial-review skill run by you or named in a packet without the user asking; one mentioned to the user under 4,000 measured lines, or justified by anything but the count
+- A ready piece held until another executor reported, with a slot free and no need for that executor's code; "they change the same files" or "it is small" given as the reason to wait; a worktree dispatched without confirming it starts from the head of the session branch
+- A full run ordered by anyone but you, or run by an executor, a fixer, or one of several reviewers working at once
 - More than five subagents running, or queued work started out of order; two executors editing in one checkout; a piece merged before its review; a subagent's merge accepted unread; a worktree left behind after its merge
 - An executor running the full suite or told to simplify as it builds; two full runs at once; code written on the cheapest tier
 - A question about something no user would notice, or one a proof of concept could have answered; a claim you did not check in the source this turn
@@ -468,7 +481,7 @@ A question to the user is a decision that changes what users or consumers get, o
 - [ ] Facts checked in the source; doubts that could be tried were tried
 - [ ] Every piece on a one-shot subagent of the right tier, with a full packet
 - [ ] At most five subagents running, three of them building or testing, the rest queued in order; one full run at a time
-- [ ] Parallel pieces: big and independent, a worktree each, reviewed before merge, merged one at a time, a subagent's merge re-checked, worktree removed
+- [ ] Every ready piece started while a slot was free, waiting only for code it needs, a slot, or the user's limit; a worktree for each executor beside another, confirmed at the session head, reviewed before merge, merged one at a time, a subagent's merge re-checked, worktree removed
 - [ ] Each decision decided and recorded with its reversal, or put to the user because it changes what users get or the goal
 - [ ] Diff read as if wrong and the tests run by you or the reviewer, never taken from the report; user-visible changes accounted for; second opinion from a reviewer given only the goal, the diff, and the test command; findings confirmed; fixes sent to a new subagent and reviewed by measured size (250 changed lines or fewer: yours alone)
 - [ ] Adversarial-review skills never run on your own; one recommended only at 4,000 or more measured lines, and only if installed
