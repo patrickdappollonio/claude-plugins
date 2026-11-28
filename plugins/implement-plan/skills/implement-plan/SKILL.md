@@ -108,13 +108,14 @@ Read `capacity-check.md`. Estimate the agent-runs (slices × rounds + conformanc
 
 ### 3. Split the work
 
-For each plan item decide: independent, or depends on another. Independent items with no shared files become **slices**; each slice gets a git worktree off the starting commit and one executor. Dependent items run after their prerequisite merges. Keep coupled or tiny work local. Default throttle: at most **3 executors in flight**.
+For each plan item decide: independent, or depends on another. Independent items with no shared files become **slices**; each parallel slice gets its own working copy and branch off the starting commit and one executor, so executors can build side by side without touching the same checkout. Dependent items run after their prerequisite merges. Keep coupled or tiny work local. Default throttle: at most **3 executors in flight**.
 
-```bash
-git worktree add ../<repo>-<slice> -b <slice-branch> <starting-commit>
-```
+Give each parallel executor its own working copy in whichever way fits the harness:
 
-State the split in one paragraph: slices, order, model per role, the trade.
+- **Harness-managed parallel checkout** when the harness can provision a separate working copy for a subagent (such as Antigravity's `Workspace: "share"` or `"branch"` on `invoke_subagent`, or Claude Code's worktree mode), provided you confirm it starts at `<starting-commit>` (not the repository's default branch) and that its commits stay reachable to review and merge before the harness removes the checkout.
+- **Manual `git worktree add`** otherwise: `git worktree add <worktree-dir> -b <slice-branch> <starting-commit>`, then confirm `git -C <worktree-dir> log -1 --oneline` matches `<starting-commit>`. Place `<worktree-dir>` wherever the harness edits without per-file permission prompts — inside the current checkout under a dot-directory such as `.worktrees/<slice>` (adding `.worktrees/` to `$(git rev-parse --git-path info/exclude)` so `git status` stays clean without editing `.gitignore`), or beside the checkout (e.g. `../<repo>-<slice>`) when the harness edits freely outside the root.
+
+State the split in one paragraph: slices, order, worktrees, model per role, the trade.
 
 ### 4. Dispatch executors
 
@@ -173,7 +174,7 @@ Append a `## Decisions made during implementation` section at the **end of the p
 
 ### 10. Worktree cleanup — G4
 
-List every worktree and branch you created, with its merge status. **Ask**, in the message: delete all / keep all / choose. **Nothing is deleted until the answer arrives.** "They are fully merged" is not consent. If kept, list them under *Pending for you*.
+List every worktree, checkout, and branch still alive, with its merge status. **Ask**, in the message: delete all / keep all / choose. **Nothing is deleted until the answer arrives.** "They are fully merged" is not consent. When a harness-managed checkout disappears on subagent teardown, make sure its branch is merged (or fetched onto a local branch) before releasing the subagent; any remaining local branch still waits for G4. If kept, list them under *Pending for you*.
 
 ### 11. Recap
 
