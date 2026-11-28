@@ -6,7 +6,7 @@ The prompt every executor receives. Executors have **no chat context**: nothing 
 
 ## What goes in, in this order
 
-1. **Repo path and branch.** The worktree path and the slice branch. "Work only inside this directory."
+1. **Repo path and branch.** The worktree path and the slice branch ("Work only inside this directory"), or, when the harness provisions the executor's own working copy at dispatch time, the starting commit to verify (`git log -1 --oneline`), the slice branch to work on, and an instruction to report its checkout path and branch back.
 2. **The plan section, verbatim.** Copy the slice's part of the plan word for word — never paraphrase, a paraphrase is where requirements drift. Include the plan's non-goals and any item marked *undecided by the user*, with the instruction: **do not decide undecided items; leave them out and report them.**
 3. **Scope.** Files and surfaces in scope; files explicitly out of scope (other slices' files, shared config the orchestrator owns).
 4. **Announced deviations** already agreed with the user, if any.
@@ -141,7 +141,7 @@ The orchestrator does the conformance review from this, so it must be complete:
 - For each library, framework, tool, or platform API the change relies on: the version in use and how its behavior was established — the documentation or source of that version, a probe and what it printed — or "from memory, not verified".
 - For every test case added: the code change that would make it fail alone, in a few words.
 - For every assertion on a count (calls, queries, attempts, sends): the plan line that promises that number to a consumer or fixes it for an upstream dependency, or "does not grow: one row vs many". A count with neither is replaced by an assertion on the result before you report.
-- The commit hash(es) on the slice branch.
+- The slice branch, checkout path (when harness-provisioned), and commit hash(es) on the slice branch.
 - Every assumption made, every item left undecided, every deviation from the plan section and why.
 - Anything the stop conditions triggered.
 
@@ -156,7 +156,7 @@ Stopping ends the run: commit what is done on the slice branch, return the evide
 ## Template
 
 ```
-You are implementing one slice of an agreed plan in <worktree path>, branch <slice-branch>.
+You are implementing one slice of an agreed plan in <worktree path | the working copy assigned to you>, branch <slice-branch> (starting from <starting-commit>; confirm `git log -1 --oneline` matches before editing).
 Work only inside that directory. Do not push. Do not touch other branches.
 This is a single run: when you finish or hit a stop condition, return your report and end. Nobody will reply to you.
 If a command may run longer than three minutes, run it in the background and check it with a wait capped at three minutes, again and again, until it finishes; report only once it has.
